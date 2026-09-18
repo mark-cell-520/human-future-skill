@@ -1,6 +1,6 @@
 {
   "name": "human-future",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "description": "人类未来实时推演操作系统 v2.2 - 吸收11个HeartFlow生态技能：因果链追溯/基准评测/知识吸收/两遍分析/信号模式/交流层",
   "main": "modules/monitor/signal-collector.js",
   "scripts": {

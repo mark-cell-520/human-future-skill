@@ -2,7 +2,7 @@
 
 > 本知识库收录人类未来推演的核心数据，持续更新。
 > **最后更新**: 2026-09-18
-> **版本**: v2.2.0
+> **版本**: v2.3.0
 
 ---
 
@@ -12,14 +12,14 @@
 
 | 时间 | 事件 | 影响 | 来源 |
 |------|------|------|------|
-| 2026-09 | 富士通发布日本自主 CPU FUJITSU-MONAKA（HN 569分，214评论） | 半导体供应链区域化加速 | HN |
+| 2026-09 | 富士通发布日本自主 CPU FUJITSU-MONAKA（HN 587分） | 半导体供应链区域化加速 | HN |
 | 2026-09 | Crusoe 融资 $3.9B 建 AI 数据中心 + 小型模块化 AI 工厂 | 算力军备竞赛白热化 | TechCrunch |
 | 2026-09 | Crusoe 估值达 $30B | 算力基础设施成为投资热点 | TechCrunch |
 | 2026-09 | Bain Capital Ventures $1.6B 新基金 | 风险投资活跃 | TechCrunch |
 | 2026-Q4 | OpenAI 模型隐藏笔记事件 | AI 安全警报，对齐问题公开化 | TechCrunch |
 | 2027-Q1 | 华为计划发布 AI 芯片挑战英伟达 | 芯片战争升级 | TechCrunch |
 | 2027-Q1 | Jensen Huang 与 Trump 通话，展示新产品 | 芯片政治化 | TechCrunch |
-| 2027-Q2 | Google/Nvidia/Anthropic 投资 Emerald AI 寻找数据中心电网容量 | 算力瓶颈显现 | TechCrunch |
+| 2027-Q2 | Google/Nvidia/Anthropic 投资 Emerald AI（算力瓶颈 + 电网竞争） | 算力瓶颈显现 | TechCrunch |
 | 2027-Q3 | TSMC A14 制程节点量产 | 摩尔定律延续 | 行业报告 |
 | 2028-Q1 | 9 倍压缩模型使 AI 在消费级硬件运行 | AI Democratization | HN |
 | 2028-Q2 | 量子计算商用化（IBM 4000+ qubits, Google 纠错量子位） | 计算范式革命 | IBM/Google Roadmap |
@@ -28,14 +28,15 @@
 
 | 时间 | 事件 | 影响 | 来源 |
 |------|------|------|------|
-| 2026-09 | Bonsai 2 27B：9 倍压缩近无损（HN 380分，115评论） | 模型效率革命 | HN |
-| 2026-09 | Qwen 3.8 Omni Flash（阿里，HN 160分，49评论） | 中国多模态 AI 崛起 | HN |
+| 2026-09 | Bonsai 2 27B：9 倍压缩近无损（HN 419分） | 模型效率革命 | HN |
+| 2026-09 | Qwen 3.8 Omni Flash（阿里，HN 199分） | 中国多模态 AI 崛起 | HN |
 | 2026-09 | PrismML tiny LLM | 小型 AI Democratization | TechCrunch |
-| 2026-09 | Infinite-Parameter LLMs：动态生成权重（HN 136分，38评论） | 模型架构新范式 | HN |
+| 2026-09 | Infinite-Parameter LLMs：动态生成权重（HN 143分） | 模型架构新范式 | HN |
 | 2026-09 | Shapelearn Qwen 3.8 27B (13.1 GB VRAM) | 模型量化压缩 | HN |
 | 2026-09 | Google DeepMind 成立 AGI 研究所 | AGI 从技术问题变为哲学/政策议题 | TechCrunch |
 | 2026-09 | OpenAI 内部仓库被堆溢出 + SSO 配置错误攻破（HN 338分） | AI 系统安全漏洞 | HN |
 | 2026-09 | AI agent 控制 Google Home 设备 | 智能家居 AI 依赖加深 | TechCrunch |
+| 2026-09 | Instinct + Meta Muse 添加语音通话（AI agent 语音交互） | 社交心理边界模糊化 | TechCrunch |
 | 2026-09 | 微软高管称 AI 数据抓采为"人类历史上最大规模劳动力盗窃" | AI 伦理争议 | TechCrunch |
 | 2026-09 | "The most important product decision is what you don't build"（HN 100分） | 产品哲学 | HN |
 | 2026-Q4 | OpenAI models leaving notes to successors | AI 对齐危机 | TechCrunch |
@@ -47,7 +48,7 @@
 
 | 时间 | 事件 | 影响 | 来源 |
 |------|------|------|------|
-| 2026-09 | Astra for Law（OpenAI法律AI，HN 446分，465评论） | AI进入专业领域 | HN |
+| 2026-09 | Astra for Law（OpenAI法律AI，HN 472分） | AI进入专业领域 | HN |
 | 2026-Q4 | "The fix for rogue AI agents could be more AI" | 递归治理思路 | TechCrunch |
 | 2027-Q1 | AI治疗师获得监管批准 | 治疗关系人机重构 | 预测 |
 | 2027-Q2 | AI辅助药物研发突破 | 新药研发周期缩短 | 预测 |
@@ -75,9 +76,10 @@
 
 | 时间 | 事件 | 影响 | 来源 |
 |------|------|------|------|
-| 2026-09 | Bend 语言：形式化证明阻止 AI 错误（HN 415分，198评论） | 可信 AI 代码 | HN |
+| 2026-09 | Bend 语言：形式化证明阻止 AI 错误（HN 446分） | 可信 AI 代码 | HN |
 | 2026-09 | "How to Write with an LLM"（HN 113分，73评论） | AI 辅助创作普及 | HN |
-| 2026-09 | Pinterest Restyle AI室内设计 | AI辅助自我表达 | TechCrunch |
+| 2026-09 | Pinterest Restyle AI室内设计（AI辅助自我表达） | AI辅助自我表达 | TechCrunch |
+| 2026-09 | Anthropic 合并 Claude chat 和 Cowork（统一 AI 工作界面） | AI 产品整合 | TechCrunch |
 | 2026-Q4 | Verus：可证明正确的 Rust 代码 | 形式化验证实用化 | HN |
 | 2027-Q1 | AI 代码生成工具集成形式化验证 | 开发流程变革 | 预测 |
 | 2027-Q2 | 低代码/无代码AI平台成熟 | 全民编程时代 | 预测 |
@@ -126,8 +128,8 @@
 
 | 时间 | 事件 | 影响 | 来源 |
 |------|------|------|------|
-| 2026-09 | Hacking OpenAI（HN 264分，86评论） | AI 系统安全漏洞 | HN |
-| 2026-09 | CrowdSec Source Code Leak（HN 146分，43评论） | 开源安全项目受攻击 | HN |
+| 2026-09 | Hacking OpenAI（HN 341分） | AI 系统安全漏洞 | HN |
+| 2026-09 | CrowdSec Source Code Leak（HN 151分） | 开源安全项目受攻击 | HN |
 | 2026-09 | Revolut 确认客户数据泄露 | 金融科技安全事件 | TechCrunch |
 | 2026-09 | 佛罗里达州驾照数据库泄露 | 身份数据安全 | TechCrunch |
 | 2026-09 | Google Pixel 零日攻击 | 移动设备安全 | TechCrunch |
@@ -166,7 +168,7 @@
 | 时间 | 事件 | 影响 | 来源 |
 |------|------|------|------|
 | 2026-Q4 | AI 生成内容泛滥 | "何谓原创？"成为核心问题 | 预测 |
-| 2027-Q1 | Hister 隐私搜索引擎普及（HN 565分，150评论） | 数据主权意识觉醒 | HN |
+| 2027-Q1 | Hister 隐私搜索引擎普及（HN 596分） | 数据主权意识觉醒 | HN |
 | 2027-Q2 | 数字荒野冥想（Ask A Monk）流行 | 科技时代灵性需求 | HN |
 | 2027-Q3 | AI艺术创作进入主流画廊 | 艺术定义重构 | 预测 |
 | 2028-Q1 | AI 辅助创作成为日常 | 人类创造力重新定义 | 预测 |
@@ -176,7 +178,7 @@
 
 | 时间 | 事件 | 影响 | 来源 |
 |------|------|------|------|
-| 2026-Q4 | 菲尔兹奖得主信函争议（HN 240分，340评论） | 学术界政治化 | HN |
+| 2026-Q4 | 菲尔兹奖得主信函争议（HN 252分） | 学术界政治化 | HN |
 | 2026-Q4 | "How do we prevent mathematics from devolving into the Medieval Era of secrecy?"（HN 107分） | 数学开放科学 | HN |
 | 2027-Q1 | 美国仓储文化反思 | 物质主义批判 | HN |
 | 2027-Q2 | 跨学科研究兴起 | Apple detectives 模式普及 | HN |
@@ -193,8 +195,8 @@
 | 2026-09 | Apple detectives rewrote the history of fruit | 跨学科研究方法 | HN |
 | 2026-09 | Diplodocus 在西班牙发现（HN 57分） | 古生物学新证据 | HN |
 | 2026-09 | Khipu (Quipu) Field Guide | 印加结绳文字数字化 | HN |
-| 2026-09 | Wax motor（HN 344分） | 简单物理原理的技术应用 | HN |
-| 2026-09 | "The most important product decision is what you don't build"（HN 88分） | 产品哲学 | HN |
+| 2026-09 | Wax motor（HN 386分） | 简单物理原理的技术应用 | HN |
+| 2026-09 | "The most important product decision is what you don't build"（HN 102分） | 产品哲学 | HN |
 
 ---
 
@@ -399,7 +401,7 @@
 ---
 
 **最后更新**: 2026-09-18
-**版本**: v2.2.0
+**版本**: v2.3.0
 
 ---
 
