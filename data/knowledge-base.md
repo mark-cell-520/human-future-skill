@@ -49,6 +49,13 @@
 | 时间 | 事件 | 影响 | 来源 |
 |------|------|------|------|
 | 2026-09 | Astra for Law（OpenAI法律AI，HN 472分） | AI进入专业领域 | HN |
+| 2026-09 | Zoox 内华达州解除 100 台 Robotaxi 限制 | 商业化规模化 | TechCrunch |
+| 2026-09 | Waymo 重启圣安东尼奥服务 | 天气韧性问题解决 | TechCrunch |
+| 2026-09 | Lucid Motors 欧洲 Robotaxi 合作 | 电动汽车+自动驾驶 | TechCrunch |
+| 2026-09 | Tesla 10月1日发布第二代 Roadster | 电动汽车创新 | TechCrunch |
+| 2026-09 | Apple 允许欧盟地区降低跟踪同意提示 | 隐私政策调整 | TechCrunch |
+| 2026-09 | FAA $875M AI 空中交通管理改造 | AI 进入航空管理 | TechCrunch |
+| 2026-09 | X 允许美国用户通过 Cashtags 交易 | 社交媒体金融化 | TechCrunch |
 | 2026-Q4 | "The fix for rogue AI agents could be more AI" | 递归治理思路 | TechCrunch |
 | 2027-Q1 | AI治疗师获得监管批准 | 治疗关系人机重构 | 预测 |
 | 2027-Q2 | AI辅助药物研发突破 | 新药研发周期缩短 | 预测 |
