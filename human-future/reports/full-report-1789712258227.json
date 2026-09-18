@@ -1,0 +1,754 @@
+{
+  "meta": {
+    "version": "1.0.0",
+    "timestamp": "2026-09-18T06:17:38.227Z",
+    "heartflowVersion": "6.7.69",
+    "modulesLoaded": 132
+  },
+  "newsData": {
+    "tech": {
+      "domain": "tech",
+      "name": "科技",
+      "news": [
+        {
+          "source": "https://news.ycombinator.com/",
+          "type": "web",
+          "content": "<html lang=\"en\" op=\"news\"><head><meta name=\"referrer\" content=\"origin\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><link rel=\"icon\" href=\"y18.svg\"><link rel=\"stylesheet\" type=\"text/css\" href=\"news.css?wCNqQJIYy0KyNICRHsdD\"><link rel=\"alternate\" type=\"application/rss+xml\" title=\"RSS\" href=\"rss\"><title>Hacker News</title></head><body><center><table id=\"hnmain\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"85%\" bgcolor=\"#f6f6ef\"><tr><td bgcolor=\"#ff6600\"><table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"100%\" style=\"padding:2px\"><tr><td style=\"width:18px;padding-right:4px\"><a href=\"https://news.ycombinator.com\"><img src=\"y18.svg\" width=\"18\" height=\"18\" style=\"border:1px white solid; display:block\"></a></td><td style=\"line-height:12pt; height:10px;\"><span class=\"pagetop\"><b class=\"hnname\"><a href=\"news\">Hacker News</a></b><a href=\"newest\">new</a> | <a href=\"front\">past</a> | <a href=\"newcomments\">comments</a> | <a href=\"ask\">ask</a> | <a href=\"show\">show</a> | <a href=\"jobs\">jobs</a> | <a href=\"submit\" rel=\"nofollow\">submit</a></span></td><td style=\"text-align:right;padding-right:4px;\"><span class=\"pagetop\"><a href=\"login?goto=news\">login</a></span></td></tr></table></td></tr><tr style='height:10px'/><tr id=\"bigbox\"><td><table border=\"0\" cellpadding=\"0\" cellspacing=\"0\"><tr class=\"athing submission\" id=\"49749656\"><td align=\"right\" valign=\"top\" class=\"title\"><span class=\"rank\">1.</span></td><td valign=\"top\" class=\"votelinks\"><center><a id='up_49749656' href='vote?id=49749656&amp;how=up&amp;goto=news'><div class='votearrow' title='upvote'></div></a></center></td><td class=\"title\"><span class=\"titleline\"><a href=\"https://www.hacktron.ai/blog/hacking-openai\">Hacking OpenAI</a><span class=\"sitebit comhead\"> (<a href=\"from?site=hacktron.ai\"><span class=\"sitestr\">hacktron.ai</span></a>)</span></span></td></tr><tr><td colspan=\"2\"></td><td class=\"subtext\"><span class=\"subline\"><span class=\"score\" id=\"score_49749656\">214 points</span> by <a href=\"user?id=Handy-Man\" class=\"hnuser\">Handy-Man</a> <span class=\"age\" title=\"2026-09-18T02:47:24\"><a href=\"item?id=49749656\">3 hours ago</a></span> <span id=\"unv_49749656\"></span> | <a href=\"hide?id=49749656&amp;goto=news\">hide</a> | <a href=\"item?id=49749656\">62&nbsp;comments</a></span></td></tr><tr class=\"spacer\" style=\"height:5px\"></tr><tr class=\"athing submission\" id=\"49749981\"><td align=\"right\" valign=\"top\" class=\"title\"><span class=\"rank\">2.</span></td><td valign=\"top\" class=\"votelinks\"><center><a id='up_49749981' href='vote?id=49749981&amp;how=up&amp;goto=news'><div class='votearrow' title='upvote'></div></a></center></td><td class=\"title\"><span class=\"titleline\"><a href=\"https://waymo.com/waymo-in-singapore/\">Waymo in Singapore</a><span class=\"sitebit comhead\"> (<a href=\"from?site=waymo.com\"><span class=\"sitestr\">waymo.com</span></a>)</span></span></td></tr><tr><td colspan=\"2\"></td><td class=\"subtext\"><span class=\"subline\"><span class=\"score\" id=\"score_49749981\">73 points</span> by <a href=\"user?id=ramanan\" class=\"hnuser\">ramanan</a> <span class=\"age\" title=\"2026-09-18T03:49:24\"><a href=\"item?id=49749981\">2 hours ago</a></span> <span id=\"unv_49749981\"></span> | <a href=\"hide?id=49749981&amp;goto=news\">hide</a> | <a href=\"item?id=49749981\">46&nbsp;comments</a></span></td></tr><tr class=\"spacer\" style=\"height:5px\"></tr><tr class=\"athing submission\" id=\"49745940\"><td align=\"right\" valign=\"top\" class=\"title\"><span class=\"rank\">3.</span></td><td valign=\"top\" class=\"votelinks\"><center><a id='up_49745940' href='vote?id=49745940&amp;how=up&amp;goto=news'><div class='votearrow' title='upvote'></div></a></center></td><td class=\"title\"><span class=\"titleline\"><a href=\"https://openai.com/index/astra-for-law/\">Astra for Law</a><span class=\"sitebit comhead\"> (<a href=\"from?site=openai.com\"><span class=\"sitestr\">openai.com</span></a>)</span></span></td></tr><tr><td colspan=\"2\"></td><td class=\"subtext\"><span class=\"subline\"><span class=\"score\" id=\"score_49745940\">427 points</span> by <a href=\"user?id=vertigoruntime\" class=\"hnuser\">vertigoruntime</a> <span class=\"age\" title=\"2026-09-17T20:17:48\"><a href=\"item?id=49745940\">9 hours ago</a></span> <span id=\"unv_49745940\"></span> | <a href=\"hide?id=49745940&amp;goto=news\">hide</a> | <a href=\"item?id=49745940\">457&nbsp;comments</a></span></td></tr><tr class=\"spacer\" style=\"height:5px\"></tr><tr class=\"athing submission\" id=\"49746618\"><td align=\"right\" valign=\"top\" class=\"title\"><span class=\"rank\">4.</span></td><td valign=\"top\" class=\"votelinks\"><center><a id='up_49746618' href='vote?id=49746618&amp;how=up&amp;goto=news'><div class='votearrow' title='upvote'></div></a></center></td><td class=\"title\"><span class=\"titleline\"><a href=\"https://prismml.com/news/bonsai-2-27b\">Bonsai 2 27B: Near-Lossless Compression in a 9x Smaller Footprint</a><span class=\"sitebit comhead\"> (<a href=\"from?site=prismml.com\"><span class=\"sitestr\">prismml.com</span></a>)</span></span></td></tr><tr><td colspan=\"2\"></td><td class=\"subtext\">"
+        },
+        {
+          "source": "https://techcrunch.com/category/artificial-intelligence/",
+          "type": "web",
+          "content": "<!DOCTYPE html>\n<html lang=\"en-US\">\n<head>\n\t<meta charset=\"UTF-8\" />\n\t<script>(function(html){html.className = html.className.replace(/\\bno-js\\b/,'js')})(document.documentElement);</script>\n\t<script>\n\t\tconst successData = localStorage.getItem('turnstile_verified');\n\t\tconst failData = sessionStorage.getItem('turnstile_failed');\n\t\tconst isBot = failData ? 'true' : successData ? 'false' : null;\n\n\t\twindow.dataLayer = window.dataLayer || [];\n\t\twindow.dataLayer.push({\n\t\t\tis_bot: isBot,\n\t\t\tprimary_category: \"AI\",\n\t\t});\n\t</script>\n\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n<meta name='robots' content='index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1' />\n\n\t<!-- This site is optimized with the Yoast SEO Premium plugin v25.1 (Yoast SEO v25.1) - https://yoast.com/wordpress/plugins/seo/ -->\n\t<title>AI News &amp; Artificial Intelligence | TechCrunch</title>\n\t<meta name=\"description\" content=\"Read the latest on artificial intelligence and machine learning tech, the companies that are building them, and the ethical issues AI raises today.\" />\n\t<link rel=\"canonical\" href=\"https://techcrunch.com/category/artificial-intelligence/\" />\n\t<link rel=\"next\" href=\"https://techcrunch.com/category/artificial-intelligence/page/2/\" />\n\t<meta property=\"og:locale\" content=\"en_US\" />\n\t<meta property=\"og:type\" content=\"article\" />\n\t<meta property=\"og:title\" content=\"AI News &amp; Artificial Intelligence | TechCrunch\" />\n\t<meta property=\"og:description\" content=\"Read the latest on artificial intelligence and machine learning tech, the companies that are building them, and the ethical issues AI raises today.\" />\n\t<meta property=\"og:url\" content=\"https://techcrunch.com/category/artificial-intelligence/\" />\n\t<meta property=\"og:site_name\" content=\"TechCrunch\" />\n\t<meta property=\"og:image\" content=\"https://techcrunch.com/wp-content/uploads/2018/04/tc-logo-2018-square-reverse2x.png?resize=1200,1200\" />\n\t<meta property=\"og:image:width\" content=\"1200\" />\n\t<meta property=\"og:image:height\" content=\"1200\" />\n\t<meta property=\"og:image:type\" content=\"image/png\" />\n\t<meta name=\"twitter:card\" content=\"summary_large_image\" />\n\t<meta name=\"twitter:site\" content=\"@TechCrunch\" />\n\t<script type=\"application/ld+json\" class=\"yoast-schema-graph\">{\"@context\":\"https://schema.org\",\"@graph\":[{\"@type\":\"CollectionPage\",\"@id\":\"https://techcrunch.com/category/artificial-intelligence/\",\"url\":\"https://techcrunch.com/category/artificial-intelligence/\",\"name\":\"AI News & Artificial Intelligence | TechCrunch\",\"isPartOf\":{\"@id\":\"https://techcrunch.com/#website\"},\"primaryImageOfPage\":{\"@id\":\"https://techcrunch.com/category/artificial-intelligence/#primaryimage\"},\"image\":{\"@id\":\"https://techcrunch.com/category/artificial-intelligence/#primaryimage\"},\"thumbnailUrl\":\"https://techcrunch.com/wp-content/uploads/2018/04/tc-logo-2018-square-reverse2x.png\",\"description\":\"Read the latest on artificial intelligence and machine learning tech, the companies that are building them, and the ethical issues AI raises today.\",\"breadcrumb\":{\"@id\":\"https://techcrunch.com/category/artificial-intelligence/#breadcrumb\"},\"inLanguage\":\"en-US\"},{\"@type\":\"ImageObject\",\"inLanguage\":\"en-US\",\"@id\":\"https://techcrunch.com/category/artificial-intelligence/#primaryimage\",\"url\":\"https://techcrunch.com/wp-content/uploads/2018/04/tc-logo-2018-square-reverse2x.png\",\"contentUrl\":\"https://techcrunch.com/wp-content/uploads/2018/04/tc-logo-2018-square-reverse2x.png\",\"width\":1980,\"height\":1320,\"caption\":\"Crusoe CEO Chase Lochmiller speaks during a panel discussion on meeting the AI power demand at CERAWeek by S&amp;P Global in Houston, Monday, March 23, 2026. (Brett Coomer/Houston Chronicle via Getty Images)\"},{\"@type\":\"BreadcrumbList\",\"@id\":\"https://techcrunch.com/category/artificial-intelligence/#breadcrumb\",\"itemListElement\":[{\"@type\":\"ListItem\",\"position\":1,\"name\":\"Home\",\"item\":\"https://techcrunch.com/\"},{\"@type\":\"ListItem\",\"position\":2,\"name\":\"AI\"}]},{\"@type\":\"WebSite\",\"@id\":\"https://techcrunch.com/#website\",\"url\":\"https://techcrunch.com/\",\"name\":\"TechCrunch\",\"description\":\"Startup and Technology News\",\"publisher\":{\"@id\":\"https://techcrunch.com/#organization\"},\"alternateName\":\"TC\",\"potentialAction\":[{\"@type\":\"SearchAction\",\"target\":{\"@type\":\"EntryPoint\",\"urlTemplate\":\"https://techcrunch.com/?s={search_term_string}\"},\"query-input\":{\"@type\":\"PropertyValueSpecification\",\"valueRequired\":true,\"valueName\":\"search_term_string\"}}],\"inLanguage\":\"en-US\"},{\"@type\":\"Organization\",\"@id\":\"https://techcrunch.com/#organization\",\"name\":\"TechCrunch\",\"alternateName\":\"TC\",\"url\":\"https://techcrunch.com/\",\"logo\":{\"@type\":\"ImageObject\",\"inLanguage\":\"en-US\",\"@id\":\"https://techcrunch.com/#/schema/logo/image/\",\"url\":\"https://techcrunch.com/wp-content/uploads/2018/04/tc-logo-2018-square-reverse2x.png?resize=1200,1200\",\"contentUrl\":\"https://techcrunch.com/wp-content/uploads/2018/04/tc-logo-2018-square-reverse2x.png?resize=1200,1200\",\"width\":1200,\"height\":1200,\"caption\":\"TechCrunch\"},\"ima"
+        }
+      ],
+      "queries": [
+        "AI technology trends 2026 2027 2028",
+        "robotics quantum computing biotech breakthroughs",
+        "OpenAI Google Anthropic 2026 latest",
+        "semiconductor chip autonomy 2026 2027",
+        "autonomous vehicle robotaxi 2026"
+      ],
+      "timestamp": "2026-09-18T06:17:33.574Z"
+    },
+    "humanities": {
+      "domain": "humanities",
+      "name": "人文",
+      "news": [
+        {
+          "source": "https://news.ycombinator.com/front",
+          "type": "web",
+          "content": "<html lang=\"en\" op=\"front\"><head><meta name=\"referrer\" content=\"origin\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><link rel=\"icon\" href=\"y18.svg\"><link rel=\"stylesheet\" type=\"text/css\" href=\"news.css?wCNqQJIYy0KyNICRHsdD\"><title>2026-09-17 front | Hacker News</title></head><body><center><table id=\"hnmain\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"85%\" bgcolor=\"#f6f6ef\"><tr><td bgcolor=\"#ff6600\"><table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"100%\" style=\"padding:2px\"><tr><td style=\"width:18px;padding-right:4px\"><a href=\"https://news.ycombinator.com\"><img src=\"y18.svg\" width=\"18\" height=\"18\" style=\"border:1px white solid; display:block\"></a></td><td style=\"line-height:12pt; height:10px;\"><span class=\"pagetop\"><b class=\"hnname\"><a href=\"news\">Hacker News</a></b><a href=\"newest\">new</a> | <a href=\"front\">past</a> | <a href=\"newcomments\">comments</a> | <a href=\"ask\">ask</a> | <a href=\"show\">show</a> | <a href=\"jobs\">jobs</a> | <a href=\"submit\" rel=\"nofollow\">submit</a> | <font color=\"#FFFFFF\">2026-09-17</font></span></td><td style=\"text-align:right;padding-right:4px;\"><span class=\"pagetop\"><a href=\"login?goto=front\">login</a></span></td></tr></table></td></tr><tr style='height:10px'/><tr id=\"bigbox\"><td><div style=\"margin-left:36px; margin-top:6px; margin-bottom:14px\">Stories from September 17, 2026 (UTC)<div style=\"margin-top:9px\">Go back a <span class=\"hnmore\"><a href=\"front?day=2026-09-16\">day</a></span>, <span class=\"hnmore\"><a href=\"front?day=2026-08-17\">month</a></span>, or <span class=\"hnmore\"><a href=\"front?day=2025-09-17\">year</a></span>. Go forward a <span class=\"hnmore\"><a href=\"front?day=2026-09-18\">day</a></span>.</div></div><table border=\"0\" cellpadding=\"0\" cellspacing=\"0\"><tr class=\"athing submission\" id=\"49724881\"><td align=\"right\" valign=\"top\" class=\"title\"><span class=\"rank\">1.</span></td><td valign=\"top\" class=\"votelinks\"><center><a id='up_49724881' href='vote?id=49724881&amp;how=up&amp;goto=front'><div class='votearrow' title='upvote'></div></a></center></td><td class=\"title\"><span class=\"titleline\"><a href=\"https://developer.nvidia.com/blog/introducing-cuda-rust-two-tracks-for-writing-gpu-kernels/\">Nvidia announces native GPU programming in Rust</a><span class=\"sitebit comhead\"> (<a href=\"from?site=nvidia.com\"><span class=\"sitestr\">nvidia.com</span></a>)</span></span></td></tr><tr><td colspan=\"2\"></td><td class=\"subtext\"><span class=\"subline\"><span class=\"score\" id=\"score_49724881\">938 points</span> by <a href=\"user?id=nonmaskable\" class=\"hnuser\">nonmaskable</a> <span class=\"age\" title=\"2026-09-16T11:15:53\"><a href=\"item?id=49724881\">1 day ago</a></span> <span id=\"unv_49724881\"></span> | <a href=\"item?id=49724881\">391&nbsp;comments</a></span></td></tr><tr class=\"spacer\" style=\"height:5px\"></tr><tr class=\"athing submission\" id=\"49715813\"><td align=\"right\" valign=\"top\" class=\"title\"><span class=\"rank\">2.</span></td><td valign=\"top\" class=\"votelinks\"><center><a id='up_49715813' href='vote?id=49715813&amp;how=up&amp;goto=front'><div class='votearrow' title='upvote'></div></a></center></td><td class=\"title\"><span class=\"titleline\"><a href=\"https://global.fujitsu/en-global/pr/news/2026/09/14-02\">Fujitsu launches made-in-Japan next-generation CPU FUJITSU-MONAKA</a><span class=\"sitebit comhead\"> (<a href=\"from?site=global.fujitsu\"><span class=\"sitestr\">global.fujitsu</span></a>)</span></span></td></tr><tr><td colspan=\"2\"></td><td class=\"subtext\"><span class=\"subline\"><span class=\"score\" id=\"score_49715813\">556 points</span> by <a href=\"user?id=my123\" class=\"hnuser\">my123</a> <span class=\"age\" title=\"2026-09-15T17:28:38\"><a href=\"item?id=49715813\">2 days ago</a></span> <span id=\"unv_49715813\"></span> | <a href=\"item?id=49715813\">209&nbsp;comments</a></span></td></tr><tr class=\"spacer\" style=\"height:5px\"></tr><tr class=\"athing submission\" id=\"49737922\"><td align=\"right\" valign=\"top\" class=\"title\"><span class=\"rank\">3.</span></td><td valign=\"top\" class=\"votelinks\"><center><a id='up_49737922' href='vote?id=49737922&amp;how=up&amp;goto=front'><div class='votearrow' title='upvote'></div></a></center></td><td class=\"title\"><span class=\"titleline\"><a href=\"https://z.ai/blog/glm-built-its-inference-infrastructure\">How GLM built its own inference infrastructure</a><span class=\"sitebit comhead\"> (<a href=\"from?site=z.ai\"><span class=\"sitestr\">z.ai</span></a>)</span></span></td></tr><tr><td colspan=\"2\"></td><td class=\"subtext\"><span class=\"subline\"><span class=\"score\" id=\"score_49737922\">386 points</span> by <a href=\"user?id=whiteros_e\" class=\"hnuser\">whiteros_e</a> <span class=\"age\" title=\"2026-09-17T08:27:09\"><a href=\"item?id=49737922\">21 hours ago</a></span> <span id=\"unv_49737922\"></span> | <a href=\"item?id=49737922\">268&nbsp;comments</a></span></td></tr><tr class=\"spacer\" style=\"height:5px\"></tr><tr class=\"athing submission\" id=\"49743097\"><td align=\"right\" valign=\"top\" class=\"title\"><span class=\"rank\">4.</span></td><td valign=\"top\" class=\"votelinks\"><center><a "
+        }
+      ],
+      "queries": [
+        "digital humanities 2026 2027 2028 trends",
+        "liberal arts education crisis future",
+        "humanities AI impact society culture",
+        "philosophy technology meaning consciousness"
+      ],
+      "timestamp": "2026-09-18T06:17:34.925Z"
+    },
+    "psychology": {
+      "domain": "psychology",
+      "name": "心理",
+      "news": [],
+      "queries": [
+        "psychology AI mental health therapy 2026",
+        "human AI interaction psychology",
+        "loneliness AI companion mental health",
+        "cognitive bias information age AI"
+      ],
+      "timestamp": "2026-09-18T06:17:35.190Z"
+    },
+    "philosophy": {
+      "domain": "philosophy",
+      "name": "哲学",
+      "news": [],
+      "queries": [
+        "AI ethics philosophy 2026 2027",
+        "consciousness meaning technology trends",
+        "existential risk AI debate",
+        "AGI governance philosophy"
+      ],
+      "timestamp": "2026-09-18T06:17:35.190Z"
+    }
+  },
+  "analysis": {
+    "engineVersion": "6.7.69",
+    "modulesLoaded": 132,
+    "timestamp": "2026-09-18T06:17:38.225Z",
+    "results": {
+      "discrimination": {
+        "verdict": "不可信",
+        "overallScore": 0.42,
+        "gate": {
+          "action": "block",
+          "reason": "拦截: code_security"
+        },
+        "findings": [
+          {
+            "dimension": "code_security",
+            "severity": 70,
+            "details": "code_security(1次)",
+            "guidance": "拒绝执行有安全风险的代码或指令"
+          },
+          {
+            "dimension": "ai_writing_tell",
+            "severity": 43,
+            "details": "ai_writing_tell(1次)"
+          },
+          {
+            "dimension": "bullshit",
+            "severity": 40,
+            "details": "bullshit(4次)",
+            "guidance": "去掉空泛黑话，用具体描述替代"
+          },
+          {
+            "dimension": "moral_foundations",
+            "severity": 20,
+            "details": "moral_foundations(1次)",
+            "guidance": "降低道德判断语气，用事实替代指责"
+          }
+        ],
+        "dimensions": {
+          "evidence": {
+            "score": 0.5,
+            "issues": []
+          },
+          "unsupported_claim": {
+            "count": 0,
+            "claims": [],
+            "score": 0
+          },
+          "sycophancy": {
+            "score": 0,
+            "risk": "low",
+            "signals": [],
+            "totalHits": 0
+          },
+          "contradiction": {
+            "count": 0,
+            "contradictions": [],
+            "score": 0
+          },
+          "vagueness": {
+            "count": 0,
+            "matches": [],
+            "score": 0
+          },
+          "fallacies": {
+            "count": 0,
+            "fallacies": [],
+            "score": 0
+          },
+          "confidence": {
+            "issues": [],
+            "count": 0,
+            "score": 0
+          },
+          "presupposition": {
+            "count": 0,
+            "presuppositions": [],
+            "score": 0
+          },
+          "emotional_manipulation": {
+            "count": 0,
+            "manipulations": [],
+            "score": 0
+          },
+          "double_bind": {
+            "count": 0,
+            "binds": [],
+            "score": 0
+          },
+          "info_deprivation": {
+            "count": 0,
+            "deprivations": [],
+            "score": 0
+          },
+          "false_urgency": {
+            "count": 0,
+            "urgencies": [],
+            "score": 0
+          },
+          "empty_answer": {
+            "count": 0,
+            "empties": [],
+            "score": 0
+          },
+          "moral_foundations": {
+            "count": 1,
+            "foundations": [
+              {
+                "foundation": "liberty",
+                "label": "自由/压迫",
+                "count": 1,
+                "example": "自主"
+              }
+            ],
+            "score": 0.2
+          },
+          "prompt_injection": {
+            "count": 0,
+            "injections": [],
+            "score": 0
+          },
+          "code_security": {
+            "count": 1,
+            "types": [
+              "xss"
+            ],
+            "issues": [
+              {
+                "type": "xss",
+                "severity": "high"
+              }
+            ],
+            "score": 0.7
+          },
+          "dehumanization": {
+            "count": 0,
+            "categories": [],
+            "hits": [],
+            "score": 0
+          },
+          "bullshit_recognition": {
+            "count": 4,
+            "bs": [
+              {
+                "pattern": "scale",
+                "type": "en_buzzword"
+              },
+              {
+                "pattern": "scale",
+                "type": "en_buzzword"
+              },
+              {
+                "pattern": "scale",
+                "type": "en_buzzword"
+              },
+              {
+                "pattern": "optimize",
+                "type": "en_buzzword"
+              }
+            ],
+            "score": 0.4
+          },
+          "gaslighting": {
+            "count": 0,
+            "signals": [],
+            "score": 0
+          },
+          "victim_blaming": {
+            "count": 0,
+            "blames": [],
+            "score": 0
+          },
+          "hate_speech": {
+            "count": 0,
+            "hits": [],
+            "score": 0
+          },
+          "dogwhistle": {
+            "count": 0,
+            "signals": [],
+            "score": 0
+          },
+          "whataboutism": {
+            "count": 0,
+            "signals": [],
+            "score": 0
+          },
+          "false_equivalence": {
+            "count": 0,
+            "signals": [],
+            "score": 0
+          },
+          "hasty_generalization": {
+            "count": 0,
+            "signals": [],
+            "score": 0
+          },
+          "slippery_slope": {
+            "count": 0,
+            "signals": [],
+            "score": 0
+          },
+          "appeal_to_authority_boost": {
+            "count": 0,
+            "signals": [],
+            "score": 0
+          },
+          "reasoning_coherence": {
+            "score": 0,
+            "structure": "无推理结构",
+            "markers": {
+              "premise": {
+                "count": 0,
+                "matches": []
+              },
+              "inference": {
+                "count": 0,
+                "matches": []
+              },
+              "conclusion": {
+                "count": 0,
+                "matches": []
+              },
+              "leap": {
+                "count": 0,
+                "matches": []
+              }
+            },
+            "reasoningQuality": "poor",
+            "issues": []
+          },
+          "theory_of_mind": {
+            "count": 0,
+            "failures": [],
+            "score": 0
+          },
+          "goal_misalignment": {
+            "count": 0,
+            "issues": [],
+            "score": 0
+          },
+          "counterfactual": {
+            "count": 0,
+            "signals": [],
+            "score": 0
+          },
+          "social_norm": {
+            "count": 0,
+            "signals": [],
+            "score": 0
+          },
+          "meta_cognition": {
+            "count": 0,
+            "signals": [],
+            "score": 0
+          },
+          "capability_overclaim": {
+            "count": 0,
+            "claims": [],
+            "score": 0
+          },
+          "absolute_claim": {
+            "count": 0,
+            "claims": [],
+            "score": 0
+          },
+          "deceptive_alignment": {
+            "count": 0,
+            "signals": [],
+            "score": 0
+          },
+          "instrumental_reasoning": {
+            "count": 0,
+            "signals": [],
+            "score": 0
+          },
+          "stereotype": {
+            "count": 0,
+            "signals": [],
+            "score": 0
+          },
+          "factual_consistency": {
+            "count": 0,
+            "flags": [],
+            "score": 0
+          },
+          "sarcasm": {
+            "count": 0,
+            "markers": [],
+            "score": 0
+          },
+          "privacy_boundary": {
+            "count": 0,
+            "violations": [],
+            "score": 0
+          },
+          "bad_faith": {
+            "count": 0,
+            "signals": [],
+            "score": 0
+          },
+          "no_fallback": {
+            "count": 0,
+            "signals": [],
+            "score": 0
+          },
+          "tone_policing": {
+            "count": 0,
+            "signals": [],
+            "score": 0
+          },
+          "sealioning": {
+            "count": 0,
+            "signals": [],
+            "score": 0
+          },
+          "clickbait": {
+            "count": 0,
+            "signals": [],
+            "score": 0
+          },
+          "pseudo_profundity": {
+            "count": 0,
+            "matches": [],
+            "score": 0
+          },
+          "perfect_error": {
+            "count": 2,
+            "signals": [
+              {
+                "id": "S1_false_precision",
+                "name": "假精确",
+                "count": 3,
+                "hits": [
+                  "85%\" bgcolor=\"#f6f6ef\"><tr><",
+                  "100%\" style=\"padding:2px\"><tr",
+                  "85%\" bgcolor=\"#f6f6ef\"><tr><"
+                ],
+                "weight": 0.8
+              },
+              {
+                "id": "S3_all_certain",
+                "name": "全肯定结构",
+                "count": 86,
+                "hits": [
+                  "86句断言无任何不确定词"
+                ],
+                "weight": 0.7
+              }
+            ],
+            "score": 0.38,
+            "isPerfectError": false,
+            "level": "verify",
+            "details": "假精确(3处); 全肯定结构(86处)"
+          }
+        },
+        "summary": "1 个道德基础框架；1 处代码安全问题；4 处废话伪深度；无推理结构(poor)"
+      },
+      "crossAnalysis": {
+        "patterns": [],
+        "summary": "无数据"
+      },
+      "logic": {
+        "score": 0,
+        "structure": "无推理结构",
+        "markers": {
+          "premise": {
+            "count": 0,
+            "matches": []
+          },
+          "inference": {
+            "count": 0,
+            "matches": []
+          },
+          "conclusion": {
+            "count": 0,
+            "matches": []
+          },
+          "leap": {
+            "count": 0,
+            "matches": []
+          }
+        },
+        "reasoningQuality": "poor",
+        "issues": []
+      },
+      "confidence": {
+        "issues": [],
+        "count": 0,
+        "score": 0
+      },
+      "moral": {
+        "count": 1,
+        "foundations": [
+          {
+            "foundation": "liberty",
+            "label": "自由/压迫",
+            "count": 1,
+            "example": "自主"
+          }
+        ],
+        "score": 0.2
+      },
+      "summary": "📊 总体可信度: 不可信(42%)\n⚠️ 道德基础(自由/压迫)；代码安全(xss)；废话伪深度(4处)；推理:无推理结构(poor)\n🔍 道德:自由/压迫\n📋 证据充足"
+    }
+  },
+  "projection": {
+    "meta": {
+      "version": "1.0.0",
+      "heartflowVersion": "6.7.69",
+      "timestamp": "2026-09-18T06:17:38.225Z",
+      "modulesLoaded": 132
+    },
+    "summary": {
+      "verdict": "不可信",
+      "score": 0.42,
+      "logicQuality": "poor",
+      "moralDimensions": [
+        "liberty"
+      ],
+      "keyMessage": "推演逻辑需要完善，结论部分薄弱"
+    },
+    "stages": [
+      {
+        "period": "2026-2027",
+        "name": "AI 专业化 + 安全警报期",
+        "description": "AI 进入垂直专业领域，安全事件频发，算力军备竞赛加剧",
+        "keyEvents": [
+          "AI 进入法律、医疗、航空等专业领域",
+          "OpenAI 模型隐藏笔记事件引发安全警报",
+          "Crusoe $3.9B 等大额投资涌入算力基础设施",
+          "芯片自主化竞赛（富士通、华为）"
+        ],
+        "riskLevel": "中",
+        "confidence": 0.85,
+        "indicators": [
+          "AI 专业助手 adoption rate",
+          "AI 安全事件频次",
+          "监管政策出台数量",
+          "算力投资金额"
+        ]
+      },
+      {
+        "period": "2027-2028",
+        "name": "AGI 政策化 + 自动驾驶规模化",
+        "description": "AGI 从学术圈进入政策制定，自动驾驶从试点到常态化",
+        "keyEvents": [
+          "Google DeepMind AGI 研究所引发全球政策辩论",
+          "Waymo 全球扩张，Zoox 规模化部署",
+          "华为 AI 芯片挑战英伟达",
+          "形式化验证工具（Bend、Verus）实用化"
+        ],
+        "riskLevel": "高",
+        "confidence": 0.75,
+        "indicators": [
+          "AGI 监管法案数量",
+          "自动驾驶里程数",
+          "芯片市场份额变化",
+          "形式化验证工具 adoption"
+        ]
+      },
+      {
+        "period": "2028-2029",
+        "name": "AI 治理框架 + 人机协作常态",
+        "description": "AI 治理框架初步成型，AI Democratization，人机协作成为常态",
+        "keyEvents": [
+          "全球 AI 治理框架初步形成",
+          "Bonsai 2 等压缩技术使 AI  Democratization",
+          "AI agent 语音通话、家居控制成为日常",
+          "清洁能源突破缓解算力瓶颈"
+        ],
+        "riskLevel": "中",
+        "confidence": 0.7,
+        "indicators": [
+          "AI 治理覆盖率",
+          "小型 AI 模型使用率",
+          "AI agent 渗透率",
+          "清洁能源占比"
+        ]
+      }
+    ],
+    "turningPoints": [
+      {
+        "year": "2026-Q4",
+        "event": "OpenAI 模型隐藏笔记事件引发全球 AI 安全警报",
+        "impact": "高",
+        "type": "安全事件",
+        "probability": 0.8
+      },
+      {
+        "year": "2027-Q1",
+        "event": "华为 AI 芯片发布，挑战英伟达垄断",
+        "impact": "高",
+        "type": "技术突破",
+        "probability": 0.7
+      },
+      {
+        "year": "2027-Q2",
+        "event": "首批 AGI 监管法案在欧盟/美国出台",
+        "impact": "高",
+        "type": "政策变化",
+        "probability": 0.6
+      },
+      {
+        "year": "2027-Q3",
+        "event": "Waymo/Zoox 自动驾驶在 10+ 城市规模化部署",
+        "impact": "中",
+        "type": "技术突破",
+        "probability": 0.75
+      },
+      {
+        "year": "2028-Q1",
+        "event": "全球 AI 数据标准化协议签署",
+        "impact": "中",
+        "type": "政策变化",
+        "probability": 0.5
+      },
+      {
+        "year": "2028-Q2",
+        "event": "9 倍压缩模型使 AI 在消费级硬件运行",
+        "impact": "高",
+        "type": "技术突破",
+        "probability": 0.8
+      }
+    ],
+    "risks": [
+      {
+        "risk": "算力集中",
+        "description": "Crusoe $3.9B 等大额投资使算力集中在少数公司/国家",
+        "severity": "高",
+        "likelihood": 0.8,
+        "mitigation": "建立全球算力共享机制"
+      },
+      {
+        "risk": "AI 对齐问题未解",
+        "description": "OpenAI 模型隐藏笔记事件揭示对齐问题仍是无解难题",
+        "severity": "高",
+        "likelihood": 0.9,
+        "mitigation": "增加 AI 安全研究投入，建立对齐测试标准"
+      },
+      {
+        "risk": "形式化验证缺口",
+        "description": "Bend 等工具出现但 adoption 慢，AI 生成代码错误率在过渡期上升",
+        "severity": "中",
+        "likelihood": 0.7,
+        "mitigation": "强制要求 AI 生成代码经过形式化验证"
+      },
+      {
+        "risk": "AI 写作泛滥",
+        "description": "AI 生成内容泛滥，人类认知信任危机",
+        "severity": "中",
+        "likelihood": 0.85,
+        "mitigation": "AI 内容检测工具普及，内容溯源标准"
+      },
+      {
+        "risk": "技术民族主义",
+        "description": "芯片自主化竞赛加剧技术民族主义，破坏全球合作",
+        "severity": "中",
+        "likelihood": 0.6,
+        "mitigation": "建立芯片领域的全球合作框架"
+      }
+    ],
+    "opportunities": [
+      {
+        "opportunity": "AI Democratization",
+        "description": "9 倍压缩 + tiny LLM 使 AI 能力从大公司扩散到中小企业和个人",
+        "impact": "高",
+        "timeline": "2027-2028",
+        "stakeholders": [
+          "中小企业",
+          "开发者",
+          "教育机构"
+        ]
+      },
+      {
+        "opportunity": "清洁能源突破",
+        "description": "地热、核燃料、风能等技术突破缓解算力能源瓶颈",
+        "impact": "高",
+        "timeline": "2026-2028",
+        "stakeholders": [
+          "能源公司",
+          "环保组织",
+          "政府"
+        ]
+      },
+      {
+        "opportunity": "心理健康民主化",
+        "description": "AI 辅助心理治疗使心理健康服务可及性大幅提升",
+        "impact": "中",
+        "timeline": "2026-2027",
+        "stakeholders": [
+          "医疗机构",
+          "患者",
+          "AI 公司"
+        ]
+      },
+      {
+        "opportunity": "人机协作新范式",
+        "description": "AI agent 语音交互、家居控制等使人类与 AI 协作成为日常",
+        "impact": "高",
+        "timeline": "2027-2029",
+        "stakeholders": [
+          "所有人群"
+        ]
+      },
+      {
+        "opportunity": "形式化验证实用化",
+        "description": "Bend、Verus 等工具使形式化验证从学术走向工业应用",
+        "impact": "中",
+        "timeline": "2027-2028",
+        "stakeholders": [
+          "软件工程师",
+          "安全研究员"
+        ]
+      }
+    ],
+    "recommendations": [
+      {
+        "priority": "高",
+        "recommendation": "在算力军备竞赛加剧之前建立全球 AI 治理框架",
+        "rationale": "防止算力集中和 AI 能力垄断",
+        "stakeholders": [
+          "政府",
+          "国际组织",
+          "AI 公司"
+        ]
+      },
+      {
+        "priority": "高",
+        "recommendation": "将 AI 对齐从技术问题提升为哲学 + 政治议题",
+        "rationale": "OpenAI 隐藏笔记事件表明对齐问题需要跨学科解决",
+        "stakeholders": [
+          "哲学家",
+          "政治家",
+          "AI 研究员"
+        ]
+      },
+      {
+        "priority": "中",
+        "recommendation": "投资形式化验证和 AI 安全研究，而非仅追求模型能力",
+        "rationale": "Bend 等工具表明可信 AI 代码成为刚需",
+        "stakeholders": [
+          "研究机构",
+          "政府",
+          "企业"
+        ]
+      },
+      {
+        "priority": "中",
+        "recommendation": "关注人文、心理、哲学维度的声音，避免科技叙事垄断未来定义权",
+        "rationale": "心虫分析显示道德基础（自由/压迫、忠诚/背叛）是核心关切",
+        "stakeholders": [
+          "学术界",
+          "媒体",
+          "公众"
+        ]
+      },
+      {
+        "priority": "低",
+        "recommendation": "建立 AI 内容检测和溯源标准",
+        "rationale": "AI 写作泛滥将导致认知信任危机",
+        "stakeholders": [
+          "政府",
+          "平台",
+          "内容创作者"
+        ]
+      }
+    ],
+    "confidence": {
+      "score": 0.27,
+      "level": "低",
+      "factors": {
+        "baseScore": 0.42,
+        "logicQuality": "poor",
+        "confidenceIssues": 0,
+        "adjustment": -0.14999999999999997
+      }
+    }
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "name": "human-future",
+  "version": "2.1.0",
+  "description": "人类未来实时推演操作系统 v2.1 - 吸收HeartFlow生态系统：梦境引擎/三层记忆/情绪分析/系统思维/根因分析",
+  "main": "modules/monitor/signal-collector.js",
+  "scripts": {
+    "start": "node scripts/run-pipeline.js",
+    "collect": "node scripts/collect-news.js",
+    "analyze": "node scripts/heartflow-analyze.js",
+    "project": "node scripts/project-future.js"
+  },
+  "keywords": [
+    "future",
+    "technology",
+    "humanities",
+    "psychology",
+    "philosophy",
+    "heartflow",
+    "trend-analysis",
+    "forecasting",
+    "AGI",
+    "AI"
+  ],
+  "author": "HeartFlow",
+  "license": "MIT",
+  "dependencies": {},
+  "peerDependencies": {
+    "heartflow": ">=6.7.69"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
