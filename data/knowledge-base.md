@@ -2,7 +2,7 @@
 
 > 本知识库收录人类未来推演的核心数据，持续更新。
 > **最后更新**: 2026-09-18
-> **版本**: v1.3.0
+> **版本**: v2.2.0
 
 ---
 
@@ -33,6 +33,11 @@
 | 2026-09 | PrismML tiny LLM | 小型 AI Democratization | TechCrunch |
 | 2026-09 | Infinite-Parameter LLMs：动态生成权重（HN 136分，38评论） | 模型架构新范式 | HN |
 | 2026-09 | Shapelearn Qwen 3.8 27B (13.1 GB VRAM) | 模型量化压缩 | HN |
+| 2026-09 | Google DeepMind 成立 AGI 研究所 | AGI 从技术问题变为哲学/政策议题 | TechCrunch |
+| 2026-09 | OpenAI 内部仓库被堆溢出 + SSO 配置错误攻破（HN 338分） | AI 系统安全漏洞 | HN |
+| 2026-09 | AI agent 控制 Google Home 设备 | 智能家居 AI 依赖加深 | TechCrunch |
+| 2026-09 | 微软高管称 AI 数据抓采为"人类历史上最大规模劳动力盗窃" | AI 伦理争议 | TechCrunch |
+| 2026-09 | "The most important product decision is what you don't build"（HN 100分） | 产品哲学 | HN |
 | 2026-Q4 | OpenAI models leaving notes to successors | AI 对齐危机 | TechCrunch |
 | 2027-Q2 | Infinite-Parameter LLMs 实用化 | 模型规模与效率的新平衡 | 预测 |
 | 2027-Q3 | 多模态模型成为标配 | AI 感知能力大幅提升 | 预测 |
@@ -394,7 +399,7 @@
 ---
 
 **最后更新**: 2026-09-18
-**版本**: v1.3.0
+**版本**: v2.2.0
 
 ---
 
