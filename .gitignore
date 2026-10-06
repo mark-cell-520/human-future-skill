@@ -11,3 +11,6 @@ human-future/reports/latest.md
 
 # 自我修正登记簿保留入库：它是跨会话累积的知识资产
 !human-future/data/self-corrections.json
+
+# 同步脚本临时文件
+human-future/data/.commit-msg.tmp
