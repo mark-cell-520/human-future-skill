@@ -1,0 +1,15 @@
+{
+  "version": "1.0.0",
+  "corrections": [
+    {
+      "id": "corr-2026-001",
+      "reportVersion": "v4",
+      "wrongClaim": "Artemis 载人登月 2026-04 已完成",
+      "rightClaim": "Artemis II 于 2026-04 完成的是载人绕月；首次载人登月为 Artemis IV，约 2028 初",
+      "evidence": "NASA 官方任务页：Artemis II 为 Crewed Lunar Flyby，9 天 1 小时 32 分，2026-04-01 发射 04-10 溅落；Artemis III(2027) 为近地轨道交会演示；Artemis IV 目标 2028 初登月",
+      "lesson": "绕月 ≠ 登月。任务名称相近但性质不同，且中间还夹交会演示任务，时间轴通常再错开一年以上。看到 lunar mission 必须先确认 flyby / docking / landing 三态。",
+      "severity": "high",
+      "recordedAt": "2026-10-06T00:29:41.872Z"
+    }
+  ]
+}

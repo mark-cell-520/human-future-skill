@@ -1,0 +1,13 @@
+# 运行产物：每次采集/推演都会变，不进版本库
+human-future/data/collected-news.json
+human-future/data/analysis-result.json
+human-future/data/prediction-ledger.json
+human-future/reports/full-report-*.json
+human-future/reports/full-report-*.md
+human-future/reports/report-*.md
+human-future/reports/projection-*.md
+human-future/reports/latest.json
+human-future/reports/latest.md
+
+# 自我修正登记簿保留入库：它是跨会话累积的知识资产
+!human-future/data/self-corrections.json

@@ -6,9 +6,19 @@
  * 使用心虫 v6.7.69 对采集的数据进行多维度分析
  */
 
-const hf = require('../../../src/index.js');
 const fs = require('fs');
 const path = require('path');
+
+// 心虫本体唯一真实路径。原 `../../../src/index.js` 从 scripts/ 出发指向一个不存在的 src/，
+// 直接让本脚本崩在 require 阶段（run-pipeline 连带瘫）。改为绝对路径 + 存在性校验，
+// 缺失时给出可读错误而不是 MODULE_NOT_FOUND 堆栈。
+const HEARTFLOW_ENTRY = '/Users/mm/heartflow/src/index.js';
+if (!fs.existsSync(HEARTFLOW_ENTRY)) {
+  console.error(`[FATAL] 心虫本体不存在: ${HEARTFLOW_ENTRY}`);
+  console.error('        心虫仓库应位于 ~/heartflow；未安装则本脚本无法提供认知分析。');
+  process.exit(2);
+}
+const hf = require(HEARTFLOW_ENTRY);
 
 /**
  * 运行心虫全维度分析

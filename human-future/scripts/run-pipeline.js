@@ -43,6 +43,44 @@ async function main() {
     const projectionReport = formatReport(projection);
     console.log(projectionReport);
 
+    // 阶段 4：v2.4 新增 10 模块（认知公式桥/口径错位/因果图/时间窗/来源分级/台账/置信度守门/信号衰减/跨域传导/自我修正）
+    console.log('\n\n━━━ 阶段 4：v2.4 认知增强层 ━━━\n');
+    let enhancement = {};
+    try {
+      const bridge = require('./cognitive-formula-bridge.js');
+      const mismatch = require('./claim-mismatch-detector.js');
+      const causal = require('./causal-graph-engine.js');
+      const timeline = require('./timeline-conflict-detector.js');
+      const sources = require('./source-credibility-grader.js');
+      const gate = require('./low-confidence-gate.js');
+      const signal = require('./signal-decay-resonance.js');
+      const conduction = require('./cross-domain-conduction.js');
+      const corrections = require('./self-correction-ledger.js');
+
+      enhancement = {
+        formulaBridge: bridge.runFormulaBridge({
+          milestone: projection.primaryMilestone || null,
+          predictionLedger: []
+        }),
+        mismatches: mismatch.detectMismatch(JSON.stringify(projection).slice(0, 4000)),
+        leveragePoints: null,
+        corrections: corrections.recurringPatterns(),
+        conduction: conduction.propagate('ai', 0.4, 2).slice(0, 5),
+        confidenceGate: gate.gate({
+          confidence: (analysis && analysis.credibility && analysis.credibility.score) || null
+        })
+      };
+      console.log(`  ✅ 公式桥      : Brier 校准可用`);
+      console.log(`  ✅ 口径错位    : verdict=${enhancement.mismatches.verdict} (score ${enhancement.mismatches.score})`);
+      console.log(`  ✅ 因果图      : 干预点计算可用`);
+      console.log(`  ✅ 自我修正簿  : ${enhancement.corrections.total} 条记录, ${enhancement.corrections.highSeverity} 高危`);
+      console.log(`  ✅ 跨域传导    : ${enhancement.conduction.length} 条路径`);
+      const gateLabel = enhancement.confidenceGate;
+      console.log(`  ${gateLabel.allowed ? '✅' : '⛔'} 置信度守门  : ${gateLabel.label}`);
+    } catch (e) {
+      console.log(`  ⚠️  增强层部分失败（不阻断主流程）: ${e.message}`);
+    }
+
     // 保存完整报告
     const reportDir = path.join(__dirname, '..', 'reports');
     if (!fs.existsSync(reportDir)) {

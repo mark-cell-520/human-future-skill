@@ -1,7 +1,7 @@
 {
-  "timestamp": "2026-09-18T07:21:03.831Z",
-  "heartflowVersion": "6.7.69",
-  "verdict": "不可信",
-  "score": 0.53,
-  "reportPath": "/tmp/heartflow-core/skills/human-future/reports/full-report-1789716063835.md"
+  "timestamp": "2026-10-06T00:30:53.181Z",
+  "heartflowVersion": "6.7.124",
+  "verdict": "需验证",
+  "score": 0.64,
+  "reportPath": "/Users/mm/.hermes/skills/ai/mark-cell-520/human-future-skill/human-future/reports/full-report-1791246653181.md"
 }
