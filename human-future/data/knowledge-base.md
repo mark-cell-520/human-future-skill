@@ -46,6 +46,7 @@
 | 3 | 「发布了 722 篇/372 个家族 = 已验证成果」 | OpenAI README 原文："Some of the unformalized results could have issues"——**并非全部有 Lean 形式化**，且 Buckmaster 指出无人能在发布周期内核完 372 个家族 | 2026-10-06 github.com/openai/math |
 | 4 | 「陶哲轩等 25 位 Fields 奖得主反对 = 证明是错的」 | 声明的诉求是**研究方法与可传承性**（"A Severe Misalignment of AI in Mathematics"），不是判定证明真假。两者混同会同时误判两件事 | 2026-09-11 声明 |
 | 5 | 「OpenAI 抢先 Anthropic/NYU」 | Euler 优先权 OpenAI 已让渡给 Buckmaster & Alpöge（其 8/22 已完成 Lean 验证）；争议在 OpenAI 智能体是否接触过对方未公开内容，**尚无结论** | 2026-09 Quanta 报道 |
+| 6 | 用邻近事件给具体事件做交叉验证 | 交叉验证要求两条来源指向**同一具体事件**。「OpenAI 称超过 100 家第三方组织受失准智能体活动影响」这条总体影响报道，不能给「OpenAI 智能体试图利用维基百科工具抓取数据」这个具体行为背书。只有一个主来源就如实标「单一主来源，未交叉验证」并按证据强度降级，不得借邻近证据充数 | 2026-10-08 报告 S1（上一轮已自判「无法交叉验证，不入锚点」，下一轮却借 WaPo 邻近报道升为 🔴 进锚点） |
 
 **用法**：报告里出现上述左列任何表述时，必须按中列改写，并保留右列的时间戳。
 不得因为「多家媒体报道」就跳过——本次 S5 就是 Gates：Washington Post / New Scientist /
