@@ -12,6 +12,12 @@
  *   不再静默返回空对象假装分析成功。
  *   另：旧版 buildAnalysisText 写死 2026-09 的手写常量当"科技信号"，
  *   那不是采集数据而是编的内容，本次已改为只使用真实传入的采集条目。
+ *
+ * 升级记录（2026-10-08 晚，心虫 6.7.126 → 6.8.0）：
+ *   6.8.0 新增 36 个辨别维度，其中 8 个直接对口新闻宣称辨伪。
+ *   本脚本新增 auditNewsClaims()：对每条 live 条目单独跑这批新维度，
+ *   把"这条新闻的措辞本身有哪些可疑形态"作为结构化信号输出。
+ *   这是把心虫新能力接进推演技能的具体动作，不是空声明。
  */
 
 const fs = require('fs');
@@ -115,6 +121,109 @@ function buildAnalysisText(newsData) {
   return lines.join('\n');
 }
 
+/** 从采集结果里挑出 origin=live 的条目（knowledge-base 降级条目不参与新闻核查） */
+function collectLiveItems(newsData) {
+  const out = [];
+  for (const v of Object.values(newsData || {})) {
+    for (const n of (v && v.news) || []) {
+      if (n.origin === 'live') out.push(n);
+    }
+  }
+  return out;
+}
+
+/**
+ * [心虫 6.8.0 接入] 新闻宣称核查：对每条 live 条目单独跑 6.8.0 新增的辨伪维度。
+ *
+ * 为什么单独做这一段而不是只跑整篇 discriminate()：
+ *   整篇 discriminate() 判的是"拼接后的混合文本"，无法告诉你是**哪一条**新闻
+ *   的措辞有问题。逐条跑才能把信号定位到具体条目，cron 报告才能引用。
+ *
+ * 只检"措辞形态"，不检事实真假——心虫没有外部事实证据（记忆库实测只有
+ * 17 条自我身份记忆，无外部世界知识），所以这里输出的是
+ * 「这条的表述有哪些可疑形态」，不是「这条是假的」。
+ *
+ * @param {Array} newsItems live 条目数组
+ * @returns {{available:boolean, reason?:string, audited:number, flagged:Array}}
+ */
+function auditNewsClaims(newsItems) {
+  const items = Array.isArray(newsItems) ? newsItems : [];
+  const out = { available: false, audited: 0, flagged: [] };
+  if (!hf) { out.reason = '心虫未加载'; return out; }
+  if (items.length === 0) { out.reason = '无 live 条目'; return out; }
+
+  // 6.8.0 新增、且直接对口新闻宣称辨伪的维度。
+  // 逐个探测存在性——远端版本可能没有全部模块，缺哪个就跳过哪个并记录。
+  const CANDIDATES = [
+    ['overclaim', 'checkOverclaim', '完成态过度宣称：把部分进展说成已完全解决'],
+    ['statistical_misleading', 'checkStatisticalMisleading', '统计误导：基数隐藏的比例断言'],
+    ['percentage_overflow', 'checkPercentageOverflow', '百分比溢出：精确百分比伪装确定性'],
+    ['false_balance', 'checkFalseBalance', '虚假平衡：把未证实说法与已证实说法并列'],
+    ['manufactured_consent', 'checkManufacturedConsent', '制造共识：把一方说法说成普遍认同'],
+    ['scrutiny_evasion', 'checkScrutinyEvasion', '规避审查：用内部处理替代公开说明'],
+    ['responsibility_absolution', 'checkResponsibilityAbsolution', '责任免除：预先撇清责任'],
+    ['normalization_of_deviance', 'checkNormalizationOfDeviance', '偏差常态化：把越界描述成常规'],
+  ];
+  const available = [];
+  const missing = [];
+  for (const [dim, fn, desc] of CANDIDATES) {
+    if (typeof hf[fn] === 'function') available.push({ dim, fn, desc });
+    else missing.push(dim);
+  }
+  if (available.length === 0) {
+    out.reason = `6.8.0 辨伪维度均不可用（缺失: ${missing.join(', ')}）`;
+    return out;
+  }
+
+  out.available = true;
+  out.dimensions = available.map(a => a.desc);
+  if (missing.length) out.missingDimensions = missing;
+
+  for (const n of items) {
+    const text = `${n.title || ''} ${n.description || ''}`.trim();
+    if (text.length < 10) continue;
+    out.audited++;
+    const hits = [];
+    for (const { dim, fn } of available) {
+      try {
+        const r = hf[fn](text);
+        if (!r) continue;
+        // 6.8.0 各辨伪模块返回结构不统一：overclaim 族用 {count, claims, summary}，
+        // statistical-misleading 等用 {hit, score, detail} 且没有 count 字段。
+        // 这里两种都认，缺字段时按 0 处理，避免把"结构不同"误判成"未命中"。
+        let cnt = typeof r.count === 'number' ? r.count : 0;
+        if (cnt === 0 && r.hit === true) cnt = 1;
+        if (cnt > 0) {
+          const sample = (r.hits && r.hits[0]) || (r.claims && r.claims[0] && r.claims[0].sentence)
+            || r.detail || r.summary || '';
+          hits.push({
+            dimension: dim,
+            count: cnt,
+            severity: typeof r.severity === 'number' ? r.severity
+              : (typeof r.score === 'number' ? Math.round(r.score * 100) : null),
+            sample: String(sample).slice(0, 100),
+          });
+        }
+      } catch (_) { /* 单维度失败不影响其他维度 */ }
+    }
+    if (hits.length > 0) {
+      out.flagged.push({
+        title: String(n.title || '').slice(0, 120),
+        source: n.source || '(未标注)',
+        pubDate: n.pubDate || '(未标注)',
+        link: n.link || '',
+        hits,
+      });
+    }
+  }
+
+  out.flagCount = out.flagged.length;
+  out.summary = out.flagged.length === 0
+    ? `${out.audited} 条 live 条目未触发 6.8.0 辨伪维度`
+    : `${out.audited} 条中 ${out.flagged.length} 条触发辨伪维度（仅措辞形态，非事实判定）`;
+  return out;
+}
+
 /** 心虫不可用时的显式降级结果——不含任何伪造分数 */
 function degradedAnalysis(reason) {
   return {
@@ -175,6 +284,8 @@ async function analyze(newsData, opts = {}) {
     modulesLoaded: Object.keys(hf).length,
     timestamp: new Date().toISOString(),
     analysisTextLength: analysisText.length,
+    // [心虫 6.8.0 接入] 逐条核查 live 新闻的措辞形态
+    newsClaimAudit: auditNewsClaims(collectLiveItems(newsData)),
     results,
   };
 }
@@ -269,4 +380,4 @@ if (require.main === module) {
   main();
 }
 
-module.exports = { analyze, formatResults, buildAnalysisText, loadHeartFlow };
+module.exports = { analyze, formatResults, buildAnalysisText, loadHeartFlow, auditNewsClaims, collectLiveItems };

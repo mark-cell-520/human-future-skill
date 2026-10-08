@@ -26,13 +26,25 @@ async function main() {
     console.log('━━━ 阶段 1：多维度数据采集 ━━━\n');
     const newsData = await collectAll();
 
-    // 阶段 2：心虫分析
+    // 阶段 2：心虫认知分析
     console.log('\n━━━ 阶段 2：心虫认知分析 ━━━\n');
     const analysis = await analyze(newsData);
 
     // 输出分析结果
     const analysisReport = formatResults(analysis);
     console.log('\n' + analysisReport);
+
+    // [心虫 6.8.0 接入] 逐条新闻宣称辨伪——把"哪条新闻措辞可疑"定位到具体条目。
+    // 只检表述形态，不检事实真假，故标题必须写清，避免被读成"该新闻为假"。
+    if (analysis.newsClaimAudit && analysis.newsClaimAudit.available) {
+      const a = analysis.newsClaimAudit;
+      console.log('\n━━━ 阶段 2b：live 新闻宣称辨伪（心虫 6.8.0 新维度）━━');
+      console.log(`  生效维度: ${a.dimensions.length} 个 | 已核查: ${a.audited} 条 | 触发: ${a.flagCount} 条`);
+      console.log('  ⚠ 仅判定表述形态（措辞可疑），不代表该新闻内容为假');
+      for (const fl of (a.flagged || []).slice(0, 10)) {
+        console.log(`  [${fl.hits.map(h => h.dimension).join(', ')}] ${fl.title}`);
+      }
+    }
 
     // 阶段 3：三年推演
     console.log('\n\n━━━ 阶段 3：三年推演引擎 ━━━\n');
