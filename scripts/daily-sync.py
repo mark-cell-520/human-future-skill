@@ -19,7 +19,14 @@ import sys
 from datetime import datetime, timezone, timedelta
 
 REPO = os.path.expanduser("~/.hermes/skills/ai/mark-cell-520/human-future-skill")
-REPORTS = os.path.join(REPO, "human-future", "reports")
+# run-pipeline.js 写报告到 <repo>/reports/，而旧版这里写的是 <repo>/human-future/reports/，
+# 两边不一致导致 daily-sync 永远读不到本次运行产物（第 4 处断链，2026-10-08 修）。
+# 现在两个位置都扫：以 run-pipeline 实际输出目录为先，human-future/reports 兼容旧数据。
+_REPORT_DIRS = [
+    os.path.join(REPO, "reports"),
+    os.path.join(REPO, "human-future", "reports"),
+]
+REPORTS = _REPORT_DIRS[0]
 DATA = os.path.join(REPO, "human-future", "data")
 DIGEST_MD = os.path.join(DATA, "daily-digest.md")
 DIGEST_JSON = os.path.join(DATA, "daily-digest.json")
@@ -69,22 +76,24 @@ def extract_entry(d, name):
 
 
 def load_reports_today():
-    """只取今天产生的 full-report（按内容里的 timestamp 判断，不靠文件名）。"""
+    """只取今天产生的 full-report（按内容里的 timestamp 判断，不靠文件名）。
+    扫两个报告目录：run-pipeline.js 实际输出的 reports/ 与旧版 human-future/reports/。"""
     today = datetime.now(CST).strftime("%Y-%m-%d")
     entries = []
-    if not os.path.isdir(REPORTS):
-        return today, entries
-    for name in sorted(os.listdir(REPORTS)):
-        if not (name.startswith("full-report-") and name.endswith(".json")):
+    for report_dir in _REPORT_DIRS:
+        if not os.path.isdir(report_dir):
             continue
-        try:
-            d = json.load(open(os.path.join(REPORTS, name), encoding="utf-8"))
-        except Exception:
-            continue
-        day, entry = extract_entry(d, name)
-        if day and day != today:
-            continue
-        entries.append(entry)
+        for name in sorted(os.listdir(report_dir)):
+            if not (name.startswith("full-report-") and name.endswith(".json")):
+                continue
+            try:
+                d = json.load(open(os.path.join(report_dir, name), encoding="utf-8"))
+            except Exception:
+                continue
+            day, entry = extract_entry(d, name)
+            if day and day != today:
+                continue
+            entries.append(entry)
     return today, entries
 
 

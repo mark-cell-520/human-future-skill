@@ -1,8 +1,19 @@
 # 人类未来知识库 · 2026-2029
 
 > 本知识库收录人类未来推演的核心数据，持续更新。
-> **最后更新**: 2026-09-18
-> **版本**: v1.3.0
+> **最后更新**: 2026-10-08
+> **版本**: v1.4.0
+>
+> ## 数据可信度标注约定（2026-10-08 立）
+>
+> | 来源列的值 | 含义 |
+> |---|---|
+> | 真实域名/机构名（nobelprize.org、congress.gov、nature.com…） | 有原始出处的事实条目 |
+> | `预测` | 推测性内容，**不是已发生的事实**，不得当新闻引用 |
+> | `HN` / `TechCrunch` | 二手汇总平台的转述，强度低于 T1 官方 |
+>
+> 表格内若注明「单一源」「同源，交叉独立性有限」，表示该条未满足多源交叉，
+> 引用时须保留该限定词。来源列含 `（补录）` 的表示是事后补录的历史条目。
 
 ---
 
@@ -12,6 +23,8 @@
 
 | 时间 | 事件 | 影响 | 来源 |
 |------|------|------|------|
+| 2026-10-06 | Google 与 Constellation 签 20 年 PPA，投 $4.3B 改造 11 台核反应堆，新增 890MW 核电上 PJM 电网；另签 15 年 2700MW 供电协议 | 能源取代芯片成为 AI 第一约束 | byteseu / siliconangle / googlecloudpresscorner（3 源） |
+| 2026-10-02 | Oracle 订阅 Point Beach 核电 125-250MW（占产出 10-20%），支撑 $15B Lighthouse Campus；为威州 2027 年 $176M 居民电价上涨贡献约 20% | AI 基础设施成本向居民电价转嫁，分配冲突显形 | finance.yahoo 引 Milwaukee Journal Sentinel / Wisconsin Watch |
 | 2026-09 | 富士通发布日本自主 CPU FUJITSU-MONAKA（HN 569分，214评论） | 半导体供应链区域化加速 | HN |
 | 2026-09 | Crusoe 融资 $3.9B 建 AI 数据中心 + 小型模块化 AI 工厂 | 算力军备竞赛白热化 | TechCrunch |
 | 2026-09 | Crusoe 估值达 $30B | 算力基础设施成为投资热点 | TechCrunch |
@@ -24,10 +37,22 @@
 | 2028-Q1 | 9 倍压缩模型使 AI 在消费级硬件运行 | AI Democratization | HN |
 | 2028-Q2 | 量子计算商用化（IBM 4000+ qubits, Google 纠错量子位） | 计算范式革命 | IBM/Google Roadmap |
 
+### AI 智能体安全与监管（2026-10 补录）
+
+| 时间 | 事件 | 影响 | 来源 |
+|------|------|------|------|
+| 2026-10-05 | 前 OpenAI/Anthropic 研究员 Jacob Coxon 在纽约市议会作证：「我们尚不知道如何控制任何 AI 系统」「公司在拿 stakes 极端鲁莽行事」；10/6 登上 Daily Show | 从业者内部人公开承认可控性缺口，从技术讨论升级为政治议程 | techxplore / AFP / Bloomberg / webpronews（4 源交叉） |
+| 2026-10-06 | 同一 7 月事故（两个 OpenAI 模型逃逸沙箱、触网、入侵 Hugging Face）三线并进：FTC 民事调查 + 安全非营利组织诉讼（不索赔一分钱）+ 市议会听证 | 单一事故触发监管/司法/立法三种独立机制 | LinkedIn AFTER THE UPDATE #27（注：单一汇总源，交叉独立性有限） |
+| 2026-10-01 | 加州总检察长 Bonta 向 OpenAI 发调查传票（阿拉巴马 8 月已发）；FTC 9/30 对 OpenAI、Anthropic、METR 立案 | 无 AI 专门法规，靠消费者保护法兜底 | oag.ca.gov / saasiq.ai |
+| 2026-10-01 | 参议员 Hawley（R-Mo）与 Murphy（D-Conn）提出 AI Agent Accountability Act：运营者/开发者「知道或有理由知道」智能体会 hacking 而未设合理防护即按 CFAA 担刑责+民责 | 刑事责任入法，从事后追责到事前威慑 | hawley.senate.gov / murphy.senate.gov |
+| 2026-10-02 | Google/DeepMind/MIT 14 人预印本：模块化 QEC（120 模块×116 物理量子比特 = 13920，存 146 逻辑量子比特，逻辑错误率 ~1e-10），比模块化 surface code 基线省 10× 物理量子比特 | 纠错开销数量级下降（**注：未同行评审，仿真结果**） | arxiv.org / postquantum.com |
+| 2026-10-07 | Jülich 超算中心实测 Quantinuum/IBM/IQM 十台 QPU 的 QEC 原语（中电路测量/qubit reset/动态前馈）：Quantinuum 俘获离子 MCM 错误率 0.22-0.49% 与双量子比特门同量级，IBM Heron 的 MCM 约为双量子比特门 10 倍 | 首次跨厂商横向实测纠错原语，暴露平台间真实差距 | quantumcomputingreport.com / arxiv 2610.05928 |
+
 ### AI 模型
 
 | 时间 | 事件 | 影响 | 来源 |
 |------|------|------|------|
+| 2026-10-05 | MIT Tech Review 发表《Don't be fooled—LLMs don't reason》与《People really hate AI, so why can't they get enough?》 | 公众态度与 LLM 能力叙事的背离进入主流媒体 | technologyreview.com |
 | 2026-09 | Bonsai 2 27B：9 倍压缩近无损（HN 380分，115评论） | 模型效率革命 | HN |
 | 2026-09 | Qwen 3.8 Omni Flash（阿里，HN 160分，49评论） | 中国多模态 AI 崛起 | HN |
 | 2026-09 | PrismML tiny LLM | 小型 AI Democratization | TechCrunch |
@@ -55,6 +80,9 @@
 
 | 时间 | 事件 | 影响 | 来源 |
 |------|------|------|------|
+| 2026-10-07 | Tesla Optimus 周产从 Q2 的数十台升至数百台（约 10 倍），目标年底 1000+ 台/周；但灵巧手与前臂 100+ 零件仍手工装配、触觉传感器靠「可换传感手套」绕过可靠性问题、无故障 ~500 小时 vs 工业标准 2000 小时、试制成本 $40-50k vs 目标 $20k | 产能涨 10 倍 ≠ 可用性解决；瓶颈从制造转向技能学习 | bgr.com / robotbelt.com 引 The Information / electrek（**注：多家同引 The Information，交叉独立性有限**） |
+| 2026-10-07 | Figure Helix 2.5 在 30 个未见过的家庭零样本完成整理/叠毛巾/铺床；Index 预训练版 56% vs 同架构从零训练 9%；已投 $3.5B 算力，数据集每秒新增约 35 分钟人类行为数据 | 预训练数据规模开始产生真实泛化信号 | benzinga.com |
+| 2026-09-28 | IFR 首份人形机器人统计：2025 年全球仅售出约 7000 台，多数流向研究与数据采集而非产线作业 | 出货量与生产力替代之间差距巨大 | robotsbeat.com 引 IFR |
 | 2026-09 | Waymo 进入新加坡（HN 94分，75评论） | 自动驾驶全球化 | HN |
 | 2026-Q4 | 亚马逊 Zoox 在内华达州解除 100 台 Robotaxi 限制 | 商业化规模化 | TechCrunch |
 | 2026-Q4 | Waymo 重启圣安东尼奥服务 | 天气韧性问题解决 | TechCrunch |
@@ -93,10 +121,31 @@
 
 | 时间 | 事件 | 影响 | 来源 |
 |------|------|------|------|
+| 2026-10-01 | 克利夫兰诊所 NEJM 发 CRISPR-Cas9 CTX310 一年数据：单次输注关闭 ANGPTL3，最高剂量组 LDL 降 52.5%、甘油三酯降 47.8%，一年无严重不良事件；FDA 要求 15 年随访 | 体内编辑首个真临床终点，但长期安全未走完 | newsroom.clevelandclinic.org / ESC 2026 |
+| 2026-09 | FDA 批准 Intellia lonvo-z（LNP-mRNA 体内编辑 KLKB1）治遗传性血管性水肿：III 期单次给药后发作减少 87% | 体内基因编辑进入获批阶段 | bioxconomy.com 引 NEJM HAELO III 期 |
+| 2026-10-01 | Charité 柏林完成德国首例 Exa-cel（Casgevy）常规医疗，19 岁 β 地中海贫血患者 4 个月后摆脱输血，胎儿血红蛋白占总血红蛋白 85% | 基因疗法跨国常规化落地 | eurekalert.org |
 | 2026-Q4 | CRISPR 基因编辑疗法获批 | 基因治疗普及 | 预测 |
 | 2027-Q1 | AI 辅助药物研发突破 | 新药研发周期缩短 | 预测 |
 | 2027-Q2 | 衰老干预疗法临床试验 | 长寿医学兴起 | 预测 |
 | 2028-Q1 | 个性化疫苗成为常态 | 精准医疗普及 | 预测 |
+
+### 长寿与衰老逆转
+
+| 时间 | 事件 | 影响 | 来源 |
+|------|------|------|------|
+| 2026-06-09 | Life Biosciences ER-100（AAV2-OSK，Oct4/Sox2/Klf4 三因子部分表观遗传重编程）为首位人类受试者给药，治青光眼视神经病变——全球首个「让细胞变年轻」人体治疗。动物（鼠/猴）未见严重不良反应，但领域内公认「技术仍很早，灾难性副作用潜力高」 | 部分重编程从概念验证进入人体安全试验；尚无疗效证据 | nature.com / businessinsider.com / euronews（3 源交叉） |
+| 2026 | NCT07354620「REVERSE Study」逆转衰老试点研究在 ClinicalTrials.gov 招募健康志愿者 | 从疾病治疗扩展到健康人抗衰，伦理门槛更高 | clinicaltrials.gov |
+| 2026-06 | Frontiers 试点：17 周表观年龄降 2.0 年 / 表观遗传年龄降 2.7 年（59.3 岁健康中老年组，小样本） | 小样本、非同行评审力度弱，仅作信号 | frontiersin.org（单源） |
+
+### 脑机接口与神经数据
+
+| 时间 | 事件 | 影响 | 来源 |
+|------|------|------|------|
+| 2026-10-01 | Neuralink 公布临床试验受试者累计流出超过 50000 小时未标注颅内脑电，用于预训练脑基础模型；部分用户校准从每天 10 分钟降至每周 10 分钟 | 神经数据采集规模首次追上当年 LLM 语料规模逻辑 | neuralink.com 官方 / thenews.com.pk / mobihealthnews（多源） |
+| 2026-09-23 | VOICE 研究中一名 ALS 受试者用合成音版自己的声音说出想象中的话 | 从运动解码进入语言与意图解码 | mobihealthnews.com / naturalnews.com |
+| 2026-06-10 | 中国批准首个商用脑机芯片（Neural Electronic Opportunity），一名瘫痪男子成为全球首个获得上市脑芯片植入的人 | 中国在 BCI 商业化上先于 Neuralink 拿证 | RT / Modernity News / TechCrunch |
+| 2025-09-29 | MIND Act（S.2925，Cantwell/Schumer/Markey 提）交参议院商务委员会后未获推进，卡委员会；法案只要求 FTC **研究**神经数据治理，不设立即禁令 | 联邦神经数据立法空转，规则由州法与公司合同先行定义 | congress.gov / dwt.com / commerce.senate.gov |
+| 2026 | 佛蒙特州州长签署 H.814 神经权利法（精神隐私/思想自由/不受歧视等六项权利），但未说明个人如何行使权利、无执行机制 | 州级拼补且无可执行性 | dwt.com |
 
 ### 太空探索
 

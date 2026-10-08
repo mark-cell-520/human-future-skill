@@ -3,15 +3,46 @@
 
 /**
  * 多维度数据采集脚本
- * 使用知识库数据，无需实时网络请求
+ *
+ * 数据来源分两层，优先级从高到低：
+ *   1. 真实联网采集（FETCH=1 时）：用 Node 内置 fetch 打 RSS/Atom 源，抓取近期条目
+ *   2. 本地知识库降级（默认）：读 ../data/knowledge-base.md
+ *
+ * 关键诚实性约束（用户铁律）：
+ *   - 网络失败时如实降级并打印 [WARN]，绝不拿本地知识库伪装成今天抓到的新闻
+ *   - 返回结构里带 origin 字段标记每条数据的真实来源（live / knowledge-base）
+ *   - 本地知识库里的内容是累积知识，其中「预测」列标明是推测，不得当已发生事实引用
  */
 
 const fs = require('fs');
 const path = require('path');
 
-/**
- * 从知识库加载数据
- */
+// 九大域的 RSS 源。用户关心的推演域：AI 智能体安全与监管 / 诺贝尔奖 / 脑机接口 /
+// 基因编辑 / 长寿衰老逆转 / 量子计算 / 人形机器人 / AI 能源与电网 / 太空探索
+const RSS_SOURCES = {
+  tech: [
+    { name: 'Hacker News Front Page', url: 'https://hnrss.org/frontpage' },
+    { name: 'MIT Tech Review - AI', url: 'https://www.technologyreview.com/topic/artificial-intelligence/feed' },
+    { name: 'Ars Technica - AI', url: 'https://feeds.arstechnica.com/arstechnica/technology-lab' },
+  ],
+  humanities: [
+    { name: 'Nature News', url: 'https://www.nature.com/nature.rss' },
+  ],
+  psychology: [],
+  philosophy: [],
+};
+
+const DOMAIN_NAMES = {
+  tech: '科技',
+  humanities: '人文',
+  psychology: '心理',
+  philosophy: '哲学',
+};
+
+const FETCH_TIMEOUT_MS = 8000;
+const MAX_ITEMS_PER_SOURCE = 12;
+
+/** 从知识库加载数据（降级路径），原样保留旧行为但标注 origin */
 function loadFromKnowledgeBase() {
   const kbPath = path.join(__dirname, '..', 'data', 'knowledge-base.md');
 
@@ -21,50 +52,121 @@ function loadFromKnowledgeBase() {
 
   const kbContent = fs.readFileSync(kbPath, 'utf-8');
 
+  const mk = (domain) => ({
+    domain,
+    name: DOMAIN_NAMES[domain],
+    news: [{ source: 'knowledge-base', origin: 'knowledge-base', content: kbContent }],
+  });
+
   return {
-    tech: {
-      domain: 'tech',
-      name: '科技',
-      news: [{ source: 'knowledge-base', content: kbContent }]
-    },
-    humanities: {
-      domain: 'humanities',
-      name: '人文',
-      news: [{ source: 'knowledge-base', content: kbContent }]
-    },
-    psychology: {
-      domain: 'psychology',
-      name: '心理',
-      news: [{ source: 'knowledge-base', content: kbContent }]
-    },
-    philosophy: {
-      domain: 'philosophy',
-      name: '哲学',
-      news: [{ source: 'knowledge-base', content: kbContent }]
-    }
+    tech: mk('tech'),
+    humanities: mk('humanities'),
+    psychology: mk('psychology'),
+    philosophy: mk('philosophy'),
   };
+}
+
+/** 极简 RSS/Atom 解析：抽 <item>/<entry> 的 title + pubDate + link */
+function parseFeed(xml) {
+  const items = [];
+  // <item> ... </item>（RSS）或 <entry> ... </entry>（Atom）
+  const blocks = xml.match(/<item[\s>][\s\S]*?<\/item>/g)
+    || xml.match(/<entry[\s>][\s\S]*?<\/entry>/g)
+    || [];
+  for (const b of blocks) {
+    const title = (b.match(/<title[^>]*>([\s\S]*?)<\/title>/) || [])[1] || '';
+    const link = (b.match(/<link[^>]*href="([^"]+)"/) || [])[1]
+      || (b.match(/<link[^>]*>([\s\S]*?)<\/link>/) || [])[1]
+      || '';
+    const pub = (b.match(/<pubDate[^>]*>([\s\S]*?)<\/pubDate>/) || [])[1]
+      || (b.match(/<published[^>]*>([\s\S]*?)<\/published>/) || [])[1]
+      || (b.match(/<updated[^>]*>([\s\S]*?)<\/updated>/) || [])[1]
+      || '';
+    const desc = (b.match(/<description[^>]*>([\s\S]*?)<\/description>/) || [])[1]
+      || (b.match(/<summary[^>]*>([\s\S]*?)<\/summary>/) || [])[1]
+      || '';
+    const clean = (s) => String(s)
+      .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+      .replace(/\s+/g, ' ').trim();
+    items.push({
+      title: clean(title), link: clean(link), pubDate: clean(pub),
+      description: clean(desc).slice(0, 500),
+    });
+  }
+  return items;
+}
+
+async function fetchFeed(src) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
+  try {
+    const res = await fetch(src.url, {
+      signal: ctrl.signal,
+      headers: { 'User-Agent': 'human-future-skill/2.0 (knowledge collection)' },
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const xml = await res.text();
+    return parseFeed(xml).slice(0, MAX_ITEMS_PER_SOURCE)
+      .map(it => ({ ...it, source: src.name, origin: 'live' }));
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** 真联网采集。任何源失败只丢该源，不影响其他源；全部失败则由调用方降级 */
+async function fetchAll() {
+  const out = {};
+  for (const [domain, sources] of Object.entries(RSS_SOURCES)) {
+    const news = [];
+    for (const src of sources) {
+      try {
+        const items = await fetchFeed(src);
+        console.log(`  [live] ${domain}/${src.name}: ${items.length} 条`);
+        news.push(...items);
+      } catch (e) {
+        console.log(`  [WARN] ${domain}/${src.name} 抓取失败: ${e.message}`);
+      }
+    }
+    if (news.length) out[domain] = { domain, name: DOMAIN_NAMES[domain], news };
+  }
+  return out;
 }
 
 /**
  * 采集所有维度的数据
+ * @param {object} opts { live: boolean }  live=true 走真联网，失败自动降级知识库
  */
-async function collectAll() {
-  console.log('🚀 从知识库加载多维度数据...\n');
+async function collectAll(opts = {}) {
+  const wantLive = opts.live ?? process.env.FETCH === '1';
+
+  if (wantLive) {
+    console.log('🌐 真实联网采集（FETCH=1）...\n');
+    const live = await fetchAll();
+    const total = Object.values(live).reduce((n, d) => n + d.news.length, 0);
+    if (total > 0) {
+      console.log(`✅ 联网采集完成，共 ${total} 条\n`);
+      return live;
+    }
+    console.log('[WARN] 所有联网源均失败，降级为本地知识库（origin=knowledge-base，不得当作今日新闻）\n');
+  } else {
+    console.log('📚 从知识库加载多维度数据（离线模式，fetch 需 FETCH=1）...\n');
+  }
 
   const results = loadFromKnowledgeBase();
 
   console.log('✅ 数据加载完成\n');
-  console.log('📊 数据统计:');
+  console.log('📊 数据统计（origin 标注真实来源）:');
   for (const [domain, data] of Object.entries(results)) {
-    console.log(`  ${data.name}: ${data.news.length} 条数据`);
+    const origins = [...new Set(data.news.map(n => n.origin))].join(',');
+    console.log(`  ${data.name}: ${data.news.length} 条数据 [origin=${origins}]`);
   }
 
   return results;
 }
 
-/**
- * 主函数
- */
 async function main() {
   try {
     const results = await collectAll();
@@ -76,9 +178,8 @@ async function main() {
   }
 }
 
-// 如果直接运行
 if (require.main === module) {
   main();
 }
 
-module.exports = { collectAll, loadFromKnowledgeBase };
+module.exports = { collectAll, loadFromKnowledgeBase, fetchAll, parseFeed };
