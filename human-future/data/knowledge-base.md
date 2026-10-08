@@ -37,6 +37,20 @@
 | 2028-Q1 | 9 倍压缩模型使 AI 在消费级硬件运行 | AI Democratization | HN |
 | 2028-Q2 | 量子计算商用化（IBM 4000+ qubits, Google 纠错量子位） | 计算范式革命 | IBM/Google Roadmap |
 
+### 口径错位高危模式库（2026-10-08 立，报告写「已解出/已解决/已攻破」前必查）
+
+| # | 高危表述 | 必须查清的真实状态 | 已发生实例 |
+|---|---|---|---|
+| 1 | 「AI 解决了 Navier-Stokes」 | OpenAI 9/8 给出的是 Clay 官方表述 **C/D（带外力）** 情形下的有限时间 blow-up 证明 + Lean 形式化；**A/B（无力）仍未解**，Clay 未认证，OpenAI 自己不申领奖金，独立同行评审未完成 | 2026-09-08 OpenAI 公告 |
+| 2 | 「Lean 形式化验证 = 问题已关闭」 | Lean 验证的是逻辑步骤，**不验证形式化陈述是否对应原问题**； Clay 认证才作数，历史上 Perelman 的庞加莱猜想用了约 8 年 | 2026-09 explainx / Tufts Daily 澄清 |
+| 3 | 「发布了 722 篇/372 个家族 = 已验证成果」 | OpenAI README 原文："Some of the unformalized results could have issues"——**并非全部有 Lean 形式化**，且 Buckmaster 指出无人能在发布周期内核完 372 个家族 | 2026-10-06 github.com/openai/math |
+| 4 | 「陶哲轩等 25 位 Fields 奖得主反对 = 证明是错的」 | 声明的诉求是**研究方法与可传承性**（"A Severe Misalignment of AI in Mathematics"），不是判定证明真假。两者混同会同时误判两件事 | 2026-09-11 声明 |
+| 5 | 「OpenAI 抢先 Anthropic/NYU」 | Euler 优先权 OpenAI 已让渡给 Buckmaster & Alpöge（其 8/22 已完成 Lean 验证）；争议在 OpenAI 智能体是否接触过对方未公开内容，**尚无结论** | 2026-09 Quanta 报道 |
+
+**用法**：报告里出现上述左列任何表述时，必须按中列改写，并保留右列的时间戳。
+不得因为「多家媒体报道」就跳过——本次 S5 就是 Gates：Washington Post / New Scientist /
+AP / The Age 全部报道了同一件事，但把「C/D 情形 + 未认证」写成「纳维-斯托克斯方程已宣布解出」。
+
 ### AI 智能体安全与监管（2026-10 补录）
 
 | 时间 | 事件 | 影响 | 来源 |
@@ -52,6 +66,10 @@
 
 | 时间 | 事件 | 影响 | 来源 |
 |------|------|------|------|
+| 2026-10-06 | OpenAI 在 GitHub（github.com/openai/math，Apache-2.0）发布 722 篇数学手稿，归入 372 个 result families，覆盖数论/拓扑/代数/几何/分析/理论计算机科学；由未发布内部前沿模型产出，平均每个结果消耗约 3 小时 ChatGPT Pro thinking 算力，共约 4000 个问题中筛出；**并非全部有 Lean 形式化，README 明言"Some of the unformalized results could have issues"** | AI 数学产出首次以工业规模公开，但验证带宽未同步扩张 | github.com/openai/math（T1 官方仓库）/ NYT / Tech Insider |
+| 2026-09-08 | OpenAI 宣布内部模型（约 1 万智能体、88 小时、约 500 万条消息、约 1300 亿输出 token、成本约 1500 万美元 API 价）给出三维 Navier-Stokes 方程有限时间 blow-up 的 166 页证明 + Lean 形式化 | 千禧年大奖难题首次由 AI 系统触及，但**仅是 Clay 官方表述的 C/D（带外力）情形** | openai.com/index/navier-stokes-solution（T1）/ Quanta / New Scientist |
+| 2026-09-11 | 25 位 Fields 奖得主（含陶哲轩、Deligne、Donaldson、Bhargava、Scholze、Maynard、Avila）签署声明"A Severe Misalignment of AI in Mathematics" | 学界反对的不是证明对错，而是 AI 产出无法被人类吸收/检验/传承的流程 | Tao 博客 / postcutoff / explainx |
+| 2026-09-08 | 归属争议：NYU 数学家 Tristan Buckmaster 与 Anthropic 研究员 Levent Alpöge 已于 8/15 报 Euler blow-up、8/22 完成 Lean 验证；OpenAI 承认受其工作启发并让渡 3D Euler 优先权，但 Buckmaster 质疑 OpenAI 智能体可能接触过其未公开内容 | AI 竞赛中的优先权与署名规则缺位 | Quanta / ithome / startupfortune |
 | 2026-10-05 | MIT Tech Review 发表《Don't be fooled—LLMs don't reason》与《People really hate AI, so why can't they get enough?》 | 公众态度与 LLM 能力叙事的背离进入主流媒体 | technologyreview.com |
 | 2026-09 | Bonsai 2 27B：9 倍压缩近无损（HN 380分，115评论） | 模型效率革命 | HN |
 | 2026-09 | Qwen 3.8 Omni Flash（阿里，HN 160分，49评论） | 中国多模态 AI 崛起 | HN |

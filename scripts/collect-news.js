@@ -12,6 +12,11 @@
  *   - 网络失败时如实降级并打印 [WARN]，绝不拿本地知识库伪装成今天抓到的新闻
  *   - 返回结构里带 origin 字段标记每条数据的真实来源（live / knowledge-base）
  *   - 本地知识库里的内容是累积知识，其中「预测」列标明是推测，不得当已发生事实引用
+ *
+ * 域归属说明：RSS 源本身有主题偏向，且同一源会跨域发文
+ * （例：Ars Technica 的 technology-lab feed 同時发 AI 与安全新闻，Nature News 发了
+ * 大量生物/地球科学新闻）。这些条目按实际源归入声明域，但**下游使用者必须按
+ * 标题自行判断是否属于自己关注的九大域**，不得假设「在 tech 桶里就等于 AI 新闻」。
  */
 
 const fs = require('fs');
@@ -21,9 +26,8 @@ const path = require('path');
 // 基因编辑 / 长寿衰老逆转 / 量子计算 / 人形机器人 / AI 能源与电网 / 太空探索
 const RSS_SOURCES = {
   tech: [
-    { name: 'Hacker News Front Page', url: 'https://hnrss.org/frontpage' },
     { name: 'MIT Tech Review - AI', url: 'https://www.technologyreview.com/topic/artificial-intelligence/feed' },
-    { name: 'Ars Technica - AI', url: 'https://feeds.arstechnica.com/arstechnica/technology-lab' },
+    { name: 'Ars Technica - Technology Lab', url: 'https://feeds.arstechnica.com/arstechnica/technology-lab' },
   ],
   humanities: [
     { name: 'Nature News', url: 'https://www.nature.com/nature.rss' },
