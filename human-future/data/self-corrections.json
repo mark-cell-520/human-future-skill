@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0",
+  "version": "1.1.0",
   "corrections": [
     {
       "id": "corr-2026-001",
@@ -10,6 +10,30 @@
       "lesson": "绕月 ≠ 登月。任务名称相近但性质不同，且中间还夹交会演示任务，时间轴通常再错开一年以上。看到 lunar mission 必须先确认 flyby / docking / landing 三态。",
       "severity": "high",
       "recordedAt": "2026-10-06T00:29:41.872Z"
+    },
+    {
+      "id": "corr-2026-002",
+      "reportVersion": "v2.5",
+      "wrongClaim": "SKILL.md v2.4 声明「真联网采集：collect-news.js v2 原生 fetch 打 RSS，不再伪装读本地知识库」，并宣称 10 个可执行认知模块已就绪",
+      "rightClaim": "v2.4 的三项核心宣称全部不成立：① collect-news.js 无任何网络代码，docstring 明写「无需实时网络请求」；② heartflow-analyze.js require('../../../src/index.js') 解析到 ~/.hermes/skills/src/index.js（不存在）→ require throw → pipeline 阶段 2 崩溃，run-pipeline.js 一次都没跑通过；③ buildAnalysisText 里的「科技/人文/心理/哲学信号」是写死的 2026-09 手写常量，不是采集数据",
+      "evidence": "node -e \"require('./scripts/run-pipeline.js')\" → Error: Cannot find module '../../../src/index.js'；read scripts/collect-news.js → loadFromKnowledgeBase() 只 readFileSync(knowledge-base.md)；read scripts/heartflow-analyze.js → 硬编码字符串",
+      "lesson": "版本号高 ≠ 能力真。审计技能必须跑代码，不能信 frontmatter 的 description。三项高危自检：① grep SKILL.md 里每个能力名，在 scripts/ 里找到实现；② require() 只验语法不验运行时，必须真的 node 跑一次主入口；③ 采集类脚本要确认输出里的 origin 字段，看它是 live 还是 knowledge-base。",
+      "severity": "critical",
+      "recordedAt": "2026-10-08T01:30:00.000Z",
+      "resolvedAt": "2026-10-08T01:30:00.000Z",
+      "fix": "collect-news.js 重写为真 fetch RSS/Atom（FETCH=1 启用，origin 标记，单源隔离，全失败降级）；heartflow-analyze.js 改为 HEARTFLOW_ROOT → ~/heartflow/src/index.js 顺序解析 + degraded 显式降级 + 删除写死常量。验证：node scripts/run-pipeline.js 跑通且输出「心虫已加载」，FETCH=1 实测抓到 34 条 live 数据"
+    },
+    {
+      "id": "corr-2026-003",
+      "reportVersion": "v2.5",
+      "wrongClaim": "（沿用假设）心虫 think() 返回 confidence 0.4 是因为输入太长太杂，拆成单条原子事实就能用",
+      "rightClaim": "实测四种输入形态（多事实分号拼接 / 单条原子事实 / 长英文句 / 短中文问句）全部恒定 confidence=0.4，reasoningChain 只回三条固定骨架，conclusion 是关键词机械切分（连 prompt 前缀「辨别任务」都被切进输出）。这不是输入形态问题，是该任务类型下引擎不具备可用辨别能力。",
+      "evidence": "~/heartflow 本体 new HeartFlow({silent:true}) + start() + await think()，四组对照输入各跑一次，输出 conf=0.4 × 4",
+      "lesson": "同一引擎在同一类输入上连续返回同一低置信度时，停止换输入形态重试——瓶颈在引擎自身。此时把结论写成「该引擎对此类输入不工作」并给替代方案（人工判断 + 显式标注），不要无限期找「正确的问法」。另：管线的 discriminate()/crossAnalyze() 等 stateless 检查器是可用的（verdict=需验证, score=1），与 think() 是两条不同的路，不能互相替代。",
+      "severity": "high",
+      "recordedAt": "2026-10-08T01:30:00.000Z",
+      "resolvedAt": null,
+      "fix": null
     }
   ]
 }

@@ -1,11 +1,18 @@
 ---
 name: human-future-v2
-title: "人类未来 · 文明推演引擎 v2.4"
-version: "2.4.0"
+title: "人类未来 · 文明推演引擎 v2.5"
+version: "2.5.0"
 description: |-
-  人类未来技能 v2.4 — 新增长程推远（2026→2035）+ 10 个可执行认知模块 + 自我修正机制：
+  人类未来技能 v2.5 — v2.5 修复四处断链/虚标，使技能从「宣称」变「可运行」：
+  - 真联网采集（已实现）：collect-news.js 用 Node 内置 fetch 打 RSS/Atom，
+    FETCH=1 启用；单源失败只丢该源，全失败如实降级到本地知识库并在
+    返回数据里打 origin=knowledge-base 标记，绝不拿知识库伪装今日新闻
+  - 心虫接线（已修复）：heartflow-analyze.js 旧的 require('../../../src/index.js')
+    解析到不存在路径导致阶段2整个崩溃；现按 HEARTFLOW_ROOT → ~/heartflow/src/index.js
+    顺序解析，心虫缺失时明确 degraded 降级而不是静默返回空对象
+  - 去假数据（已修复）：buildAnalysisText 旧版写死 2026-09 手写常量当「科技信号」，
+    现只使用真实传入的采集条目，无 live 数据时显式警告
   - 长程推远：四主线 × 三时间窗的十年尺度推演（功能重建/智能体自主性/物理约束/人机边界）
-  - 真联网采集：collect-news.js v2 原生 fetch 打 RSS，不再伪装读本地知识库；网络失败如实降级不造数据
   - 认知公式桥：贝叶斯更新 / Brier 评分 / 校准曲线 / 指数折现 / 风险期望值
   - 口径错位检测：产能vs订单、检测vs纠错、绕月vs登月、试验vs批准、路线图vs结果
   - 因果链图引擎：建图→根因→传导路径→干预点排序（按断开路径数）
@@ -16,6 +23,12 @@ description: |-
   - 信号衰减检测：半衰期区分一次性事件与结构性转变
   - 跨域传导矩阵：强度×时延的域间传导
   - 自我修正登记簿：错误推演显式记录并归纳高危模式
+  
+  已知边界（如实声明，不得对外宣称已解决）：
+  - 心虫 think() 对「多事实块新闻推演」输入实测恒定 confidence=0.4，
+    连单条原子事实也恒定 0.4，该输入形态下不具备可用辨别能力。
+    管线用的是 discriminate()/crossAnalyze() 等 stateless 检查器而非 think()。
+  - psychology / philosophy 两个域暂无 RSS 源，离线模式下只读知识库。
   
   适用场景：
   - 追踪事件间的因果传导链（A→B→C→D）
@@ -495,9 +508,33 @@ tags:
 
 ---
 
-**✅ 人类未来技能 v2.2.0 升级完成！**
+**✅ 人类未来技能 v2.5.0 断链修复完成**
 
-**版本**: v2.2.0
-**最后更新**: 2026-09-18
-**心虫版本**: v6.7.69+
-**架构**: 实时推演操作系统 + 认知增强系统 + 因果追溯 + 基准评测
+**版本**: v2.5.0
+**最后更新**: 2026-10-08
+**心虫版本**: v6.7.124（实测可用路径 ~/heartflow/src/index.js）
+**架构**: 数据采集（RSS 真联网 / 知识库降级）+ 心虫 stateless 检查器 + 三年推演引擎
+
+### v2.5 修复清单（全部有运行输出佐证）
+
+| # | 问题 | 性质 | 修复 | 验证 |
+|---|------|------|------|------|
+| 1 | `heartflow-analyze.js` require 路径断裂，阶段 2 整个崩溃 | 断链（bug） | 按 HEARTFLOW_ROOT → ~/heartflow/src/index.js 顺序解析；不可用则明确 degraded | `node scripts/run-pipeline.js` 跑通，输出「心虫已加载: /Users/mm/heartflow/src/index.js」 |
+| 2 | SKILL.md 宣称「原生 fetch 打 RSS」但实际读本地 md | 虚标（假能力） | 重写 collect-news.js：真 fetch RSS/Atom，FETCH=1 启用，单源失败隔离，全失败带 origin 标记降级 | FETCH=1 实测抓到 34 条 live 数据（MIT Tech Review 10 + Ars 12 + Nature 12；HN 源超时被隔离） |
+| 3 | `buildAnalysisText` 写死 2026-09 手写常量当「科技信号」 | 假数据 | 改为只渲染真实传入的采集条目；无 live 数据时显式警告不得当新闻引用 | pipeline 阶段 2 输出分析文本长度随真实数据变化（离线 1073 字符 → FETCH=1 7125 字符） |
+| 4 | `run-pipeline.js` 写报告到 `<repo>/reports/`，而 `daily-sync.py` 读 `<repo>/human-future/reports/` | 断链（路径不一致） | daily-sync 改为扫两个目录，以实际输出目录为先 | `load_reports_today()` 实测返回今天 4 条真实运行记录（含 FETCH=1 那条 score=0.73） |
+
+### v2.5 未解决（如实声明）
+
+- **心虫 think() 在新闻推演输入上不可用**：多事实块、长英文句、单条原子事实、短中文问句
+  四种形态实测全部 confidence=0.4。这不是 bug 而是该输入形态下引擎不具备辨别能力。
+  管线当前改用 stateless 检查器（discriminate/crossAnalyze/checkReasoningCoherence 等）
+  跑通了，但「跨域共同风险模式识别」这一层没有引擎支撑，只能人工判断。
+- psychology / philosophy 两域暂无 RSS 源。
+
+### 架构说明（关于版本号）
+
+v2.4 → v2.5 不是架构重构（不构成大版本），而是「宣称能力 → 真实可运行」的
+补 gates 修复 + 虚标纠正。按用户版号纪律，末位为补丁，此处取 x.0 是因为
+用户可感知（pipeline 从跑不通到跑通），但它**不是**新辨别维度，
+后续若加新辨别维度才算能力升级。
