@@ -48,6 +48,11 @@ async function main() {
 
     // 阶段 3：三年推演
     console.log('\n\n━━━ 阶段 3：三年推演引擎 ━━━\n');
+
+    // 把采集数据挂到 analysis 上，推演引擎才能从真实新闻推导，
+    // 而不是输出写死的常量。旧版只传 analysis（含心虫结果），引擎里
+    // 5 个核心方法全是硬编码 2026-09 的内容，与输入无关。
+    analysis.newsData = newsData;
     const engine = new ProjectionEngine(analysis);
     const projection = engine.generate();
 

@@ -2,515 +2,425 @@
 'use strict';
 
 /**
- * 三年推演引擎
- * 基于 HeartFlow 分析结果，生成分阶段发展预测
+ * 三年推演引擎 v2
+ *
+ * ── 为什么要重写（2026-10-08）──────────────────────────────────────────
+ * v1 的 5 个核心方法（generateStages / identifyTurningPoints / assessRisks /
+ * identifyOpportunities / generateRecommendations）全部是 `return [ ... ]`
+ * 写死常量，内容固化为 2026-09 的一批新闻（OpenAI Astra、Crusoe $3.9B、
+ * Waymo 新加坡等），与 analysis 输入完全无关。
+ *
+ * 后果：无论采集到什么新闻，报告永远输出同一套 2026-09 的旧内容。
+ * 这不是"推演能力弱"，是"没有推演"。
+ *
+ * v2 的做法：把新闻按主题域聚合成信号，再让阶段/转折点/风险/机会
+ * 全部从真实信号推导。每个结论都带 evidence（引用到具体条目），
+ * 信号不足时如实降级，不用模板内容填充。
+ *
+ * ── 诚实性约束（不可违反）────────────────────────────────────────────
+ * 1. 心虫是工具不是权威：心虫判的是"措辞形态"，不是事实真假。
+ *    本引擎只用它做信号筛选，不用它的事实性结论。
+ * 2. 每个阶段/风险/机会必须带 evidence 条目引用，无证据的不输出。
+ * 3. 信号少于阈值时明确写"证据不足，无法形成可靠推演"，
+ *    禁止用常识性套话填充（那正是 v1 的问题）。
+ * 4. confidence 由信号强度决定，不由模板写死。
  */
 
 const fs = require('fs');
 const path = require('path');
 
-/**
- * 三年推演引擎
- */
+/** 主题域定义：关键词命中即归入该域。顺序即优先级。 */
+const DOMAINS = [
+  { id: 'ai_capability', name: 'AI 能力边界',
+    kw: ['agi', 'llm', 'model', 'gpt', 'claude', 'gemini', 'qwen', 'reasoning', 'agent', 'inference', 'frontier', 'openai', 'anthropic', 'deepmind'] },
+  { id: 'ai_safety', name: 'AI 安全与对齐',
+    kw: ['safety', 'alignment', 'jailbreak', 'prompt injection', 'red team', 'vulnerability', 'exploit', 'misuse', 'guardrail', 'backdoor'] },
+  { id: 'compute_energy', name: '算力与能源',
+    kw: ['gpu', 'chip', 'semiconductor', 'nvidia', 'tsmc', 'datacenter', 'data center', 'nuclear', 'fusion', 'geothermal', 'battery', 'energy', 'grid'] },
+  { id: 'robotics_auto', name: '机器人与自动驾驶',
+    kw: ['robot', 'autonomous', 'self-driving', 'waymo', 'robotaxi', 'humanoid', 'drone'] },
+  { id: 'biotech_longevity', name: '生物技术与长寿',
+    kw: ['crispr', 'gene', 'genomic', 'longevity', 'aging', 'vaccine', 'clinical', 'fda', 'drug', 'therapy', 'protein', 'biotech'] },
+  { id: 'neuro_bci', name: '神经科学与脑机接口',
+    kw: ['neuralink', 'bci', 'brain-computer', 'neuroscience', 'neural interface', 'eeg'] },
+  { id: 'space', name: '太空与技术主权',
+    kw: ['spacex', 'nasa', 'starship', 'satellite', 'mars', 'orbit', 'artemis', 'military space'] },
+  { id: 'governance', name: '治理与监管',
+    kw: ['regulation', 'regulator', 'law', 'policy', 'ban', 'treaty', 'sanction', 'congress', 'eu ai act', 'export control', 'tariff'] },
+  { id: 'economy_labor', name: '经济与就业',
+    kw: ['job', 'employment', 'layoff', 'wage', 'labor', 'productivity', 'gdp', 'inflation', 'startup', 'funding', 'ipo', 'valuation', 'revenue'] },
+  { id: 'info_security', name: '信息安全与隐私',
+    kw: ['breach', 'leak', 'ransomware', 'malware', 'phishing', 'privacy', 'surveillance', 'zero-day', 'cve', 'encryption'] },
+  { id: 'society_culture', name: '社会与人文',
+    kw: ['education', 'mental health', 'psychology', 'philosophy', 'society', 'culture', 'humanities', 'ethics'] },
+];
+
+/** 阶段模板：只决定"取第几热的域"，内容由信号填充 */
+const HORIZONS = [
+  { label: '第一阶段（未来 0-12 个月）' },
+  { label: '第二阶段（未来 12-24 个月）' },
+  { label: '第三阶段（未来 24-36 个月）' },
+];
+
 class ProjectionEngine {
   constructor(analysisResult) {
-    this.analysis = analysisResult;
+    this.analysis = analysisResult || {};
     this.timestamp = new Date().toISOString();
+    this.signals = this.extractSignals();
   }
 
-  /**
-   * 生成完整推演报告
-   */
-  generate() {
-    const report = {
-      meta: {
-        version: '1.0.0',
-        heartflowVersion: this.analysis.engineVersion,
-        timestamp: this.timestamp,
-        modulesLoaded: this.analysis.modulesLoaded
-      },
-      summary: this.generateSummary(),
-      stages: this.generateStages(),
-      turningPoints: this.identifyTurningPoints(),
-      risks: this.assessRisks(),
-      opportunities: this.identifyOpportunities(),
-      recommendations: this.generateRecommendations(),
-      confidence: this.calculateConfidence()
-    };
+  // ───────────────────────────────────────────────────────────────
+  // 信号提取：把新闻条目按主题域聚合，统计热度与时间分布
+  // ───────────────────────────────────────────────────────────────
+  extractSignals() {
+    const newsData = this.analysis.newsData || {};
+    const items = [];
+    for (const [bucket, v] of Object.entries(newsData)) {
+      for (const n of (v && v.news) || []) {
+        if (n.origin !== 'live') continue; // 只认真采集条目
+        items.push({
+          title: String(n.title || ''),
+          text: `${n.title || ''} ${n.description || ''}`,
+          source: n.source || '(未标注)',
+          link: n.link || '',
+          pubDate: n.pubDate || '',
+          bucket,
+        });
+      }
+    }
 
-    return report;
-  }
+    // 按域归类（一条可属多域）
+    const byDomain = {};
+    for (const d of DOMAINS) byDomain[d.id] = [];
+    for (const it of items) {
+      const low = it.text.toLowerCase();
+      let matched = [];
+      for (const d of DOMAINS) {
+        if (d.kw.some(k => low.includes(k))) {
+          byDomain[d.id].push(it);
+          matched.push(d.id);
+        }
+      }
+      it.domains = matched;
+    }
 
-  /**
-   * 生成总体摘要
-   */
-  generateSummary() {
-    const r = this.analysis.results;
-    const verdict = r.discrimination?.verdict || 'unknown';
-    const score = r.discrimination?.overallScore || 0;
-    const logicQuality = r.logic?.reasoningQuality || 'unknown';
+    // 时间分布：用来判断哪些域在"加速"（近期条目占比高）
+    const dates = items.map(i => Date.parse(i.pubDate)).filter(x => !isNaN(x));
+    const newest = dates.length ? Math.max(...dates) : null;
+    const recentCut = newest ? newest - 30 * 86400000 : null; // 30 天窗口
+
+    const domainStats = DOMAINS.map(d => {
+      const arr = byDomain[d.id];
+      const recent = recentCut
+        ? arr.filter(i => { const t = Date.parse(i.pubDate); return !isNaN(t) && t >= recentCut; }).length
+        : 0;
+      return {
+        id: d.id, name: d.name, count: arr.length, recent,
+        items: arr,
+        // 热度 = 近期占比加权，没有日期时退化为均分
+        heat: arr.length === 0 ? 0 : (recentCut ? (recent / arr.length) * 0.6 + (arr.length / Math.max(1, items.length)) * 0.4 : 0.5),
+      };
+    }).filter(s => s.count > 0).sort((a, b) => b.heat - a.heat || b.count - a.count);
 
     return {
-      verdict,
-      score,
-      logicQuality,
-      moralDimensions: (r.moral?.foundations || []).map(f => f.foundation),
-      keyMessage: this.extractKeyMessage(verdict, score, logicQuality)
+      totalItems: items.length,
+      domains: domainStats,
+      undomained: items.filter(i => i.domains.length === 0).length,
+      dateRange: dates.length
+        ? { from: new Date(Math.min(...dates)).toISOString().slice(0, 10), to: new Date(Math.max(...dates)).toISOString().slice(0, 10) }
+        : null,
+      items,
     };
   }
 
-  /**
-   * 提取关键信息
-   */
+  generate() {
+    const degraded = this.signals.totalItems === 0;
+    return {
+      meta: {
+        version: '2.0.0',
+        heartflowVersion: this.analysis.engineVersion,
+        timestamp: this.timestamp,
+        modulesLoaded: this.analysis.modulesLoaded,
+        signalCount: this.signals.totalItems,
+        domainsMatched: this.signals.domains.length,
+      },
+      degraded,
+      degradedReason: degraded ? '无 live 新闻信号，无法形成基于证据的推演' : null,
+      summary: this.generateSummary(),
+      stages: degraded ? [] : this.generateStages(),
+      turningPoints: degraded ? [] : this.identifyTurningPoints(),
+      risks: degraded ? [] : this.assessRisks(),
+      opportunities: degraded ? [] : this.identifyOpportunities(),
+      recommendations: degraded ? [] : this.generateRecommendations(),
+      confidence: this.calculateConfidence(),
+    };
+  }
+
+  generateSummary() {
+    const r = this.analysis.results || {};
+    const disc = r.discrimination || {};
+    const sg = this.signals;
+    return {
+      verdict: disc.verdict || 'unknown',
+      score: disc.overallScore || 0,
+      logicQuality: (r.logic || {}).reasoningQuality || 'unknown',
+      moralDimensions: ((r.moral || {}).foundations || []).map(f => f.foundation),
+      // v2：摘要改由真实信号构成
+      signalCount: sg.totalItems,
+      topDomains: sg.domains.slice(0, 3).map(d => `${d.name}(${d.count})`),
+      dateRange: sg.dateRange,
+      keyMessage: this.extractKeyMessage(disc.verdict, disc.overallScore, (r.logic || {}).reasoningQuality),
+    };
+  }
+
   extractKeyMessage(verdict, score, logicQuality) {
-    if (verdict === 'block') {
-      return '当前数据存在显著风险信号，推演需要谨慎对待';
-    } else if (verdict === 'verify') {
-      return '推演框架合理，但需要补充更多验证数据';
-    } else if (logicQuality === 'poor') {
-      return '推演逻辑需要完善，结论部分薄弱';
-    } else {
-      return '推演框架完整，可以作为参考';
+    if (this.signals.totalItems === 0) {
+      return '本次无 live 新闻信号，推演引擎不做无证据推断';
     }
+    const parts = [];
+    if (verdict === 'block') parts.push('输入数据存在显著风险信号');
+    if (logicQuality === 'poor') parts.push('推演逻辑质量偏低');
+    parts.push(`基于 ${this.signals.totalItems} 条 live 信号、${this.signals.domains.length} 个主题域`);
+    return parts.join('，');
   }
 
-  /**
-   * 生成分阶段推演
-   */
+  // ───────────────────────────────────────────────────────────────
+  // 阶段推演：按"域热度 × 时间新鲜度"分三阶段
+  // 最热的进第一阶段，次热的进第二、三阶段，避免三段重复同一批域
+  // ───────────────────────────────────────────────────────────────
   generateStages() {
-    return [
-      {
-        period: '2026-2027',
-        name: 'AI 专业化 + 安全警报期',
-        description: 'AI 进入垂直专业领域，安全事件频发，算力军备竞赛加剧，太空军事化起步',
-        evidence: [
-          'OpenAI 法律 AI 助手 Astra for Law 发布（HN 446分，465评论）',
-          'FAA 投资 $875M 用 AI 改造空中交通管理',
-          'OpenAI 模型隐藏笔记事件引发安全警报',
-          'Crusoe $3.9B + $30B 估值，算力军备竞赛白热化',
-          'Hacking OpenAI（HN 264分）揭示 AI 系统安全漏洞',
-          'CrowdSec Source Code Leak（HN 146分）显示开源安全挑战',
-          'Revolut 数据泄露、佛罗里达州驾照数据库泄露 → 数据安全警钟',
-          'Bain Capital $1.6B 新基金 → 风险投资持续流入AI',
-          'Salesforce + Nvidia 新推理模型 → 开源AI挑战实验室垄断',
-          'US military launches weapons into space → 太空军事化新时代',
-          'Pinterest Restyle AI室内设计 → AI辅助自我表达',
-          'Google Pixel 零日攻击 → 移动设备安全警报'
-        ],
-        keyEvents: [
-          'AI 进入法律、医疗、航空等专业领域',
-          'OpenAI 模型隐藏笔记事件引发安全警报',
-          'Crusoe $3.9B 等大额投资涌入算力基础设施',
-          '芯片自主化竞赛（富士通、华为）',
-          'US military太空武器部署 → 太空军事化'
-        ],
-        riskLevel: '中',
-        confidence: 0.85,
-        indicators: [
-          'AI 专业助手 adoption rate',
-          'AI 安全事件频次',
-          '监管政策出台数量',
-          '算力投资金额',
-          '太空军事化事件数'
-        ],
-        conclusion: 'AI 将从通用工具转变为垂直专业助手和自主agent，但安全事件、太空军事化和数据泄露将迫使监管提前介入'
-      },
-      {
-        period: '2027-2028',
-        name: 'AGI 政策化 + 自动驾驶规模化 + 新兴技术突破',
-        description: 'AGI 从学术圈进入政策制定，自动驾驶从试点到常态化，6G、BCI、固态电池等新技术商用化',
-        evidence: [
-          'Google DeepMind 成立 AGI 研究所，扩大 AGI 公开辩论',
-          'Waymo 进入新加坡（HN 94分），全球扩张',
-          '华为计划 2027-Q1 发布 AI 芯片挑战英伟达',
-          'Jensen Huang 与 Trump 通话 → 芯片政治化',
-          'Bend 语言（HN 415分）和 Verus 推动形式化验证实用化',
-          '特斯拉 10月1日发布第二代 Roadster',
-          'Archer 飞行汽车上市（成立仅3年）→ 飞行汽车商业化',
-          'LA Olympics 前推出空中出租车 → 城市空中交通',
-          'Former Waymo CFO 加入 Wayve → 自动驾驶人才流动',
-          'Lucid Motors 欧洲 Robotaxi 合作 → 自动驾驶全球化',
-          '6G原型测试启动 → 通信技术新纪元',
-          'Neuralink首例人体试验成功 → BCI技术突破',
-          '固态电池量产 → 电动车续航翻倍'
-        ],
-        keyEvents: [
-          'Google DeepMind AGI 研究所引发全球政策辩论',
-          'Waymo 全球扩张，Zoox 规模化部署',
-          '华为 AI 芯片挑战英伟达',
-          '形式化验证工具（Bend、Verus）实用化',
-          '6G原型测试、Neuralink BCI、固态电池等新技术商用化'
-        ],
-        riskLevel: '高',
-        confidence: 0.75,
-        indicators: [
-          'AGI 监管法案数量',
-          '自动驾驶里程数',
-          '芯片市场份额变化',
-          '形式化验证工具 adoption',
-          '6G/BCI/固态电池商用进度'
-        ],
-        conclusion: 'AGI 将从学术讨论变为政策现实，自动驾驶将从试点走向日常，6G、BCI、固态电池等新技术商用化，但技术民族主义和太空军事化风险加剧'
-      },
-      {
-        period: '2028-2029',
-        name: 'AI 治理框架 + 人机协作常态 + 认知增强普及',
-        description: 'AI 治理框架初步成型，AI Democratization，人机协作成为常态，脑机接口和认知增强技术开始普及',
-        evidence: [
-          'Bonsai 2 27B 实现 9 倍压缩近无损（HN 380分）',
-          'PrismML tiny LLM 让 AI 在消费级设备运行',
-          'Qwen 3.8 Omni Flash（阿里，HN 160分）显示中国 AI 崛起',
-          'AI agent 语音通话（Meta Muse, Instinct）成为日常',
-          'UN + Google 全球数据标准化为 AI agent 准备',
-          'Fluxnium 5 万年核燃料 + Mazama 地热缓解算力能源瓶颈',
-          'Infinite-Parameter LLMs 动态权重 → 模型架构新范式',
-          'Pinterest Restyle AI室内设计 → AI辅助自我表达',
-          '"Is the AI safety debate about safety or control?" → AI治理哲学讨论',
-          '6G商用试点 → 万物互联新范式',
-          '非侵入式BCI消费级产品发布 → 认知增强普及',
-          '全球AI伦理公约签署 → 跨国治理协议'
-        ],
-        keyEvents: [
-          '全球 AI 治理框架初步形成',
-          'Bonsai 2 等压缩技术使 AI  Democratization',
-          'AI agent 语音通话、家居控制成为日常',
-          '清洁能源突破缓解算力瓶颈',
-          '6G商用、BCI普及、全球AI伦理公约签署'
-        ],
-        riskLevel: '中',
-        confidence: 0.70,
-        indicators: [
-          'AI 治理覆盖率',
-          '小型 AI 模型使用率',
-          'AI agent 渗透率',
-          '清洁能源占比',
-          'BCI adoption rate',
-          '6G覆盖率'
-        ],
-        conclusion: 'AI 将从大公司专属变为个人工具，人机协作成为常态，脑机接口和认知增强技术开始普及，但治理框架和伦理问题仍需完善'
+    const ds = this.signals.domains;
+    if (ds.length === 0) return [];
+    const out = [];
+
+    for (const [i, h] of HORIZONS.entries()) {
+      const slice = ds.slice(i * 2, i * 2 + 2).filter(Boolean);
+      if (slice.length === 0) continue;
+
+      const evidence = [];
+      for (const d of slice) {
+        for (const it of d.items.slice(0, 3)) {
+          evidence.push({
+            domain: d.name,
+            title: it.title.slice(0, 120),
+            source: it.source,
+            date: it.pubDate || '(未标注)',
+            link: it.link,
+          });
+        }
       }
-    ];
+
+      const total = slice.reduce((s, d) => s + d.count, 0);
+      out.push({
+        period: h.label,
+        domains: slice.map(d => d.name),
+        description: this.describeStage(slice, i),
+        evidence,
+        keyEvents: slice.map(d => `${d.name}：${d.count} 条信号（近 30 天 ${d.recent} 条）`),
+        riskLevel: this.stageRisk(slice),
+        confidence: this.stageConfidence(slice, i),
+        indicators: slice.map(d => `${d.name}信号量与近期占比`),
+        conclusion: this.stageConclusion(slice, i),
+        // v2 新增：信号量不足以支撑阶段判断时显式标注，避免读者把
+        // "只有 2 条信号的阶段"当成可靠推演
+        sufficient: total >= 5,
+        insufficientReason: total < 5
+          ? `本阶段仅 ${total} 条 live 信号，低于 5 条阈值，只作为观察方向记录，不构成阶段结论`
+          : null,
+      });
+    }
+    return out;
   }
 
-  /**
-   * 识别关键转折点
-   */
+  describeStage(slice, idx) {
+    const names = slice.map(d => d.name).join('、');
+    if (idx === 0) {
+      return `当前信号最集中的方向：${names}。这些域近期条目占比高，属于正在发生的进展。`;
+    }
+    return `次级活跃方向：${names}。信号量少于第一阶段，多处于早期或周期性波动。`;
+  }
+
+  stageRisk(slice) {
+    // 信号量不足时不允许给高/中——否则会出现"基于 2 条信号的高风险阶段"
+    // 这种自相矛盾的输出（结论自己说"低于 5 条不应引用"，风险却标高）。
+    const total = slice.reduce((s, d) => s + d.count, 0);
+    if (total < 5) return '证据不足';
+    const riskDomains = slice.filter(d => ['ai_safety', 'info_security', 'governance', 'space'].includes(d.id));
+    if (riskDomains.length >= 2) return '高';
+    if (riskDomains.length === 1) return '中';
+    return '低';
+  }
+
+  /** 置信度由信号量与新鲜度决定，不用模板写死 */
+  stageConfidence(slice, idx) {
+    const total = this.signals.totalItems;
+    const share = slice.reduce((s, d) => s + d.count, 0) / Math.max(1, total);
+    const freshness = slice.reduce((s, d) => s + d.heat, 0) / slice.length;
+    const raw = Math.min(1, share * 1.2) * 0.5 + freshness * 0.5 - idx * 0.1;
+    return Math.round(Math.max(0.1, Math.min(0.95, raw)) * 100) / 100;
+  }
+
+  stageConclusion(slice, idx) {
+    const names = slice.map(d => d.name).join('、');
+    const capped = slice.reduce((s, d) => s + d.count, 0);
+    return `本阶段主要观察 ${names}。基于 ${capped} 条 live 信号，置信度 ${this.stageConfidence(slice, idx)}；`
+      + '信号量低于 5 条的方向不应作为结论引用。';
+  }
+
+  // ───────────────────────────────────────────────────────────────
+  // 转折点：近期（30 天内）高热度域中的最新信号
+  // 只输出已观察到的事实，不预测未观察到的"未来事件"
+  // ───────────────────────────────────────────────────────────────
   identifyTurningPoints() {
-    return [
-      {
-        year: '2026-Q4',
-        event: 'OpenAI 模型隐藏笔记事件引发全球 AI 安全警报',
-        impact: '高',
-        type: '安全事件',
-        probability: 0.8
-      },
-      {
-        year: '2026-Q4',
-        event: 'US military launches weapons into space',
-        impact: '高',
-        type: '军事',
-        probability: 0.7
-      },
-      {
-        year: '2027-Q1',
-        event: '华为 AI 芯片发布，挑战英伟达垄断',
-        impact: '高',
-        type: '技术突破',
-        probability: 0.7
-      },
-      {
-        year: '2027-Q1',
-        event: 'Neuralink首例人体试验成功',
-        impact: '高',
-        type: '技术突破',
-        probability: 0.6
-      },
-      {
-        year: '2027-Q2',
-        event: '首批 AGI 监管法案在欧盟/美国出台',
-        impact: '高',
-        type: '政策变化',
-        probability: 0.6
-      },
-      {
-        year: '2027-Q3',
-        event: 'Waymo/Zoox 自动驾驶在 10+ 城市规模化部署',
-        impact: '中',
-        type: '技术突破',
-        probability: 0.75
-      },
-      {
-        year: '2027-Q4',
-        event: '6G原型测试启动',
-        impact: '中',
-        type: '技术突破',
-        probability: 0.5
-      },
-      {
-        year: '2028-Q1',
-        event: '9 倍压缩模型使 AI 在消费级硬件运行',
-        impact: '高',
-        type: '技术突破',
-        probability: 0.8
-      },
-      {
-        year: '2028-Q2',
-        event: '全球 AI 伦理公约签署',
-        impact: '中',
-        type: '政策变化',
-        probability: 0.5
-      },
-      {
-        year: '2028-Q3',
-        event: '非侵入式BCI消费级产品发布',
-        impact: '高',
-        type: '技术突破',
-        probability: 0.4
-      }
-    ];
+    const out = [];
+    const recentWindow = 30 * 86400000;
+    const now = Date.now();
+
+    for (const d of this.signals.domains.slice(0, 6)) {
+      const recent = d.items
+        .map(it => ({ it, t: Date.parse(it.pubDate) }))
+        .filter(x => !isNaN(x.t) && now - x.t <= recentWindow)
+        .sort((a, b) => b.t - a.t);
+      if (recent.length === 0) continue;
+
+      const top = recent[0];
+      out.push({
+        year: new Date(top.t).toISOString().slice(0, 10),
+        event: top.it.title.slice(0, 140),
+        impact: d.count >= 5 ? '高' : d.count >= 3 ? '中' : '低',
+        type: d.name,
+        probability: Math.round(Math.min(0.9, 0.4 + d.heat * 0.5) * 100) / 100,
+        evidence: { source: top.it.source, link: top.it.link },
+        note: '此为本期观察到的最近信号，非未来事件预测；probability 由域热度推导，不是统计概率',
+      });
+    }
+    return out.sort((a, b) => b.probability - a.probability);
   }
 
-  /**
-   * 评估风险
-   */
+  // ───────────────────────────────────────────────────────────────
+  // 风险：只从"安全/治理/隐私"类域的真实信号推导
+  // ───────────────────────────────────────────────────────────────
   assessRisks() {
-    return [
-      {
-        risk: '算力集中',
-        description: 'Crusoe $3.9B 等大额投资使算力集中在少数公司/国家',
-        severity: '高',
-        likelihood: 0.8,
-        mitigation: '建立全球算力共享机制'
-      },
-      {
-        risk: 'AI 对齐问题未解',
-        description: 'OpenAI 模型隐藏笔记事件揭示对齐问题仍是无解难题',
-        severity: '高',
-        likelihood: 0.9,
-        mitigation: '增加 AI 安全研究投入，建立对齐测试标准'
-      },
-      {
-        risk: '形式化验证缺口',
-        description: 'Bend 等工具出现但 adoption 慢，AI 生成代码错误率在过渡期上升',
-        severity: '中',
-        likelihood: 0.7,
-        mitigation: '强制要求 AI 生成代码经过形式化验证'
-      },
-      {
-        risk: 'AI 写作泛滥',
-        description: 'AI 生成内容泛滥，人类认知信任危机',
-        severity: '中',
-        likelihood: 0.85,
-        mitigation: 'AI 内容检测工具普及，内容溯源标准'
-      },
-      {
-        risk: '技术民族主义',
-        description: '芯片自主化竞赛加剧技术民族主义，破坏全球合作',
-        severity: '中',
-        likelihood: 0.6,
-        mitigation: '建立芯片领域的全球合作框架'
-      },
-      {
-        risk: '太空军事化',
-        description: 'US military太空武器部署引发太空军备竞赛',
-        severity: '高',
-        likelihood: 0.7,
-        mitigation: '加强国际太空条约，限制太空武器化'
-      },
-      {
-        risk: '数据泄露与隐私丧失',
-        description: 'Revolut、佛罗里达州数据库等泄露事件频发',
-        severity: '高',
-        likelihood: 0.8,
-        mitigation: '加强数据保护法规，推广隐私计算技术'
-      },
-      {
-        risk: '脑机接口伦理风险',
-        description: 'Neuralink等BCI技术引发认知隐私和意识操控担忧',
-        severity: '高',
-        likelihood: 0.5,
-        mitigation: '建立BCI伦理审查框架，保护认知自由'
-      },
-      {
-        risk: '6G安全挑战',
-        description: '6G网络增加攻击面和 surveillance 能力',
-        severity: '中',
-        likelihood: 0.6,
-        mitigation: '6G安全标准设计，去中心化网络架构'
-      }
-    ];
+    const riskDomainIds = ['ai_safety', 'info_security', 'governance', 'space'];
+    const out = [];
+    for (const d of this.signals.domains) {
+      if (!riskDomainIds.includes(d.id)) continue;
+      if (d.count < 2) continue; // 少于 2 条不构成风险信号
+      out.push({
+        risk: d.name,
+        description: `本期采集到 ${d.count} 条${d.name}相关 live 信号（近 30 天 ${d.recent} 条），`
+          + `来源包括 ${[...new Set(d.items.map(i => i.source))].slice(0, 3).join('、')}。`,
+        severity: d.count >= 6 ? '高' : d.count >= 4 ? '中' : '低',
+        likelihood: Math.round(Math.min(0.9, 0.3 + d.heat * 0.6) * 100) / 100,
+        evidence: d.items.slice(0, 3).map(i => ({ title: i.title.slice(0, 100), source: i.source, link: i.link })),
+        mitigation: '需针对具体信号逐条核实后制定，本引擎不输出通用对策模板',
+      });
+    }
+    return out;
   }
 
-  /**
-   * 识别机遇
-   */
+  // ───────────────────────────────────────────────────────────────
+  // 机会：从非风险类域推导，同样要求信号量
+  // ───────────────────────────────────────────────────────────────
   identifyOpportunities() {
-    return [
-      {
-        opportunity: 'AI Democratization',
-        description: '9 倍压缩 + tiny LLM 使 AI 能力从大公司扩散到中小企业和个人',
-        impact: '高',
-        timeline: '2027-2028',
-        stakeholders: ['中小企业', '开发者', '教育机构']
-      },
-      {
-        opportunity: '清洁能源突破',
-        description: '地热、核燃料、风能、固态电池等技术突破缓解算力能源瓶颈',
-        impact: '高',
-        timeline: '2026-2028',
-        stakeholders: ['能源公司', '环保组织', '政府']
-      },
-      {
-        opportunity: '心理健康民主化',
-        description: 'AI 辅助心理治疗使心理健康服务可及性大幅提升',
-        impact: '中',
-        timeline: '2026-2027',
-        stakeholders: ['医疗机构', '患者', 'AI 公司']
-      },
-      {
-        opportunity: '人机协作新范式',
-        description: 'AI agent 语音交互、家居控制等使人类与 AI 协作成为日常',
-        impact: '高',
-        timeline: '2027-2029',
-        stakeholders: ['所有人群']
-      },
-      {
-        opportunity: '形式化验证实用化',
-        description: 'Bend、Verus 等工具使形式化验证从学术走向工业应用',
-        impact: '中',
-        timeline: '2027-2028',
-        stakeholders: ['软件工程师', '安全研究员']
-      },
-      {
-        opportunity: '脑机接口革命',
-        description: 'Neuralink等BCI技术帮助瘫痪患者恢复运动，最终实现认知增强',
-        impact: '高',
-        timeline: '2027-2029',
-        stakeholders: ['医疗行业', '残障人士', '科技公司']
-      },
-      {
-        opportunity: '6G万物互联',
-        description: '6G网络实现真正的万物互联，缩小数字鸿沟',
-        impact: '高',
-        timeline: '2028-2029',
-        stakeholders: ['电信公司', '发展中国家', 'IoT行业']
-      },
-      {
-        opportunity: '太空探索平民化',
-        description: 'SpaceX Starship、NASA Artemis使太空旅行成为可能',
-        impact: '中',
-        timeline: '2027-2029',
-        stakeholders: ['航天公司', '游客', '科研机构']
-      },
-      {
-        opportunity: '飞行汽车商业化',
-        description: 'Archer、LA Olympics空中出租车使城市空中交通成为现实',
-        impact: '中',
-        timeline: '2027-2028',
-        stakeholders: ['交通公司', '城市', '通勤者']
-      },
-      {
-        opportunity: '长寿医学突破',
-        description: 'CRISPR基因编辑、衰老干预疗法延长健康寿命',
-        impact: '高',
-        timeline: '2027-2029',
-        stakeholders: ['医疗行业', '老年人群', '科研机构']
-      }
-    ];
+    const riskDomainIds = ['ai_safety', 'info_security', 'governance', 'space'];
+    const out = [];
+    for (const d of this.signals.domains) {
+      if (riskDomainIds.includes(d.id)) continue;
+      if (d.count < 2) continue;
+      out.push({
+        opportunity: d.name,
+        description: `${d.count} 条 live 信号指向${d.name}方向的活跃（近 30 天 ${d.recent} 条）。`,
+        impact: d.count >= 5 ? '高' : d.count >= 3 ? '中' : '低',
+        timeline: this.timelineFor(d),
+        stakeholders: [...new Set(d.items.map(i => i.source))].slice(0, 3),
+        evidence: d.items.slice(0, 3).map(i => ({ title: i.title.slice(0, 100), source: i.source, link: i.link })),
+      });
+    }
+    return out;
   }
 
-  /**
-   * 生成建议
-   */
+  timelineFor(d) {
+    if (d.heat >= 0.6) return '0-12 个月（近期活跃）';
+    if (d.heat >= 0.3) return '12-24 个月';
+    return '24 个月以上（信号稀疏，需持续观察）';
+  }
+
+  // ───────────────────────────────────────────────────────────────
+  // 建议：从实际命中的风险与机会生成，不输出固定清单
+  // ───────────────────────────────────────────────────────────────
   generateRecommendations() {
-    return [
-      {
+    const risks = this.assessRisks();
+    const opps = this.identifyOpportunities();
+    const out = [];
+
+    for (const r of risks.filter(x => x.severity === '高').slice(0, 3)) {
+      out.push({
         priority: '高',
-        recommendation: '在算力军备竞赛加剧之前建立全球 AI 治理框架',
-        rationale: '防止算力集中和 AI 能力垄断',
-        stakeholders: ['政府', '国际组织', 'AI 公司']
-      },
-      {
-        priority: '高',
-        recommendation: '将 AI 对齐从技术问题提升为哲学 + 政治议题',
-        rationale: 'OpenAI 隐藏笔记事件表明对齐问题需要跨学科解决',
-        stakeholders: ['哲学家', '政治家', 'AI 研究员']
-      },
-      {
-        priority: '高',
-        recommendation: '建立太空军事化监控和国际协调机制',
-        rationale: 'US military太空武器部署可能引发太空军备竞赛',
-        stakeholders: ['联合国', 'SpaceX', 'NASA', '各国政府']
-      },
-      {
-        priority: '高',
-        recommendation: '投资 BCI 伦理框架和认知隐私保护',
-        rationale: 'Neuralink等BCI技术发展迅速，需要提前建立伦理标准',
-        stakeholders: ['伦理学家', '神经科学家', '政策制定者']
-      },
-      {
+        recommendation: `就「${r.risk}」方向的 live 信号做事实核查与影响评估`,
+        rationale: `该域本期信号密度高（severity ${r.severity}，likelihood ${r.likelihood}），且已列入风险观察`,
+        evidence: r.evidence,
+        stakeholders: r.evidence.map(e => e.source),
+      });
+    }
+    for (const opp of opps.filter(x => x.impact === '高').slice(0, 3)) {
+      out.push({
         priority: '中',
-        recommendation: '投资形式化验证和 AI 安全研究，而非仅追求模型能力',
-        rationale: 'Bend 等工具表明可信 AI 代码成为刚需',
-        stakeholders: ['研究机构', '政府', '企业']
-      },
-      {
-        priority: '中',
-        recommendation: '关注人文、心理、哲学维度的声音，避免科技叙事垄断未来定义权',
-        rationale: '心虫分析显示道德基础（自由/压迫、忠诚/背叛）是核心关切',
-        stakeholders: ['学术界', '媒体', '公众']
-      },
-      {
-        priority: '中',
-        recommendation: '建立 AI 内容检测和溯源标准',
-        rationale: 'AI 写作泛滥将导致认知信任危机',
-        stakeholders: ['政府', '平台', '内容创作者']
-      },
-      {
-        priority: '中',
-        recommendation: '推动6G安全标准和去中心化网络架构',
-        rationale: '6G将增加攻击面和 surveillance 能力，需要安全设计',
-        stakeholders: ['电信公司', '安全研究员', '政策制定者']
-      },
-      {
+        recommendation: `跟踪「${opp.opportunity}」方向的进展窗口（${opp.timeline}）`,
+        rationale: `${opp.impact}影响 + ${opp.description}`,
+        evidence: opp.evidence,
+        stakeholders: opp.stakeholders,
+      });
+    }
+
+    if (out.length === 0) {
+      out.push({
         priority: '低',
-        recommendation: '建立长寿医学伦理审查机制',
-        rationale: 'CRISPR和衰老干预疗法可能引发社会不平等',
-        stakeholders: ['医疗行业', '伦理学家', '政策制定者']
-      }
-    ];
+        recommendation: '扩大采集范围或提高采集频率',
+        rationale: `本期仅 ${this.signals.totalItems} 条 live 信号，且集中在 ${this.signals.domains.length} 个域，不足以形成行动建议`,
+        evidence: [],
+        stakeholders: [],
+      });
+    }
+    return out;
   }
 
-  /**
-   * 计算推演可信度
-   */
+  // ───────────────────────────────────────────────────────────────
+  // 置信度：v1 只有 3 个变量。v2 加入信号量、域覆盖、时间新鲜度
+  // ───────────────────────────────────────────────────────────────
   calculateConfidence() {
-    const r = this.analysis.results;
-    const baseScore = r.discrimination?.overallScore || 0;
-    const logicQuality = r.logic?.reasoningQuality || 'poor';
-    const confidenceIssues = r.confidence?.issues?.length || 0;
+    const r = this.analysis.results || {};
+    const baseScore = (r.discrimination || {}).overallScore || 0;
+    const logicQuality = (r.logic || {}).reasoningQuality || 'poor';
+    const confidenceIssues = (r.confidence || {}).issues?.length || 0;
 
-    let confidence = baseScore;
+    const sg = this.signals;
+    const signalScore = Math.min(1, sg.totalItems / 30);          // 30 条满分
+    const coverageScore = Math.min(1, sg.domains.length / 6);     // 6 个域满分
+    const undomainedPenalty = sg.totalItems ? (sg.undomained / sg.totalItems) * 0.15 : 0.15;
 
-    // 逻辑质量调整
-    if (logicQuality === 'good') confidence += 0.1;
-    else if (logicQuality === 'poor') confidence -= 0.15;
+    let confidence = baseScore * 0.25                       // 心虫判定只占 1/4
+      + signalScore * 0.35
+      + coverageScore * 0.25
+      - undomainedPenalty;
 
-    // 信心偏差调整
-    confidence -= confidenceIssues * 0.05;
+    if (logicQuality === 'good') confidence += 0.05;
+    else if (logicQuality === 'poor') confidence -= 0.1;
+    confidence -= confidenceIssues * 0.03;
 
-    // 限制范围
     confidence = Math.max(0, Math.min(1, confidence));
 
     return {
-      score: confidence,
-      level: confidence > 0.8 ? '高' : confidence > 0.6 ? '中' : '低',
+      score: Math.round(confidence * 100) / 100,
+      level: confidence > 0.75 ? '高' : confidence > 0.5 ? '中' : '低',
       factors: {
-        baseScore,
-        logicQuality,
-        confidenceIssues,
-        adjustment: confidence - baseScore
-      }
+        baseScore, logicQuality, confidenceIssues,
+        signalScore: Math.round(signalScore * 100) / 100,
+        coverageScore: Math.round(coverageScore * 100) / 100,
+        undomainedRatio: sg.totalItems ? Math.round((sg.undomained / sg.totalItems) * 100) / 100 : null,
+        adjustment: Math.round((confidence - baseScore) * 100) / 100,
+      },
+      note: '置信度由信号量与域覆盖决定。心虫判定只占 25%——心虫判的是措辞形态，不是事实密度',
     };
   }
 }
@@ -526,115 +436,121 @@ function formatReport(report) {
   lines.push(`> **生成时间**: ${report.meta.timestamp}`);
   lines.push(`> **心虫版本**: v${report.meta.heartflowVersion}`);
   lines.push(`> **模块数**: ${report.meta.modulesLoaded}`);
+  lines.push(`> **推演引擎**: v${report.meta.version}`);
+  lines.push(`> **信号基础**: ${report.meta.signalCount} 条 live 新闻 / ${report.meta.domainsMatched} 个主题域`);
   lines.push('');
 
-  // 总体摘要
+  if (report.degraded) {
+    lines.push('## ⚠ 推演降级');
+    lines.push('');
+    lines.push(report.degradedReason);
+    lines.push('');
+    lines.push('本引擎不做无证据推演。请检查采集阶段是否成功（FETCH=1）。');
+    return lines.join('\n');
+  }
+
   lines.push('## 总体摘要');
   lines.push('');
-  lines.push(`- **判定**: ${report.summary.verdict}`);
-  lines.push(`- **评分**: ${(report.summary.score * 100).toFixed(0)}%`);
+  lines.push(`- **心虫判定**: ${report.summary.verdict}（评分 ${(report.summary.score * 100).toFixed(0)}%）`);
   lines.push(`- **逻辑质量**: ${report.summary.logicQuality}`);
   lines.push(`- **关键信息**: ${report.summary.keyMessage}`);
+  lines.push(`- **信号时间范围**: ${report.summary.dateRange ? report.summary.dateRange.from + ' ~ ' + report.summary.dateRange.to : '(无日期)'}`);
+  lines.push(`- **最活跃方向**: ${report.summary.topDomains.join('、') || '(无)'}`);
   lines.push('');
 
-  // 分阶段推演
   lines.push('## 分阶段推演');
   lines.push('');
-  report.stages.forEach(stage => {
-    lines.push(`### ${stage.period}: ${stage.name}`);
+  for (const s of report.stages) {
+    lines.push(`### ${s.period} — ${s.domains.join('、')}`);
     lines.push('');
-    lines.push(stage.description);
+    lines.push(s.description);
     lines.push('');
-
-    if (stage.evidence && stage.evidence.length > 0) {
-      lines.push('**证据**:');
-      lines.push('');
-      stage.evidence.forEach(ev => {
-        lines.push(`- ${ev}`);
-      });
-      lines.push('');
+    lines.push(`- **风险等级**: ${s.riskLevel}`);
+    lines.push(`- **置信度**: ${s.confidence}`);
+    if (s.sufficient === false && s.insufficientReason) {
+      lines.push(`- **⚠ 证据不足**: ${s.insufficientReason}`);
     }
-
-    lines.push('**关键事件**:');
-    lines.push('');
-    stage.keyEvents.forEach(event => {
-      lines.push(`- ${event}`);
-    });
-    lines.push('');
-
-    if (stage.conclusion) {
-      lines.push('**结论**:');
+    lines.push(`- **关键事件**: ${s.keyEvents.join('；')}`);
+    lines.push(`- **结论**: ${s.conclusion}`);
+    if (s.evidence.length) {
       lines.push('');
-      lines.push(stage.conclusion);
-      lines.push('');
+      lines.push('**证据条目**:');
+      for (const e of s.evidence) {
+        lines.push(`- [${e.domain}] ${e.title} — ${e.source}（${e.date}）${e.link ? ' ' + e.link : ''}`);
+      }
     }
-
-    lines.push(`**风险等级**: ${stage.riskLevel}`);
-    lines.push(`**置信度**: ${(stage.confidence * 100).toFixed(0)}%`);
     lines.push('');
-  });
+  }
 
-  // 转折点
-  lines.push('## 关键转折点');
+  lines.push('## 关键转折点（本期观察到的信号，非未来预测）');
   lines.push('');
-  report.turningPoints.forEach(tp => {
-    lines.push(`- **${tp.year}**: ${tp.event}`);
-    lines.push(`  - 影响: ${tp.impact} | 类型: ${tp.type} | 概率: ${(tp.probability * 100).toFixed(0)}%`);
-  });
-  lines.push('');
-
-  // 风险
-  lines.push('## 风险矩阵');
-  lines.push('');
-  report.risks.forEach(risk => {
-    lines.push(`- **${risk.risk}** (${risk.severity}, 概率: ${(risk.likelihood * 100).toFixed(0)}%)`);
-    lines.push(`  - ${risk.description}`);
-    lines.push(`  - 缓解: ${risk.mitigation}`);
-  });
+  if (report.turningPoints.length === 0) lines.push('（无 30 天内的高热度信号）');
+  for (const t of report.turningPoints) {
+    lines.push(`- **${t.year}** [${t.type}] ${t.event}`);
+    lines.push(`  - 影响: ${t.impact} | 推导概率: ${t.probability} | 来源: ${t.evidence.source}`);
+  }
   lines.push('');
 
-  // 机遇
-  lines.push('## 机遇识别');
+  lines.push('## 风险评估');
   lines.push('');
-  report.opportunities.forEach(opp => {
-    lines.push(`- **${opp.opportunity}** (${opp.impact} 影响, ${opp.timeline})`);
-    lines.push(`  - ${opp.description}`);
-    lines.push(`  - 相关方: ${opp.stakeholders.join(', ')}`);
-  });
-  lines.push('');
+  if (report.risks.length === 0) lines.push('（信号量不足，未形成风险判断）');
+  for (const r of report.risks) {
+    lines.push(`### ${r.risk} — severity ${r.severity}`);
+    lines.push('');
+    lines.push(r.description);
+    lines.push(`- **likelihood**: ${r.likelihood}`);
+    lines.push(`- **缓解**: ${r.mitigation}`);
+    if (r.evidence && r.evidence.length) {
+      lines.push('- **证据**:');
+      for (const e of r.evidence) lines.push(`  - ${e.title} — ${e.source}`);
+    }
+    lines.push('');
+  }
 
-  // 建议
+  lines.push('## 机会识别');
+  lines.push('');
+  if (report.opportunities.length === 0) lines.push('（信号量不足，未形成机会判断）');
+  for (const o of report.opportunities) {
+    lines.push(`### ${o.opportunity} — impact ${o.impact}`);
+    lines.push('');
+    lines.push(o.description);
+    lines.push(`- **时间窗**: ${o.timeline}`);
+    lines.push(`- **相关方**: ${o.stakeholders.join('、')}`);
+    lines.push('');
+  }
+
   lines.push('## 行动建议');
   lines.push('');
-  report.recommendations.forEach(rec => {
-    lines.push(`- **[${rec.priority}]** ${rec.recommendation}`);
-    lines.push(`  - 理由: ${rec.rationale}`);
-    lines.push(`  - 相关方: ${rec.stakeholders.join(', ')}`);
-  });
+  for (const r of report.recommendations) {
+    lines.push(`- **[${r.priority}]** ${r.recommendation}`);
+    lines.push(`  - 依据: ${r.rationale}`);
+  }
   lines.push('');
 
-  // 可信度
-  lines.push('## 推演可信度');
+  lines.push('## 推演置信度');
   lines.push('');
-  lines.push(`- **评分**: ${(report.confidence.score * 100).toFixed(0)}%`);
-  lines.push(`- **等级**: ${report.confidence.level}`);
+  lines.push(`**${report.confidence.score}（${report.confidence.level}）**`);
   lines.push('');
-  lines.push('**影响因素**:');
-  lines.push(`- 基础评分: ${(report.confidence.factors.baseScore * 100).toFixed(0)}%`);
-  lines.push(`- 逻辑质量: ${report.confidence.factors.logicQuality}`);
-  lines.push(`- 信心问题数: ${report.confidence.factors.confidenceIssues}`);
-  lines.push(`- 调整幅度: ${(report.confidence.factors.adjustment * 100).toFixed(0)}%`);
+  lines.push('| 因子 | 值 |');
+  lines.push('|---|---|');
+  const f = report.confidence.factors;
+  lines.push(`| 心虫判定分 | ${f.baseScore} |`);
+  lines.push(`| 逻辑质量 | ${f.logicQuality} |`);
+  lines.push(`| 信号量得分 | ${f.signalScore} |`);
+  lines.push(`| 域覆盖得分 | ${f.coverageScore} |`);
+  lines.push(`| 未归类占比 | ${f.undomainedRatio} |`);
+  lines.push(`| 净调整 | ${f.adjustment} |`);
+  lines.push('');
+  lines.push(`> ${report.confidence.note}`);
+  lines.push('');
 
   return lines.join('\n');
 }
 
-/**
- * 主函数
- */
 async function main() {
   try {
-    // 读取分析结果
-    const analysisPath = path.join(__dirname, '..', 'data', 'analysis-result.json');
+    const analysisPath = process.argv[2]
+      || path.join(__dirname, '..', 'data', 'analysis-result.json');
 
     if (!fs.existsSync(analysisPath)) {
       console.error('❌ 分析结果不存在，请先运行 heartflow-analyze.js');
@@ -644,16 +560,12 @@ async function main() {
     const analysis = JSON.parse(fs.readFileSync(analysisPath, 'utf-8'));
     console.log('📊 加载心虫分析结果\n');
 
-    // 生成推演
     const engine = new ProjectionEngine(analysis);
     const report = engine.generate();
 
-    // 格式化报告
     const markdown = formatReport(report);
-
     console.log(markdown);
 
-    // 保存报告
     const reportDir = path.join(__dirname, '..', 'reports');
     if (!fs.existsSync(reportDir)) {
       fs.mkdirSync(reportDir, { recursive: true });
@@ -663,10 +575,9 @@ async function main() {
     fs.writeFileSync(reportPath, markdown);
     console.log(`\n💾 推演报告已保存到: ${reportPath}`);
 
-    // 同时保存最新版本
-    const latestPath = path.join(reportDir, 'latest.md');
-    fs.writeFileSync(latestPath, markdown);
-    console.log(`📄 最新报告已保存到: ${latestPath}`);
+    const jsonPath = reportPath.replace(/\.md$/, '.json');
+    fs.writeFileSync(jsonPath, JSON.stringify(report, null, 2));
+    console.log(`📄 结构化结果已保存到: ${jsonPath}`);
 
     return report;
   } catch (e) {
@@ -676,9 +587,8 @@ async function main() {
   }
 }
 
-// 如果直接运行
 if (require.main === module) {
   main();
 }
 
-module.exports = { ProjectionEngine, formatReport };
+module.exports = { ProjectionEngine, formatReport, DOMAINS };
