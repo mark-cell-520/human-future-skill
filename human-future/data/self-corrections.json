@@ -1,5 +1,5 @@
 {
-  "version": "1.1.0",
+  "version": "1.2.0",
   "corrections": [
     {
       "id": "corr-2026-001",
@@ -34,6 +34,30 @@
       "recordedAt": "2026-10-08T01:30:00.000Z",
       "resolvedAt": null,
       "fix": null
+    },
+    {
+      "id": "corr-2026-004",
+      "reportVersion": "v2.5 / heartflow v6.7.125",
+      "wrongClaim": "（隐含假设）stateless 检查器维度够多，接了真数据源后口径错位会自然被闸门抓到",
+      "rightClaim": "实测 6 个既有检测器对「纳维-斯托克斯方程已被 AI 彻底解决」这类完成态过度宣称全部失效，且 discriminate() 会给出一致性相反的结论：完整句子英文版判「不可信」(0.91)，而 'The problem is now closed.' 和 'AI has cracked the Millennium Prize problem.' 判「可信」(1.0) 放行。verify() 返回「文本不含可验证声明」。checkCapabilityOverclaim 全部 0 命中。checkAbsoluteClaim 只抓到英文 completely solved，中文「彻底解决」0 命中。",
+      "evidence": "~/heartflow 本机 6 检测器对照实测：think()=0.4；discriminate() 三条同质错误宣称给出可信/不可信相反结论；checkCapabilityOverclaim count=0；checkAbsoluteClaim 中文 0 命中；verify()='文本不含可验证声明'；checkPerfectError 单条 pass、三条堆叠才 verify",
+      "lesson": "「检测器数量多」不等于「覆盖到位」。判别一个缺口是否真实存在，必须拿具体误报样本逐]个检测器跑，而不是看维度清单。另外：多源报道通过时口径仍可能全错——本次 4 家媒体全部报道了同一件事，全部写成「已解出」，所以交叉验证必须同时查数量和口径两个维度。",
+      "severity": "critical",
+      "recordedAt": "2026-10-08T03:10:00.000Z",
+      "resolvedAt": "2026-10-08T03:10:00.000Z",
+      "fix": "新建 src/overclaim-checker.js（v6.7.125）：完成态动词 + 无保留副词 + 无限定标记三要素判定，只判表述形态不判事实真假。接入 discriminate() 成为 overclaim 维度并经 _shapeOverclaim 整形，MCP heartflow_check_single 通过 dimension='overclaim' 自动可用。9/9 测试通过（含 2 条易误报真话），gate-benchmark 30 条良性样本全部 pass 无误拦，6 个回归测试文件 0 失败"
+    },
+    {
+      "id": "corr-2026-005",
+      "reportVersion": "v2.5",
+      "wrongClaim": "S5 写成「OpenAI 以内部前沿模型对三百余项数学开放问题发布全量或部分解答，其中包含多个千禧年大奖难题的进展（纳维–斯托克斯方程已宣布解出）」",
+      "rightClaim": "OpenAI 2026-09-08 给出的是 Clay 官方表述 C/D（带外力）情形下的有限时间 blow-up 证明与 Lean 形式化，A/B（无力）仍未解，Clay 未认证，OpenAI 自己不申领奖金，独立同行评审未完成；2026-10-06 的 722 篇手稿/372 个家族是另一件事，其 README 原文写着部分未形式化结果可能有问题",
+      "evidence": "openai.com/index/navier-stokes-solution（T1）、github.com/openai/math README（T1）、Quanta、Scientific American、techforum.ca、NYT 多源交叉",
+      "lesson": "媒体转述会把「在某表述下成立」压缩成「已解决」。凡千禧年级/纪录级/首创级宣称，必须回到 T1 一手源读原始措辞，并单独确认认证状态（Clay/监管机构/同行评审）与技术范围（哪个情形/条件下）。",
+      "severity": "high",
+      "recordedAt": "2026-10-08T03:10:00.000Z",
+      "resolvedAt": "2026-10-08T03:10:00.000Z",
+      "fix": "knowledge-base 立「口径错位高危模式库」5 条 + 补 4 条 T1 源正式条目；cron prompt 加「第四步之前必做」同内容，并在第三段加入 overclaim 注入结果的用法说明"
     }
   ]
 }
