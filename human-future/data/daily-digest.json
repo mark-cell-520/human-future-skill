@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "updatedAt": "2026-10-08T09:39:05.884819+08:00",
+  "updatedAt": "2026-10-08T23:50:23.306838+08:00",
   "days": {
     "2026-10-06": {
       "runs": 2,
@@ -23,21 +23,54 @@
       "note": "当日无新推演运行"
     },
     "2026-10-08": {
-      "runs": 4,
+      "runs": 33,
       "firstRun": "2026-10-08T01:33:39.717Z",
-      "lastRun": "2026-10-08T01:37:43.234Z",
-      "avgScore": 0.9325,
+      "lastRun": "2026-10-08T14:02:28.090Z",
+      "avgScore": 0.7336,
       "verdicts": [
+        "不可信",
         "需验证"
       ],
       "heartflowVersions": [
-        "6.7.124"
+        "6.7.124",
+        "6.7.125",
+        "6.7.126",
+        "6.8.0"
       ],
       "sources": [
         "full-report-1791423219717.json",
         "full-report-1791423223327.json",
         "full-report-1791423447896.json",
-        "full-report-1791423463234.json"
+        "full-report-1791423463234.json",
+        "full-report-1791423634457.json",
+        "full-report-1791424342307.json",
+        "full-report-1791424415105.json",
+        "full-report-1791424424499.json",
+        "full-report-1791424433277.json",
+        "full-report-1791424437693.json",
+        "full-report-1791424486821.json",
+        "full-report-1791425056178.json",
+        "full-report-1791426741351.json",
+        "full-report-1791426750662.json",
+        "full-report-1791426759553.json",
+        "full-report-1791427343591.json",
+        "full-report-1791427370142.json",
+        "full-report-1791427407844.json",
+        "full-report-1791427458849.json",
+        "full-report-1791427799671.json",
+        "full-report-1791428680488.json",
+        "full-report-1791430243164.json",
+        "full-report-1791430743025.json",
+        "full-report-1791438206517.json",
+        "full-report-1791444401004.json",
+        "full-report-1791445265356.json",
+        "full-report-1791445647106.json",
+        "full-report-1791446657616.json",
+        "full-report-1791446698345.json",
+        "full-report-1791446726784.json",
+        "full-report-1791453206790.json",
+        "full-report-1791460646565.json",
+        "full-report-1791468148090.json"
       ]
     }
   }
