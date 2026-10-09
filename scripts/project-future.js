@@ -29,6 +29,22 @@
 const fs = require('fs');
 const path = require('path');
 
+// ── 接入 v2.4 已有的推演组件（此前全部零引用，从未接进 pipeline）────────
+// 这些模块是 v2.4 时写的，方法名、自测、诚实性注释都在，但没有任何
+// 调用方。所以「推演内容少」不是因为没工具，是工具没接线。
+// 路径：本文件在 <skill>/scripts/，组件在 <skill>/human-future/scripts/，
+// 故为 ../human-future/scripts/（只上一级，不是两级）。
+const HF = path.join(__dirname, '..', 'human-future', 'scripts');
+const { CausalGraph } = require(path.join(HF, 'causal-graph-engine.js'));
+const { propagate, renderMatrix } = require(path.join(HF, 'cross-domain-conduction.js'));
+const { classify: classifySignal } = require(path.join(HF, 'signal-decay-resonance.js'));
+const { detectTimelineConflicts, parseWindow } = require(path.join(HF, 'timeline-conflict-detector.js'));
+const { classifySource, adjudicate } = require(path.join(HF, 'source-credibility-grader.js'));
+const { detectMismatch } = require(path.join(HF, 'claim-mismatch-detector.js'));
+const { runFormulaBridge } = require(path.join(HF, 'cognitive-formula-bridge.js'));
+const { gate: lowConfidenceGate } = require(path.join(HF, 'low-confidence-gate.js'));
+const predictionLedger = require(path.join(HF, 'prediction-ledger.js'));
+
 /** 主题域定义：关键词命中即归入该域。顺序即优先级。 */
 const DOMAINS = [
   { id: 'ai_capability', name: 'AI 能力边界',
@@ -135,14 +151,21 @@ class ProjectionEngine {
 
   generate() {
     const degraded = this.signals.totalItems === 0;
-    return {
+    const report = {
       meta: {
-        version: '2.0.0',
+        version: '3.0.0',
         heartflowVersion: this.analysis.engineVersion,
         timestamp: this.timestamp,
         modulesLoaded: this.analysis.modulesLoaded,
         signalCount: this.signals.totalItems,
         domainsMatched: this.signals.domains.length,
+        // v3：声明实际接入的推演组件，避免"宣称接入了但没跑"
+        reasoningEngines: [
+          'causal-graph-engine', 'cross-domain-conduction', 'signal-decay-resonance',
+          'timeline-conflict-detector', 'source-credibility-grader',
+          'claim-mismatch-detector', 'cognitive-formula-bridge', 'low-confidence-gate',
+          'prediction-ledger',
+        ],
       },
       degraded,
       degradedReason: degraded ? '无 live 新闻信号，无法形成基于证据的推演' : null,
@@ -154,6 +177,341 @@ class ProjectionEngine {
       recommendations: degraded ? [] : this.generateRecommendations(),
       confidence: this.calculateConfidence(),
     };
+
+    if (!degraded) {
+      // ── v3 新增：真正的推演（此前这些能力从未被调用）────────────
+      report.causalChains = this.buildCausalChains();
+      report.crossDomainConduction = this.buildCrossDomainConduction();
+      report.trendClassification = this.buildTrendClassification();
+      report.timelineConflicts = this.buildTimelineConflicts();
+      report.sourceAdjudication = this.buildSourceAdjudication();
+      report.claimMismatches = this.buildClaimMismatches();
+      report.formulaAssessment = this.buildFormulaAssessment();
+      report.lowConfidenceGate = this.applyLowConfidenceGate(report);
+      report.ledgerStatus = this.getLedgerStatus();
+      // 登记本次预测（供未来结算 Brier 分数）——必须在 ledgerStatus 之后，
+      // 这样本次报告里能看到"本次登记了几条"
+      this._lastReport = report;
+      report.predictionRecording = this.recordPredictions();
+      report.ledgerStatus.recordedThisRun = report.predictionRecording.count;
+    }
+    return report;
+  }
+
+  // ───────────────────────────────────────────────────────────────
+  // v3：把当期高热度域连成因果图，找根因、终局与最强干预点。
+  // 节点来自真实信号条目；边来自 CONDUCTION 规则 + 域内共现。
+  // ───────────────────────────────────────────────────────────────
+  buildCausalChains() {
+    const ds = this.signals.domains.slice(0, 5);
+    if (ds.length < 2) {
+      return { available: false, reason: '活跃域少于 2 个，无法建立域间因果链' };
+    }
+    // 本引擎域 id → cross-domain-conduction 的域 id。
+    // 不映射的话 CONDUCTION 规则一条都匹配不上，因果链必然为空。
+    const MAP = {
+      ai_capability: 'ai', ai_safety: 'ai', compute_energy: 'energy',
+      neuro_bci: 'neuro', biotech_longevity: 'genomics',
+      robotics_auto: 'robotics', space: 'space', governance: 'ai',
+    };
+    const CONDUCTION = require(path.join(HF, 'cross-domain-conduction.js')).CONDUCTION;
+
+    const g = new CausalGraph();
+    // 用传导表的域 id 作为节点 id，否则 addEdge 会因端点不存在抛错
+    const used = new Map(); // 传导域id -> 本引擎域对象
+    for (const d of ds) {
+      const cid = MAP[d.id];
+      if (!cid) continue;
+      if (!used.has(cid)) used.set(cid, d);
+      const merged = used.get(cid);
+      // 同源多个域（如 ai_capability 与 ai_safety 都映射到 ai）合并计数
+      merged._merged = merged._merged || [];
+      if (d !== merged) merged._merged.push(d);
+    }
+    if (used.size < 2) {
+      return { available: false, reason: `映射后仅 ${used.size} 个域有对应传导源，无法建立域间因果链` };
+    }
+    for (const [cid, d] of used) {
+      const count = d.count + ((d._merged || []).reduce((s, x) => s + x.count, 0));
+      g.addNode(cid, `${d.name}${d._merged && d._merged.length ? ' 等' : ''}（${count} 条信号）`, 'domain');
+    }
+    for (const rule of CONDUCTION) {
+      if (rule.strength < 0.5) continue;
+      if (used.has(rule.from) && used.has(rule.to)) {
+        g.addEdge(rule.from, rule.to, rule.why, rule.strength);
+      }
+    }
+    if (g.edges.length === 0) {
+      return { available: false, reason: '本期域之间没有强度 >=0.5 的实证传导关系' };
+    }
+    return {
+      available: true,
+      roots: g.roots().map(n => n.label),
+      outcomes: g.outcomes().map(n => n.label),
+      chains: g.allPaths().slice(0, 6).map(p =>
+        p.map(id => (g.nodes.get(id) || {}).label || id).join(' → ')),
+      leveragePoints: g.leveragePoints().slice(0, 5).map(lp => ({
+        node: lp.node.label,
+        pathsBroken: lp.pathsBroken,
+        ratio: Math.round(lp.ratio * 100) / 100,
+      })),
+      note: '边来自 cross-domain-conduction 的实证规则表，不是本引擎臆造的因果关系',
+    };
+  }
+
+  // ───────────────────────────────────────────────────────────────
+  // v3：从当期最热域出发，算它向其他域的传导全景（强度+时延）
+  // ───────────────────────────────────────────────────────────────
+  buildCrossDomainConduction() {
+    const top = this.signals.domains[0];
+    if (!top) return { available: false, reason: '无活跃域' };
+    // cross-domain-conduction 用的域 id 是 ai/neuro/genomics/...
+    // 本引擎的域 id 需要映射过去
+    const MAP = {
+      ai_capability: 'ai', ai_safety: 'ai', compute_energy: 'energy',
+      neuro_bci: 'neuro', biotech_longevity: 'genomics',
+      robotics_auto: 'robotics', space: 'space',
+    };
+    const src = MAP[top.id];
+    if (!src) {
+      return { available: false, reason: `域「${top.name}」在传导矩阵中没有对应源域`, source: top.id };
+    }
+    const rows = propagate(src, 0.3, 3);
+    return {
+      available: true,
+      source: `${top.name} → ${src}`,
+      matrix: renderMatrix(src),
+      topTargets: rows.slice(0, 5).map(r => ({
+        domain: r.domain, strength: r.strength, lagMonths: r.lagMonths,
+        chain: r.chain.join('→'), why: r.via,
+      })),
+      note: '强度与时延来自实证规则表；只表示"若该域突破，最可能沿哪条线传导"，不是概率',
+    };
+  }
+
+  // ───────────────────────────────────────────────────────────────
+  // v3：把每条信号按周聚合成序列，判定"一次性事件/持续趋势/结构性转变"。
+  // 单期样本不足时如实返回 insufficient-data，不硬判。
+  // ───────────────────────────────────────────────────────────────
+  buildTrendClassification() {
+    // 需要 >=3 个周期才能算衰减，本期数据通常只有 1-2 周 → 多数会得到
+    // insufficient-data。这是诚实结果，不是 bug。
+    const byWeek = new Map();
+    for (const it of this.signals.items) {
+      const t = Date.parse(it.pubDate);
+      if (isNaN(t)) continue;
+      const d = new Date(t);
+      const week = `${d.getUTCFullYear()}-W${String(Math.ceil(((d - new Date(d.getUTCFullYear(), 0, 1)) / 86400000 + 1) / 7)).padStart(2, '0')}`;
+      for (const dom of it.domains) {
+        const key = dom;
+        if (!byWeek.has(key)) byWeek.set(key, new Map());
+        const m = byWeek.get(key);
+        m.set(week, (m.get(week) || 0) + 1);
+      }
+    }
+    const series = [];
+    for (const [topic, weeks] of byWeek) {
+      for (const [period, count] of weeks) series.push({ period, topic, count });
+    }
+    const out = [];
+    for (const d of this.signals.domains.slice(0, 8)) {
+      const r = classifySignal(series, d.id);
+      out.push({
+        domain: d.name, id: d.id, periods: r.periods, total: r.total,
+        halfLifePeriods: r.halfLifePeriods, verdict: r.verdict,
+      });
+    }
+    const judged = out.filter(o => o.verdict !== 'insufficient-data');
+    return {
+      available: series.length > 0,
+      classifications: out,
+      judgedCount: judged.length,
+      note: '需要同一主题 >=3 个周期的计数才能判定半衰期；单期样本一律返回 insufficient-data',
+    };
+  }
+
+  // ───────────────────────────────────────────────────────────────
+  // v3：把信号里出现的 roadmap 时间点放进同一时间轴，检测冲突。
+  // ───────────────────────────────────────────────────────────────
+  buildTimelineConflicts() {
+    // 从标题里抽取 "2027" / "2027-Q1" / "by 2028" 等时间声明
+    const milestones = [];
+    const seen = new Set();
+    for (const it of this.signals.items) {
+      const m = it.title.match(/(?:by\s+)?(20\d{2})(?:-Q([1-4])|-H([12]))?/);
+      if (!m) continue;
+      const claimed = m[0].replace(/^by\s+/i, '');
+      const id = `${it.source}:${claimed}:${it.title.slice(0, 20)}`;
+      if (seen.has(id)) continue;
+      seen.add(id);
+      milestones.push({
+        id, label: it.title.slice(0, 80), claimed,
+        verified: false,   // 信号里声称的时间点一律未证实
+        source: it.source, link: it.link,
+      });
+      if (milestones.length >= 12) break;
+    }
+    if (milestones.length < 2) {
+      return { available: false, reason: '信号中可提取的时间点少于 2 个，无法检测冲突' };
+    }
+    const res = detectTimelineConflicts(milestones);
+    return {
+      available: true,
+      ordered: res.ordered,
+      conflicts: res.conflicts,
+      summary: res.summary,
+      note: 'verified=false 表示该时间点只是来源声称，未经独立证实',
+    };
+  }
+
+  // ───────────────────────────────────────────────────────────────
+  // v3：对同一域内互相矛盾的说法做来源加权裁决（T1..T4）
+  // ───────────────────────────────────────────────────────────────
+  buildSourceAdjudication() {
+    // 本期 RSS 条目大多同源（MIT TR / Ars Technica），没有真正的多方矛盾，
+    // 所以这一步通常只能给出"来源分级分布"，不能给出裁决。如实报告。
+    const tiers = {};
+    for (const it of this.signals.items) {
+      const t = classifySource(it.link || it.source);
+      tiers[t] = (tiers[t] || 0) + 1;
+    }
+    return {
+      available: this.signals.items.length > 0,
+      tierDistribution: tiers,
+      distinctSources: [...new Set(this.signals.items.map(i => i.source))].length,
+      note: '裁决需要同一事实的多个矛盾来源；同源 RSS 不构成矛盾，故本期只给分级分布',
+    };
+  }
+
+  // ───────────────────────────────────────────────────────────────
+  // v3：对信号标题做口径错位检测（产能vs订单、检测vs纠正等）
+  // ───────────────────────────────────────────────────────────────
+  buildClaimMismatches() {
+    const hits = [];
+    for (const it of this.signals.items) {
+      const r = detectMismatch(it.text || it.title);
+      const arr = Array.isArray(r) ? r : (r && r.hits) || [];
+      if (arr.length) {
+        hits.push({ title: it.title.slice(0, 100), source: it.source, link: it.link, mismatches: arr });
+      }
+    }
+    return {
+      available: true,
+      count: hits.length,
+      hits: hits.slice(0, 8),
+      note: '口径错位检测：识别"设计产能 vs 实际订单"这类数字达标但能力未达标的表述',
+    };
+  }
+
+  // ───────────────────────────────────────────────────────────────
+  // v3：用认知公式对推演做量化评估（贝叶斯/折现/风险期望）
+  // ───────────────────────────────────────────────────────────────
+  buildFormulaAssessment() {
+    const top = this.signals.domains[0];
+    const bridge = runFormulaBridge({
+      milestone: top ? {
+        prior: 0.5,
+        evidenceStrength: Math.min(1, 0.3 + top.heat * 0.7),
+        yearsAhead: 2,
+      } : null,
+      discountRate: 0.1,
+      predictionLedger: predictionLedger.load().predictions.filter(p => p.outcome !== null),
+      scenarios: this.assessRisks().slice(0, 3).map(r => ({
+        probability: r.likelihood,
+        impact: -0.5,
+        worstCase: r.severity === '高',
+      })),
+    });
+    return {
+      available: true,
+      formulas: bridge.formulas,
+      note: '贝叶斯先验固定 0.5（无外部先验），证据强度由域热度推导；这是方法演示，不是校准过的概率',
+    };
+  }
+
+  // ───────────────────────────────────────────────────────────────
+  // v3：低置信度守门——confidence<0.6 的结论必须显式标注
+  // ───────────────────────────────────────────────────────────────
+  applyLowConfidenceGate(report) {
+    const gates = [];
+    for (const s of report.stages || []) {
+      const g = lowConfidenceGate({ confidence: s.confidence, conclusion: s.conclusion, producer: 'project-future-v3' });
+      gates.push({ stage: s.period, confidence: s.confidence, allowed: g.allowed, label: g.label, disclosure: g.disclosure });
+    }
+    const overall = lowConfidenceGate({ confidence: report.confidence.score, producer: 'project-future-v3' });
+    return {
+      overall: { confidence: report.confidence.score, allowed: overall.allowed, label: overall.label, disclosure: overall.disclosure },
+      stages: gates,
+      threshold: 0.6,
+    };
+  }
+
+  // ───────────────────────────────────────────────────────────────
+  // v3：预测台账状态——回答"我们过去预测得准不准"
+  // ───────────────────────────────────────────────────────────────
+  getLedgerStatus() {
+    const sc = predictionLedger.scorecard();
+    const od = predictionLedger.overdue();
+    return {
+      available: true,
+      brier: sc.brier, sample: sc.sample, hitRate: sc.hitRate,
+      calibration: sc.calibration,
+      overdueCount: od.length,
+      note: sc.sample === 0
+        ? '台账暂无已结算预测，无法计算 Brier 分数——推演质量暂不可度量'
+        : `基于 ${sc.sample} 条已结算预测`,
+    };
+  }
+
+  // ───────────────────────────────────────────────────────────────
+  // v3：把本次推演的概率预测登记进台账，到期后才能结算出 Brier 分数。
+  // 只登记信号充足的阶段——把"基于 2 条信号的预测"登记进去会污染度量。
+  // 幂等：同一天同一域重复跑不会写两条。
+  // ───────────────────────────────────────────────────────────────
+  recordPredictions() {
+    const recorded = [];
+    const day = this.timestamp.slice(0, 10);
+    for (const s of (this._lastReport && this._lastReport.stages) || []) {
+      if (s.sufficient === false) continue;   // 证据不足的不登记
+      if (typeof s.confidence !== 'number' || s.confidence <= 0) continue;
+      const dom = s.domains.join('+') || 'unknown';
+      // id 用域 id（英文）而不是中文域名：sanitize 会把中文全抹掉，
+      // 导致 id 变成 proj-2026-10-09-AI______，无法区分不同域组合。
+      const domKey = ((s._domainIds) || []).join('+') || 'unknown';
+      const id = `proj-${day}-${domKey}`.replace(/[^\w-]/g, '_');
+      try {
+        predictionLedger.record({
+          id,
+          claim: `${s.period}：${s.domains.join('、')} 方向在本期内保持活跃`,
+          probability: Math.min(0.95, s.confidence),
+          dueOn: this.dueDateFor(s.period),
+          domain: dom,
+          rationale: `${s.evidence ? s.evidence.length : 0} 条 live 证据；域热度推导，非统计概率`,
+        });
+        recorded.push(id);
+      } catch (e) {
+        // 不静默吞错：id 已存在（今天已登记）是正常幂等跳过，
+        // 其他错误必须显式记录，否则"登记成功"会变成假宣称。
+        if (!/已存在/.test(e.message)) {
+          this._recordErrors = this._recordErrors || [];
+          this._recordErrors.push({ id, error: e.message });
+        }
+      }
+    }
+    return { recorded, count: recorded.length, errors: this._recordErrors || [] };
+  }
+
+  dueDateFor(period) {
+    // 第一阶段 0-12 个月 → 一年后结算；后续阶段顺延。
+    // 注意：period 是中文「第一阶段」，第(.)阶段 抓到的是全角「一」，
+    // Number() 会得 NaN → new Date() 抛 Invalid time value。必须做中文数字映射。
+    const CN = { '一': 1, '二': 2, '三': 3, '1': 1, '2': 2, '3': 3 };
+    const m = /第(.)阶段/.exec(period || '');
+    const idx = (m && CN[m[1]]) || 1;
+    const d = new Date(this.timestamp);
+    if (isNaN(d.getTime())) return null;   // 时间戳异常时不猜日期
+    d.setUTCMonth(d.getUTCMonth() + idx * 12);
+    return isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10);
   }
 
   generateSummary() {
@@ -214,6 +572,7 @@ class ProjectionEngine {
       out.push({
         period: h.label,
         domains: slice.map(d => d.name),
+        _domainIds: slice.map(d => d.id),   // 供预测台账生成可读 id
         description: this.describeStage(slice, i),
         evidence,
         keyEvents: slice.map(d => `${d.name}：${d.count} 条信号（近 30 天 ${d.recent} 条）`),
@@ -542,6 +901,188 @@ function formatReport(report) {
   lines.push(`| 净调整 | ${f.adjustment} |`);
   lines.push('');
   lines.push(`> ${report.confidence.note}`);
+  lines.push('');
+
+  // ══════════════════════════════════════════════════════════════
+  // v3：真正的推演输出——因果链 / 跨域传导 / 趋势 / 时间轴 / 来源 / 公式
+  // ══════════════════════════════════════════════════════════════
+
+  const cc = report.causalChains;
+  lines.push('## 因果链与干预点');
+  lines.push('');
+  if (!cc || !cc.available) {
+    lines.push(`（${(cc && cc.reason) || '未运行'}）`);
+  } else {
+    lines.push(`**根因（入度为 0）**: ${cc.roots.join('、') || '(无)'}`);
+    lines.push(`**终局（出度为 0）**: ${cc.outcomes.join('、') || '(无)'}`);
+    lines.push('');
+    lines.push('**因果链**:');
+    for (const c of cc.chains) lines.push(`- ${c}`);
+    lines.push('');
+    lines.push('**干预点排序**（删掉它断开最多路径）:');
+    for (const lp of cc.leveragePoints) {
+      lines.push(`- ${lp.node} — 断开 ${lp.pathsBroken} 条路径（${Math.round(lp.ratio * 100)}%）`);
+    }
+    lines.push('');
+    lines.push(`> ${cc.note}`);
+  }
+  lines.push('');
+
+  const cd = report.crossDomainConduction;
+  lines.push('## 跨域传导');
+  lines.push('');
+  if (!cd || !cd.available) {
+    lines.push(`（${(cd && cd.reason) || '未运行'}）`);
+  } else {
+    lines.push('```');
+    lines.push(cd.matrix);
+    lines.push('```');
+    lines.push('');
+    lines.push('**主要传导目标**:');
+    for (const t of cd.topTargets) {
+      lines.push(`- → ${t.domain} 强度 ${t.strength} / 时延 ${t.lagMonths} 月 — ${t.why}`);
+    }
+    lines.push('');
+    lines.push(`> ${cd.note}`);
+  }
+  lines.push('');
+
+  const tc = report.trendClassification;
+  lines.push('## 趋势判定（一次性事件 vs 持续趋势）');
+  lines.push('');
+  if (!tc || !tc.available) {
+    lines.push('（无可聚合的日期序列）');
+  } else {
+    lines.push('| 域 | 周期数 | 总信号 | 半衰期 | 判定 |');
+    lines.push('|---|---|---|---|---|');
+    for (const c of tc.classifications) {
+      const hl = c.halfLifePeriods === null ? '—' : (c.halfLifePeriods === Infinity ? '∞' : c.halfLifePeriods);
+      lines.push(`| ${c.domain} | ${c.periods} | ${c.total} | ${hl} | ${c.verdict} |`);
+    }
+    lines.push('');
+    lines.push(`> ${tc.note}`);
+  }
+  lines.push('');
+
+  const tl = report.timelineConflicts;
+  lines.push('## 时间轴冲突检测');
+  lines.push('');
+  if (!tl || !tl.available) {
+    lines.push(`（${(tl && tl.reason) || '未运行'}）`);
+  } else {
+    lines.push('**信号中声称的时间点**:');
+    for (const o of tl.ordered) lines.push(`- ${o}`);
+    lines.push('');
+    if (tl.conflicts.length === 0) {
+      lines.push('未检测到依赖违反或互斥冲突。');
+    } else {
+      lines.push('**冲突**:');
+      for (const c of tl.conflicts) lines.push(`- [${c.type}] ${c.detail}`);
+    }
+    lines.push('');
+    lines.push(`> ${tl.note}`);
+  }
+  lines.push('');
+
+  const sa = report.sourceAdjudication;
+  lines.push('## 来源可信度分级');
+  lines.push('');
+  if (!sa || !sa.available) {
+    lines.push('（无来源信息）');
+  } else {
+    const t = sa.tierDistribution;
+    lines.push(`不同来源数: ${sa.distinctSources}`);
+    lines.push(`- T1 官方披露: ${t.T1 || 0}`);
+    lines.push(`- T2 主流媒体/同行评议: ${t.T2 || 0}`);
+    lines.push(`- T3 有方法论的分析: ${t.T3 || 0}`);
+    lines.push(`- T4 自媒体/论坛: ${t.T4 || 0}`);
+    lines.push('');
+    lines.push(`> ${sa.note}`);
+  }
+  lines.push('');
+
+  const cm = report.claimMismatches;
+  lines.push('## 口径错位检测');
+  lines.push('');
+  if (!cm || !cm.available || cm.count === 0) {
+    lines.push('未检测到「产能 vs 订单」「检测 vs 纠正」类口径错位表述。');
+  } else {
+    lines.push(`命中 ${cm.count} 条:`);
+    for (const h of cm.hits) {
+      lines.push(`- ${h.title} — ${h.source}`);
+      for (const m of h.mismatches) {
+        lines.push(`  - ${m.label || m.id}（${m.severity || '未标级'}）: ${m.guidance || m.detail || ''}`);
+      }
+    }
+  }
+  lines.push('');
+
+  const fa = report.formulaAssessment;
+  lines.push('## 认知公式评估');
+  lines.push('');
+  if (!fa || !fa.available || !fa.formulas || Object.keys(fa.formulas).length === 0) {
+    lines.push('（无可评估输入）');
+  } else {
+    if (fa.formulas.bayes) {
+      const b = fa.formulas.bayes;
+      lines.push(`- **贝叶斯更新**: 先验 ${b.prior} → 后验 ${b.posterior}（Δ ${b.delta > 0 ? '+' : ''}${b.delta}）`);
+    }
+    if (fa.formulas.discount) {
+      const d = fa.formulas.discount;
+      lines.push(`- **指数折现**: ${d.years} 年后的影响权重 ${d.weight}（年折现率 ${d.annualRate}）`);
+    }
+    if (fa.formulas.risk) {
+      const r = fa.formulas.risk;
+      lines.push(`- **风险期望值**: ${r.expectedValue}（最坏情况贡献 ${r.worstCaseContribution}）`);
+    }
+    if (fa.formulas.brier) {
+      const b = fa.formulas.brier;
+      lines.push(`- **Brier 分数**: ${b.score}（样本 ${b.sample}，越小越好）`);
+    }
+    lines.push('');
+    lines.push(`> ${fa.note}`);
+  }
+  lines.push('');
+
+  const lg = report.lowConfidenceGate;
+  lines.push('## 低置信度守门');
+  lines.push('');
+  if (lg) {
+    lines.push(`- **总体**: 置信度 ${lg.overall.confidence} → ${lg.overall.allowed ? '✅ 通过' : '⚠ 需显式标注'}`);
+    if (lg.overall.disclosure) lines.push(`  - ${lg.overall.disclosure}`);
+    const blocked = (lg.stages || []).filter(s => !s.allowed);
+    if (blocked.length) {
+      lines.push(`- **被拦阶段**: ${blocked.map(b => b.stage).join('、')}`);
+      lines.push('  - 这些阶段的结论不得作为判断引用，只能作为观察方向记录');
+    }
+  }
+  lines.push('');
+
+  const ls = report.ledgerStatus;
+  lines.push('## 预测台账（推演质量度量）');
+  lines.push('');
+  if (ls && ls.sample > 0) {
+    lines.push(`- **Brier 分数**: ${ls.brier}（已结算 ${ls.sample} 条）`);
+    lines.push(`- **命中率**: ${Math.round((ls.hitRate || 0) * 100)}%`);
+    lines.push(`- **到期未结算**: ${ls.overdueCount} 条`);
+    lines.push('');
+    lines.push('| 置信度桶 | 样本数 | 实际命中率 | 期望 |');
+    lines.push('|---|---|---|---|');
+    for (const b of ls.calibration) {
+      const obs = b.observed === null ? '—' : `${Math.round(b.observed * 100)}%`;
+      lines.push(`| ${b.range} | ${b.count} | ${obs} | ${Math.round(b.expected * 100)}% |`);
+    }
+  } else {
+    lines.push('台账暂无已结算预测——推演质量目前不可度量。');
+    lines.push('');
+    lines.push('要让它可度量，需要把本次推演中的概率预测登记进台账');
+    lines.push('（`prediction-ledger.record()`），到期后 `settle()` 结算出 Brier 分数。');
+  }
+  if (report.predictionRecording && report.predictionRecording.count > 0) {
+    lines.push('');
+    lines.push(`**本次已登记 ${report.predictionRecording.count} 条预测**（仅证据充足的阶段，到期自动结算）：`);
+    for (const id of report.predictionRecording.recorded) lines.push(`- \`${id}\``);
+  }
   lines.push('');
 
   return lines.join('\n');
