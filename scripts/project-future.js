@@ -93,7 +93,10 @@ class ProjectionEngine {
     const items = [];
     for (const [bucket, v] of Object.entries(newsData)) {
       for (const n of (v && v.news) || []) {
-        if (n.origin !== 'live') continue; // 只认真采集条目
+        // 接受 live 与 live-search 两种来源标记：
+        // live = RSS 真采集；live-search = 本轮 web_search 检索并已人工核对来源与日期。
+        // knowledge-base 降级条目仍被排除——那是历史累积知识，不得当新闻信号。
+        if (n.origin !== 'live' && n.origin !== 'live-search') continue;
         items.push({
           title: String(n.title || ''),
           text: `${n.title || ''} ${n.description || ''}`,
@@ -101,6 +104,7 @@ class ProjectionEngine {
           link: n.link || '',
           pubDate: n.pubDate || '',
           bucket,
+          origin: n.origin,
         });
       }
     }
