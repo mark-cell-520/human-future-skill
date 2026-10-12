@@ -525,3 +525,10 @@ v2.4 → v2.5 不是架构重构（不构成大版本），而是「宣称能力
 补 gates 修复 + 虚标纠正。按用户版号纪律，末位为补丁，此处取 x.0 是因为
 用户可感知（pipeline 从跑不通到跑通），但它**不是**新辨别维度，
 后续若加新辨别维度才算能力升级。
+
+## References（历史记录与工作方法）
+
+- [expansion-sessions.md](references/expansion-sessions.md) — 各版本增量扩展历史与来源获取模式
+- [integration-patterns.md](references/integration-patterns.md) — 跨域来源集成与技能更新方法
+- [gate-format-lessons-2026-09-16.md](references/gate-format-lessons-2026-09-16.md) — 门禁策略决策与已知误报维度清单
+- [v0.5.0-upgrade-notes.md](references/v0.5.0-upgrade-notes.md) — v0.4.0 → v0.5.0 升级记录

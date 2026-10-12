@@ -135,3 +135,10 @@ version: "2.3.0"
 4. **多事实块长句输入**：心虫 think() 对 8 个以上中文分号并联事实常返回 confidence 0.4 且 conclusion 只抓住最后一个实体（如 `lonvoguran·ziclumeran·neuralink`）。报告必须原样呈现 confidence，低于 0.6 时明确标注「心虫低置信度，以下为人工判断」，禁止拿低置信度结论冒充分析结论。
 5. **技能缺失兜底**：SKILL 列表里指向 `human-future-skill/human-future-forecast` 不存在时，回退到 `human-future-forecast-v23-archive`，并在回复首行声明 skipped。
 6. **新闻分期**：当日问答只覆盖「过去 24 小时」；arXiv/季度回顾/政策长文不作为当日锚点，只在因果链引用时标注时间。
+
+## References（归档资料）
+
+- [expansion-sessions.md](references/expansion-sessions.md) — 各版本增量扩展历史
+- [integration-patterns.md](references/integration-patterns.md) — 跨域来源集成方法
+- [gate-format-lessons-2026-09-16.md](references/gate-format-lessons-2026-09-16.md) — 门禁策略与已知误报维度
+- [v0.5.0-upgrade-notes.md](references/v0.5.0-upgrade-notes.md) — v0.5.0 升级记录

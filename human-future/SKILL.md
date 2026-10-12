@@ -1,6 +1,6 @@
 ---
-name: human-future-v2
-title: "人类未来 · 文明推演引擎 v2.1"
+name: human-future-v21-legacy
+title: "人类未来 · 文明推演引擎 v2.1（历史版，已被 human-future-skill v2.5 取代）"
 version: "2.1.0"
 description: |-
   人类未来技能 v2.1 — 在 v2.0 实时推演操作系统基础上，吸收 HeartFlow 生态系统能力：
