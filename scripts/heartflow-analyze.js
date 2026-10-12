@@ -100,23 +100,57 @@ function buildAnalysisText(newsData) {
   }
 
   // 推演结构（真实数据 + 结构化推理框架）。换行符按原文保留。
+  // -- 推演结构：从本期真实数据推导，不写死 -------------------------
+  // 旧版在这里放了 6 月手写的「前提1..4 / 推理过程 / 结论」，无论采集到什么
+  // 新闻都原样输出。心虫 discriminate() 判的是那段固定文本，于是每期报告的
+  // verdict/score 描述的是模板而不是本期数据 —— 这是假推演。
+  // 现在按真实条目的域分布、时间跨度、来源构成现推。
+  const domainCount = {};
+  const srcCount = {};
+  const dates = [];
+  for (const data of Object.values(domains)) {
+    for (const n of (data && data.news) || []) {
+      const key = (data && data.name) || 'unknown';
+      domainCount[key] = (domainCount[key] || 0) + 1;
+      const s = n.source || 'unknown';
+      srcCount[s] = (srcCount[s] || 0) + 1;
+      if (n.pubDate) {
+        const d = new Date(n.pubDate);
+        if (!isNaN(d.getTime())) dates.push(d);
+      }
+    }
+  }
+  const ranked = Object.entries(domainCount).sort((a, b) => b[1] - a[1]);
+  const span = dates.length
+    ? `${dates[dates.length - 1].toISOString().slice(0, 10)} ~ ${dates[0].toISOString().slice(0, 10)}`
+    : '日期未知';
+  const topSrc = Object.entries(srcCount).sort((a, b) => b[1] - a[1])[0];
+
   lines.push('');
-  lines.push('【推演结构】');
-  lines.push('前提1：AI 技术从通用工具向垂直专业助手和自主 agent 转变');
-  lines.push('前提2：算力军备竞赛加剧，芯片自主化趋势明显');
-  lines.push('前提3：AI 安全事件频发，对齐问题公开化');
-  lines.push('前提4：模型效率革命和新兴技术使 AI 普及成为可能');
+  lines.push('【推演结构】（由本期真实数据推导，非固定模板）');
+  ranked.slice(0, 4).forEach(([name, c], i) => {
+    lines.push(`前提${i + 1}：${name} 域本期 ${c} 条信号，是数据最集中的方向`);
+  });
+  if (!ranked.length) lines.push('前提1：本期无任何信号，无法推导');
   lines.push('');
   lines.push('推理过程：');
-  lines.push('  如果 AI 进入专业领域（前提1），同时算力集中和芯片战争加剧（前提2），');
-  lines.push('  那么 AI 治理将从技术问题变为政治议题。');
-  lines.push('  如果 AI 安全事件频发（前提3），同时模型效率提升（前提4），');
-  lines.push('  那么 2027-2028 年将出现 AGI 监管政策和规模化部署。');
+  if (ranked.length >= 2) {
+    const top2 = ranked.slice(0, 2);
+    lines.push(`  本期信号集中在 ${top2.map(r => r[0]).join(' 与 ')}，两者合计 ` +
+      `${top2.reduce((s, r) => s + r[1], 0)}/${totalItems} 条。`);
+    lines.push('  若该集中度在后续各期保持，则这两个域是当前结构性主线，其余域为噪声。');
+    lines.push('  若下一期集中度转移到别的域，则本期集中只是单周事件，不构成趋势。');
+  } else {
+    lines.push('  信号域过于单一或为空，不足以做跨域推理。');
+  }
   lines.push('');
-  lines.push('结论：2026-2029 年是人类决定 AI 走向的关键窗口期。');
-  lines.push('  阶段1（2026-2027）：AI 专业化 + 安全警报期');
-  lines.push('  阶段2（2027-2028）：AGI 政策化 + 规模化部署 + 新兴技术突破');
-  lines.push('  阶段3（2028-2029）：AI 治理框架 + 人机协作常态 + 认知增强普及');
+  lines.push('结论（受数据约束）：');
+  lines.push(`  本期 ${totalItems} 条信号中 live=${liveCount}，时间跨度 ${span}。`);
+  if (topSrc) {
+    lines.push(`  最大来源 ${topSrc[0]} 占 ${topSrc[1]} 条 —— 单源占比过高时，`);
+    lines.push('  「多源一致」不成立，只能说明该源在本期发文集中。');
+  }
+  lines.push('  以上是基于本期数据的观察，不是对未来的预测；未来判断需多期累积后在台账结算。');
 
   return lines.join('\n');
 }

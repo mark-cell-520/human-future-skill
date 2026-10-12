@@ -461,8 +461,14 @@ class ProjectionEngine {
       brier: sc.brier, sample: sc.sample, hitRate: sc.hitRate,
       calibration: sc.calibration,
       overdueCount: od.length,
+      pending: (predictionLedger.load().predictions || []).filter(p => p.outcome === null).length,
       note: sc.sample === 0
-        ? '台账暂无已结算预测，无法计算 Brier 分数——推演质量暂不可度量'
+        ? (() => {
+            const pend = (predictionLedger.load().predictions || []).filter(p => p.outcome === null).length;
+            return pend > 0
+              ? `台账已有 ${pend} 条待结算预测（到期日在 2027 年起），暂无已结算项，故 Brier 暂不可算——不是没登记`
+              : '台账暂无任何预测，无法计算 Brier 分数——推演质量暂不可度量';
+          })()
         : `基于 ${sc.sample} 条已结算预测`,
     };
   }
@@ -474,6 +480,7 @@ class ProjectionEngine {
   // ───────────────────────────────────────────────────────────────
   recordPredictions() {
     const recorded = [];
+    let skipped = null;
     const day = this.timestamp.slice(0, 10);
     for (const s of (this._lastReport && this._lastReport.stages) || []) {
       if (s.sufficient === false) continue;   // 证据不足的不登记
@@ -496,13 +503,18 @@ class ProjectionEngine {
       } catch (e) {
         // 不静默吞错：id 已存在（今天已登记）是正常幂等跳过，
         // 其他错误必须显式记录，否则"登记成功"会变成假宣称。
-        if (!/已存在/.test(e.message)) {
+        if (/已存在/.test(e.message)) {
+          // 幂等跳过也要报出来：否则同一天第二次运行时 recorded 为空，
+          // 报告会显示"本次登记 0 条"，看起来像登记失败。
+          (skipped || (skipped = [])).push(id);
+        } else {
           this._recordErrors = this._recordErrors || [];
           this._recordErrors.push({ id, error: e.message });
         }
       }
     }
-    return { recorded, count: recorded.length, errors: this._recordErrors || [] };
+    return { recorded, count: recorded.length,
+             skipped: skipped || [], errors: this._recordErrors || [] };
   }
 
   dueDateFor(period) {
@@ -560,8 +572,15 @@ class ProjectionEngine {
       if (slice.length === 0) continue;
 
       const evidence = [];
+      // 同一条新闻可能命中多个域（DOMAINS 顺序扫描但允许多域命中），
+      // 两个域的 items 会含同一条 link。不去重则同一 stage 的证据数组
+      // 出现重复条目，读者会以为证据量比实际多。
+      const seenKey = new Set();
       for (const d of slice) {
         for (const it of d.items.slice(0, 3)) {
+          const key = it.link || it.title;
+          if (seenKey.has(key)) continue;
+          seenKey.add(key);
           evidence.push({
             domain: d.name,
             title: it.title.slice(0, 120),
@@ -1077,15 +1096,29 @@ function formatReport(report) {
       lines.push(`| ${b.range} | ${b.count} | ${obs} | ${Math.round(b.expected * 100)}% |`);
     }
   } else {
-    lines.push('台账暂无已结算预测——推演质量目前不可度量。');
-    lines.push('');
-    lines.push('要让它可度量，需要把本次推演中的概率预测登记进台账');
-    lines.push('（`prediction-ledger.record()`），到期后 `settle()` 结算出 Brier 分数。');
+    const pend = report.ledgerStatus && typeof report.ledgerStatus.pending === 'number'
+      ? report.ledgerStatus.pending : null;
+    if (pend > 0) {
+      lines.push(`台账已有 ${pend} 条待结算预测，暂无已结算项，故 Brier 分数暂不可算。`);
+      lines.push('（待结算 ≠ 未登记：预测的到期日在 2027 年起，到期后 `settle()` 才出 Brier。）');
+    } else {
+      lines.push('台账暂无任何预测——推演质量目前不可度量。');
+      lines.push('');
+      lines.push('要让它可度量，需要把本次推演中的概率预测登记进台账');
+      lines.push('（`prediction-ledger.record()`），到期后 `settle()` 结算出 Brier 分数。');
+    }
   }
-  if (report.predictionRecording && report.predictionRecording.count > 0) {
+  const rec = report.predictionRecording;
+  if (rec && (rec.count > 0 || (rec.skipped && rec.skipped.length > 0))) {
     lines.push('');
-    lines.push(`**本次已登记 ${report.predictionRecording.count} 条预测**（仅证据充足的阶段，到期自动结算）：`);
-    for (const id of report.predictionRecording.recorded) lines.push(`- \`${id}\``);
+    if (rec.count > 0) {
+      lines.push(`**本次新登记 ${rec.count} 条预测**（仅证据充足的阶段，到期自动结算）：`);
+      for (const id of rec.recorded) lines.push(`- \`${id}\``);
+    }
+    if (rec.skipped && rec.skipped.length > 0) {
+      lines.push(`**本次幂等跳过 ${rec.skipped.length} 条**（同一编号今天已登记过，不重复写入）：`);
+      for (const id of rec.skipped) lines.push(`- \`${id}\``);
+    }
   }
   lines.push('');
 
