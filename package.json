@@ -1,13 +1,14 @@
 {
   "name": "human-future",
-  "version": "2.3.0",
-  "description": "人类未来实时推演操作系统 v2.2 - 吸收11个HeartFlow生态技能：因果链追溯/基准评测/知识吸收/两遍分析/信号模式/交流层",
+  "version": "2.6.0",
+  "description": "人类未来实时推演操作系统 v2.6 - 推演结构按真实数据推导，配可重跑测试",
   "main": "modules/monitor/signal-collector.js",
   "scripts": {
     "start": "node scripts/run-pipeline.js",
     "collect": "node scripts/collect-news.js",
     "analyze": "node scripts/heartflow-analyze.js",
-    "project": "node scripts/project-future.js"
+    "project": "node scripts/project-future.js",
+    "test": "node test-reasoning-is-derived.js"
   },
   "keywords": [
     "future",
