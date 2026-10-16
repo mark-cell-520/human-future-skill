@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "updatedAt": "2026-10-15T23:50:34.106005+08:00",
+  "updatedAt": "2026-10-16T23:50:37.423875+08:00",
   "days": {
     "2026-10-06": {
       "runs": 2,
@@ -268,6 +268,33 @@
         "full-report-1792059334879.json",
         "full-report-1792066901506.json",
         "full-report-1792074518476.json"
+      ]
+    },
+    "2026-10-16": {
+      "runs": 12,
+      "firstRun": "2026-10-15T16:34:34.401Z",
+      "lastRun": "2026-10-16T15:41:41.685Z",
+      "avgScore": 0.625,
+      "verdicts": [
+        "需验证"
+      ],
+      "heartflowVersions": [
+        "6.8.35",
+        "6.8.36"
+      ],
+      "sources": [
+        "full-report-1792082074401.json",
+        "full-report-1792089874141.json",
+        "full-report-1792097254172.json",
+        "full-report-1792104694198.json",
+        "full-report-1792112141801.json",
+        "full-report-1792119636101.json",
+        "full-report-1792127322386.json",
+        "full-report-1792134881999.json",
+        "full-report-1792142556788.json",
+        "full-report-1792150184034.json",
+        "full-report-1792157736637.json",
+        "full-report-1792165301685.json"
       ]
     }
   }
