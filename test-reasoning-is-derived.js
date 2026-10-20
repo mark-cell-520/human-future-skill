@@ -502,3 +502,89 @@ if (f29 > 0) {
 } else {
   console.log('结论：v2.9 正文抓取与两处断链修复均有回归保护。');
 }
+
+// ════════════════════════════════════════════════════════════════
+// v2.10 新增断言：信号趋势判定必须能区分 12 种真实形态。
+// 实测依据：v2.9 报告里 8 个活跃域 7 个判 growing-or-flat，判定退化成常数。
+// 根因是 decayRate 只比较首尾两点，中间形态完全看不见。
+// ════════════════════════════════════════════════════════════════
+const { classify: classifySignal, decayRate } = require('./human-future/scripts/signal-decay-resonance.js');
+
+const v210 = [];
+function c210(name, ok, detail) { v210.push({ name, ok, detail }); }
+
+const mkSeries = (counts) => counts.map((c, i) => ({
+  period: `2026-W${String(35 + i).padStart(2, '0')}`, topic: 'probe', count: c,
+}));
+
+const CASES = [
+  ['单调上升', [1, 2, 4, 8, 16], 'growing-or-flat', 'rising'],
+  ['单调下降', [16, 8, 4, 2, 1], 'one-off', 'decaying'],
+  ['尖峰后衰减', [1, 16, 8, 4, 2], 'one-off', 'decaying'],
+  ['尖峰居中', [2, 3, 20, 3, 2], 'one-off', 'decaying'],
+  ['平台后突增', [1, 1, 1, 1, 16], 'growing-or-flat', 'rising'],
+  ['首周异常高', [16, 1, 2, 4, 8], 'one-off', 'decaying'],
+  ['完全平稳', [5, 5, 5, 5, 5], 'growing-or-flat', 'flat'],
+  ['持续趋势', [2, 3, 4, 5, 6], 'growing-or-flat', 'rising'],
+  ['末期上升', [4, 3, 2, 5, 9], 'growing-or-flat', 'rising'],
+  ['慢衰减', [100, 80, 64, 51, 41], 'trend', 'decaying'],
+  ['极快衰减', [50, 2, 0, 0, 0], 'one-off', 'decaying'],
+  ['长期缓降', [100, 95, 90, 86, 82], 'structural', 'decaying'],
+];
+
+for (const [name, counts, expectVerdict, expectDir] of CASES) {
+  const r = classifySignal(mkSeries(counts), 'probe');
+  const okV = r.verdict.includes(expectVerdict);
+  const okD = r.direction === expectDir;
+  c210(`趋势判定：${name}`, okV && okD,
+    `[${counts.join(',')}] → verdict=${r.verdict} dir=${r.direction} shape=${r.shape} hl=${r.halfLifePeriods}`);
+}
+
+// 关键回归：尖峰与单调上升必须判不同（旧实现两者都判 growing-or-flat）
+const spike = classifySignal(mkSeries([1, 16, 8, 4, 2]), 'probe');
+const rising = classifySignal(mkSeries([1, 2, 4, 8, 16]), 'probe');
+c210('尖峰与单调上升判定不同（旧实现两者相同）',
+  spike.verdict !== rising.verdict && spike.shape === 'spike',
+  `spike=${spike.verdict}(${spike.shape}) vs rising=${rising.verdict}(${rising.shape})`);
+
+// 样本不足时必须如实返回 insufficient-data，不硬判
+const short = classifySignal(mkSeries([1, 2]), 'probe');
+c210('样本不足 3 期时返回 insufficient-data',
+  short.verdict === 'insufficient-data' && short.halfLifePeriods === null,
+  `verdict=${short.verdict} hl=${short.halfLifePeriods}`);
+
+// 直接对 decayRate 断言（classify 层的 spike/outlier 检测独立于 decayRate，
+// 所以只测 classify 会漏掉 decayRate 本身的回归——v2.10 实测踩过：
+// 把 decayRate 换回旧的首尾比较实现，14 条 classify 断言仍然全过）。
+// 旧实现在首尾对称的序列上返回 0（表示"没有衰减"），新实现返回 Infinity。
+// 这个差异必须被钉住，否则「重写 decayRate」这件事本身没有回归保护。
+const hlRising = decayRate([1, 2, 4, 8, 16]);
+const hlSpike = decayRate([1, 16, 8, 4, 2]);
+const hlFlat = decayRate([5, 5, 5, 5, 5]);
+const hlDecay = decayRate([16, 8, 4, 2, 1]);
+c210('decayRate：上升序列返回倍增周期（非 0）',
+  typeof hlRising === 'number' && hlRising > 0 && hlRising !== 0,
+  `hl=${hlRising}（旧实现会返回 0）`);
+c210('decayRate：首尾对称的尖峰序列不报"没有衰减"',
+  hlSpike === Infinity,
+  `hl=${hlSpike}（旧实现返回 0，把尖峰当平稳）`);
+c210('decayRate：完全平稳返回 Infinity',
+  hlFlat === Infinity,
+  `hl=${hlFlat}`);
+c210('decayRate：单调下降返回正的半衰期',
+  typeof hlDecay === 'number' && hlDecay > 0 && hlDecay !== Infinity,
+  `hl=${hlDecay}`);
+
+let f210 = 0;
+for (const c of v210) {
+  console.log(`${c.ok ? '✓' : '✗'} ${c.name}${c.ok ? '' : '  —— ' + c.detail}`);
+  if (!c.ok) f210++;
+}
+console.log(`\nv2.10: ${v210.length - f210} 通过, ${f210} 失败, 共 ${v210.length} 个`);
+if (f210 > 0) {
+  console.log('结论：信号趋势判定未守住 12 形态区分能力。');
+  console.log('修法：检查 signal-decay-resonance.js 的 decayRate/classify 实现。');
+  process.exitCode = 1;
+} else {
+  console.log('结论：信号趋势判定可区分 12 种真实形态，不再退化为常数。');
+}

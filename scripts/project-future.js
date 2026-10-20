@@ -429,7 +429,13 @@ class ProjectionEngine {
       const r = classifySignal(series, d.id);
       out.push({
         domain: d.name, id: d.id, periods: r.periods, total: r.total,
-        halfLifePeriods: r.halfLifePeriods, verdict: r.verdict,
+        halfLifePeriods: r.halfLifePeriods,
+        // [v2.10] direction/shape 是重写 decayRate 后新增的两个维度：
+        // direction = rising/decaying/flat，shape = steady/spike/leading-outlier。
+        // 缺了它们，读者只看到 verdict 看不到"为什么这么判"——
+        // 尤其是 one-off，必须能看出是尖峰还是首端异常还是正常衰减。
+        direction: r.direction || null, shape: r.shape || null,
+        verdict: r.verdict,
       });
     }
     const judged = out.filter(o => o.verdict !== 'insufficient-data');
@@ -1312,13 +1318,24 @@ function formatReport(report) {
   if (!tc || !tc.available) {
     lines.push('（无可聚合的日期序列）');
   } else {
-    lines.push('| 域 | 周期数 | 总信号 | 半衰期 | 判定 |');
-    lines.push('|---|---|---|---|---|');
+    lines.push('| 域 | 周期数 | 总信号 | 倍增/半衰期(周) | 形态 | 方向 | 判定 |');
+    lines.push('|---|---|---|---|---|---|---|');
+    const SHAPE_CN = { steady: '平稳序列', spike: '尖峰', 'leading-outlier': '首端异常' };
+    const DIR_CN = { rising: '上升', decaying: '衰减', flat: '持平' };
     for (const c of tc.classifications) {
-      const hl = c.halfLifePeriods === null ? '—' : (c.halfLifePeriods === Infinity ? '∞' : c.halfLifePeriods);
-      lines.push(`| ${c.domain} | ${c.periods} | ${c.total} | ${hl} | ${c.verdict} |`);
+      // [v2.10] 列名改为「倍增/半衰期」：这个数在上升序列里是翻倍周期，
+      // 在衰减序列里是半衰期。旧列名只写「半衰期」，读者看到上升域的
+      // 「半衰期 1.98 周」会以为该域正在消亡，与判定列的 growing 矛盾。
+      const hlRaw = c.halfLifePeriods;
+      const hl = hlRaw === null ? '—' : (hlRaw === Infinity ? '∞' : hlRaw);
+      const shape = SHAPE_CN[c.shape] || c.shape || '—';
+      const dir = DIR_CN[c.direction] || c.direction || '—';
+      lines.push(`| ${c.domain} | ${c.periods} | ${c.total} | ${hl} | ${shape} | ${dir} | ${c.verdict} |`);
     }
     lines.push('');
+    lines.push('> 该列语义随方向变化：方向=上升时是「倍增周期」（计数翻倍所需周数，越小增长越快）；');
+    lines.push('> 方向=衰减时是「半衰期」（计数减半所需周数，越小消亡越快）；∞ 表示序列平稳或首尾对称。');
+    lines.push('> 形态列区分首尾对称的两种情况：尖峰与首端异常仍判一次性事件，平稳序列才看方向。');
     lines.push(`> ${tc.note}`);
   }
   lines.push('');

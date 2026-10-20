@@ -1,7 +1,7 @@
 {
   "name": "human-future",
-  "version": "2.9.0",
-  "description": "人类未来实时推演操作系统 v2.9 - 正文抓取 + 修口径错位/时间轴两处断链",
+  "version": "2.10.0",
+  "description": "人类未来实时推演操作系统 v2.10 - 重写信号趋势判定，可区分 12 种序列形态",
   "main": "modules/monitor/signal-collector.js",
   "scripts": {
     "start": "node scripts/run-pipeline.js",
