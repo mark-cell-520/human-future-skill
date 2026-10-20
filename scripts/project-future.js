@@ -407,26 +407,91 @@ class ProjectionEngine {
   buildTrendClassification() {
     // 需要 >=3 个周期才能算衰减，本期数据通常只有 1-2 周 → 多数会得到
     // insufficient-data。这是诚实结果，不是 bug。
-    const byWeek = new Map();
+    // [v2.11] 源归一化。
+    //
+    // 为什么必须做：实测每个源都被 MAX_ITEMS_PER_SOURCE=12 硬截断，所以
+    // 「本周条目数」混了两种完全不同的信号——
+    //   a) 该源本周真的发了多少篇；
+    //   b) 该源的 RSS 返回窗口有多宽。
+    // 实测 W42 占该源全部条目的比例：OpenAI 100%、Simon Willison 100%、
+    // NVIDIA 92% … Interconnects 8%、Microsoft Research 10%。
+    // 不归一化时，一个"RSS 只返回最近一周"的源会被读成"该域正在爆发"，
+    // 而一个"RSS 返回 10 周历史"的源会被读成"该域在衰退"。
+    //
+    // 归一化方法：每个源在其**有数据的周**内按「篇/周」折算，再按源取中位数，
+    // 避免单源高频淹没其他源（OpenAI 一周 12 篇 vs Interconnects 一周 1 篇）。
+    // 中位数而非均值：均值会被单一高产源拉走，中位数反映"典型源的行为"。
+    //
+    // 诚实性约束：归一化后的序列是**折算值**不是真实计数，必须在输出里标明，
+    // 且原始计数一并保留，让读者能自己对比。
+    const srcWeek = new Map();   // source -> Map(week -> count)
     for (const it of this.signals.items) {
       const t = Date.parse(it.pubDate);
       if (isNaN(t)) continue;
       const d = new Date(t);
-      const week = `${d.getUTCFullYear()}-W${String(Math.ceil(((d - new Date(d.getUTCFullYear(), 0, 1)) / 86400000 + 1) / 7)).padStart(2, '0')}`;
+      const week = `${d.getUTCFullYear()}-W${String(Math.ceil(((t - new Date(d.getUTCFullYear(), 0, 1)) / 86400000 + 1) / 7)).padStart(2, '0')}`;
+      const src = it.source || '(未标注)';
+      if (!srcWeek.has(src)) srcWeek.set(src, new Map());
+      srcWeek.get(src).set(week, (srcWeek.get(src).get(week) || 0) + 1);
+    }
+
+    const byWeek = new Map();          // 原始计数（保留供对比）
+    const byWeekNorm = new Map();      // 源归一化后的折算值
+    for (const it of this.signals.items) {
+      const t = Date.parse(it.pubDate);
+      if (isNaN(t)) continue;
+      const d = new Date(t);
+      const week = `${d.getUTCFullYear()}-W${String(Math.ceil(((t - new Date(d.getUTCFullYear(), 0, 1)) / 86400000 + 1) / 7)).padStart(2, '0')}`;
       for (const dom of it.domains) {
-        const key = dom;
-        if (!byWeek.has(key)) byWeek.set(key, new Map());
-        const m = byWeek.get(key);
-        m.set(week, (m.get(week) || 0) + 1);
+        if (!byWeek.has(dom)) byWeek.set(dom, new Map());
+        byWeek.get(dom).set(week, (byWeek.get(dom).get(week) || 0) + 1);
       }
     }
-    const series = [];
+
+    // 折算：每个源在其活跃周内按 篇/周 计，域内取各源的中位数
+    const allWeeks = new Set();
+    for (const m of srcWeek.values()) for (const w of m.keys()) allWeeks.add(w);
+    for (const [dom, weeks] of byWeek) {
+      // 找出该域每个源各周的计数
+      const perSrc = new Map();   // source -> Map(week -> count)
+      for (const it of this.signals.items) {
+        if (!it.domains.includes(dom)) continue;
+        const t = Date.parse(it.pubDate);
+        if (isNaN(t)) continue;
+        const d = new Date(t);
+        const week = `${d.getUTCFullYear()}-W${String(Math.ceil(((t - new Date(d.getUTCFullYear(), 0, 1)) / 86400000 + 1) / 7)).padStart(2, '0')}`;
+        const src = it.source || '(未标注)';
+        if (!perSrc.has(src)) perSrc.set(src, new Map());
+        perSrc.get(src).set(week, (perSrc.get(src).get(week) || 0) + 1);
+      }
+      const norm = new Map();
+      for (const w of allWeeks) {
+        const rates = [];
+        for (const [, wm] of perSrc) {
+          if (wm.has(w)) rates.push(wm.get(w));   // 该源该周在该域的条目数
+        }
+        if (rates.length === 0) continue;
+        rates.sort((a, b) => a - b);
+        const mid = Math.floor(rates.length / 2);
+        const median = rates.length % 2 ? rates[mid] : (rates[mid - 1] + rates[mid]) / 2;
+        norm.set(w, Math.round(median * 100) / 100);
+      }
+      byWeekNorm.set(dom, norm);
+    }
+
+    const series = [];        // 归一化序列（用于判定）
+    const seriesRaw = [];     // 原始计数序列（供对比）
+    for (const [topic, weeks] of byWeekNorm) {
+      for (const [period, count] of weeks) series.push({ period, topic, count, normalized: true });
+    }
     for (const [topic, weeks] of byWeek) {
-      for (const [period, count] of weeks) series.push({ period, topic, count });
+      for (const [period, count] of weeks) seriesRaw.push({ period, topic, count });
     }
     const out = [];
     for (const d of this.signals.domains.slice(0, 8)) {
       const r = classifySignal(series, d.id);
+      // 原始序列也跑一遍，用于在报告里标注"归一化前后判定是否改变"
+      const rRaw = classifySignal(seriesRaw, d.id);
       out.push({
         domain: d.name, id: d.id, periods: r.periods, total: r.total,
         halfLifePeriods: r.halfLifePeriods,
@@ -436,6 +501,22 @@ class ProjectionEngine {
         // 尤其是 one-off，必须能看出是尖峰还是首端异常还是正常衰减。
         direction: r.direction || null, shape: r.shape || null,
         verdict: r.verdict,
+        // [v2.11] 归一化前后对照：verdictChanged=true 说明该域的"趋势"
+        // 主要是采集假象，真实信号方向相反。这是本表最重要的可信度标记。
+        rawVerdict: rRaw.verdict,
+        rawDirection: rRaw.direction || null,
+        verdictChanged: r.verdict !== rRaw.verdict,
+        rawTotal: (byWeek.get(d.id) && [...byWeek.get(d.id).values()].reduce((a, b) => a + b, 0)) || 0,
+        // [v2.11] 归一化的源数背书。实测局限：只有 2 个源时中位数退化为
+        // 两者均值，归一化基本失效；源数越多中位数越能反映"典型源行为"。
+        // 不写出来读者无法判断这次的归一化值有多少可信度。
+        normalizedFromSources: (() => {
+          const srcs = new Set();
+          for (const it of this.signals.items) {
+            if (it.domains.includes(d.id)) srcs.add(it.source || '(未标注)');
+          }
+          return srcs.size;
+        })(),
       });
     }
     const judged = out.filter(o => o.verdict !== 'insufficient-data');
@@ -443,7 +524,11 @@ class ProjectionEngine {
       available: series.length > 0,
       classifications: out,
       judgedCount: judged.length,
-      note: '需要同一主题 >=3 个周期的计数才能判定半衰期；单期样本一律返回 insufficient-data',
+      // [v2.11] 归一化说明必须写在 note 里：折算值不是真实计数。
+      note: '计数已做源归一化（每源折算为篇/周后取域内中位数），'
+        + '避免"RSS 返回窗口宽的源"被读成衰退、"只返回近期条目的源"被读成爆发；'
+        + 'rawVerdict 列为未归一化的原始判定，verdictChanged=true 表示该域趋势主要是采集假象。'
+        + '另：需要同一主题 >=3 个周期的计数才能判定半衰期，单期样本一律返回 insufficient-data',
     };
   }
 
@@ -563,10 +648,20 @@ class ProjectionEngine {
     }
 
     if (milestones.length < 2) {
-      return {
-        available: false,
-        reason: `从 ${this.signals.items.length} 条 live 信号中，未抽到 2 个以上可排序时间点（前瞻声明或发布日期）`,
-      };
+      // [v2.11] 降级原因要说清：本模块的时间点有三类来源（前瞻声明 /
+      // 结构化季度 / 发布日期），其中**发布日期主要在正文里**（实测 DeepMind
+      // 的 "Sep 30, 2026" 写在正文，RSS 摘要不含）。没有 FETCH_BODY=1 时
+      // 这一类整体缺失，可用时间点会大幅减少。笼统说"未抽到"会让读者以为
+      // 是抽取规则的问题，实际是数据深度的问题——两者修法完全不同。
+      const withBody = this.signals.items.filter(i => i.hasBody).length;
+      const total = this.signals.items.length;
+      const reason = withBody === 0 && total > 0
+        ? `未抽到 2 个以上可排序时间点。注意：本次 ${total} 条 live 信号均无正文`
+          + `（未开启 FETCH_BODY=1），而发布日期主要写在正文里，这一类时间点整体缺失。`
+          + `开启后实测可获得 16 个可排序时间点。`
+        : `从 ${total} 条 live 信号（其中 ${withBody} 条有正文）中，`
+          + `未抽到 2 个以上可排序时间点（前瞻声明或发布日期）`;
+      return { available: false, reason };
     }
     const res = detectTimelineConflicts(milestones);
     return {
@@ -1318,24 +1413,34 @@ function formatReport(report) {
   if (!tc || !tc.available) {
     lines.push('（无可聚合的日期序列）');
   } else {
-    lines.push('| 域 | 周期数 | 总信号 | 倍增/半衰期(周) | 形态 | 方向 | 判定 |');
-    lines.push('|---|---|---|---|---|---|---|');
+    lines.push('| 域 | 周期数 | 归一化总量 | 倍增/半衰期(周) | 形态 | 方向 | 判定 | 归一化前判定 | 源数 |');
+    lines.push('|---|---|---|---|---|---|---|---|---|');
     const SHAPE_CN = { steady: '平稳序列', spike: '尖峰', 'leading-outlier': '首端异常' };
     const DIR_CN = { rising: '上升', decaying: '衰减', flat: '持平' };
     for (const c of tc.classifications) {
-      // [v2.10] 列名改为「倍增/半衰期」：这个数在上升序列里是翻倍周期，
-      // 在衰减序列里是半衰期。旧列名只写「半衰期」，读者看到上升域的
-      // 「半衰期 1.98 周」会以为该域正在消亡，与判定列的 growing 矛盾。
+      // [v2.11] 计数已做源归一化（每源折算为篇/周后取域内中位数）。
+      // 不归一化时，"RSS 只返回最近一周"的源会被读成该域爆发，
+      // "RSS 返回 10 周历史"的源会被读成该域衰退——那是采集窗口差异，
+      // 不是真实信号变化。
       const hlRaw = c.halfLifePeriods;
       const hl = hlRaw === null ? '—' : (hlRaw === Infinity ? '∞' : hlRaw);
       const shape = SHAPE_CN[c.shape] || c.shape || '—';
       const dir = DIR_CN[c.direction] || c.direction || '—';
-      lines.push(`| ${c.domain} | ${c.periods} | ${c.total} | ${hl} | ${shape} | ${dir} | ${c.verdict} |`);
+      // verdictChanged=true 必须显式标出：该域的"趋势"主要是采集假象
+      const rawCol = c.verdictChanged
+        ? `${c.rawVerdict}（不同→假象）`
+        : (c.rawVerdict || '—');
+      // 源数 <3 时归一化基本失效（中位数退化为均值），必须标出
+      const srcCol = (c.normalizedFromSources || 0) < 3
+        ? `${c.normalizedFromSources}（过少，归一化弱）`
+        : String(c.normalizedFromSources || '—');
+      lines.push(`| ${c.domain} | ${c.periods} | ${c.total} | ${hl} | ${shape} | ${dir} | ${c.verdict} | ${rawCol} | ${srcCol} |`);
     }
     lines.push('');
-    lines.push('> 该列语义随方向变化：方向=上升时是「倍增周期」（计数翻倍所需周数，越小增长越快）；');
-    lines.push('> 方向=衰减时是「半衰期」（计数减半所需周数，越小消亡越快）；∞ 表示序列平稳或首尾对称。');
-    lines.push('> 形态列区分首尾对称的两种情况：尖峰与首端异常仍判一次性事件，平稳序列才看方向。');
+    lines.push('> 计数为源归一化后的折算值（每源折算为篇/周，域内取中位数），不是原始条目数。');
+    lines.push('> 倍增/半衰期列语义随方向变化：上升时是倍增周期（越小增长越快），');
+    lines.push('> 衰减时是半衰期（越小消亡越快）；∞ 表示序列平稳或首尾对称。');
+    lines.push('> 「归一化前判定」列标注不同时，说明该域趋势主要由采集窗口差异造成，不是真实信号变化。');
     lines.push(`> ${tc.note}`);
   }
   lines.push('');

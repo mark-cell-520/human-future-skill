@@ -1,7 +1,7 @@
 {
   "name": "human-future",
-  "version": "2.10.0",
-  "description": "人类未来实时推演操作系统 v2.10 - 重写信号趋势判定，可区分 12 种序列形态",
+  "version": "2.11.0",
+  "description": "人类未来实时推演操作系统 v2.11 - 源归一化消除采集窗口差异造成的假趋势",
   "main": "modules/monitor/signal-collector.js",
   "scripts": {
     "start": "node scripts/run-pipeline.js",
