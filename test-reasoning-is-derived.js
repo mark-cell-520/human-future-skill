@@ -1029,3 +1029,73 @@ c213d('不可证伪的预测不登记进台账', (() => {
     console.log('结论：可结算预测已能自动登记进台账，幂等且不污染不可结算条目。');
   }
 })();
+
+// ════════════════════════════════════════════════════════════════
+// v2.13e 新增断言：台账 id 必须稳定，不随抽取逻辑变化。
+// 实测依据：第一版 id 含 claimSentence 前 40 字符，而 claimSentence 会变——
+// 同一篇 Anthropic 文章一次抽到纯句子，另一次抽到「标题+句子」
+// （抽取改为送 3 句上下文后命中句位置变了）。结果同一条预测产生两个 id，
+// 幂等失效，台账里出现 2 条重复条目（实测 55 条里有 2 条 fc-anthropic）。
+// ════════════════════════════════════════════════════════════════
+const v213e = [];
+function c213e(name, ok, detail) { v213e.push({ name, ok, detail }); }
+
+const fsE = require('fs');
+const LEDGER_E = path.join(__dirname, 'human-future/data/prediction-ledger.json');
+const readLedgerE = () => JSON.parse(fsE.readFileSync(LEDGER_E, 'utf-8')).predictions;
+
+// 同一篇文章，但让 claimSentence 取到不同形态：
+// 形态 A = 纯句子；形态 B = 标题被拼进正文开头（真实踩坑时的形态）
+const mkInstE = (bodyPrefix) => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const inst = new ProjectionEngine({});
+  inst.signals = { items: [{
+    title: 'Self Replicating Ai',
+    body: bodyPrefix + 'If small models improve at their historical rate, '
+      + 'they\u2019ll match this capability level by the end of this year. '
+      + 'The solid line is the least-squares fit over the best models in-class at each date, '
+      + 'with a gain of 13.7 ECI per year (R 2 of 0.95).',
+    description: '', source: 'Anthropic News (sitemap)', category: 'frontier_models',
+    pubDate: 'Tue, 13 Oct 2026 00:44:16 GMT',
+  }] };
+  return inst;
+};
+
+c213e('同一预测在不同抽取形态下产生同一台账 id', (() => {
+  const rA = mkInstE('').buildForecastDiscrimination();
+  const rB = mkInstE('Self Replicating Ai ').buildForecastDiscrimination();
+  const idA = (rA.ledgerRegistration.registered[0] || rA.ledgerRegistration.skipped[0] || {}).id;
+  const idB = (rB.ledgerRegistration.registered[0] || rB.ledgerRegistration.skipped[0] || {}).id;
+  return !!idA && idA === idB;
+})(), '两种 claimSentence 形态应得到同一 id（幂等不失效）');
+
+c213e('台账里同一条预测不出现重复条目', (() => {
+  const fc = readLedgerE().filter(p => /^fc-anthropic/.test(p.id));
+  const ids = fc.map(p => p.id);
+  return ids.length === new Set(ids).size && fc.length <= 1;
+})(), '同一来源+日期+结算点的预测只允许 1 条');
+
+c213e('id 不含会变化的 claim 文本', (() => {
+  const src = fsE.readFileSync(path.join(__dirname, 'scripts/project-future.js'), 'utf-8');
+  // id 构造行不得引用 claimSentence / text
+  const idLine = src.split('\n').find(l => /const id = `fc-/.test(l));
+  const idBlock = src.slice(src.indexOf('const id = `fc-'), src.indexOf('const id = `fc-') + 400);
+  return !!idLine && !/claimSentence/.test(idBlock) && !/r\.text/.test(idBlock);
+})(), 'id 只能用来源+日期+结算点等稳定字段');
+
+(async () => {
+  const results = await Promise.all(v213e.map(c => Promise.resolve(c.ok)));
+  let f = 0;
+  v213e.forEach((c, i) => {
+    const ok = results[i];
+    if (!ok) f++;
+    console.log(`${ok ? '✓' : '✗'} ${c.name}${ok ? '' : '  —— ' + c.detail}`);
+  });
+  console.log(`\nv2.13e: ${v213e.length - f} 通过, ${f} 失败, 共 ${v213e.length} 个`);
+  if (f > 0) {
+    console.log('结论：台账 id 仍不稳定，幂等会失效。');
+    process.exitCode = 1;
+  } else {
+    console.log('结论：台账 id 稳定，同一条预测不会重复登记。');
+  }
+})();

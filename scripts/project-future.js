@@ -1229,9 +1229,20 @@ class ProjectionEngine {
     const skipped = [];
     for (const r of (res.results || [])) {
       if (!r.settleable) continue;
+      // [v2.13] id 只用**稳定字段**：来源 + 发布日期 + 结算点。
+      //
+      // 实测踩坑：第一版 id 里含 claimSentence 前 40 字符，但 claimSentence
+      // 会变——同一篇 Anthropic 文章，一次抽到纯句子
+      // "If small models improve..."，另一次抽到 "Self Replicating Ai If small
+      // models improve..."（标题被拼进来，因为抽取改为送 3 句上下文后
+      // 命中句位置变了）。结果同一条预测产生两个 id，幂等失效，
+      // 台账里出现 2 条重复条目。
+      //
+      // 规律：id 绝不能含会随抽取逻辑变化的文本。来源+日期+结算点
+      // 三者组合足以定位「某来源在某日发布的、在某时点结算的那条预测」。
       const id = `fc-${(r.source || 'unknown').replace(/[^a-z0-9]+/gi, '-').toLowerCase()}`
         + `-${(r.date || '').replace(/[^0-9]/g, '').slice(0, 8) || 'nodate'}`
-        + `-${(r.claimSentence || r.text || '').slice(0, 40).replace(/[^a-z0-9]+/gi, '-').toLowerCase()}`;
+        + `-${(r.dueOn || 'nodue').replace(/[^a-z0-9]+/gi, '-').toLowerCase()}`;
       const dueDate = r.dueOn && /^\d{4}-Q([1-4])$/.test(r.dueOn)
         ? `${r.dueOn.slice(0, 4)}-${['03-31', '06-30', '09-30', '12-31'][Number(r.dueOn.slice(-1)) - 1]}`
         : (r.dueOn || null);
