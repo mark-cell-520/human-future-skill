@@ -1,7 +1,7 @@
 {
   "name": "human-future",
-  "version": "2.6.0",
-  "description": "人类未来实时推演操作系统 v2.6 - 推演结构按真实数据推导，配可重跑测试",
+  "version": "2.7.0",
+  "description": "人类未来实时推演操作系统 v2.7 - 新增专项大模型采集与推演域，配可重跑测试",
   "main": "modules/monitor/signal-collector.js",
   "scripts": {
     "start": "node scripts/run-pipeline.js",

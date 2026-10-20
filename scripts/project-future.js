@@ -46,7 +46,20 @@ const { gate: lowConfidenceGate } = require(path.join(HF, 'low-confidence-gate.j
 const predictionLedger = require(path.join(HF, 'prediction-ledger.js'));
 
 /** 主题域定义：关键词命中即归入该域。顺序即优先级。 */
+// [v2.7 新增] frontier_models「专项大模型」：
+// 用户要求专项跟踪「大模型的趋势和最新进展」。放在最前是因为它的关键词
+// 最宽（openai/anthropic/gemini/gpt/claude…），若排在 ai_capability 之后，
+// 同一条新闻会被算作「AI 能力边界」而漏进专项域；且原 ai_capability 的关键词
+// 已含 gpt/gemini/claude，重复命中会让两个域拿到同一批条目、专项域失去意义。
+// 顺序优先 = 该条同时命中时算专项域。project-future 的多域命中逻辑仍会保留
+// 其他域的命中，不会丢信号。
 const DOMAINS = [
+  { id: 'frontier_models', name: '专项大模型',
+    kw: ['openai', 'gpt-5', 'gpt-6', 'chatgpt', 'o1', 'o3', 'sora', 'anthropic',
+      'claude', 'gemini', 'deepmind', 'gemma', 'llama', 'meta ai', 'qwen',
+      'deepseek', 'mistral', 'grok', 'kimi', 'moonshot', 'glm', 'ernie', 'minimax',
+      'frontier model', 'foundation model', 'pretraining', 'scaling law',
+      'context window', 'benchmark', 'mmlu', 'swe-bench', 'lmsys', 'chatbot arena'] },
   { id: 'ai_capability', name: 'AI 能力边界',
     kw: ['agi', 'llm', 'model', 'gpt', 'claude', 'gemini', 'qwen', 'reasoning', 'agent', 'inference', 'frontier', 'openai', 'anthropic', 'deepmind'] },
   { id: 'ai_safety', name: 'AI 安全与对齐',
@@ -190,6 +203,7 @@ class ProjectionEngine {
       report.timelineConflicts = this.buildTimelineConflicts();
       report.sourceAdjudication = this.buildSourceAdjudication();
       report.claimMismatches = this.buildClaimMismatches();
+      report.frontierModelSection = this.buildFrontierModelSection();
       report.formulaAssessment = this.buildFormulaAssessment();
       report.lowConfidenceGate = this.applyLowConfidenceGate(report);
       report.ledgerStatus = this.getLedgerStatus();
@@ -213,8 +227,13 @@ class ProjectionEngine {
     }
     // 本引擎域 id → cross-domain-conduction 的域 id。
     // 不映射的话 CONDUCTION 规则一条都匹配不上，因果链必然为空。
+    // [v2.7] frontier_models 与 ai_capability/ai_safety 一样映射到 'ai'：
+    // 专项大模型的进展在传导表里就是 ai 域的输入，不新增传导域。
+    // 副作用：当专项大模型与 AI 能力边界同时进 top5 时，used 只有 1 个 key
+    // （都映射到 ai），因果链返回「映射后仅 1 个域」而不画图——这是真实
+    // 状态（两个域在传导表里是同一个节点），如实报告，不为了出图而拆假域。
     const MAP = {
-      ai_capability: 'ai', ai_safety: 'ai', compute_energy: 'energy',
+      ai_capability: 'ai', ai_safety: 'ai', frontier_models: 'ai', compute_energy: 'energy',
       neuro_bci: 'neuro', biotech_longevity: 'genomics',
       robotics_auto: 'robotics', space: 'space', governance: 'ai',
     };
@@ -680,6 +699,82 @@ class ProjectionEngine {
   }
 
   // ───────────────────────────────────────────────────────────────
+  // [v2.7 新增] 专项大模型趋势段：把 frontier_models 域的信号整理成
+  // 「来源分布 + 最新进展倒序 + 周度节奏」三块，直接回答用户要求的
+  // 「专项大模型的趋势和最新进展」。
+  //
+  // 诚实性约束：
+  //   - 只输出 origin=live / live-search 的真实条目，不带 knowledge-base
+  //   - 不判断哪个模型更强（那是能力评测，不是本引擎的职责）
+  //   - 发布日期一律原样给出，不做「今天发布」的伪装
+  // ───────────────────────────────────────────────────────────────
+  buildFrontierModelSection() {
+    const d = this.signals.domains.find(x => x.id === 'frontier_models');
+    const note = '本节只做信号整理与节奏统计，不评判模型能力高低；'
+      + '发布日期为来源标注的原值，超过 24 小时的条目不代表近期发生。';
+    if (!d || d.count === 0) {
+      return {
+        available: false,
+        reason: '本期未采集到 frontier_models 域的 live 信号',
+        note,
+      };
+    }
+
+    const parsed = d.items
+      .map(it => ({ it, t: Date.parse(it.pubDate) }))
+      .filter(x => !isNaN(x.t))
+      .sort((a, b) => b.t - a.t);
+    const allDates = parsed.map(x => x.t);
+    const dateRange = allDates.length
+      ? {
+          from: new Date(Math.min(...allDates)).toISOString().slice(0, 10),
+          to: new Date(Math.max(...allDates)).toISOString().slice(0, 10),
+        }
+      : { from: '(无日期)', to: '(无日期)' };
+    const now = Date.now();
+    const recent30d = parsed.filter(x => now - x.t <= 30 * 86400000).length;
+
+    const bySrc = new Map();
+    for (const { it } of parsed) {
+      const s = it.source || '(未标注)';
+      if (!bySrc.has(s)) bySrc.set(s, { source: s, count: 0, latest: '' });
+      const e = bySrc.get(s);
+      e.count++;
+      if (!e.latest) e.latest = it.pubDate ? it.pubDate.slice(0, 16) : '';
+    }
+    const sourceBreakdown = [...bySrc.values()].sort((a, b) => b.count - a.count);
+
+    // 周度节奏：按 ISO 周聚合条目数，回答「这个域最近是不是在加速」
+    const byWeek = new Map();
+    for (const { t } of parsed) {
+      const dt = new Date(t);
+      const week = `${dt.getUTCFullYear()}-W${String(Math.ceil(((t - new Date(dt.getUTCFullYear(), 0, 1)) / 86400000 + 1) / 7)).padStart(2, '0')}`;
+      byWeek.set(week, (byWeek.get(week) || 0) + 1);
+    }
+    const series = [...byWeek.entries()]
+      .sort((a, b) => b[0].localeCompare(a[0]))
+      .slice(0, 8)
+      .map(([week, count]) => ({ week, count }));
+
+    return {
+      available: true,
+      total: d.count,
+      distinctSources: bySrc.size,
+      dateRange,
+      recent30d,
+      sourceBreakdown,
+      latestItems: parsed.slice(0, 12).map(({ it }) => ({
+        title: it.title.slice(0, 160),
+        source: it.source || '(未标注)',
+        date: it.pubDate ? it.pubDate.slice(0, 16) : '(未标注)',
+        link: it.link,
+      })),
+      series,
+      note,
+    };
+  }
+
+  // ───────────────────────────────────────────────────────────────
   // 风险：只从"安全/治理/隐私"类域的真实信号推导
   // ───────────────────────────────────────────────────────────────
   assessRisks() {
@@ -870,6 +965,40 @@ function formatReport(report) {
   for (const t of report.turningPoints) {
     lines.push(`- **${t.year}** [${t.type}] ${t.event}`);
     lines.push(`  - 影响: ${t.impact} | 推导概率: ${t.probability} | 来源: ${t.evidence.source}`);
+  }
+  lines.push('');
+
+  lines.push('## 专项大模型趋势与最新进展');
+  lines.push('');
+  const fm = report.frontierModelSection;
+  if (!fm || !fm.available) {
+    lines.push(`（${(fm && fm.reason) || '未运行'}）`);
+    lines.push('');
+    lines.push(`> ${(fm && fm.note) || ''}`);
+  } else {
+    lines.push(`本期专项大模型域共 ${fm.total} 条 live 信号，来自 ${fm.distinctSources} 个独立来源。`);
+    lines.push(`时间跨度：${fm.dateRange.from} ~ ${fm.dateRange.to}；其中 ${fm.recent30d} 条在近 30 天内。`);
+    lines.push('');
+    lines.push('**厂商/来源分布**:');
+    for (const s of fm.sourceBreakdown) {
+      lines.push(`- ${s.source}: ${s.count} 条${s.latest ? `（最新 ${s.latest}）` : ''}`);
+    }
+    lines.push('');
+    lines.push('**最新进展（按发布时间倒序，前 12 条）**:');
+    for (const it of fm.latestItems) {
+      lines.push(`- ${it.date} | ${it.title}`);
+      lines.push(`  来源: ${it.source} | ${it.link}`);
+    }
+    lines.push('');
+    if (fm.series.length) {
+      lines.push('**周度发布节奏**:');
+      lines.push('');
+      lines.push('| 周 | 条目数 |');
+      lines.push('|---|---|');
+      for (const w of fm.series) lines.push(`| ${w.week} | ${w.count} |`);
+      lines.push('');
+      lines.push(`> ${fm.note}`);
+    }
   }
   lines.push('');
 

@@ -24,6 +24,15 @@ const path = require('path');
 
 // 九大域的 RSS 源。用户关心的推演域：AI 智能体安全与监管 / 诺贝尔奖 / 脑机接口 /
 // 基因编辑 / 长寿衰老逆转 / 量子计算 / 人形机器人 / AI 能源与电网 / 太空探索
+//
+// [v2.7 新增] frontier_models「专项大模型」域：
+//   用户 2026-10-20 要求「增加一个专项大模型的趋势和最新进展」。原采集源里
+//   没有任何一家模型厂商的一手源，导致大模型方向的信号只能从二手科技媒体
+//   转述里捡，且型号更新（GPT/Gemini/Claude/开源家族）几乎必然滞后。
+//   本域 9 个源全部经过实测可达（8 秒超时内全部返回 200 且有 item/entry），
+//   每源最多取 8 条，防止 OpenAI 那种 1300 条的历史 feed 把候选池撑爆。
+//   厂商一手源 + 两家分析型 newsletter（Interconnects / Understanding AI /
+//   Transformer News）覆盖「官方发布」与「业界解读」两侧。
 const RSS_SOURCES = {
   tech: [
     { name: 'MIT Tech Review - AI', url: 'https://www.technologyreview.com/topic/artificial-intelligence/feed' },
@@ -32,6 +41,17 @@ const RSS_SOURCES = {
   humanities: [
     { name: 'Nature News', url: 'https://www.nature.com/nature.rss' },
   ],
+  frontier_models: [
+    { name: 'OpenAI News', url: 'https://openai.com/news/rss.xml' },
+    { name: 'Google DeepMind Blog', url: 'https://deepmind.google/blog/rss.xml' },
+    { name: 'Microsoft Research Blog', url: 'https://www.microsoft.com/en-us/research/feed/' },
+    { name: 'NVIDIA Blog', url: 'https://blogs.nvidia.com/feed/' },
+    { name: 'MIT News - AI', url: 'https://news.mit.edu/rss/topic/artificial-intelligence2' },
+    { name: 'Interconnects', url: 'https://www.interconnects.ai/feed' },
+    { name: 'Understanding AI', url: 'https://www.understandingai.org/feed' },
+    { name: 'Transformer News', url: 'https://www.transformernews.ai/feed' },
+    { name: 'Simon Willison', url: 'https://simonwillison.net/atom/everything/' },
+  ],
   psychology: [],
   philosophy: [],
 };
@@ -39,6 +59,7 @@ const RSS_SOURCES = {
 const DOMAIN_NAMES = {
   tech: '科技',
   humanities: '人文',
+  frontier_models: '专项大模型',
   psychology: '心理',
   philosophy: '哲学',
 };
@@ -65,6 +86,7 @@ function loadFromKnowledgeBase() {
   return {
     tech: mk('tech'),
     humanities: mk('humanities'),
+    frontier_models: mk('frontier_models'),
     psychology: mk('psychology'),
     philosophy: mk('philosophy'),
   };
@@ -113,8 +135,16 @@ async function fetchFeed(src) {
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const xml = await res.text();
-    return parseFeed(xml).slice(0, MAX_ITEMS_PER_SOURCE)
-      .map(it => ({ ...it, source: src.name, origin: 'live' }));
+    return {
+      ok: true,
+      items: parseFeed(xml).slice(0, MAX_ITEMS_PER_SOURCE)
+        .map(it => ({ ...it, source: src.name, origin: 'live' })),
+    };
+  } catch (e) {
+    // 不在这里 throw：改成返回 {ok:false}，让 fetchAll 并行收集结果。
+    // 串行版用 try/catch 包裹是因为 await 会中断循环；并行版 Promise.all
+    // 里任何一个 throw 都会让整个采集失败，所以必须把失败收敛成值。
+    return { ok: false, error: e.message, items: [] };
   } finally {
     clearTimeout(timer);
   }
@@ -123,18 +153,25 @@ async function fetchFeed(src) {
 /** 真联网采集。任何源失败只丢该源，不影响其他源；全部失败则由调用方降级 */
 async function fetchAll() {
   const out = {};
+  // 并行抓取：旧版按域串行 await，单源超时 8 秒 × 13 源 = 最坏 104 秒。
+  // 源之间互不依赖，并行后总耗时约等于最慢的那个源。
+  const jobs = [];
   for (const [domain, sources] of Object.entries(RSS_SOURCES)) {
-    const news = [];
-    for (const src of sources) {
-      try {
-        const items = await fetchFeed(src);
-        console.log(`  [live] ${domain}/${src.name}: ${items.length} 条`);
-        news.push(...items);
-      } catch (e) {
-        console.log(`  [WARN] ${domain}/${src.name} 抓取失败: ${e.message}`);
-      }
+    if (!out[domain]) out[domain] = { domain, name: DOMAIN_NAMES[domain], news: [] };
+    for (const src of sources) jobs.push({ domain, src });
+  }
+  const results = await Promise.all(jobs.map(({ domain, src }) => fetchFeed(src)));
+  for (const [i, r] of results.entries()) {
+    const { domain, src } = jobs[i];
+    if (r.ok) {
+      console.log(`  [live] ${domain}/${src.name}: ${r.items.length} 条`);
+      out[domain].news.push(...r.items);
+    } else {
+      console.log(`  [WARN] ${domain}/${src.name} 抓取失败: ${r.error}`);
     }
-    if (news.length) out[domain] = { domain, name: DOMAIN_NAMES[domain], news };
+  }
+  for (const domain of Object.keys(out)) {
+    if (!out[domain].news.length) delete out[domain];
   }
   return out;
 }

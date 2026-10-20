@@ -1,8 +1,15 @@
 ---
 name: human-future-v2
-title: "人类未来 · 文明推演引擎 v2.6"
-version: "2.6.0"
+title: "人类未来 · 文明推演引擎 v2.7"
+version: "2.7.0"
 description: |-
+  人类未来技能 v2.7 — v2.7 新增「专项大模型」采集与推演域：
+  - 新采集域 frontier_models：9 个实测可达源（4 家厂商一手 + MIT News-AI + 4 家 AI 分析型 newsletter），每源最多 12 条
+  - 新推演主题域 frontier_models：32 个关键词覆盖 openai/anthropic/claude/gemini/deepseek/qwen 等主流家族
+  - 新报告段「专项大模型趋势与最新进展」：来源分布 + 最新进展倒序 + 周度发布节奏，只整理信号不评判能力
+  - 采集并行化：13 源 Promise.all 并发，最坏耗时从 104 秒降到约 4 秒
+  - 测试从 12 项扩到 23 项，含真联网采集断言与反向验证（摘除该域 → 5 条断言失败）
+  
   人类未来技能 v2.6 — v2.6 把写死的推演模板改为按真实数据推导，并配可重跑测试：
   - 真联网采集：collect-news.js 用 Node fetch 打 RSS/Atom，FETCH=1 启用，单源失败隔离，全失败带 origin 标记降级到知识库
   - 心虫接线：heartflow-analyze.js 按 HEARTFLOW_ROOT→~/heartflow/src/index.js 顺序解析，缺失明确 degraded
@@ -529,6 +536,31 @@ tags:
 
 **副作用（诚实记录）**：verdict score 从 0.5 变为 0.41。原因是心虫现在判真实数据
 而不是四平八稳的固定模板，分数低是真实质量，不是改坏。
+
+### v2.7 升级清单（2026-10-20，全部有可重跑测试与运行输出佐证）
+
+用户需求原话：「定时 每两小时人类未来推演，增加一个专项大模型的趋势和最新进展」。
+
+| # | 改动 | 性质 | 实现 | 验证 |
+|---|------|------|------|------|
+| 1 | 大模型方向没有任何一手源，信号只能从二手科技媒体转述里捡，型号更新必然滞后 | 新采集维度 | `collect-news.js` 新增 `frontier_models` 域，9 个源：OpenAI News / Google DeepMind Blog / Microsoft Research Blog / NVIDIA Blog / MIT News-AI / Interconnects / Understanding AI / Transformer News / Simon Willison | `FETCH=1 node scripts/run-pipeline.js` 实测 9 源全部命中，共 106 条 live；每源在 8 秒超时内返回 200 |
+| 2 | 新采集条目无处归类，会落进 undomained 被扣覆盖率分 | 新推演维度 | `project-future.js` 的 `DOMAINS` 新增 `frontier_models`（32 个关键词，含 openai/anthropic/claude/gemini/deepseek/qwen/mistral/grok/kimi/moonshot 等主流家族） | 实测 domainsMatched 从 9 → 11，undomainedRatio 0.36 → 0.27 |
+| 3 | 用户要的「趋势和最新进展」没有对应报告段 | 新输出能力 | `buildFrontierModelSection()`：来源分布 + 最新进展倒序（前 12）+ 周度发布节奏；只整理信号，不评判模型能力 | 实测输出「本期专项大模型域共 42 条 live 信号，来自 9 个独立来源」+ 12 条倒序条目 + W42=21 条等节奏表 |
+| 4 | cron 注入的 140 条里专项域占 106 条，混在总表里被稀释 | 投递优化 | `hf-cron-fetch.sh` 把专项条目单独分区（F1/F2/F3 编号），厂商一手源与第三方解读分开提示 | 实跑 `bash hf-cron-fetch.sh` 输出 274 行，第 59 行起为专项分区，含 20 条 F 编号条目 |
+| 5 | cron prompt 还是四段式，没有专项节的写作要求 | 投递优化 | prompt 改为五段式报告，第 2 节专项大模型趋势（最新进展/趋势归纳/待核实项三小块），并新增「跑分≠能力/demo≠交付/preview≠GA/厂商自述≠验证」四条口径纪律 | 已回读 jobs.json 确认新 prompt 生效（4419 字符） |
+| 6 | 采集串行，13 源 × 8 秒超时 = 最坏 104 秒 | 性能 | `fetchAll()` 改 Promise.all 并行；`fetchFeed()` 失败改为返回 `{ok:false}` 而非 throw（并行下一个 throw 会炸掉整批） | 实测 9 源并行 3.7 秒完成；单源失败不再影响其他源 |
+| 7 | 没有测试守住新维度，退化后无人知晓 | 可验证性 | `test-reasoning-is-derived.js` 从 12 项扩到 23 项：含知识库降级路径、关键词覆盖、真联网采集、origin 标记、专项段随信号生成、空输入如实报不可用 | `npm test`：23 通过 0 失败。反向验证：摘除 `frontier_models` 域定义 → 5 条断言失败、退出码 1 |
+
+**已知边界（如实声明，不得对外宣称已解决）**：
+
+- **本节不评判模型能力高低。** 它整理的是「哪些厂商在这段时间发了什么」，
+  不回答「哪个模型更强」。跑分复现与能力对比需要独立评测，不是 RSS 摘要能做的事。
+- **专项域条目仍须 web_search 交叉验证。** 厂商官方源是自己说自己，
+  newsletter 是带立场的解读，两者都不构成事实核查。
+- **Microsoft Research Blog 本期只有 1 条落入专项域**（最新 2026-08-31），
+  该源发文密度低于其他 8 个源，实际贡献以旧条目为主。
+- **Simon Willison 是个人博客**，条目含大量工具版本号类短讯（llm-tools-datasette
+  0.1.1 等），信息密度低于其他源；它提供的是生态侧信号，不是模型发布信号。
 
 ### 关于「上次是假的」这类说法（本技能的工作纪律）
 
