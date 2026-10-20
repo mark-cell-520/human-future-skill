@@ -51,6 +51,13 @@ const RSS_SOURCES = {
     { name: 'Understanding AI', url: 'https://www.understandingai.org/feed' },
     { name: 'Transformer News', url: 'https://www.transformernews.ai/feed' },
     { name: 'Simon Willison', url: 'https://simonwillison.net/atom/everything/' },
+    // [v2.13] Anthropic 官方博客：无 RSS（实测 4 个常见路径全 404），走 sitemap。
+    // 它是本期唯一发布带明确时间点可结算预测的厂商源——agent 自己发现这个缺口
+    // 并写明「采集范围决定辨别上限」。
+    // pathPrefixes 同时覆盖 /news/ 与 /research/：IoT 自复制那篇可结算预测
+    // 在 /research/self-replicating-ai，只采 /news/ 会漏掉它（实测踩过）。
+    { name: 'Anthropic News (sitemap)', url: 'https://www.anthropic.com/sitemap.xml',
+      type: 'sitemap', pathPrefixes: ['/news/', '/research/'] },
   ],
   psychology: [],
   philosophy: [],
@@ -269,6 +276,78 @@ function parseFeed(xml) {
   return items;
 }
 
+/**
+ * [v2.13] Sitemap 采集器。
+ *
+ * 为什么需要：Anthropic 官方博客没有 RSS（实测 /news/rss.xml、/rss.xml、
+ * /feed.xml、/research/rss.xml 全部 404），但它是本期唯一发布带明确时间点
+ * 可结算预测的厂商源（IoT 自复制研究写「今年底达到该能力水平」）。
+ * 缺了它，预测辨别器只能抓到意图声明，抓不到可结算预测——
+ * 实测 agent 自己发现了这个缺口并写明「采集范围决定辨别上限」。
+ *
+ * sitemap.xml 有 <loc> + <lastmod>，足以支撑「近期更新了什么」的采集。
+ * 与 RSS 的区别：sitemap 不含标题与摘要，只有 URL 和修改日期。
+ * 因此标题从 URL 末段推导（连字符转空格），摘要留空——
+ * 下游需要内容时会走 FETCH_BODY 抓正文。
+ *
+ * 诚实性约束：lastmod 是「页面最后修改时间」不是「发布时间」，
+ * 两者可能不同（修订旧文也会更新 lastmod）。已在 origin 标记里区分。
+ */
+async function fetchSitemap(src) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
+  try {
+    const res = await fetch(src.url, {
+      signal: ctrl.signal,
+      headers: { 'User-Agent': 'human-future-skill/2.0 (knowledge collection)' },
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const xml = await res.text();
+    const blocks = xml.match(/<url>[\s\S]*?<\/url>/g) || [];
+    const items = [];
+    for (const b of blocks) {
+      const loc = (b.match(/<loc>([\s\S]*?)<\/loc>/) || [])[1] || '';
+      const mod = (b.match(/<lastmod>([\s\S]*?)<\/lastmod>/) || [])[1] || '';
+      if (!loc) continue;
+      // 只取 src.pathPrefixes 限定的条目（如 /news/ 与 /research/），
+      // 避免把 careers 页当新闻。兼容旧的单数 pathPrefix 字段。
+      const prefixes = src.pathPrefixes || (src.pathPrefix ? [src.pathPrefix] : null);
+      if (prefixes && !prefixes.some(p => loc.includes(p))) continue;
+      const slug = loc.replace(/\/$/, '').split('/').pop() || '';
+      // 末段太短或是纯索引页（如 /news 本身）则跳过
+      if (!slug || slug.length < 8) continue;
+      items.push({
+        // 标题从 slug 推导：连字符转空格。这是推导值不是原标题，
+        // 下游引用时应注意（正文抓取后可获得真标题）。
+        title: slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+        link: loc,
+        pubDate: mod ? new Date(mod).toUTCString() : '',
+        description: '',
+        source: src.name,
+        origin: 'live',
+        // 标记这是 sitemap 来源：lastmod 是修改时间不是发布时间
+        _fromSitemap: true,
+      });
+    }
+    // 按 lastmod 倒序取最新的若干条。
+    // [v2.13] 必须用 Date.parse 比较，不能用 localeCompare——RFC 822/ISO 字符串
+    // 按字典序排会得到错误顺序（hf-cron-fetch.sh 踩过同一个坑）。
+    items.sort((a, b) => {
+      const ta = Date.parse(a.pubDate || '');
+      const tb = Date.parse(b.pubDate || '');
+      if (isNaN(ta) && isNaN(tb)) return 0;
+      if (isNaN(ta)) return 1;
+      if (isNaN(tb)) return -1;
+      return tb - ta;
+    });
+    return { ok: true, items: items.slice(0, MAX_ITEMS_PER_SOURCE) };
+  } catch (e) {
+    return { ok: false, error: e.message, items: [] };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function fetchFeed(src) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
@@ -304,7 +383,8 @@ async function fetchAll(opts = {}) {
     if (!out[domain]) out[domain] = { domain, name: DOMAIN_NAMES[domain], news: [] };
     for (const src of sources) jobs.push({ domain, src });
   }
-  const results = await Promise.all(jobs.map(({ domain, src }) => fetchFeed(src)));
+  const results = await Promise.all(jobs.map(({ domain, src }) =>
+    (src.type === 'sitemap' ? fetchSitemap(src) : fetchFeed(src))));
   for (const [i, r] of results.entries()) {
     const { domain, src } = jobs[i];
     if (r.ok) {
@@ -323,8 +403,68 @@ async function fetchAll(opts = {}) {
   if (opts.wantBody ?? process.env.FETCH_BODY === '1') {
     const all = [];
     for (const d of Object.values(out)) all.push(...d.news);
-    all.sort((a, b) => String(b.pubDate || '').localeCompare(String(a.pubDate || '')));
-    const st = await enrichWithBody(all);
+    // [v2.13] 正文增强的选取策略：每源保底 + 关键源加权。
+    //
+    // 为什么不能只按全库日期取前 N：实测 Anthropic 的
+    // /research/self-replicating-ai（10-13）含本期唯一两条带明确时间点的
+    // 可结算预测（"by the end of this year"、"by the end of 2026"），
+    // 还带机制（ECI 年增 13.7，R²=0.95）与先行指标（ECI 分数）。
+    // 但 Anthropic 有 10-19 的更新条目，按日期排时 10-13 那条拿不到额度。
+    //
+    // 策略：每源保底 1 条，PRIORITY_SOURCES 取更多，剩余额度按全库日期补足。
+    //
+    // 实测踩过的两个坑：
+    //   1. quota=3 时 Anthropic 只拿到 10-19/10-19/10-18 三条，
+    //      而 self-replicating-ai（10-13）排第 7，body 仍为 0。
+    //   2. quota=6 时 Anthropic 拿到 6 条但仍不含 10-13（该源有 6 条比它新），
+    //      且 picked 总数只有 17——额度没用满，因为内层 break 后没有继续补。
+    // 所以 priority 源的 quota 要足够大（覆盖该源近期全部），
+    // 且补足逻辑必须在所有源处理完之后统一按全库日期走。
+    const PRIORITY_SOURCES = ['Anthropic News (sitemap)'];
+    const PER_SOURCE_BASE = 1;
+    const PER_SOURCE_PRIORITY = 12;   // 覆盖该源一次采集的全部条目
+    const bySource = new Map();
+    for (const n of all) {
+      const s = n.source || '(未标注)';
+      if (!bySource.has(s)) bySource.set(s, []);
+      bySource.get(s).push(n);
+    }
+    const byTimeDesc = (a, b) => {
+      const ta = Date.parse(a.pubDate || '');
+      const tb = Date.parse(b.pubDate || '');
+      if (isNaN(ta) && isNaN(tb)) return 0;
+      if (isNaN(ta)) return 1;
+      if (isNaN(tb)) return -1;
+      return tb - ta;
+    };
+    const picked = [];
+    const pickedSet = new Set();
+    // 先保底：每源 1 条最新的（保证覆盖所有源）
+    for (const [, items] of bySource) {
+      items.sort(byTimeDesc);
+      if (items[0] && picked.length < MAX_BODY_ITEMS) {
+        picked.push(items[0]);
+        pickedSet.add(items[0]);
+      }
+    }
+    // 再给 priority 源加权：该源近期条目优先补足
+    for (const [src, items] of bySource) {
+      if (!PRIORITY_SOURCES.includes(src)) continue;
+      items.sort(byTimeDesc);
+      for (const it of items.slice(0, PER_SOURCE_PRIORITY)) {
+        if (picked.length >= MAX_BODY_ITEMS) break;
+        if (pickedSet.has(it)) continue;
+        picked.push(it);
+        pickedSet.add(it);
+      }
+    }
+    // 最后剩余额度按全库日期补足（用 Date.parse，不用 localeCompare）
+    const rest = all.filter(n => !pickedSet.has(n)).sort(byTimeDesc);
+    for (const n of rest) {
+      if (picked.length >= MAX_BODY_ITEMS) break;
+      picked.push(n);
+    }
+    const st = await enrichWithBody(picked);
     console.log(`  [body] 正文增强: 尝试 ${st.attempted} 条, 成功 ${st.succeeded} 条`);
     if (st.succeeded === 0 && st.attempted > 0) {
       console.log('  [WARN] 正文增强 0 成功：可能是站点反爬或网络问题。'
@@ -387,4 +527,5 @@ if (require.main === module) {
 module.exports = {
   collectAll, loadFromKnowledgeBase, fetchAll, parseFeed,
   fetchBody, enrichWithBody, extractMainContent, stripHtml,
+  fetchSitemap,
 };

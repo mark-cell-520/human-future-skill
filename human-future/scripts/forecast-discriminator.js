@@ -52,7 +52,11 @@ const DEFAULT_BASE_RATES = {
 
 /** 不可证伪的措辞模式：无主体、无时点、或纯价值判断。 */
 const UNFALSIFIABLE_PATTERNS = [
-  { id: 'no-timeline', test: (t) => !/(20\d{2}|明年|未来|个月内|年内|季度|Q[1-4]|H[12]|soon|by \d|within \d)/i.test(t),
+  // [v2.13] no-timeline 必须同时认**相对时间**。
+  // 实测踩坑：Anthropic 的 "by the end of this year" 不含 20xx，
+  // 旧正则不认它，导致这条有明确结算点的预测被误判「无时间点」。
+  // 相对时间词与 project-future.js 的 TIME_POINT 保持一致。
+  { id: 'no-timeline', test: (t) => !/(20\d{2}|明年|后年|未来|个月内|年内|季度|Q[1-4]|H[12]|soon|by \d|within \d|this\s+year|end\s+of\s+(?:this\s+)?year|year[\s-]end|年底|今年|明年初|年底前|next\s+(?:year|quarter|month)|下季度|下个月)/i.test(t),
     label: '无时间点（意图声明，非可结算预测）', guidance: '没有时点的前瞻表述是意图或愿景，无法结算，只能算观点。' },
   { id: 'vague-subject', test: (t) => /(AI|技术|社会|世界|行业|我们|人们|大家)\s*(会|将|可能|应该|需要)/.test(t)
     && !/(OpenAI|Google|Anthropic|Meta|Microsoft|NVIDIA|DeepSeek|阿里|字节|腾讯|百度|某公司|该公司|厂商)/.test(t),
@@ -68,11 +72,21 @@ const UNFALSIFIABLE_PATTERNS = [
 /** 推理有效性的检查项：给出机制 / 先行指标 / 反例条件。 */
 const REASONING_CHECKS = [
   { id: 'has-mechanism', label: '给出机制（为什么）',
-    test: (t) => /(因为|由于|基于|得益于|驱动|导致|源于|because|due to|driven by|owing to)/i.test(t) },
+    // [v2.13] 补上**量化趋势外推**这一形态。
+    // 实测踩坑：Anthropic 的机制是
+    //   "improve at their historical rate" + "least-squares fit" +
+    //   "a gain of 13.7 ECI per year (R 2 of 0.95)"
+    // 这是「历史速率外推 + 回归拟合 + 量化斜率」，是比因果连接词更强的机制，
+    // 但旧判据只认 because/due to/driven by，导致推理分 0/3——
+    // 明明有 R²=0.95 的拟合却判「无机制」。
+    test: (t) => /(因为|由于|基于|得益于|驱动|导致|源于|because|due to|driven by|owing to|historical\s+rate|trend\s+line|least[\s-]squares|regression|per\s+year|annual\s+(?:gain|growth|rate)|年增|年均|趋势线|回归|历史速率|拟合|R\s*[²2]|R-squared)/i.test(t) },
   { id: 'has-leading-indicator', label: '给出先行指标（怎么提前知道）',
-    test: (t) => /(指标|信号|观察|监测|先行|领先|若.*则|当.*时|indicator|signal|watch for|if .* then)/i.test(t) },
+    // 同上：ECI 分数就是先行指标，但旧判据不认「指标名 + 数值」这种形态。
+    test: (t) => /(指标|信号|观察|监测|先行|领先|若.*则|当.*时|indicator|signal|watch for|if .* then|ECI|benchmark|score\s+of|index\s+of|capabilit(?:y|ies)\s+(?:level|floor|ceiling)|floor|ceiling|分数|得分|基准线|能力线)/i.test(t) },
   { id: 'has-counterfactual', label: '承认反例条件（什么情况下我错）',
-    test: (t) => /(除非|如果不|反之|否则|失败|未达|低于|高于|unless|if not|otherwise|fails? to)/i.test(t) },
+    // 同上：条件式预测（"If X, they'll Y"）本身就是反例条件——
+    // X 不成立则预测不成立。旧判据只认 unless/otherwise/fails to。
+    test: (t) => /(除非|如果不|反之|否则|失败|未达|低于|高于|unless|if not|otherwise|fails? to|if\s+\w+.*,\s*(?:they|it|we|the)\s*(?:'ll|will|would)|若.*则|如果.*就)/i.test(t) },
 ];
 
 /**
@@ -92,20 +106,66 @@ function discriminate(claim, opts = {}) {
     .map(p => ({ id: p.id, label: p.label, guidance: p.guidance }));
 
   // 抽取显式时间点（用于结算日）
-  const timeMatch = text.match(/(20\d{2})(?:-Q([1-4])|-H([12])|-(\d{2}))?/)
+  //
+  // [v2.13] 必须同时覆盖**相对时间**。实测踩坑：Anthropic 的
+  // "they'll match this capability level by the end of this year"
+  // 用的是 `end of this year`——不含 20xx，旧正则只认绝对年份和「N 个月」，
+  // 导致这条质量最高的可结算预测 dueOn=null、settleable=false。
+  //
+  // 相对时间以 claim.date 为基准解析（claim.date 是信号发布日）。
+  // 解析不出基准日期时退回当前日期，并在 note 里说明基准来源。
+  const baseDate = (() => {
+    const t = claim.date ? Date.parse(claim.date) : NaN;
+    return isNaN(t) ? new Date() : new Date(t);
+  })();
+  const baseYear = baseDate.getUTCFullYear();
+  const RELATIVE = [
+    { re: /end\s+of\s+(?:this\s+)?year|year[\s-]end|年底|年底前/i, due: () => `${baseYear}-Q4` },
+    { re: /(?:early|start|beginning)\s+of\s+(?:next\s+)?year|明年初|年初/i, due: () => `${baseYear + 1}-Q1` },
+    { re: /next\s+year|明年|后年/i, due: () => `${baseYear + 1}-Q4` },
+    { re: /this\s+year|今年|年内/i, due: () => `${baseYear}-Q4` },
+    { re: /next\s+quarter|下季度|下一季度/i, due: () => `${baseYear}-Q${((baseDate.getUTCMonth() / 3 | 0) + 2 > 4 ? 1 : (baseDate.getUTCMonth() / 3 | 0) + 2)}` },
+    { re: /next\s+month|下个月|下月/i, due: () => {
+      const d = new Date(baseDate); d.setUTCMonth(d.getUTCMonth() + 1);
+      return d.toISOString().slice(0, 10);
+    } },
+  ];
+  let timeMatch = text.match(/(20\d{2})(?:-Q([1-4])|-H([12])|-(\d{2}))?/)
     || text.match(/(\d+)\s*(?:个月|月内|months?)/i);
   let dueOn = null;
+  let dueBasis = null;
+  // [v2.13] 年份合理性校验。
+  // 实测踩坑：NVIDIA 那条正文里有 "2,000" 这类数字，被 (20\d{2}) 误配成
+  // 年份 2000，产出 dueOn=2000-Q4——一个 26 年前的结算点，荒谬。
+  // 规则：绝对年份必须落在 [发布年, 发布年+15] 区间内，否则视为误配，
+  // 继续尝试相对时间。
+  const YEAR_MIN = baseYear;
+  const YEAR_MAX = baseYear + 15;
+  const yearIsPlausible = (y) => y >= YEAR_MIN && y <= YEAR_MAX;
+  if (timeMatch && /^\d{4}/.test(timeMatch[0]) && !yearIsPlausible(Number(timeMatch[1]))) {
+    // 误配：清掉 timeMatch，落到相对时间分支
+    timeMatch = null;
+  }
   if (timeMatch) {
     if (/^\d{4}/.test(timeMatch[0])) {
       const y = Number(timeMatch[1]);
       const q = timeMatch[2] ? Number(timeMatch[2]) : (timeMatch[3] ? (timeMatch[3] === '1' ? 2 : 4) : (timeMatch[4] ? Math.ceil(Number(timeMatch[4]) / 3) : 4));
       dueOn = `${y}-Q${q}`;
+      dueBasis = 'absolute';
     } else {
       const months = Number(timeMatch[1]);
-      const base = claim.date ? new Date(Date.parse(claim.date)) : new Date();
-      if (!isNaN(base.getTime())) {
-        base.setUTCMonth(base.getUTCMonth() + months);
-        dueOn = base.toISOString().slice(0, 10);
+      const d = new Date(baseDate);
+      d.setUTCMonth(d.getUTCMonth() + months);
+      dueOn = d.toISOString().slice(0, 10);
+      dueBasis = 'relative-months';
+    }
+  } else {
+    // 绝对时间没命中时试相对时间
+    for (const r of RELATIVE) {
+      if (r.re.test(text)) {
+        dueOn = r.due();
+        dueBasis = 'relative';
+        break;
       }
     }
   }
@@ -172,6 +232,7 @@ function discriminate(claim, opts = {}) {
       problems: unfalsifiable,
     },
     dueOn,
+    dueBasis,
     settleable,
     baseRate,
     reasoning: {

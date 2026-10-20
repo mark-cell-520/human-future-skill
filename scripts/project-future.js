@@ -1141,23 +1141,58 @@ class ProjectionEngine {
     //   A. 前瞻词 + 时间点（"will launch in 2027"、"将于 2027 年发布"）
     //   B. 承诺/目标结构（"plans to"、"aims to"、"目标"、"roadmap"、"有望"）
     // 且排除纯定价/设计说明（"at a price of"、"is confined to"、"will be able to"）。
-    const TIME_POINT = /(20\d{2}(?:-Q[1-4]|-H[12]|-\d{2})?|明年|后年|未来\s*\d+\s*年?|个月内|年内|季度|Q[1-4]|H[12]|within\s+\d|in\s+20\d{2}|by\s+20\d{2}|next\s+(?:year|quarter|month))/i;
-    const COMMITMENT = /(plans?\s+to|aims?\s+to|intends?\s+to|expects?\s+to|targets?\s|goal\s+is|on\s+the\s+roadmap|roadmap| slated|poised|set\s+to|计划|预计|拟于|定于|有望|目标|路线图|将要|将会)/i;
+    // [v2.13] 抽取判据必须同时覆盖**相对时间**。
+    //
+    // 实测踩坑：Anthropic 的 self-replicating-ai 正文里有两条教科书级可结算预测
+    //   "If small models improve at their historical rate, they'll match this
+    //    capability level by the end of this year."
+    //   "the trend line puts a small model at that level by the end of 2026."
+    // 第一条用 `by the end of this year`——相对时间，不含 20xx，
+    // 我的 TIME 正则不认它，COMMIT 也不命中（没有 plans to 这类词）。
+    // 结果这条质量最高的预测被漏掉，只能抓到意图声明。
+    //
+    // 因此 TIME 必须含相对时间词，COMMIT 必须含条件式预测
+    // （"if X, they'll Y"、"X will Y by Z"）——条件句本身就是预测的典型形态。
+    const TIME_POINT = /(20\d{2}(?:-Q[1-4]|-H[12]|-\d{2})?|明年|后年|未来\s*\d+\s*年?|个月内|年内|季度|Q[1-4]|H[12]|within\s+\d|in\s+20\d{2}|by\s+20\d{2}|next\s+(?:year|quarter|month)|this\s+year|end\s+of\s+(?:this\s+)?year|year[\s-]end|年底|今年|明年初|年底前)/i;
+    const COMMITMENT = /(plans?\s+to|aims?\s+to|intends?\s+to|expects?\s+to|targets?\s|goal\s+is|on\s+the\s+roadmap|roadmap| slated|poised|set\s+to|计划|预计|拟于|定于|有望|目标|路线图|将要|将会|will\s+(?:match|reach|hit|achieve|arrive|be\s+at)|they'?ll\s+(?:match|reach|hit|be)|would\s+(?:match|reach|hit|be))/i;
     const NOT_A_PREDICTION = /(at\s+(?:an?\s+)?(?:introductory\s+)?price|priced\s+at|is\s+confined\s+to|will\s+be\s+able\s+to|is\s+designed\s+to|this\s+ensures|with\s+this\s+new|定价|价格为|售价)/i;
     const claims = [];
     for (const it of this.signals.items) {
       const text = `${it.title || ''} ${it.body || ''} ${it.description || ''}`;
-      const sents = text.split(/(?<=[.!?。！？])\s+/);
+      // [v2.13] 归一化弯引号/弯撇号。
+      //
+      // 实测踩坑：Anthropic 正文里 `they'll` 实际是 `they’ll`（U+2019 弯撇号），
+      // 而 COMMITMENT 正则写的是直引号 `'`，导致这条质量最高的可结算预测
+      // （"they'll match this capability level by the end of this year"）
+      // 被漏掉。网页正文普遍用弯引号，这是抽取层的通用缺陷——
+      // 所有含撇号的英文缩写（they'll / won't / it's / don't）都会踩。
+      // 归一化后正则只需写直引号一种形态。
+      const norm = text.replace(/[\u2018\u2019\u201A\u201B\u2032]/g, "'")
+        .replace(/[\u201C\u201D\u201E\u201F\u2033]/g, '"');
+      const sents = norm.split(/(?<=[.!?。！？])\s+/);
       // 找第一个同时满足「有前瞻结构」且「不是定价/设计说明」的句子
-      const hit = sents.find(s => {
+      const hitIdx = sents.findIndex(s => {
         if (s.length < 20 || s.length > 400) return false;
         if (NOT_A_PREDICTION.test(s)) return false;
         return (COMMITMENT.test(s) && TIME_POINT.test(s))   // A: 承诺+时间
           || (COMMITMENT.test(s) && /(将|计划|预计|有望|目标|plans?|aims?|expects?|targets?|roadmap)/i.test(s)); // B: 明确承诺
       });
-      if (!hit) continue;
+      if (hitIdx < 0) continue;
+      // [v2.13] 把命中句连同**后 2 句**一起送进辨别器。
+      //
+      // 实测踩坑：Anthropic 的预测句是
+      //   "If small models improve at their historical rate, they'll match this
+      //    capability level by the end of this year."
+      // 而机制与先行指标写在**后面的句子**里：
+      //   "The solid line is the least-squares fit ... with a gain of 13.7 ECI
+      //    per year (R 2 of 0.95)."
+      // 只送单句时推理有效性 0/3——机制明明存在却判不出来。
+      // 送上下文后辨别器能读到机制，推理分才反映真实质量。
+      const context = sents.slice(hitIdx, hitIdx + 3).join(' ').trim();
       claims.push({
-        text: hit.trim(),
+        text: context.slice(0, 600),
+        // 保留命中句本身，供报告引用时聚焦
+        claimSentence: sents[hitIdx].trim(),
         source: it.source,
         date: it.pubDate,
         url: it.link,

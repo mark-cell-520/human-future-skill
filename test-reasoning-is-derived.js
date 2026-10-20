@@ -779,3 +779,145 @@ if (f213 > 0) {
 } else {
   console.log('结论：预测辨别器可区分四种形态，阶段标签已停止声称推演。');
 }
+
+// ════════════════════════════════════════════════════════════════
+// v2.13b 新增断言：Anthropic sitemap 源必须真的补上采集缺口。
+// 实测依据：agent 自己发现「Anthropic 官方博客不在当前 13 个 RSS 源内」，
+// 而它是本期唯一发布带明确时间点可结算预测的厂商源。
+// ════════════════════════════════════════════════════════════════
+const { fetchSitemap } = require('./scripts/collect-news.js');
+
+const v213b = [];
+function c213b(name, ok, detail) { v213b.push({ name, ok, detail }); }
+
+c213b('Anthropic sitemap 源已注册进采集域', (() => {
+  const src = require('fs').readFileSync('./scripts/collect-news.js', 'utf-8');
+  // [v2.13] 断言要认 pathPrefixes（复数）——IoT 自复制那篇在 /research/ 下，
+  // 只采 /news/ 会漏掉它（实测踩过）。
+  return /anthropic\.com\/sitemap\.xml/.test(src)
+    && /type:\s*'sitemap'/.test(src)
+    && /pathPrefixes:\s*\['\/news\/',\s*'\/research\/'\]/.test(src);
+})(), 'RSS_SOURCES 应含 anthropic sitemap 且限定 /news/ 与 /research/');
+
+c213b('sitemap 采集器真能抓到 Anthropic 新闻', (() => {
+  // 真联网探测：Anthropic 无 RSS，sitemap 是唯一可行路径
+  return fetchSitemap({
+    name: 'Anthropic News (sitemap)',
+    url: 'https://www.anthropic.com/sitemap.xml',
+    pathPrefix: '/news/',
+  }).then(r => r.ok === true && r.items.length > 0
+    && r.items.every(i => i.link.includes('/news/'))
+    && r.items[0]._fromSitemap === true);
+})(), '应抓到 /news/ 条目且带 _fromSitemap 标记');
+
+// 上面那条是 Promise，单独 await 处理
+(async () => {
+  const results = await Promise.all(v213b.map(c => Promise.resolve(c.ok)));
+  let f = 0;
+  v213b.forEach((c, i) => {
+    const ok = results[i];
+    if (!ok) f++;
+    console.log(`${ok ? '✓' : '✗'} ${c.name}${ok ? '' : '  —— ' + c.detail}`);
+  });
+  console.log(`\nv2.13b: ${v213b.length - f} 通过, ${f} 失败, 共 ${v213b.length} 个`);
+  if (f > 0) {
+    console.log('结论：Anthropic sitemap 源未补上采集缺口。');
+    process.exitCode = 1;
+  } else {
+    console.log('结论：Anthropic sitemap 源已补上，预测辨别器有了可结算预测的来源。');
+  }
+})();
+
+// ════════════════════════════════════════════════════════════════
+// v2.13c 新增断言：可结算预测必须真的被抽出来并辨别。
+// 实测依据：Anthropic /research/self-replicating-ai 含本期唯一一条
+// 结构完整的可结算预测（"by the end of this year"，机制 ECI 年增 13.7 R²=0.95）。
+// 修之前 settleable=0——四个环节各有一个缺口，全部修掉才拿到 1 条。
+// ════════════════════════════════════════════════════════════════
+const v213c = [];
+function c213c(name, ok, detail) { v213c.push({ name, ok, detail }); }
+
+// 1. 弯引号归一化：they'll 在网页正文里是 they’ll（U+2019）
+c213c('弯引号归一化后条件式预测能被抽出', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const inst = new ProjectionEngine({});
+  inst.signals = { items: [{
+    title: 'Self Replicating Ai',
+    // 故意用弯撇号 U+2019，复现真实网页正文
+    body: 'If small models improve at their historical rate, they\u2019ll match this capability level by the end of this year. '
+      + 'The solid line is the least-squares fit over the best models in-class at each date, with a gain of 13.7 ECI per year (R 2 of 0.95).',
+    description: '', source: 'Anthropic News (sitemap)', category: 'frontier_models',
+    pubDate: 'Tue, 13 Oct 2026 00:44:16 GMT',
+  }] };
+  const r = inst.buildForecastDiscrimination();
+  return r.available === true && r.summary.settleableCount >= 1;
+})(), '含 U+2019 的条件式预测应被抽出且判为可结算');
+
+// 2. 相对时间解析：end of this year → 2026-Q4（以发布年为基准）
+c213c('相对时间「end of this year」解析为发布年 Q4', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const inst = new ProjectionEngine({});
+  inst.signals = { items: [{
+    title: 'T', body: 'They will match this capability level by the end of this year.',
+    description: '', source: 'S', category: 'frontier_models',
+    pubDate: 'Tue, 13 Oct 2026 00:44:16 GMT',
+  }] };
+  const r = inst.buildForecastDiscrimination();
+  const hit = (r.results || []).find(x => x.settleable);
+  return !!hit && hit.dueOn === '2026-Q4' && hit.dueBasis === 'relative';
+})(), 'dueOn 应为 2026-Q4，basis 应为 relative');
+
+// 3. 量化趋势外推算机制：least-squares fit + per year + R²
+c213c('量化趋势外推被认作机制（推理分 3/3）', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const inst = new ProjectionEngine({});
+  inst.signals = { items: [{
+    title: 'T',
+    body: 'If small models improve at their historical rate, they will match this capability level by the end of this year. '
+      + 'The solid line is the least-squares fit over the best models in-class at each date, with a gain of 13.7 ECI per year (R 2 of 0.95). '
+      + 'If we take GLM-5.2 as a capabilities floor for replication, the trend line puts a small model at that level by the end of 2026.',
+    description: '', source: 'S', category: 'frontier_models',
+    pubDate: 'Tue, 13 Oct 2026 00:44:16 GMT',
+  }] };
+  const r = inst.buildForecastDiscrimination();
+  const hit = (r.results || []).find(x => x.settleable);
+  return !!hit && hit.reasoning.score === 3 && hit.verdict === 'well-formed';
+})(), '机制/先行指标/反例条件三要素应齐备');
+
+// 4. 年份合理性：正文里的数字不得被误配成荒谬结算年份
+//    反向验证要求：摘除校验后这条必须失败，所以用例必须**真的触发误配**。
+//    实测踩坑：第一版用例写 "2,000 GPUs"——逗号让 (20\d{2}) 匹配到的是 "000"
+//    而非 "2000"，校验分支从未被触发，断言恒真（空转）。
+//    改用无逗号分隔的 "2000 GPUs"，让 (20\d{2}) 真的匹配到 2000。
+c213c('荒谬年份（早于发布年）不得产出结算点', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const inst = new ProjectionEngine({});
+  inst.signals = { items: [{
+    title: 'T',
+    // 无逗号：让 (20\d{2}) 真的匹配到 2000，复现误配
+    body: 'We plan to deploy 2000 GPUs in the new data center this year. The roadmap targets expansion.',
+    description: '', source: 'S', category: 'frontier_models',
+    pubDate: 'Tue, 13 Oct 2026 00:44:16 GMT',
+  }] };
+  const r = inst.buildForecastDiscrimination();
+  const bad = (r.results || []).filter(x => x.dueOn && Number(x.dueOn.slice(0, 4)) < 2026);
+  // 断言两层：既不能有荒谬年份，也必须真的产出过结果（否则恒真空转）
+  return bad.length === 0 && (r.results || []).length > 0;
+})(), '不得出现早于发布年的结算点，且必须有辨别结果（防空转）');
+
+(async () => {
+  const results = await Promise.all(v213c.map(c => Promise.resolve(c.ok)));
+  let f = 0;
+  v213c.forEach((c, i) => {
+    const ok = results[i];
+    if (!ok) f++;
+    console.log(`${ok ? '✓' : '✗'} ${c.name}${ok ? '' : '  —— ' + c.detail}`);
+  });
+  console.log(`\nv2.13c: ${v213c.length - f} 通过, ${f} 失败, 共 ${v213c.length} 个`);
+  if (f > 0) {
+    console.log('结论：可结算预测仍抽不出来。');
+    process.exitCode = 1;
+  } else {
+    console.log('结论：可结算预测已能被抽出并完整辨别（弯引号/相对时间/量化机制/年份校验）。');
+  }
+})();
