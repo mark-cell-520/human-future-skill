@@ -22,3 +22,4 @@ reports/latest.md
 
 # 同步脚本临时文件
 human-future/data/.commit-msg.tmp
+.cache/

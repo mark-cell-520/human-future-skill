@@ -68,10 +68,12 @@ const RSS_SOURCES = {
     // EU AI Act 的义务表述天然可结算——「providers must do X by August 2026」
     // 有主体、有事件、有法定时点，到点就能验证有没有做到。
     // 实测该源 9 条里有带日期义务句（"must do by August 2026"）。
-    // timeoutMs=45000：该源 feed 有 350KB（含全文），8 秒传不完
-    // （实测 30 秒都没传完），必须单独放宽超时。
+    // timeoutMs=45000：该源 feed 有 527KB（每条 content:encoded 9-19KB 全文），
+    // 8 秒传不完（实测 50 秒）。解析器不读 content:encoded，正文另有 FETCH_BODY
+    // 拉，所以这 527KB 纯属浪费——但 HTTP Range 被服务端忽略，只能靠缓存。
+    // cacheTtlMs=6h：该源最新条目是 8 月 7 日，6 小时内不会变。
     { name: 'EU AI Act Timeline', url: 'https://artificialintelligenceact.eu/feed/',
-      timeoutMs: 45000 },
+      timeoutMs: 45000, cacheTtlMs: 6 * 60 * 60 * 1000 },
     // NIST 新闻：监管节点与标准发布，同样有官方时点。
     { name: 'NIST News', url: 'https://www.nist.gov/news-events/news/rss.xml' },
   ],
@@ -409,17 +411,75 @@ async function fetchAll(opts = {}) {
   const out = {};
   // 并行抓取：旧版按域串行 await，单源超时 8 秒 × 13 源 = 最坏 104 秒。
   // 源之间互不依赖，并行后总耗时约等于最慢的那个源。
+  //
+  // [v2.13] 慢源缓存：EU AI Act 的 feed 有 527KB（每条 content:encoded 9-19KB
+  // 全文），实测单次要 50 秒，而它每 2 小时才更新一次 cron——等于每轮都白等。
+  // 更关键的是：解析器不读 content:encoded（只读 description，318 字节），
+  // 正文另有 FETCH_BODY 单独拉，所以 feed 里的全文纯属浪费带宽。
+  // HTTP Range 请求实测被服务端忽略（仍下 224KB），所以只能靠缓存。
+  //
+  // 规则：src.cacheTtlMs 非 0 的源，在 TTL 内复用上次结果。
+  // 默认 TTL 6 小时——EU AI Act 最新条目是 8 月 7 日，6 小时足够。
   const jobs = [];
+  const cacheDir = path.join(__dirname, '..', '.cache');
+  const now = Date.now();
   for (const [domain, sources] of Object.entries(RSS_SOURCES)) {
     if (!out[domain]) out[domain] = { domain, name: DOMAIN_NAMES[domain], news: [] };
     for (const src of sources) jobs.push({ domain, src });
   }
-  const results = await Promise.all(jobs.map(({ domain, src }) =>
+  // 先读缓存，把还在 TTL 内的源直接跳过网络请求
+  const needFetch = [];
+  const cached = new Map();
+  for (const job of jobs) {
+    const ttl = job.src.cacheTtlMs;
+    if (!ttl) { needFetch.push(job); continue; }
+    const cf = path.join(cacheDir, `feed-${job.src.name.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}.json`);
+    try {
+      if (fs.existsSync(cf)) {
+        const c = JSON.parse(fs.readFileSync(cf, 'utf-8'));
+        if (now - c.fetchedAt < ttl && Array.isArray(c.items)) {
+          cached.set(job, c.items);
+          continue;
+        }
+      }
+    } catch (_) { /* 缓存损坏就重新抓 */ }
+    needFetch.push(job);
+  }
+  const results = await Promise.all(needFetch.map(({ domain, src }) =>
     (src.type === 'sitemap' ? fetchSitemap(src) : fetchFeed(src))));
+  // 把新抓到的结果写进缓存
+  // [v2.13] 注意：r 必须取自 results（抓取结果），不是 needFetch（job 对象）。
+  // 实测踩坑：第一版写成 `for (const [i, r] of needFetch.entries())`，
+  // r 是 {domain, src} 对象，r.ok 恒为 undefined，缓存从未生成——
+  // 而 catch (_) {} 把问题藏住了，白查了很久。
   for (const [i, r] of results.entries()) {
+    const { src } = needFetch[i];
+    if (!src.cacheTtlMs || !r.ok) continue;
+    // [v2.13] 写失败要打印原因，不能静默吞掉——实测缓存从未生成，
+    // 而 catch (_) {} 把真实错误藏了，白查了很久。
+    try {
+      if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(cacheDir, `feed-${src.name.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}.json`),
+        JSON.stringify({ fetchedAt: now, items: r.items }), 'utf-8');
+    } catch (e) {
+      console.log(`  [WARN] 写缓存失败 ${src.name}: ${e.message}`);
+    }
+  }
+  // 合并：缓存命中的 + 新抓的
+  const allResults = [];
+  for (const job of jobs) {
+    if (cached.has(job)) {
+      allResults.push({ ok: true, items: cached.get(job), fromCache: true });
+    } else {
+      const idx = needFetch.indexOf(job);
+      allResults.push(results[idx]);
+    }
+  }
+  for (const [i, r] of allResults.entries()) {
     const { domain, src } = jobs[i];
     if (r.ok) {
-      console.log(`  [live] ${domain}/${src.name}: ${r.items.length} 条`);
+      console.log(`  [live] ${domain}/${src.name}: ${r.items.length} 条${r.fromCache ? '（缓存）' : ''}`);
       out[domain].news.push(...r.items);
     } else {
       console.log(`  [WARN] ${domain}/${src.name} 抓取失败: ${r.error}`);

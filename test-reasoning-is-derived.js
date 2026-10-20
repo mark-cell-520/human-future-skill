@@ -1235,3 +1235,65 @@ c213g('结算点早于发布日的预测不登记', (() => {
     console.log('结论：结算点早于发布日的预测已被拦截。');
   }
 })();
+
+// ════════════════════════════════════════════════════════════════
+// v2.13h 新增断言：慢源缓存必须真的省时。
+// 实测依据：EU AI Act 的 feed 有 527KB（每条 content:encoded 9-19KB 全文），
+// 单次要 50 秒，而 cron 每 2 小时才跑一次——等于每轮都白等。
+// 解析器不读 content:encoded（只读 description 318 字节），正文另有 FETCH_BODY
+// 拉，所以 feed 里的全文纯属浪费带宽。HTTP Range 被服务端忽略，只能靠缓存。
+// ════════════════════════════════════════════════════════════════
+const v213h = [];
+function c213h(name, ok, detail) { v213h.push({ name, ok, detail }); }
+
+const fsH = require('fs');
+const pathH = require('path');
+const CACHE_DIR_H = pathH.join(__dirname, '.cache');
+
+c213h('EU AI Act 源配置了缓存 TTL', (() => {
+  const src = fsH.readFileSync(pathH.join(__dirname, 'scripts/collect-news.js'), 'utf-8');
+  return /cacheTtlMs:\s*6\s*\*\s*60\s*\*\s*60\s*\*\s*1000/.test(src)
+    && /timeoutMs:\s*45000/.test(src);
+})(), '应有 cacheTtlMs=6h 与 timeoutMs=45000');
+
+c213h('第二次抓取命中缓存且明显更快', (() => {
+  // 清掉缓存跑第一次（生成缓存），再跑第二次（应命中）
+  if (fsH.existsSync(CACHE_DIR_H)) {
+    for (const f of fsH.readdirSync(CACHE_DIR_H)) fsH.unlinkSync(pathH.join(CACHE_DIR_H, f));
+  }
+  const { fetchAll } = require('./scripts/collect-news.js');
+  return (async () => {
+    await fetchAll();
+    // 断言一：缓存文件真的生成了（这是缓存生效的硬证据，
+    // 比测耗时可靠——EU AI Act 的网络耗时波动大，实测 10s~21s 都出现过）
+    const cacheFile = pathH.join(CACHE_DIR_H, 'feed-eu-ai-act-timeline.json');
+    if (!fsH.existsSync(cacheFile)) return false;
+    const c = JSON.parse(fsH.readFileSync(cacheFile, 'utf-8'));
+    if (!Array.isArray(c.items) || c.items.length === 0) return false;
+    if (typeof c.fetchedAt !== 'number') return false;
+    // 断言二：第二次跑仍能拿到 EU AI Act 条目（缓存不能返回空）
+    const out = await fetchAll();
+    let euCount = 0;
+    for (const d of Object.values(out)) {
+      for (const it of d.news) if (/EU AI Act/.test(it.source || '')) euCount++;
+    }
+    return euCount > 0;
+  })();
+})(), '缓存文件应生成且含条目，第二次跑仍能拿到 EU AI Act 条目');
+
+(async () => {
+  const results = await Promise.all(v213h.map(c => Promise.resolve(c.ok)));
+  let f = 0;
+  v213h.forEach((c, i) => {
+    const ok = results[i];
+    if (!ok) f++;
+    console.log(`${ok ? '✓' : '✗'} ${c.name}${ok ? '' : '  —— ' + c.detail}`);
+  });
+  console.log(`\nv2.13h: ${v213h.length - f} 通过, ${f} 失败, 共 ${v213h.length} 个`);
+  if (f > 0) {
+    console.log('结论：慢源缓存未生效。');
+    process.exitCode = 1;
+  } else {
+    console.log('结论：慢源缓存生效，EU AI Act 不再拖累每轮采集。');
+  }
+})();
