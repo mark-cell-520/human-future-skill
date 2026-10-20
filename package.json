@@ -1,7 +1,7 @@
 {
   "name": "human-future",
-  "version": "2.12.0",
-  "description": "人类未来实时推演操作系统 v2.12 - SKILL.md 瘦身 48KB→11KB，历史归档至 references",
+  "version": "2.13.0",
+  "description": "人类未来 v2.13 - 停止假推演，转为辨别他人的预测（可证伪性/基准概率/推理有效性/证伪条件）",
   "main": "modules/monitor/signal-collector.js",
   "scripts": {
     "start": "node scripts/run-pipeline.js",

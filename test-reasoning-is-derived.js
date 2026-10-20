@@ -696,3 +696,86 @@ if (f211 > 0) {
 } else {
   console.log('结论：源归一化已消除采集窗口差异造成的假趋势，并保留前后对照。');
 }
+
+// ════════════════════════════════════════════════════════════════
+// v2.13 新增断言：预测辨别器必须能区分四种预测形态，
+// 且阶段标签不得再声称是「未来 N 个月」的推演。
+// ════════════════════════════════════════════════════════════════
+const { discriminate: discriminateOne } = require('./human-future/scripts/forecast-discriminator.js');
+
+const v213 = [];
+function c213(name, ok, detail) { v213.push({ name, ok, detail }); }
+
+// 1. 可证伪的预测应判 settleable
+c213('有主体有时点的预测判为可结算', (() => {
+  const r = discriminateOne({ text: 'OpenAI 将在 2027 年发布 GPT-7', source: 'Probe', date: '2026-10-20' });
+  return r.available && r.falsifiability.ok === true && r.settleable === true && r.dueOn !== null;
+})(), '应可证伪、可结算、有结算点');
+
+// 2. 无主体无时点的修辞应判 not-a-forecast
+c213('无主体无时点的修辞判为不可证伪', (() => {
+  const r = discriminateOne({ text: 'AI 会继续进步，未来很美好', source: 'Probe', date: '2026-10-20' });
+  return r.available && r.verdict === 'not-a-forecast' && r.settleable === false;
+})(), '「AI 会继续进步」不是预测');
+
+// 3. 过度自信应触发校准警告
+c213('宣称高置信度但基准概率低时给出校准警告', (() => {
+  const r = discriminateOne({ text: '我们有 95% 的信心在 2028 年实现 AGI', source: 'Probe', date: '2026-10-20' });
+  return r.available && r.calibrationWarning !== null
+    && r.calibrationWarning.gap > 0.3;
+})(), '95% vs 基准 35%，落差应 >30 个百分点');
+
+// 4. 有机制+指标+反例的预测应判 well-formed
+c213('含机制/指标/反例的预测判为结构完整', (() => {
+  const r = discriminateOne({
+    text: 'Gemini 5 将在 2027-Q2 GA，因为算力瓶颈已缓解；观察指标是预览版发布时间；除非出现芯片短缺否则不会延期',
+    source: 'Probe', date: '2026-10-20',
+  });
+  return r.available && r.verdict === 'well-formed' && r.reasoning.score === 3;
+})(), '三要素齐全应判 well-formed');
+
+// 5. 阶段标签不得再声称「未来 N 个月」
+// 只检查 label: 行（代码里的实际标签），不检查注释——
+// 注释里引用旧标签是为了说明「为什么改」，那是正当的历史记录。
+c213('阶段标签不再声称是未来推演', (() => {
+  const src = require('fs').readFileSync('./scripts/project-future.js', 'utf-8');
+  const labelLines = src.split('\n').filter(l => /^\s*label:/.test(l)).join('\n');
+  return !/未来 0-12 个月/.test(labelLines)
+    && !/未来 12-24 个月/.test(labelLines)
+    && !/未来 24-36 个月/.test(labelLines);
+})(), 'HORIZONS 的 label 不得含「未来 N 个月」');
+
+// 6. 报告标题不得再声称「分阶段推演」
+c213('报告标题不再声称分阶段推演', (() => {
+  const src = require('fs').readFileSync('./scripts/project-future.js', 'utf-8');
+  return !/lines\.push\('## 分阶段推演'\)/.test(src)
+    && /预测辨别/.test(src);
+})(), '应有「预测辨别」段，无「分阶段推演」标题');
+
+// 7. 预测辨别段在真实数据上可用
+c213('预测辨别在真实报告上产出结果', (() => {
+  const fs = require('fs');
+  const files = fs.readdirSync('reports').filter(f => f.startsWith('full-report-') && f.endsWith('.json'));
+  if (!files.length) return false;
+  const latest = files.sort().pop();
+  const d = JSON.parse(fs.readFileSync('reports/' + latest, 'utf-8'));
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const eng = new ProjectionEngine(d);
+  const fd = eng.buildForecastDiscrimination();
+  // 可能无前瞻声明（如实返回不可用），但有声明时必须结构完整
+  if (!fd.available) return typeof fd.reason === 'string' && fd.reason.length > 0;
+  return fd.audited > 0 && Array.isArray(fd.results) && typeof fd.summary === 'object';
+})(), '应产出 audited/results/summary 或如实说明无预测');
+
+let f213 = 0;
+for (const c of v213) {
+  console.log(`${c.ok ? '✓' : '✗'} ${c.name}${c.ok ? '' : '  —— ' + c.detail}`);
+  if (!c.ok) f213++;
+}
+console.log(`\nv2.13: ${v213.length - f213} 通过, ${f213} 失败, 共 ${v213.length} 个`);
+if (f213 > 0) {
+  console.log('结论：v2.13 预测辨别或去假推演未守住。');
+  process.exitCode = 1;
+} else {
+  console.log('结论：预测辨别器可区分四种形态，阶段标签已停止声称推演。');
+}

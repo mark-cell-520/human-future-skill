@@ -44,6 +44,9 @@ const { detectMismatch } = require(path.join(HF, 'claim-mismatch-detector.js'));
 const { runFormulaBridge } = require(path.join(HF, 'cognitive-formula-bridge.js'));
 const { gate: lowConfidenceGate } = require(path.join(HF, 'low-confidence-gate.js'));
 const predictionLedger = require(path.join(HF, 'prediction-ledger.js'));
+// [v2.13] 预测辨别器：引擎不再自己生成未来，改为辨别他人关于未来的主张。
+// 这是 v2.13 的方向转变——见 SKILL.md「v2.13 方向转变」一节。
+const { discriminateAll: discriminateForecasts } = require(path.join(HF, 'forecast-discriminator.js'));
 
 /** 主题域定义：关键词命中即归入该域。顺序即优先级。 */
 // [v2.7 新增] frontier_models「专项大模型」：
@@ -85,10 +88,23 @@ const DOMAINS = [
 ];
 
 /** 阶段模板：只决定"取第几热的域"，内容由信号填充 */
+// [v2.13] 阶段标签改为如实描述，不再用「未来 N 个月」的推演外壳。
+//
+// 为什么改：这三个标签承诺的是未来，而 generateStages() 的实际操作是
+// `ds.slice(i*2, i*2+2)` —— 按当前信号热度排序后取前 2、次 2、再次 2 个域。
+// 那是「当下哪些域最活跃」的排名，不是「未来 0-12 个月会发生什么」的推演。
+// 旧标签与 describeStage() 自己的描述直接矛盾：
+//   旧标签写的是「第一阶段（未来 0-12 个月）」，而描述写「当前信号最集中的方向……
+//   属于正在发生的进展」——标签承诺未来，描述承认现在。
+// 用推演的外壳包新闻，比明说没推演更糟——它让读者以为有预测。
+//
+// 新标签如实说明这是什么：按本期信号热度排序的域分组。
+// 真正的推演能力在 v2.13 由 forecast-discriminator 提供（辨别他人的预测），
+// 不在这个函数里。
 const HORIZONS = [
-  { label: '第一阶段（未来 0-12 个月）' },
-  { label: '第二阶段（未来 12-24 个月）' },
-  { label: '第三阶段（未来 24-36 个月）' },
+  { label: '信号最集中方向（本期热度第 1-2 位）' },
+  { label: '次级活跃方向（本期热度第 3-4 位）' },
+  { label: '再次级方向（本期热度第 5-6 位）' },
 ];
 
 class ProjectionEngine {
@@ -231,6 +247,7 @@ class ProjectionEngine {
       report.timelineConflicts = this.buildTimelineConflicts();
       report.sourceAdjudication = this.buildSourceAdjudication();
       report.claimMismatches = this.buildClaimMismatches();
+      report.forecastDiscrimination = this.buildForecastDiscrimination();
       report.frontierModelSection = this.buildFrontierModelSection();
       report.formulaAssessment = this.buildFormulaAssessment();
       report.lowConfidenceGate = this.applyLowConfidenceGate(report);
@@ -1100,6 +1117,74 @@ class ProjectionEngine {
   }
 
   // ───────────────────────────────────────────────────────────────
+  // [v2.13] 预测辨别：从本期信号里抽出含前瞻声明的条目，逐条辨别其
+  // 可证伪性 / 基准概率 / 推理有效性 / 证伪条件。
+  //
+  // 与「推演」的根本区别：这里不产出「我认为未来会怎样」，
+  // 而是产出「这些关于未来的主张，哪些站得住脚」。
+  // 这是 Layer 1（辨别者）的独有位置。
+  //
+  // 抽取判据：只取**含前瞻词**的条目（将/会/计划/预计/by 20xx/roadmap…），
+  // 且句子长度足够承载一个完整主张。纯事实陈述（已发布、已披露）不取——
+  // 那不是预测。
+  // ───────────────────────────────────────────────────────────────
+  buildForecastDiscrimination() {
+    // [v2.13] 抽取判据必须收紧。
+    //
+    // 第一版用「含 will/将/计划 就抽」，实测 10 条里 7 条是技术描述句——
+    // "the robot's inference will be confined to the onboard GPU"、
+    // "Argon will launch at an introductory price of $2"。这些句子里 will
+    // 只是语法将来时或定价说明，不是对未来的承诺。把它们当预测辨别，
+    // 产出的是「不可证伪：无时间点」的噪音。
+    //
+    // 收紧为两类真预测形态：
+    //   A. 前瞻词 + 时间点（"will launch in 2027"、"将于 2027 年发布"）
+    //   B. 承诺/目标结构（"plans to"、"aims to"、"目标"、"roadmap"、"有望"）
+    // 且排除纯定价/设计说明（"at a price of"、"is confined to"、"will be able to"）。
+    const TIME_POINT = /(20\d{2}(?:-Q[1-4]|-H[12]|-\d{2})?|明年|后年|未来\s*\d+\s*年?|个月内|年内|季度|Q[1-4]|H[12]|within\s+\d|in\s+20\d{2}|by\s+20\d{2}|next\s+(?:year|quarter|month))/i;
+    const COMMITMENT = /(plans?\s+to|aims?\s+to|intends?\s+to|expects?\s+to|targets?\s|goal\s+is|on\s+the\s+roadmap|roadmap| slated|poised|set\s+to|计划|预计|拟于|定于|有望|目标|路线图|将要|将会)/i;
+    const NOT_A_PREDICTION = /(at\s+(?:an?\s+)?(?:introductory\s+)?price|priced\s+at|is\s+confined\s+to|will\s+be\s+able\s+to|is\s+designed\s+to|this\s+ensures|with\s+this\s+new|定价|价格为|售价)/i;
+    const claims = [];
+    for (const it of this.signals.items) {
+      const text = `${it.title || ''} ${it.body || ''} ${it.description || ''}`;
+      const sents = text.split(/(?<=[.!?。！？])\s+/);
+      // 找第一个同时满足「有前瞻结构」且「不是定价/设计说明」的句子
+      const hit = sents.find(s => {
+        if (s.length < 20 || s.length > 400) return false;
+        if (NOT_A_PREDICTION.test(s)) return false;
+        return (COMMITMENT.test(s) && TIME_POINT.test(s))   // A: 承诺+时间
+          || (COMMITMENT.test(s) && /(将|计划|预计|有望|目标|plans?|aims?|expects?|targets?|roadmap)/i.test(s)); // B: 明确承诺
+      });
+      if (!hit) continue;
+      claims.push({
+        text: hit.trim(),
+        source: it.source,
+        date: it.pubDate,
+        url: it.link,
+      });
+      if (claims.length >= 20) break;
+    }
+    if (claims.length === 0) {
+      return {
+        available: false,
+        reason: `本期 ${this.signals.items.length} 条 live 信号中未抽到含前瞻承诺的可辨别预测`,
+        note: '只辨别含明确承诺结构（plans to / aims to / 计划 / 预计 / roadmap）的条目；'
+          + '纯事实陈述与技术描述句不是预测，不参与辨别。',
+      };
+    }
+    let ledger = [];
+    try {
+      ledger = predictionLedger.load().predictions || [];
+    } catch (_) { ledger = []; }
+    const res = discriminateForecasts(claims, { ledger });
+    return {
+      ...res,
+      note: '本段只辨别预测的表述与结构质量（可证伪性/基准概率/推理有效性/证伪条件），'
+        + '不判断其内容真假。可结算的预测（settleable=true）应登记进台账到期结算 Brier 分数。',
+    };
+  }
+
+  // ───────────────────────────────────────────────────────────────
   // 机会：从非风险类域推导，同样要求信号量
   // ───────────────────────────────────────────────────────────────
   identifyOpportunities() {
@@ -1238,7 +1323,9 @@ function formatReport(report) {
   lines.push(`- **最活跃方向**: ${report.summary.topDomains.join('、') || '(无)'}`);
   lines.push('');
 
-  lines.push('## 分阶段推演');
+  // [v2.13] 标题改为如实描述：这是按本期信号热度的域分组，不是推演。
+  // 真正的推演能力由「预测辨别」段提供（辨别他人的预测）。
+  lines.push('## 信号热度分组（按本期活跃度排序，非推演）');
   lines.push('');
   for (const s of report.stages) {
     lines.push(`### ${s.period} — ${s.domains.join('、')}`);
@@ -1479,6 +1566,42 @@ function formatReport(report) {
     lines.push(`- T4 自媒体/论坛: ${t.T4 || 0}`);
     lines.push('');
     lines.push(`> ${sa.note}`);
+  }
+  lines.push('');
+
+  // [v2.13] 预测辨别段：本引擎不再自己生成未来，改为辨别他人的预测。
+  const fd = report.forecastDiscrimination;
+  lines.push('## 预测辨别（他人关于未来的主张，哪些站得住脚）');
+  lines.push('');
+  if (!fd || !fd.available) {
+    lines.push(`（${(fd && fd.reason) || '未运行'}）`);
+    lines.push('');
+    lines.push(`> ${(fd && fd.note) || ''}`);
+  } else {
+    const s = fd.summary;
+    lines.push(`本期抽到 ${fd.audited} 条含前瞻声明的预测，逐条辨别结果：`);
+    lines.push(`  可结算 ${s.settleableCount} 条 | 结构完整 ${s.wellFormedCount} 条`
+      + ` | 不可证伪 ${s.notForecastCount} 条 | 校准警告 ${s.calibrationWarnings} 条`);
+    lines.push('');
+    const VERDICT_CN = {
+      'not-a-forecast': '不可证伪', 'bare-assertion': '裸断言',
+      'weakly-supported': '支撑不足', 'well-formed': '结构完整',
+    };
+    for (const r of fd.results.slice(0, 12)) {
+      lines.push(`[${VERDICT_CN[r.verdict] || r.verdict}] ${r.text.slice(0, 110)}`);
+      lines.push(`  来源: ${r.source} | 类别: ${r.category} | 结算点: ${r.dueOn || '(无)'}`
+        + ` | 可结算: ${r.settleable ? '是' : '否'}`);
+      lines.push(`  推理完整性: ${r.reasoning.score}/3`
+        + `（${r.reasoning.checks.filter(c => c.present).map(c => c.label.split('（')[0]).join('、') || '无'}）`);
+      lines.push(`  基准概率: ${Math.round(r.baseRate.rate * 100)}%`
+        + `（sample=${r.baseRate.sample}${r.baseRate.source === 'default-prior' ? '，通用先验' : '，本地台账'}）`);
+      if (r.falsifiability.problems.length) {
+        lines.push(`  不可证伪原因: ${r.falsifiability.problems.map(p => `${p.label}——${p.guidance}`).join('；')}`);
+      }
+      if (r.calibrationWarning) lines.push(`  ⚠ ${r.calibrationWarning.message}`);
+    }
+    lines.push('');
+    lines.push(`> ${fd.note}`);
   }
   lines.push('');
 
