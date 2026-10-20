@@ -1,7 +1,7 @@
 {
   "name": "human-future",
-  "version": "2.11.0",
-  "description": "人类未来实时推演操作系统 v2.11 - 源归一化消除采集窗口差异造成的假趋势",
+  "version": "2.12.0",
+  "description": "人类未来实时推演操作系统 v2.12 - SKILL.md 瘦身 48KB→11KB，历史归档至 references",
   "main": "modules/monitor/signal-collector.js",
   "scripts": {
     "start": "node scripts/run-pipeline.js",
