@@ -1212,10 +1212,61 @@ class ProjectionEngine {
       ledger = predictionLedger.load().predictions || [];
     } catch (_) { ledger = []; }
     const res = discriminateForecasts(claims, { ledger });
+
+    // ── 把可结算预测真的登记进台账 ──────────────────────────────
+    // [v2.13] 实测踩坑：v2.13 首轮 agent 在报告里写「这条应登记进台账，
+    // 2026 年底结算」，但台账里只有旧的「方向保持活跃」伪预测——
+    // 没人真登记。note 里写「应登记」是句空话。
+    // 不登记就无法到期结算、无法建立校准曲线，「辨别」只停留在报告里。
+    //
+    // 登记规则：
+    //   1. 只登记 settleable=true 的（有时间点且可证伪）
+    //   2. id 用「来源 + 日期 + 序号」保证幂等——同一轮重复跑不会重复登记
+    //   3. probability 用基准概率（不是宣称置信度）——校准曲线比的就是这个
+    //   4. dueOn 从辨别结果的结算点换算成具体日期（Q4 → 12-31）
+    //   5. 登记失败不能中断报告（台账写不进去不该让整轮失败）
+    const registered = [];
+    const skipped = [];
+    for (const r of (res.results || [])) {
+      if (!r.settleable) continue;
+      const id = `fc-${(r.source || 'unknown').replace(/[^a-z0-9]+/gi, '-').toLowerCase()}`
+        + `-${(r.date || '').replace(/[^0-9]/g, '').slice(0, 8) || 'nodate'}`
+        + `-${(r.claimSentence || r.text || '').slice(0, 40).replace(/[^a-z0-9]+/gi, '-').toLowerCase()}`;
+      const dueDate = r.dueOn && /^\d{4}-Q([1-4])$/.test(r.dueOn)
+        ? `${r.dueOn.slice(0, 4)}-${['03-31', '06-30', '09-30', '12-31'][Number(r.dueOn.slice(-1)) - 1]}`
+        : (r.dueOn || null);
+      try {
+        const rec = predictionLedger.record({
+          id,
+          claim: (r.claimSentence || r.text || '').slice(0, 300),
+          probability: r.baseRate ? r.baseRate.rate : 0.35,
+          domain: r.category || 'general',
+          rationale: `他人主张，引擎辨别 settleable；推理 ${r.reasoning.score}/3；`
+            + `基准概率 sample=${r.baseRate ? r.baseRate.sample : 0}`
+            + `${r.baseRate && r.baseRate.source === 'default-prior' ? '（通用先验，非统计结论）' : ''}；`
+            + `来源 ${r.source}；原文 ${r.url || '(无链接)'}`,
+          dueOn: dueDate,
+        });
+        registered.push({ id: rec.id, dueOn: dueDate, probability: rec.probability });
+      } catch (e) {
+        // id 已存在 = 上轮已登记过，这是正常的幂等跳过，不算错误
+        skipped.push({ id, reason: e.message });
+      }
+    }
+
     return {
       ...res,
+      // 登记结果回填进报告，让 agent 与读者都能看到「这条真的进台账了」
+      ledgerRegistration: {
+        registered,
+        skipped,
+        note: registered.length > 0
+          ? `已登记 ${registered.length} 条可结算预测进台账，到期结算 Brier 分数。`
+          : '本期无可结算预测需要登记（或已在此前轮次登记过）。',
+      },
       note: '本段只辨别预测的表述与结构质量（可证伪性/基准概率/推理有效性/证伪条件），'
-        + '不判断其内容真假。可结算的预测（settleable=true）应登记进台账到期结算 Brier 分数。',
+        + '不判断其内容真假。可结算的预测（settleable=true）已自动登记进台账，'
+        + '到期结算 Brier 分数以建立校准曲线。',
     };
   }
 

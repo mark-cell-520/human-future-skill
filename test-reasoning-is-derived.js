@@ -19,6 +19,28 @@
 const path = require('path');
 const { buildAnalysisText } = require('./scripts/heartflow-analyze.js');
 
+// ── 全局台账保护 ────────────────────────────────────────────────
+// buildForecastDiscrimination() 有副作用：会把可结算预测写进台账文件。
+// 本测试文件多处调用它（v2.13 / v2.13c / v2.13d 各节），如果不在
+// 最早时机备份，先跑的调用写出的条目会被当成「原始状态」备份进去，
+// 还原时只是还原到已污染的状态——实测踩过：54 条被污染成 58 条。
+// 所以在 require 之后、任何断言之前就备份，并在进程退出时无条件还原。
+const _fsG = require('fs');
+const _LEDGER = path.join(__dirname, 'human-future/data/prediction-ledger.json');
+const _BACKUP = path.join(require('os').tmpdir(), 'hf-ledger-global-backup.json');
+const _hadLedger = _fsG.existsSync(_LEDGER);
+if (_hadLedger) _fsG.copyFileSync(_LEDGER, _BACKUP);
+const _restoreLedger = () => {
+  try {
+    if (_hadLedger && _fsG.existsSync(_BACKUP)) _fsG.copyFileSync(_BACKUP, _LEDGER);
+    else if (!_hadLedger && _fsG.existsSync(_LEDGER)) _fsG.unlinkSync(_LEDGER);
+    if (_fsG.existsSync(_BACKUP)) _fsG.unlinkSync(_BACKUP);
+  } catch (_) { /* 还原失败不掩盖测试结果 */ }
+};
+// 同时挂 normal exit 与 SIGINT，确保 Ctrl-C 也不留污染
+process.on('exit', _restoreLedger);
+process.on('SIGINT', () => { _restoreLedger(); process.exit(130); });
+
 /** 构造一个域的数据集。titles 是新闻标题，src 是来源名。 */
 function dataset(domainName, src, titles, pubDate) {
   return {
@@ -919,5 +941,91 @@ c213c('荒谬年份（早于发布年）不得产出结算点', (() => {
     process.exitCode = 1;
   } else {
     console.log('结论：可结算预测已能被抽出并完整辨别（弯引号/相对时间/量化机制/年份校验）。');
+  }
+})();
+
+// ════════════════════════════════════════════════════════════════
+// v2.13d 新增断言：可结算预测必须真的登记进台账，且幂等。
+// 实测依据：v2.13 首轮 agent 在报告里写「这条应登记进台账，2026 年底结算」，
+// 但台账里只有旧的「方向保持活跃」伪预测——没人真登记。
+// note 里写「应登记」是句空话：不登记就无法到期结算、无法建立校准曲线。
+// ════════════════════════════════════════════════════════════════
+const v213d = [];
+function c213d(name, ok, detail) { v213d.push({ name, ok, detail }); }
+
+// 台账保护已在文件开头全局挂好（备份 + exit 时还原），这里直接测。
+// 不用局部备份：局部备份时机太晚，先跑的断言写出的条目会被当成原始状态
+// 备份进去，还原只是还原到已污染状态（实测踩过）。
+const fsT = require('fs');
+const REAL_LEDGER = path.join(__dirname, 'human-future/data/prediction-ledger.json');
+const readLedger = () => JSON.parse(fsT.readFileSync(REAL_LEDGER, 'utf-8')).predictions;
+const mkInst = () => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const inst = new ProjectionEngine({});
+  inst.signals = { items: [{
+    title: 'Self Replicating Ai',
+    body: 'If small models improve at their historical rate, they\u2019ll match this capability level by the end of this year. '
+      + 'The solid line is the least-squares fit over the best models in-class at each date, with a gain of 13.7 ECI per year (R 2 of 0.95).',
+    description: '', source: 'Anthropic News (sitemap)', category: 'frontier_models',
+    pubDate: 'Tue, 13 Oct 2026 00:44:16 GMT',
+  }] };
+  return inst;
+};
+
+c213d('可结算预测被真的登记进台账', (() => {
+  // 不依赖断言执行顺序：v2.13c 的断言可能已经登记过同一条预测，
+  // 此时本次调用会走幂等跳过分支。所以断言「台账里真的有这条」，
+  // 而不是「本次 registered 非空」——后者在顺序变化时会假失败。
+  const r = mkInst().buildForecastDiscrimination();
+  const onDisk = readLedger();
+  const wroteIt = onDisk.some(p => /small models improve/.test(p.claim));
+  const usedBaseRate = onDisk.some(p => /small models improve/.test(p.claim) && p.probability === 0.35);
+  const hasDueOn = onDisk.some(p => /small models improve/.test(p.claim) && p.dueOn === '2026-12-31');
+  // 登记结果字段必须存在（无论本次是 registered 还是 skipped）
+  const hasField = !!r.ledgerRegistration;
+  return wroteIt && usedBaseRate && hasDueOn && hasField;
+})(), '台账里应有这条预测，probability 用基准概率 0.35，dueOn 换算为 2026-12-31');
+
+c213d('重复登记被幂等跳过（不产生重复条目）', (() => {
+  const before = readLedger().length;
+  const r = mkInst().buildForecastDiscrimination();
+  const after = readLedger().length;
+  // 条数不变，且 skipped 里说明了原因
+  return before === after
+    && r.ledgerRegistration.skipped.length >= 1
+    && r.ledgerRegistration.registered.length === 0;
+})(), '同一条预测重复跑不得产生重复条目，且 skipped 说明原因');
+
+c213d('不可证伪的预测不登记进台账', (() => {
+  const before = readLedger().length;
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const inst = new ProjectionEngine({});
+  inst.signals = { items: [{
+    title: 'T',
+    // 无时间点的意图声明，应判 not-a-forecast，不得登记
+    body: 'We aim to close the gap between what evaluators understand and what the company itself knows.',
+    description: '', source: 'S', category: 'frontier_models',
+    pubDate: 'Tue, 13 Oct 2026 00:44:16 GMT',
+  }] };
+  const r = inst.buildForecastDiscrimination();
+  const after = readLedger().length;
+  return before === after && (r.results || []).every(x => !x.settleable);
+})(), '意图声明不得进台账（没有结算点就无法结算）');
+
+(async () => {
+  const results = await Promise.all(v213d.map(c => Promise.resolve(c.ok)));
+  let f = 0;
+  v213d.forEach((c, i) => {
+    const ok = results[i];
+    if (!ok) f++;
+    console.log(`${ok ? '✓' : '✗'} ${c.name}${ok ? '' : '  —— ' + c.detail}`);
+  });
+  console.log(`\nv2.13d: ${v213d.length - f} 通过, ${f} 失败, 共 ${v213d.length} 个`);
+  // 台账还原由文件开头的 process.on('exit') 统一负责，这里不重复还原。
+  if (f > 0) {
+    console.log('结论：台账登记链路仍有断点。');
+    process.exitCode = 1;
+  } else {
+    console.log('结论：可结算预测已能自动登记进台账，幂等且不污染不可结算条目。');
   }
 })();
