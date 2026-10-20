@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "updatedAt": "2026-10-19T23:50:35.577841+08:00",
+  "updatedAt": "2026-10-20T23:50:09.553509+08:00",
   "days": {
     "2026-10-06": {
       "runs": 2,
@@ -373,6 +373,77 @@
         "full-report-1792405655089.json",
         "full-report-1792413159856.json",
         "full-report-1792420658331.json"
+      ]
+    },
+    "2026-10-20": {
+      "runs": 56,
+      "firstRun": "2026-10-19T16:41:36.602Z",
+      "lastRun": "2026-10-20T14:37:31.079Z",
+      "avgScore": 0.0904,
+      "verdicts": [
+        "不可信"
+      ],
+      "heartflowVersions": [
+        "6.8.36",
+        "6.8.38"
+      ],
+      "sources": [
+        "full-report-1792428096602.json",
+        "full-report-1792435723630.json",
+        "full-report-1792443155018.json",
+        "full-report-1792450595648.json",
+        "full-report-1792458038057.json",
+        "full-report-1792464284622.json",
+        "full-report-1792464426177.json",
+        "full-report-1792464648054.json",
+        "full-report-1792464810469.json",
+        "full-report-1792468464423.json",
+        "full-report-1792468511702.json",
+        "full-report-1792468989739.json",
+        "full-report-1792470475178.json",
+        "full-report-1792470910272.json",
+        "full-report-1792471092551.json",
+        "full-report-1792471153556.json",
+        "full-report-1792471511651.json",
+        "full-report-1792474364491.json",
+        "full-report-1792475117975.json",
+        "full-report-1792475401531.json",
+        "full-report-1792478993157.json",
+        "full-report-1792481282396.json",
+        "full-report-1792483170437.json",
+        "full-report-1792483249546.json",
+        "full-report-1792483324138.json",
+        "full-report-1792484077783.json",
+        "full-report-1792484132627.json",
+        "full-report-1792484556614.json",
+        "full-report-1792484883404.json",
+        "full-report-1792484938751.json",
+        "full-report-1792485332851.json",
+        "full-report-1792485468785.json",
+        "full-report-1792485538564.json",
+        "full-report-1792485629508.json",
+        "full-report-1792485737973.json",
+        "full-report-1792485841837.json",
+        "full-report-1792486061416.json",
+        "full-report-1792486362862.json",
+        "full-report-1792486424227.json",
+        "full-report-1792486710958.json",
+        "full-report-1792487029123.json",
+        "full-report-1792487083816.json",
+        "full-report-1792487104738.json",
+        "full-report-1792487391968.json",
+        "full-report-1792487776316.json",
+        "full-report-1792488461452.json",
+        "full-report-1792491139676.json",
+        "full-report-1792491316577.json",
+        "full-report-1792491847441.json",
+        "full-report-1792491906528.json",
+        "full-report-1792492143509.json",
+        "full-report-1792492724359.json",
+        "full-report-1792499635526.json",
+        "full-report-1792505172318.json",
+        "full-report-1792505198191.json",
+        "full-report-1792507051079.json"
       ]
     }
   }
