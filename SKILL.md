@@ -1,8 +1,15 @@
 ---
 name: human-future-v2
-title: "人类未来 · 文明推演引擎 v2.7"
-version: "2.7.0"
+title: "人类未来 · 文明推演引擎 v2.8"
+version: "2.8.0"
 description: |-
+  人类未来技能 v2.8 — v2.8 修掉 v2.7 上线后实测的四个缺口（全部有回归测试）：
+  - 专项采集域里正文无厂商标识的条目不再落 undomained（采集域即归类依据）
+  - AI 相关域独占活跃域时，因果链走主题域共现兜底并自报 edgeSource=cooccurrence
+  - 来源可信度分级补厂商官方博客（T1）/主流媒体（T2）/分析型 newsletter（T3）表
+  - 时间轴抽取扩到摘要，前瞻词分强/弱两档 + 历史引用否决
+  - 测试从 23 项扩到 29 项，四项缺口各做过反向验证（摘除即失败）
+  
   人类未来技能 v2.7 — v2.7 新增「专项大模型」采集与推演域：
   - 新采集域 frontier_models：9 个实测可达源（4 家厂商一手 + MIT News-AI + 4 家 AI 分析型 newsletter），每源最多 12 条
   - 新推演主题域 frontier_models：32 个关键词覆盖 openai/anthropic/claude/gemini/deepseek/qwen 等主流家族
@@ -536,6 +543,39 @@ tags:
 
 **副作用（诚实记录）**：verdict score 从 0.5 变为 0.41。原因是心虫现在判真实数据
 而不是四平八稳的固定模板，分数低是真实质量，不是改坏。
+
+### v2.8 修复清单（2026-10-20，全部有可重跑测试与反向验证佐证）
+
+v2.7 上线后连着看了 4 份 full-report，发现四个「宣称可用但实际不可用」的缺口。
+每一个都先用真实报告证明它存在，再修，最后加断言防复发。
+
+| # | 缺口（实测证据） | 性质 | 修复 | 验证 |
+|---|------|------|------|------|
+| 1 | 专项采集域 106 条里有 22 条正文不含任何厂商标识（OpenAI 教育版公告、DeepMind 蛋白质/Private AI Compute、MIT News 天气预报与供应链、Interconnects 播客），关键词一个都不命中，全落 undomained | 归类失真 | `extractSignals()` 增加「采集域即归类依据」：`bucket === 'frontier_models'` 的条目即使无关键词命中也归入专项主题域 | undomainedRatio 0.27 → 0.11；专项域条目 42 → 112。测试：`专项采集域条目即使无厂商标识也归入专项主题域`。反向验证：摘除该段 → 断言失败 |
+| 2 | 因果链 3/4 轮返回「映射后仅 1 个域有对应传导源」而不画图。根因：`frontier_models` 与 `ai_capability` 都映射到传导表的 `ai`，top5 合并后只剩 1 个传导节点 | 能力空转 | 传导域 <2 时改用主题域级共现建图（同一信号命中多个域 = 被同一批事件牵连），按域热度定单向边避免无向图读不出根因，输出自报 `edgeSource: 'cooccurrence'` 并在 markdown 加⚠提示 | 实测 chains 从 0 → 3，roots 从空 → 「专项大模型（112 条信号）」。测试：`AI 域独占时因果链走共现兜底且标出 edgeSource`。反向验证：摘除兜底 → 断言失败 |
+| 3 | 12 个 live 来源全部被判 T4 自媒体/论坛，含 openai.com、deepmind.google、blogs.nvidia.com、news.mit.edu。分级器的 hint 表停在 v2.4 只覆盖 Reuters/Nature/MIT TR | 标识丢失（比数字错误更严重：官方博客正是一手口径所在，判成 T4 后报告无法区分「厂商自己说」与「第三方转述」） | 补三张表：`T1_VENDOR`（厂商官方博客/研究站/arXiv/ClinicalTrials）、`T2_ADDED`（Ars/MIT News/The Verge/SecurityWeek 等主流媒体）、`T3_ADDED`（Interconnects/Understanding AI/Simon Willison 等有方法论 newsletter）；`T1_VENDOR` 必须排在最前，否则 `microsoft.com/en-us/research` 会被 T2 吃掉 | 来源分级从 `{T4: 106}` 变为 `{T1: 47, T2: 45, T3: 48, T4: 0}`。测试：`厂商官方博客判为 T1` + `主流媒体判为 T2、分析型 newsletter 判为 T3`。反向验证：摘除 T1_VENDOR → 断言失败 |
+| 4 | 时间轴冲突检测连续 0/4 可用。根因：只扫标题，而 140 条 live 里标题含年份的仅 1 条 | 能力空转 | 抽取扩到标题+摘要；前瞻词分强/弱两档（弱档 in/on/from 必须搭配 will/planned/next 才认）；`since/ago/back in/last/past` 显式历史标记出现时否决裸年份 | 测试：`时间轴抽取覆盖摘要且只认前瞻词形态` + `历史引用年份不被当成 roadmap 声明`。反向验证：两项分别摘除 → 对应断言失败 |
+
+**修这四个缺口的过程中，测试自身抓到两个我引入的真 bug**（这正是加断言的价值）：
+
+| bug | 怎么被抓到 | 后果 |
+|---|---|---|
+| `buildTimelineConflicts()` 读 `it.description`，而 `extractSignals()` 从未给 items 挂过该字段 | 断言 `时间轴抽取覆盖摘要` 失败：摘要里的 `by 2028` 恒抽不到 | 若没这条断言，时间轴会以「扩了范围」的姿态继续零可用，且看不出原因 |
+| 第一版把裸 `in` 当前瞻词 | 断言 `历史引用年份不被当成 roadmap 声明` 失败：`In 2025, Stan created` 与 `since Q1 2023` 都被抽成 milestone | 会把历史引用当成 roadmap 声明排进同一条时间轴，正是该模块要防的那类错 |
+
+**v2.8 未解决（如实声明）**：
+
+- **时间轴冲突检测本期仍不可用**，原因是数据事实而非抽取失败：本批 140 条 live 里
+  能通过强前瞻词/结构化季度筛选的声明不足 2 个。厂商公告的时间声明多在
+  landing page 而非 RSS 摘要里，RSS 摘要只给导语。要让它稳定可用，需要扩采集
+  深度（抓正文）而不是继续改正则。
+- **共现兜底产出的因果链不是实证因果**。报告里已用⚠与 note 双重标注，但读者
+  仍可能把它当因果读。根治办法是给 `cross-domain-conduction.js` 的 CONDUCTION 表
+  增加 AI 域内部的细分规则（模型能力 / 安全 / 生态各自独立成域），这需要领域
+  知识输入，不是本技能能自行推导的。
+- **`buildClaimMismatches()` 连续多轮 0 命中**：本期 140 条 0 命中。它的检测对象是
+  「产能 vs 订单」类数字口径错位，而 RSS 摘要通常不含具体数字，所以 0 命中更可能是
+  「没数据可检」而非「没问题」。未修，因为修它同样需要抓正文。
 
 ### v2.7 升级清单（2026-10-20，全部有可重跑测试与运行输出佐证）
 

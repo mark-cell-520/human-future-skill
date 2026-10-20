@@ -203,3 +203,157 @@ if (fmDomain) {
   console.log('这属于测试自身缺陷或被测代码崩溃，按失败处理。');
   process.exitCode = 1;
 });
+
+// ════════════════════════════════════════════════════════════════
+// v2.8 新增断言：四项「实测缺口」必须有回归保护。
+// 每一条都对应 v2.7 上线后真实观察到的问题，不是假设。
+// ════════════════════════════════════════════════════════════════
+const { classifySource } = require('./human-future/scripts/source-credibility-grader.js');
+
+const v28 = [];
+function c28(name, ok, detail) { v28.push({ name, ok, detail }); }
+
+// 缺口 1：专项采集域里正文无厂商标识的条目必须归入专项主题域。
+// 实测：106 条专项源条目有 22 条正文无厂商标识，全落 undomained。
+c28('专项采集域条目即使无厂商标识也归入专项主题域', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const data = {
+    frontier_models: {
+      domain: 'frontier_models', name: '专项大模型',
+      news: [
+        // 正文不含 openai/gemini/claude 等任何关键词的厂商公告
+        { title: 'Teaching students to think through questions', description: 'AI for Educators',
+          source: 'OpenAI News', link: 'https://openai.com/index/x',
+          pubDate: 'Mon, 19 Oct 2026 10:00:00 +0000', origin: 'live' },
+        { title: 'Improving weather forecasts two to six weeks out', description: 'machine learning',
+          source: 'MIT News - AI', link: 'https://news.mit.edu/x',
+          pubDate: 'Fri, 16 Oct 2026 10:00:00 +0000', origin: 'live' },
+      ],
+    },
+  };
+  const eng = new ProjectionEngine({ newsData: data });
+  const dom = eng.signals.domains.find(d => d.id === 'frontier_models');
+  return !!dom && dom.count === 2;
+})(), '两条无厂商标识的专项源条目应归入 frontier_models');
+
+// 缺口 2：AI 相关域独占活跃域时，因果链必须用共现兜底而非返回不可用。
+// 实测 v2.7：3/4 轮返回「映射后仅 1 个域」，整段不可用。
+c28('AI 域独占时因果链走共现兜底且标出 edgeSource', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const data = {
+    frontier_models: {
+      domain: 'frontier_models', name: '专项大模型',
+      news: [
+        // 同一条同时命中专项域与治理域 → 产生共现边
+        { title: 'OpenAI policy regulation announcement on frontier model safety',
+          description: 'regulation law', source: 'OpenAI News',
+          link: 'https://openai.com/index/a', pubDate: 'Mon, 19 Oct 2026 10:00:00 +0000', origin: 'live' },
+        { title: 'OpenAI regulation law for model export control',
+          description: 'regulation', source: 'OpenAI News',
+          link: 'https://openai.com/index/b', pubDate: 'Fri, 16 Oct 2026 10:00:00 +0000', origin: 'live' },
+      ],
+    },
+    tech: {
+      domain: 'tech', name: '科技',
+      news: [
+        { title: 'OpenAI regulation policy debate on model safety law',
+          description: 'regulation', source: 'MIT Tech Review - AI',
+          link: 'https://technologyreview.com/c', pubDate: 'Thu, 15 Oct 2026 10:00:00 +0000', origin: 'live' },
+      ],
+    },
+  };
+  const eng = new ProjectionEngine({ newsData: data });
+  const rep = eng.generate();
+  const cc = rep.causalChains;
+  if (!cc.available) return false;
+  // 兜底路径必须自报 edgeSource，且根因/链不能全空
+  return cc.edgeSource === 'cooccurrence'
+    && cc.roots.length > 0
+    && cc.chains.length > 0
+    && /共现/.test(cc.note);
+})(), '共现图应有根因、链，且 note 标明非实证因果');
+
+// 缺口 3：官方厂商博客不能被判成 T4 自媒体。
+// 实测 v2.7：12 个 live 来源全部落 T4，含 openai.com/deepmind.google。
+c28('厂商官方博客判为 T1（不是 T4 自媒体）', (() => {
+  const cases = [
+    ['https://openai.com/index/low-resource-programming-languages', 'T1'],
+    ['https://deepmind.google/blog/accelerating-antimicrobial-discovery/', 'T1'],
+    ['https://blogs.nvidia.com/blog/germany-wants-to-lead-the-world-in-industrial-ai/', 'T1'],
+    ['https://www.microsoft.com/en-us/research/blog/proof-based-general-purpose-computing/', 'T1'],
+  ];
+  const bad = cases.filter(([u, want]) => classifySource(u) !== want);
+  return bad.length === 0;
+})(), 'openai/deepmind/nvidia/microsoft 官方博客应为 T1');
+
+c28('主流媒体判为 T2、分析型 newsletter 判为 T3', (() => {
+  const cases = [
+    ['https://arstechnica.com/security/2026/10/x/', 'T2'],
+    ['https://news.mit.edu/2026/x', 'T2'],
+    ['https://www.technologyreview.com/2026/10/19/x/', 'T2'],
+    ['https://www.interconnects.ai/p/meta-shakes-up-the-frontiers/', 'T3'],
+    ['https://simonwillison.net/2026/Oct/19/x/', 'T3'],
+  ];
+  const bad = cases.filter(([u, want]) => classifySource(u) !== want);
+  return bad.length === 0;
+})(), 'Ars/MIT News/MIT TR 应 T2，Interconnects/Simon Willison 应 T3');
+
+// 缺口 4：时间轴抽取必须覆盖摘要（v2.7 只扫标题，实测 140 条仅 1 条命中）。
+c28('时间轴抽取覆盖摘要且只认前瞻词形态', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const data = {
+    tech: {
+      domain: 'tech', name: '科技',
+      news: [
+        { title: 'Roadmap update', description: 'We plan to launch by 2028 with staged rollout',
+          source: 'Vendor Blog', link: 'https://example.com/a',
+          pubDate: 'Mon, 19 Oct 2026 10:00:00 +0000', origin: 'live' },
+        { title: 'Another roadmap', description: 'Scheduled for 2027-Q1 general availability',
+          source: 'Vendor Blog', link: 'https://example.com/b',
+          pubDate: 'Fri, 16 Oct 2026 10:00:00 +0000', origin: 'live' },
+      ],
+    },
+  };
+  const eng = new ProjectionEngine({ newsData: data });
+  const tl = eng.buildTimelineConflicts();
+  return tl.available === true
+    && tl.summary.total >= 2
+    && tl.ordered.some(s => /2028/.test(s))
+    && tl.ordered.some(s => /2027/.test(s));
+})(), '摘要里的 by 2028 / 2027-Q1 应被抽到');
+
+c28('历史引用年份不被当成 roadmap 声明', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const data = {
+    tech: {
+      domain: 'tech', name: '科技',
+      news: [
+        { title: 'History piece', description: 'In 2025, Stan created something notable',
+          source: 'Blog', link: 'https://example.com/a',
+          pubDate: 'Mon, 19 Oct 2026 10:00:00 +0000', origin: 'live' },
+        { title: 'Another history', description: 'The sharpest decline since Q1 2023 continued',
+          source: 'News', link: 'https://example.com/b',
+          pubDate: 'Fri, 16 Oct 2026 10:00:00 +0000', origin: 'live' },
+      ],
+    },
+  };
+  const eng = new ProjectionEngine({ newsData: data });
+  const tl = eng.buildTimelineConflicts();
+  // 这两条的年份都是历史引用（无前瞻词），必须判不可用而不是硬抽
+  return tl.available === false;
+})(), 'In 2025 / since Q1 2023 属历史引用，不应凑成时间轴');
+
+// ── v2.8 汇总 ──────────────────────────────────────────────────
+let f28 = 0;
+for (const c of v28) {
+  console.log(`${c.ok ? '✓' : '✗'} ${c.name}${c.ok ? '' : '  —— ' + c.detail}`);
+  if (!c.ok) f28++;
+}
+console.log(`\nv2.8: ${v28.length - f28} 通过, ${f28} 失败, 共 ${v28.length} 个`);
+if (f28 > 0) {
+  console.log('结论：v2.8 缺口修复未守住。');
+  console.log('修法：见 test-reasoning-is-derived.js 里 v28() 各条对应的实测缺口注释。');
+  process.exitCode = 1;
+} else {
+  console.log('结论：v2.8 四项缺口修复均有回归保护。');
+}

@@ -113,6 +113,11 @@ class ProjectionEngine {
         items.push({
           title: String(n.title || ''),
           text: `${n.title || ''} ${n.description || ''}`,
+          // [v2.8] description 必须单独保留：buildTimelineConflicts() 要按
+          // 「标题 vs 摘要」区别对待（标题里的 2026-10 是发布声明，摘要里的多
+          // 为例程日期）。v2.8 第一版只读 it.description，而这里从未挂过该字段，
+          // 于是抽取恒为空、时间轴连续不可用。测试用例（摘要含 by 2028）抓到了它。
+          description: String(n.description || ''),
           source: n.source || '(未标注)',
           link: n.link || '',
           pubDate: n.pubDate || '',
@@ -133,6 +138,23 @@ class ProjectionEngine {
           byDomain[d.id].push(it);
           matched.push(d.id);
         }
+      }
+      // [v2.8] 采集域即归类依据：来自 frontier_models 采集域的条目，
+      // 即使正文不含任何厂商标识，也归入专项主题域。
+      //
+      // 为什么需要这条：实测 106 条专项源条目里有 22 条正文无厂商标识——
+      // OpenAI 的教育版公告、DeepMind 的蛋白质/Private AI Compute、MIT News 的
+      // 天气预报与供应链报告、Interconnects 的播客与观点文。它们来自专项源但
+      // 讲的是教育/气象/学术生态，关键词一个都不命中，于是全落进 undomained，
+      // 把未归类占比推到 0.27，且专项趋势段漏掉它们。
+      //
+      // 「来源是厂商/专项源」本身就是比正文更可靠的归类信号：用户要的是
+      // 「这些源在关注什么」，不是「这些源里哪些含厂商名」。
+      // 副作用如实记录：这会让专项域条目数从 42 涨到约 64，domainsMatched 不变，
+      // 未归类占比下降。它不改变其他任何域的归属。
+      if (it.bucket === 'frontier_models' && !matched.includes('frontier_models')) {
+        byDomain.frontier_models.push(it);
+        matched.push('frontier_models');
       }
       it.domains = matched;
     }
@@ -227,11 +249,15 @@ class ProjectionEngine {
     }
     // 本引擎域 id → cross-domain-conduction 的域 id。
     // 不映射的话 CONDUCTION 规则一条都匹配不上，因果链必然为空。
-    // [v2.7] frontier_models 与 ai_capability/ai_safety 一样映射到 'ai'：
-    // 专项大模型的进展在传导表里就是 ai 域的输入，不新增传导域。
-    // 副作用：当专项大模型与 AI 能力边界同时进 top5 时，used 只有 1 个 key
-    // （都映射到 ai），因果链返回「映射后仅 1 个域」而不画图——这是真实
-    // 状态（两个域在传导表里是同一个节点），如实报告，不为了出图而拆假域。
+    // [v2.8] 映射到同一传导域的多个主题域合并为一个节点，但保留各自的
+    // 专项身份：合并后若只有 1 个传导域，退而用「域内共现」建子图。
+    //
+    // 背景（v2.7 引入的回归）：v2.7 把 frontier_models 也映射到 'ai'，
+    // 于是 top5 里 ai_capability(74) + frontier_models(42) 合并后 used 只有
+    // 1 个 key，因果链连续返回「映射后仅 1 个域」而不画图——3/4 轮不可用。
+    // 这不是真实状态：两个域的信号确实同时活跃，只是传导表把 AI 视为一个域。
+    // 正确做法：传导域 <2 时，用主题域之间的条目共现建图（同一条新闻命中
+    // 两个主题域 = 这两个域在本期存在关联），并明确标注边来自共现而非实证规则。
     const MAP = {
       ai_capability: 'ai', ai_safety: 'ai', frontier_models: 'ai', compute_energy: 'energy',
       neuro_bci: 'neuro', biotech_longevity: 'genomics',
@@ -251,24 +277,75 @@ class ProjectionEngine {
       merged._merged = merged._merged || [];
       if (d !== merged) merged._merged.push(d);
     }
-    if (used.size < 2) {
-      return { available: false, reason: `映射后仅 ${used.size} 个域有对应传导源，无法建立域间因果链` };
-    }
-    for (const [cid, d] of used) {
-      const count = d.count + ((d._merged || []).reduce((s, x) => s + x.count, 0));
-      g.addNode(cid, `${d.name}${d._merged && d._merged.length ? ' 等' : ''}（${count} 条信号）`, 'domain');
-    }
-    for (const rule of CONDUCTION) {
-      if (rule.strength < 0.5) continue;
-      if (used.has(rule.from) && used.has(rule.to)) {
-        g.addEdge(rule.from, rule.to, rule.why, rule.strength);
+
+    // 边来自实证传导规则（强度 >= 0.5）——优先路径
+    let edgeSource = 'conduction';
+    if (used.size >= 2) {
+      for (const [cid, d] of used) {
+        const count = d.count + ((d._merged || []).reduce((s, x) => s + x.count, 0));
+        g.addNode(cid, `${d.name}${d._merged && d._merged.length ? ' 等' : ''}（${count} 条信号）`, 'domain');
+      }
+      for (const rule of CONDUCTION) {
+        if (rule.strength < 0.5) continue;
+        if (used.has(rule.from) && used.has(rule.to)) {
+          g.addEdge(rule.from, rule.to, rule.why, rule.strength);
+        }
       }
     }
+
+    // [v2.8] 传导域不足 2 个（AI 相关域独占 top5）时的兜底：
+    // 改用主题域级共现建图。同一条新闻同时命中两个主题域，说明本期这两个域
+    // 被同一批事件牵连——这是从真实数据得到的关联，不是臆造。
+    // 与实证规则的区别必须在输出里写明，不得混为「因果」。
+    if (g.edges.length === 0) {
+      edgeSource = 'cooccurrence';
+      const nodeSet = new Set();
+      const edgeCount = new Map();
+      for (const it of this.signals.items) {
+        const doms = (it.domains || []).filter(x => ds.some(d => d.id === x));
+        for (const a of doms) {
+          nodeSet.add(a);
+          for (const b of doms) {
+            if (a === b) continue;
+            const key = `${a}->${b}`;
+            edgeCount.set(key, (edgeCount.get(key) || 0) + 1);
+          }
+        }
+      }
+      if (nodeSet.size < 2) {
+        return { available: false, reason: `映射后仅 ${used.size} 个域有对应传导源，且主题域共现不足，无法建立因果链` };
+      }
+      for (const id of nodeSet) {
+        const d = ds.find(x => x.id === id);
+        g.addNode(id, `${d.name}（${d.count} 条信号）`, 'domain');
+      }
+      // 共现是无向关联，若两个方向都加边，每个节点入度出度都非零，
+      // roots()/outcomes() 全为空，因果链与干预点也出不来——图建了却读不出
+      // 任何结构（v2.8 第一版实测：根因(无)、终局(无)、因果链空、干预点空）。
+      // 做法：按域热度排序定主方向（热域 → 冷域），只加单向边。
+      // 热度来自 signals.domains 的排序（extractSignals 已按 heat 排好）。
+      const heatRank = new Map(ds.map((d, i) => [d.id, i]));
+      const added = new Set();
+      for (const [key, cnt] of [...edgeCount].sort((a, b) => b[1] - a[1])) {
+        const [from, to] = key.split('->');
+        const pairKey = [from, to].sort().join('|');
+        if (added.has(pairKey)) continue;   // 一对域只保留共现次数最多的方向
+        added.add(pairKey);
+        const strength = Math.min(0.9, 0.3 + cnt * 0.1);
+        // 方向按热度：热域在前，作为"被牵连的起点"
+        const [hot, cold] = heatRank.get(from) <= heatRank.get(to) ? [from, to] : [to, from];
+        const hotCnt = edgeCount.get(`${hot}->${cold}`) || cnt;
+        const s2 = Math.min(0.9, 0.3 + hotCnt * 0.1);
+        g.addEdge(hot, cold, `本期 ${hotCnt} 条信号同时命中两个域（共现，非实证因果）`, s2);
+      }
+    }
+
     if (g.edges.length === 0) {
       return { available: false, reason: '本期域之间没有强度 >=0.5 的实证传导关系' };
     }
     return {
       available: true,
+      edgeSource,
       roots: g.roots().map(n => n.label),
       outcomes: g.outcomes().map(n => n.label),
       chains: g.allPaths().slice(0, 6).map(p =>
@@ -278,7 +355,9 @@ class ProjectionEngine {
         pathsBroken: lp.pathsBroken,
         ratio: Math.round(lp.ratio * 100) / 100,
       })),
-      note: '边来自 cross-domain-conduction 的实证规则表，不是本引擎臆造的因果关系',
+      note: edgeSource === 'conduction'
+        ? '边来自 cross-domain-conduction 的实证规则表，不是本引擎臆造的因果关系'
+        : '边来自本期主题域共现（同一信号命中多个域），不是实证因果规则；只表示这些域在本期被同一批事件牵连',
     };
   }
 
@@ -286,15 +365,18 @@ class ProjectionEngine {
   // v3：从当期最热域出发，算它向其他域的传导全景（强度+时延）
   // ───────────────────────────────────────────────────────────────
   buildCrossDomainConduction() {
-    const top = this.signals.domains[0];
-    if (!top) return { available: false, reason: '无活跃域' };
-    // cross-domain-conduction 用的域 id 是 ai/neuro/genomics/...
-    // 本引擎的域 id 需要映射过去
+    // [v2.8] 从最热域出发找传导源；frontier_models 与 ai_capability 同属 ai，
+    // 所以专项域登顶时仍用 'ai' 作传导源，不再返回"没有对应源域"。
+    // v2.7 的 MAP 漏了 frontier_models，导致专项域成为 top1 的那几轮
+    // 跨域传导整段不可用（实测 3/4 轮）。
     const MAP = {
-      ai_capability: 'ai', ai_safety: 'ai', compute_energy: 'energy',
+      ai_capability: 'ai', ai_safety: 'ai', frontier_models: 'ai', compute_energy: 'energy',
       neuro_bci: 'neuro', biotech_longevity: 'genomics',
-      robotics_auto: 'robotics', space: 'space',
+      robotics_auto: 'robotics', space: 'space', governance: 'ai',
     };
+    // 选第一个能映射到传导源的最热域（不是无条件取 domains[0]）
+    const top = this.signals.domains.find(d => MAP[d.id]);
+    if (!top) return { available: false, reason: '本期活跃域均无对应传导源域' };
     const src = MAP[top.id];
     if (!src) {
       return { available: false, reason: `域「${top.name}」在传导矩阵中没有对应源域`, source: top.id };
@@ -357,25 +439,83 @@ class ProjectionEngine {
   // v3：把信号里出现的 roadmap 时间点放进同一时间轴，检测冲突。
   // ───────────────────────────────────────────────────────────────
   buildTimelineConflicts() {
-    // 从标题里抽取 "2027" / "2027-Q1" / "by 2028" 等时间声明
+    // [v2.8] 从标题 + 摘要里抽取 "2027" / "2027-Q1" / "2026-10" / "by 2028" 等时间声明。
+    //
+    // 为什么扩到摘要：v2.7 实测 140 条 live 里标题含年份的只有 1 条，
+    // 而标题+摘要有 7 条。厂商公告的时间声明（"first half of 2027"、
+    // "2026-10-13 GA"、"by 2028"）绝大多数写在正文而非标题，只扫标题等于
+    // 连续多轮零可用。扩到摘要后可用性由数据决定，不再由抽取位置决定。
+    //
+    // 但要防一种失真：摘要里的年份可能只是引用别的事件（"In 2025, Stan
+    // ... created ..."、"since Q1 2023"），那不是本条的 roadmap 声明。
+    //
+    // 第一版把裸 in/on/from/through 也当前瞻词，实测 "In 2025, Stan created"
+    // 与 "since Q1 2023" 都被抽成 milestone——这两个恰恰是最典型的历史引用。
+    // 因此前瞻词分两档：
+    //   强前瞻词（明确指向未来）：by / until / ahead of / expected / planned /
+    //     scheduled / target / launch / ship / available / release / roll out /
+    //     debut / 至 / 到 / 将在 / 计划 / 预计 / 拟于 / 定于 —— 后面跟年份即声明
+    //   弱前瞻词（in / on / during / from / through）：必须搭配未来标记
+    //     （will / would / plans / next / coming / upcoming / 未来 / 未来几年）
+    //     才认，单独出现不认。
+    // 另外 "since/for/ago/back in/last/past" 是显式历史标记，出现即否决该年份。
     const milestones = [];
     const seen = new Set();
+    const STRONG = /(?:by|until|till|ahead of|expected|plan(?:s|ned|ning)?|scheduled|target(?:s|ing)?|launch(?:es|ing|ed)?|ship(?:s|ping)?|availab(?:le|ility)|releas(?:e|es|ing)|roll(?:s|ing)?\s?out|debut(?:s|ing)?|至|到|将在|计划|预计|拟于|定于|预计于)\s*[^.;]{0,24}?(20\d{2})(-Q[1-4]|-H[12]|-\d{2})?(?:\s|$|[.,;)）])/gi;
+    const WEAK = /(?:in|on|during|from|through)\s*[^.;]{0,24}?(?:will|would|plans?|planned|next|coming|upcoming|future|未来|将来)[^.;]{0,24}?(20\d{2})(-Q[1-4]|-H[12]|-\d{2})?(?:\s|$|[.,;)）])/gi;
+    const HISTORICAL = /(?:since|for\s+\d|ago|back\s+in|last\s+year|past\s+\d|in\s+the\s+past|histor\w+)/i;
+    const STRUCTURED = /(20\d{2})(-Q[1-4]|-H[12])(?![-\d])/g;
+    const YEAR_MONTH = /(20\d{2})-(\d{2})(?![\d])/g;
     for (const it of this.signals.items) {
-      const m = it.title.match(/(?:by\s+)?(20\d{2})(?:-Q([1-4])|-H([12]))?/);
-      if (!m) continue;
-      const claimed = m[0].replace(/^by\s+/i, '');
-      const id = `${it.source}:${claimed}:${it.title.slice(0, 20)}`;
-      if (seen.has(id)) continue;
-      seen.add(id);
-      milestones.push({
-        id, label: it.title.slice(0, 80), claimed,
-        verified: false,   // 信号里声称的时间点一律未证实
-        source: it.source, link: it.link,
-      });
+      const text = `${it.title || ''} ${(it.description || '').slice(0, 400)}`;
+      const found = [];
+      // 1) 强前瞻词 + 年份（最高可信：是声明不是引用）
+      let m;
+      STRONG.lastIndex = 0;
+      while ((m = STRONG.exec(text)) !== null) {
+        found.push(`${m[1]}${m[2] || ''}`);
+      }
+      // 2) 弱前瞻词 + 未来标记 + 年份
+      WEAK.lastIndex = 0;
+      while ((m = WEAK.exec(text)) !== null) {
+        found.push(`${m[1]}${m[2] || ''}`);
+      }
+      // 3) 结构化 2027-Q1 / 2027-H2（本身就是声明形态）
+      STRUCTURED.lastIndex = 0;
+      while ((m = STRUCTURED.exec(text)) !== null) {
+        found.push(`${m[1]}${m[2]}`);
+      }
+      // 4) 2026-10 这类年月（只认标题：标题里的是发布声明，摘要里多为例程日期）
+      if (/20\d{2}-\d{2}/.test(it.title || '')) {
+        YEAR_MONTH.lastIndex = 0;
+        while ((m = YEAR_MONTH.exec(it.title)) !== null) {
+          found.push(`${m[1]}-${m[2]}`);
+        }
+      }
+      // 5) 历史引用否决：整条文本带显式历史标记时，只保留结构化季度/年月
+      //    （"2027-Q1 GA" 这种即使在回顾文里也是声明），丢掉裸年份。
+      let usable = found;
+      if (HISTORICAL.test(text)) {
+        usable = found.filter(f => /-Q[1-4]|-H[12]|-\d{2}$/.test(f));
+      }
+      for (const claimed of usable) {
+        const id = `${it.source}:${claimed}:${it.title.slice(0, 20)}`;
+        if (seen.has(id)) continue;
+        seen.add(id);
+        milestones.push({
+          id, label: it.title.slice(0, 80), claimed,
+          verified: false,   // 信号里声称的时间点一律未证实
+          source: it.source, link: it.link,
+        });
+        if (milestones.length >= 12) break;
+      }
       if (milestones.length >= 12) break;
     }
     if (milestones.length < 2) {
-      return { available: false, reason: '信号中可提取的时间点少于 2 个，无法检测冲突' };
+      return {
+        available: false,
+        reason: `从 ${this.signals.items.length} 条 live 信号的标题与摘要中，未抽到 2 个以上前瞻性时间声明`,
+      };
     }
     const res = detectTimelineConflicts(milestones);
     return {
@@ -383,7 +523,8 @@ class ProjectionEngine {
       ordered: res.ordered,
       conflicts: res.conflicts,
       summary: res.summary,
-      note: 'verified=false 表示该时间点只是来源声称，未经独立证实',
+      note: 'verified=false 表示该时间点只是来源声称，未经独立证实；'
+        + '抽取范围含摘要，只认前瞻词或结构化季度/年月形态，不含正文里的历史引用',
     };
   }
 
@@ -1065,6 +1206,11 @@ function formatReport(report) {
   if (!cc || !cc.available) {
     lines.push(`（${(cc && cc.reason) || '未运行'}）`);
   } else {
+    if (cc.edgeSource === 'cooccurrence') {
+      lines.push('⚠ 本图边来自主题域共现，不是实证因果规则（本期 AI 相关域独占活跃域，');
+      lines.push('   跨域实证规则无适用对象）。共现只说明这些域被同一批事件牵连。');
+      lines.push('');
+    }
     lines.push(`**根因（入度为 0）**: ${cc.roots.join('、') || '(无)'}`);
     lines.push(`**终局（出度为 0）**: ${cc.outcomes.join('、') || '(无)'}`);
     lines.push('');

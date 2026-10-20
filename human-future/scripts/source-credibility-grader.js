@@ -26,11 +26,29 @@ const T1_HINTS = /(sec\.gov|nmpa|fda\.gov|nasa\.gov|aisi\.gov\.uk|nobelprize\.or
 const T2_HINTS = /(reuters|bloomberg|bbc\.com|nature\.com|science\.org|technologyreview|wsj\.com|ft\.com|cnbc|theinformation|scmp|people\.com\.cn|\.gov)/i;
 const T3_HINTS = /(gartner|forrester|iea\.org|bcg\.com|deloitte|brookings|mckinsey|analysis|report)/i;
 
+// [v2.8 增补] 以下 hint 表是 v2.4 按当时的采集源写的，只覆盖 Reuters/Nature/
+// MIT TR 一类。v2.7 引入 frontier_models 采集域后，实测 12 个 live 来源全部
+// 落 T4——包括 openai.com、deepmind.google、blogs.nvidia.com、news.mit.edu
+// 这些厂商官方博客与高校新闻室。把它们判成「自媒体/论坛」是错的：
+//   一，来源分级报告会显示「T4 自媒体 106 条」，读者以为证据基础是论坛帖；
+//   二，更关键的是「厂商自述」这个标识丢了——官方博客正是一手口径所在，
+//      判成 T4 后，报告无法区分「厂商自己说」与「第三方转述」。
+// 因此按真实来源域补表。补的每一项都能在采集源列表里找到对应条目。
+const T1_VENDOR = /(openai\.com|deepmind\.google|anthropic\.com|ai\.meta\.com|mistral\.ai|blogs\.microsoft\.com|microsoft\.com\/en-us\/research|nvidia\.com\/en-us\/research|developer\.nvidia\.com|research\.google|ai\.googleblog\.com|arxiv\.org|clinicaltrials\.gov|patents\.google\.com|blogs\.nvidia\.com|nvidianews\.nvidia\.com)/i;
+const T2_ADDED = /(arstechnica\.com|news\.mit\.edu|theverge\.com|techcrunch\.com|wired\.com|scientificamerican\.com|newscientist\.com|economist\.com|nytimes\.com|washingtonpost\.com|theguardian\.com|apnews\.com|nature\.com\/news|securityweek\.com|thehackernews\.com|zdnet\.com|theregister\.com|venturebeat\.com|technologyreview\.com|acs\.org|ieee\.org|acm\.org)/i;
+const T3_ADDED = /(substack\.com|interconnects\.ai|understandingai\.org|transformernews\.ai|simonwillison\.net|lesswrong\.com|alignmentforum\.org|epochai\.org|importai\.net|oneusefulthing\.org|importai|analyticsindiamag|venturebeat)/i;
+
 function classifySource(urlOrName) {
   const s = String(urlOrName || '');
+  // 顺序即优先级：T1 厂商官方/监管先判，T2 主流媒体，T3 有方法论的分析。
+  // [v2.8] 注意 T1_VENDOR 必须排在 T2_ADDED 之前：microsoft.com/en-us/research
+  // 同时含 "microsoft.com" 与 "/research"，若先匹配 T2 会把官方研究博客降级。
+  if (T1_VENDOR.test(s)) return 'T1';
   if (T1_HINTS.test(s)) return 'T1';
   if (T2_HINTS.test(s)) return 'T2';
+  if (T2_ADDED.test(s)) return 'T2';
   if (T3_HINTS.test(s)) return 'T3';
+  if (T3_ADDED.test(s)) return 'T3';
   return 'T4';
 }
 
