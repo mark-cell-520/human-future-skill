@@ -66,6 +66,13 @@ description: |-
 - `npm test`：52 项断言（12 基础 + 6 v2.8 + 6 v2.9 + 18 v2.10 + 3 v2.11 + 7 早期）
 - 每项修复都做过反向验证（摘除修复 → 对应断言失败）
 
+**cron 注入脚本**（`~/.hermes/scripts/hf-cron-fetch.sh`，不在本仓、不受版本控制）
+- 跑法：`FETCH=1 FETCH_BODY=1 node scripts/run-pipeline.js` → 提取摘要 → 心虫 think()
+- 专项域分区：F 编号明细前 20 条 + 全量按来源/按周聚合概览
+- 排序必须用 `Date.parse` 比较，**不能用 `localeCompare`**：RFC 822 字符串
+  （"Wed, 14 Oct 2026"）按字符串比会得到错误顺序，实测 10-19 的条目被排到第 6 位
+- 改动前先备份：`cp ~/.hermes/scripts/hf-cron-fetch.sh{,.bak-$(date +%Y%m%d)}`
+
 
 ### 历史升级与修复清单（v2.5 → v2.11）
 
