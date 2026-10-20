@@ -52,11 +52,12 @@ const DEFAULT_BASE_RATES = {
 
 /** 不可证伪的措辞模式：无主体、无时点、或纯价值判断。 */
 const UNFALSIFIABLE_PATTERNS = [
-  // [v2.13] no-timeline 必须同时认**相对时间**。
+  // [v2.13] no-timeline 必须同时认**相对时间**与**月份+年份**。
   // 实测踩坑：Anthropic 的 "by the end of this year" 不含 20xx，
   // 旧正则不认它，导致这条有明确结算点的预测被误判「无时间点」。
+  // EU AI Act 的 "by August 2026" 是月份+年份形态，同样要认。
   // 相对时间词与 project-future.js 的 TIME_POINT 保持一致。
-  { id: 'no-timeline', test: (t) => !/(20\d{2}|明年|后年|未来|个月内|年内|季度|Q[1-4]|H[12]|soon|by \d|within \d|this\s+year|end\s+of\s+(?:this\s+)?year|year[\s-]end|年底|今年|明年初|年底前|next\s+(?:year|quarter|month)|下季度|下个月)/i.test(t),
+  { id: 'no-timeline', test: (t) => !/(20\d{2}|明年|后年|未来|个月内|年内|季度|Q[1-4]|H[12]|soon|by \d|within \d|this\s+year|end\s+of\s+(?:this\s+)?year|year[\s-]end|年底|今年|明年初|年底前|next\s+(?:year|quarter|month)|下季度|下个月|(?:january|february|march|april|may|june|july|august|september|october|november|december)\s+20\d{2}|Q[1-4]\s+20\d{2})/i.test(t),
     label: '无时间点（意图声明，非可结算预测）', guidance: '没有时点的前瞻表述是意图或愿景，无法结算，只能算观点。' },
   { id: 'vague-subject', test: (t) => /(AI|技术|社会|世界|行业|我们|人们|大家)\s*(会|将|可能|应该|需要)/.test(t)
     && !/(OpenAI|Google|Anthropic|Meta|Microsoft|NVIDIA|DeepSeek|阿里|字节|腾讯|百度|某公司|该公司|厂商)/.test(t),
@@ -129,9 +130,35 @@ function discriminate(claim, opts = {}) {
       const d = new Date(baseDate); d.setUTCMonth(d.getUTCMonth() + 1);
       return d.toISOString().slice(0, 10);
     } },
+    // [v2.13] 月份+年份（"by August 2026"）→ 换算成该月所在季度。
+    // EU AI Act 这类监管源的时点就是月份+年份形态，必须能解析出结算点。
+    { re: /(january|february|march|april|may|june|july|august|september|october|november|december)\s+(20\d{2})/i,
+      due: (m) => {
+        const MON = { january: 1, february: 2, march: 3, april: 4, may: 5, june: 6, july: 7,
+          august: 8, september: 9, october: 10, november: 11, december: 12 };
+        const mo = MON[String(m[1]).toLowerCase()];
+        const yr = Number(m[2]);
+        return `${yr}-Q${Math.ceil(mo / 3)}`;
+      } },
+    { re: /Q([1-4])\s+(20\d{2})/i, due: (m) => `${m[2]}-Q${m[1]}` },
   ];
   let timeMatch = text.match(/(20\d{2})(?:-Q([1-4])|-H([12])|-(\d{2}))?/)
     || text.match(/(\d+)\s*(?:个月|月内|months?)/i);
+  // [v2.13] 裸年份可能是「月份+年份」的一部分，此时不能按 Q4 处理。
+  //
+  // 实测踩坑：EU AI Act 的 "must do by August 2026" 被 (20\d{2}) 先匹配到
+  // 裸年份 2026，走 absolute 分支默认 Q4，产出 dueOn=2026-Q4——
+  // 但 August 在 Q3。同样 "by Q2 2027" 被匹配成裸 2027 → Q4，实际是 Q2。
+  //
+  // 规则：如果年份前面紧邻月份名或 Q 标记，就不是裸年份，
+  // 清掉 timeMatch 让相对时间分支的月份解析接管。
+  if (timeMatch && /^\d{4}/.test(timeMatch[0]) && timeMatch.index !== undefined) {
+    const before = text.slice(Math.max(0, timeMatch.index - 20), timeMatch.index);
+    if (/(?:january|february|march|april|may|june|july|august|september|october|november|december)\s+$/i.test(before)
+      || /\bQ[1-4]\s+$/i.test(before)) {
+      timeMatch = null;
+    }
+  }
   let dueOn = null;
   let dueBasis = null;
   // [v2.13] 年份合理性校验。
@@ -162,8 +189,9 @@ function discriminate(claim, opts = {}) {
   } else {
     // 绝对时间没命中时试相对时间
     for (const r of RELATIVE) {
-      if (r.re.test(text)) {
-        dueOn = r.due();
+      const m = text.match(r.re);
+      if (m) {
+        dueOn = r.due(m);
         dueBasis = 'relative';
         break;
       }

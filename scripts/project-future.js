@@ -1151,11 +1151,17 @@ class ProjectionEngine {
     // 我的 TIME 正则不认它，COMMIT 也不命中（没有 plans to 这类词）。
     // 结果这条质量最高的预测被漏掉，只能抓到意图声明。
     //
-    // 因此 TIME 必须含相对时间词，COMMIT 必须含条件式预测
+    // 因此 TIME 必须含相对时间词，COMMITMENT 必须含条件式预测
     // （"if X, they'll Y"、"X will Y by Z"）——条件句本身就是预测的典型形态。
-    const TIME_POINT = /(20\d{2}(?:-Q[1-4]|-H[12]|-\d{2})?|明年|后年|未来\s*\d+\s*年?|个月内|年内|季度|Q[1-4]|H[12]|within\s+\d|in\s+20\d{2}|by\s+20\d{2}|next\s+(?:year|quarter|month)|this\s+year|end\s+of\s+(?:this\s+)?year|year[\s-]end|年底|今年|明年初|年底前)/i;
-    const COMMITMENT = /(plans?\s+to|aims?\s+to|intends?\s+to|expects?\s+to|targets?\s|goal\s+is|on\s+the\s+roadmap|roadmap| slated|poised|set\s+to|计划|预计|拟于|定于|有望|目标|路线图|将要|将会|will\s+(?:match|reach|hit|achieve|arrive|be\s+at)|they'?ll\s+(?:match|reach|hit|be)|would\s+(?:match|reach|hit|be))/i;
-    const NOT_A_PREDICTION = /(at\s+(?:an?\s+)?(?:introductory\s+)?price|priced\s+at|is\s+confined\s+to|will\s+be\s+able\s+to|is\s+designed\s+to|this\s+ensures|with\s+this\s+new|定价|价格为|售价)/i;
+    //
+    // [v2.13] 还要认**义务句式**：EU AI Act 这类监管源的表述是
+    //   "What providers and deployers must do by August 2026"
+    // 有主体（providers）、有事件（must do）、有法定时点（August 2026），
+    // 是比厂商意图声明更硬的可结算预测——到点就能验证有没有做到。
+    // 实测该句式 COMMITMENT 不命中（没有 plans to 这类词），必须补。
+    const TIME_POINT = /(20\d{2}(?:-Q[1-4]|-H[12]|-\d{2})?|明年|后年|未来\s*\d+\s*年?|个月内|年内|季度|Q[1-4]|H[12]|within\s+\d|in\s+20\d{2}|by\s+20\d{2}|next\s+(?:year|quarter|month)|this\s+year|end\s+of\s+(?:this\s+)?year|year[\s-]end|年底|今年|明年初|年底前|(?:january|february|march|april|may|june|july|august|september|october|november|december)\s+20\d{2}|20\d{2}\s+(?:january|february|march|april|may|june|july|august|september|october|november|december)|Q[1-4]\s+20\d{2})/i;
+    const COMMITMENT = /(plans?\s+to|aims?\s+to|intends?\s+to|expects?\s+to|targets?\s|goal\s+is|on\s+the\s+roadmap|roadmap| slated|poised|set\s+to|计划|预计|拟于|定于|有望|目标|路线图|将要|将会|will\s+(?:match|reach|hit|achieve|arrive|be\s+at)|they'?ll\s+(?:match|reach|hit|be)|would\s+(?:match|reach|hit|be)|must\s+(?:do|comply|implement|ensure|provide|register|report|obtain|conduct)|shall\s+(?:do|comply|implement|ensure|provide|be)|(?:is|are|be)\s+required\s+to|required\s+to\s+(?:comply|implement|ensure|provide|register)|obligation\s+to|义务|必须|须于|应于|应当)/i;
+    const NOT_A_PREDICTION = /(at\s+(?:an?\s+)?(?:introductory\s+)?price|priced\s+at|is\s+confined\s+to|will\s+be\s+able\s+to|is\s+designed\s+to|this\s+ensures|with\s+this\s+new|定价|价格为|售价|must\s+register\s+by|registration\s+(?:deadline|closes|due)|register\s+by\s+\d|wishing\s+to\s+attend|virtual\s+meeting|webinar|会议注册|报名截止| wishing to attend)/i;
     const claims = [];
     for (const it of this.signals.items) {
       const text = `${it.title || ''} ${it.body || ''} ${it.description || ''}`;

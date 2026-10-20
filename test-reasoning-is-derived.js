@@ -1099,3 +1099,84 @@ c213e('id 不含会变化的 claim 文本', (() => {
     console.log('结论：台账 id 稳定，同一条预测不会重复登记。');
   }
 })();
+
+// ════════════════════════════════════════════════════════════════
+// v2.13f 新增断言：义务句式 + 月份年份时点 + HTML 数字实体解码。
+// 实测依据：加了 EU AI Act / NIST 两个监管源后，义务句式
+// "What providers and deployers must do by August 2026" 抽不出来
+// （COMMITMENT 不认 must/shall），且 &#8217; 数字实体没解码导致正则失配。
+// ════════════════════════════════════════════════════════════════
+const v213f = [];
+function c213f(name, ok, detail) { v213f.push({ name, ok, detail }); }
+
+const { stripHtml: stripHtmlF } = require('./scripts/collect-news.js');
+
+c213f('HTML 数字实体被解码（&#8217; → 弯撇号）', (() => {
+  const out = stripHtmlF('The EU AI Act&#8217;s rules: they&#8217;ll comply by August 2026');
+  return !/&#\d+;/.test(out) && out.includes('\u2019');
+})(), '不得残留 &#NNNN; 实体');
+
+c213f('义务句式 + 月份年份被抽出且解析出正确季度', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const inst = new ProjectionEngine({});
+  inst.signals = { items: [{
+    title: 'EU AI Act',
+    body: 'The EU AI Act\u2019s transparency rules under Article 50 set out what providers and deployers '
+      + 'must do by August 2026. Providers of general-purpose AI models must comply with the '
+      + 'documentation and transparency obligations before that date.',
+    description: '', source: 'EU AI Act Timeline', category: 'governance',
+    pubDate: 'Thu, 14 May 2026 23:11:21 GMT',
+  }] };
+  const r = inst.buildForecastDiscrimination();
+  const hit = (r.results || []).find(x => x.settleable);
+  return !!hit && hit.dueOn === '2026-Q3';
+})(), 'August 2026 应解析为 2026-Q3（不是裸年份默认的 Q4）');
+
+c213f('Q 季度时点被正确解析（Q2 2027 → 2027-Q2）', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const inst = new ProjectionEngine({});
+  inst.signals = { items: [{
+    title: 'T',
+    body: 'Member states shall implement the enforcement framework by Q2 2027. '
+      + 'National authorities are required to establish the necessary procedures.',
+    description: '', source: 'EU AI Act Timeline', category: 'governance',
+    pubDate: 'Tue, 31 Mar 2026 08:15:05 GMT',
+  }] };
+  const r = inst.buildForecastDiscrimination();
+  const hit = (r.results || []).find(x => x.settleable);
+  return !!hit && hit.dueOn === '2027-Q2';
+})(), 'Q2 2027 应解析为 2027-Q2');
+
+c213f('会议注册截止不算预测', (() => {
+  // 断言必须直接测排除正则，不能靠「results 里没有它」——
+  // NOT_A_PREDICTION 在**抽取层**就滤掉了该句，results 为空，
+  // 「results 里没有 must register」恒真（实测踩过，反向验证报空转）。
+  //
+  // 正确做法：从源码里取出 NOT_A_PREDICTION 正则，直接测它是否命中注册句。
+  const src = require('fs').readFileSync(
+    require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
+  const m = src.match(/const NOT_A_PREDICTION = \/([\s\S]*?)\/i;/);
+  if (!m) return false;
+  const re = new RegExp(m[1], 'i');
+  const regSentence = 'Anyone wishing to attend the virtual meeting must register by 5 p.m. EDT on Wednesday, Sept. 16, 2026.';
+  const realForecast = 'If small models improve at their historical rate, they will match this capability level by the end of this year.';
+  // 排除要命中注册句，且不能误杀真预测
+  return re.test(regSentence) && !re.test(realForecast);
+})(), '注册截止句应被排除，且不得误杀真预测');
+
+(async () => {
+  const results = await Promise.all(v213f.map(c => Promise.resolve(c.ok)));
+  let f = 0;
+  v213f.forEach((c, i) => {
+    const ok = results[i];
+    if (!ok) f++;
+    console.log(`${ok ? '✓' : '✗'} ${c.name}${ok ? '' : '  —— ' + c.detail}`);
+  });
+  console.log(`\nv2.13f: ${v213f.length - f} 通过, ${f} 失败, 共 ${v213f.length} 个`);
+  if (f > 0) {
+    console.log('结论：监管源接入后仍有缺口。');
+    process.exitCode = 1;
+  } else {
+    console.log('结论：义务句式与月份年份时点已能辨别，实体解码正常。');
+  }
+})();

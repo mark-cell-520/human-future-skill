@@ -58,6 +58,22 @@ const RSS_SOURCES = {
     // 在 /research/self-replicating-ai，只采 /news/ 会漏掉它（实测踩过）。
     { name: 'Anthropic News (sitemap)', url: 'https://www.anthropic.com/sitemap.xml',
       type: 'sitemap', pathPrefixes: ['/news/', '/research/'] },
+    // [v2.13] EU AI Act 实施时间表：**有法定截止日**的预测源。
+    //
+    // 为什么加：实测通用博客源（AstralCodexTen 等）近期全是 Open Thread 与
+    // 书评，0 条预测性句子；Metaculus API 全面 403（Cloudflare 拦截），
+    // ?format=rss 返回的是 Next.js HTML 不是真 RSS；Epoch AI 页面 JS 渲染，
+    // curl 拿不到内容。真正缺的不是「更多博客」，而是**带硬截止日的承诺**。
+    //
+    // EU AI Act 的义务表述天然可结算——「providers must do X by August 2026」
+    // 有主体、有事件、有法定时点，到点就能验证有没有做到。
+    // 实测该源 9 条里有带日期义务句（"must do by August 2026"）。
+    // timeoutMs=45000：该源 feed 有 350KB（含全文），8 秒传不完
+    // （实测 30 秒都没传完），必须单独放宽超时。
+    { name: 'EU AI Act Timeline', url: 'https://artificialintelligenceact.eu/feed/',
+      timeoutMs: 45000 },
+    // NIST 新闻：监管节点与标准发布，同样有官方时点。
+    { name: 'NIST News', url: 'https://www.nist.gov/news-events/news/rss.xml' },
   ],
   psychology: [],
   philosophy: [],
@@ -105,6 +121,19 @@ function stripHtml(html) {
     .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'")
     .replace(/&#x27;/g, "'").replace(/&mdash;/g, '—').replace(/&rsquo;/g, "'")
+    // [v2.13] 通用数字实体解码。
+    // 实测踩坑：EU AI Act 的 feed 用 &#8217;（弯撇号）、&#8220; 等数字实体，
+    // 而上面只硬编码了少数几个。残留的 &#8217; 会让辨别层的正则匹配不到
+    // （"they&#8217;ll" 不匹配 "they'll"），报告里也直接显示实体乱码。
+    // 用 String.fromCodePoint 统一解码所有 &#NNNN; 与 &#xHHHH; 形态。
+    .replace(/&#(\d+);/g, (_, d) => {
+      const c = Number(d);
+      return (c > 0 && c <= 0x10FFFF) ? String.fromCodePoint(c) : _;
+    })
+    .replace(/&#x([0-9a-f]+);/gi, (_, h) => {
+      const c = parseInt(h, 16);
+      return (c > 0 && c <= 0x10FFFF) ? String.fromCodePoint(c) : _;
+    })
     .replace(/\s+/g, ' ').trim();
 }
 
@@ -262,12 +291,11 @@ function parseFeed(xml) {
     const desc = (b.match(/<description[^>]*>([\s\S]*?)<\/description>/) || [])[1]
       || (b.match(/<summary[^>]*>([\s\S]*?)<\/summary>/) || [])[1]
       || '';
-    const clean = (s) => String(s)
-      .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1')
-      .replace(/<[^>]+>/g, ' ')
-      .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
-      .replace(/&quot;/g, '"').replace(/&#39;/g, "'")
-      .replace(/\s+/g, ' ').trim();
+    // [v2.13] 复用 stripHtml 而不是本地 clean——本地 clean 只解码 5 个实体，
+    // EU AI Act 的标题用 &#8217;（弯撇号），残留后报告里直接显示实体乱码，
+    // 且辨别层正则匹配不到（"they&#8217;ll" 不匹配 "they'll"）。
+    // stripHtml 已含通用数字实体解码。
+    const clean = (s) => stripHtml(String(s).replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1'));
     items.push({
       title: clean(title), link: clean(link), pubDate: clean(pub),
       description: clean(desc).slice(0, 500),
@@ -295,7 +323,9 @@ function parseFeed(xml) {
  */
 async function fetchSitemap(src) {
   const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
+  // [v2.13] 允许按源覆盖超时：EU AI Act 的 feed 有 350KB（含全文），
+  // 8 秒传不完必然超时（实测 30 秒都没传完）。src.timeoutMs 可单独放宽。
+  const timer = setTimeout(() => ctrl.abort(), src.timeoutMs || FETCH_TIMEOUT_MS);
   try {
     const res = await fetch(src.url, {
       signal: ctrl.signal,
@@ -350,7 +380,8 @@ async function fetchSitemap(src) {
 
 async function fetchFeed(src) {
   const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
+  // [v2.13] 同 fetchSitemap：允许按源覆盖超时。
+  const timer = setTimeout(() => ctrl.abort(), src.timeoutMs || FETCH_TIMEOUT_MS);
   try {
     const res = await fetch(src.url, {
       signal: ctrl.signal,
