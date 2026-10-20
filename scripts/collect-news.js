@@ -66,6 +66,150 @@ const DOMAIN_NAMES = {
 
 const FETCH_TIMEOUT_MS = 8000;
 const MAX_ITEMS_PER_SOURCE = 12;
+// [v2.9] 正文抓取开关与预算。
+// 为什么需要正文：v2.8 实测 RSS 摘要只给导语——DeepMind 的 Gemini 4 Argon
+// 公告在正文里有 8 处关键口径（introductory price $2/$10、95% off、
+// DeepSWE 77.9%、AutomationBench 51.3%、Fairwind 限量、"before making Argon
+// available"），摘要里一个都没有。于是时间轴检测抽不到声明、口径错位检测
+// 抽不到数字，两个模块连续零可用。
+//
+// 纪律：
+//   - 默认关闭（FETCH_BODY=1 才启用），因为 140 条 × 正文抓取会把单轮 pipeline
+//     从约 30 秒推到数分钟，且多数条目下游用不到正文。
+//   - 只抓最新 N 条（MAX_BODY_ITEMS），按 pubDate 倒序，越新的越值得抓。
+//   - 单条失败只丢该条正文（body 保持空），绝不抛错、绝不用知识库内容顶替。
+//   - 抓到的正文只进 body 字段，不覆盖 description——description 是 RSS 原值，
+//     两者来源不同，混淆会让下游无法判断哪句是摘要哪句是正文。
+const MAX_BODY_ITEMS = 24;
+const BODY_TIMEOUT_MS = 12000;
+const BODY_MAX_CHARS = 6000;
+// 用浏览器 UA：部分站点（Ars Technica 等）对非浏览器 UA 返回 405。
+// 这不是绕过付费墙，只是让公开文章页面对脚本可见。
+const BROWSER_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 '
+  + '(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+
+/** 把 HTML 压成纯文本：去 script/style/标签、解实体、压空白。 */
+function stripHtml(html) {
+  return String(html)
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<noscript[\s\S]*?<\/noscript>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+    .replace(/&#x27;/g, "'").replace(/&mdash;/g, '—').replace(/&rsquo;/g, "'")
+    .replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * 抓单条正文。失败返回空串，不抛错。
+ *
+ * 为什么不能简单 slice(0, N)：v2.9 第一版实测 DeepMind 博客页前 6000 字符
+ * 全是导航菜单（"Innovation & AI / Products & platforms / Company news / ..."），
+ * 真正的跑分数据（DeepSWE 77.9%、AutomationBench 51.3%）在 8000+ 字符处。
+ * 直接截断等于把关键口径切掉，正文增强等于白做。
+ * 因此这里做两步：先按正文字符密度跳过站点头部，再截断到正文主体。
+ */
+async function fetchBody(url) {
+  if (!url || !/^https?:\/\//.test(url)) return '';
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), BODY_TIMEOUT_MS);
+  try {
+    const res = await fetch(url, {
+      signal: ctrl.signal,
+      headers: { 'User-Agent': BROWSER_UA, Accept: 'text/html,application/xhtml+xml' },
+      redirect: 'follow',
+    });
+    if (!res.ok) return '';
+    const ct = res.headers.get('content-type') || '';
+    // 只处理 HTML；RSS/PDF/图片一律跳过（PDF 要另走解析器，不在本步范围）
+    if (!/text\/html|application\/xhtml/i.test(ct)) return '';
+    const raw = stripHtml(await res.text());
+    return extractMainContent(raw);
+  } catch (_) {
+    return '';
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/**
+ * 从 strip 后的全文里取主体内容。
+ *
+ * 为什么不能简单 slice(0, N)：v2.9 实测 DeepMind 博客页前约 7900 字符全是
+ * 导航菜单，真正的跑分数据（DeepSWE 77.9%）在 8042 字符处。
+ *
+ * 前三版的失败都记在这里，避免第四次踩同一个坑：
+ *   第一版「3 连句平均长度 >= 60」→ DeepMind 导航块没有句末标点，整块粘成
+ *     一句 3351 字符的"句"，判据在第一句误触发，start=0。
+ *   第二版「取最靠后的导航串」→ 页面末尾 "Read more from Koray..." 把切割点
+ *     推到末尾，只剩 1118 字符，正文全丢。
+ *   第三版「取第一个导航串 + 跳到第一个长句」→ 第一个"长句"就是整块导航
+ *     （3351 字符无标点），切割点仍落在导航块内部，DeepSWE 取不到。
+ *
+ * 现在用：**跳过整块导航**。站点头部的可靠特征是导航串成族出现——
+ * DeepMind 页面里 "See all in" 出现 4 次、"See all" 出现 8+ 次、
+ * "Back ..." 出现 4 次。做法：找最后一个"族成员"的位置，从那之后取。
+ * 族成员限定为「只可能出现在导航里」的串（See all / Back Innovation /
+ * Back Products / Explore our / Jump to / Main menu / Skip to ...），
+ * **不含** Newsletter / Related stories / Read more from / Posted in
+ * ——后四者也可能出现在正文尾部或作者信息里，第二版就是被它们拖到末尾的。
+ */
+function extractMainContent(text) {
+  if (!text) return '';
+  // 只可能出现在站点头部的导航族。取最靠后的一个作为导航块终点。
+  const NAV_FAMILY = [
+    'See all in', 'See all Products', 'See all Platforms', 'See all Devices',
+    'See all Technology', 'See all Infrastructure', 'See all Learn',
+    'Back Innovation', 'Back Products', 'Back to top',
+    'Explore our', 'Jump to', 'Main menu', 'Skip to main content',
+    'skip to content', 'Skip to navigation',
+  ];
+  let cut = -1;
+  let hitMarker = '';
+  for (const m of NAV_FAMILY) {
+    const idx = text.lastIndexOf(m);
+    if (idx > cut) { cut = idx; hitMarker = m; }
+  }
+  let start = 0;
+  if (cut >= 0) {
+    // 从导航块终点往后扫，跳过残余短串（栏目名、单字链接），落到长句上。
+    const tail = text.slice(cut + hitMarker.length, cut + hitMarker.length + 600);
+    const sents = tail.split(/(?<=[.!?。！？])\s+/);
+    let acc = cut + hitMarker.length;
+    for (const s of sents) {
+      if (s.length >= 40) break;
+      acc += s.length + 1;
+    }
+    start = acc;
+  }
+  return text.slice(start, start + BODY_MAX_CHARS);
+}
+
+/**
+ * 给条目补正文。只处理传入的 items（调用方已按需筛好），
+ * 并发上限用有界并发：24 条同时打 24 个站点可能触发对方限流。
+ */
+async function enrichWithBody(items, opts = {}) {
+  const want = opts.want ?? process.env.FETCH_BODY === '1';
+  if (!want) return { attempted: 0, succeeded: 0 };
+  const targets = items.slice(0, MAX_BODY_ITEMS);
+  let succeeded = 0;
+  // 有界并发：4 条一批。实测 24 条分 6 批约 15-25 秒完成。
+  const BATCH = 4;
+  for (let i = 0; i < targets.length; i += BATCH) {
+    const batch = targets.slice(i, i + BATCH);
+    const bodies = await Promise.all(batch.map(it => fetchBody(it.link)));
+    for (const [j, it] of batch.entries()) {
+      const b = bodies[j];
+      if (b && b.length > 200) {   // 太短的多半是导航/登录页，不当正文
+        it.body = b;
+        succeeded++;
+      }
+    }
+  }
+  return { attempted: targets.length, succeeded };
+}
 
 /** 从知识库加载数据（降级路径），原样保留旧行为但标注 origin */
 function loadFromKnowledgeBase() {
@@ -151,7 +295,7 @@ async function fetchFeed(src) {
 }
 
 /** 真联网采集。任何源失败只丢该源，不影响其他源；全部失败则由调用方降级 */
-async function fetchAll() {
+async function fetchAll(opts = {}) {
   const out = {};
   // 并行抓取：旧版按域串行 await，单源超时 8 秒 × 13 源 = 最坏 104 秒。
   // 源之间互不依赖，并行后总耗时约等于最慢的那个源。
@@ -172,6 +316,20 @@ async function fetchAll() {
   }
   for (const domain of Object.keys(out)) {
     if (!out[domain].news.length) delete out[domain];
+  }
+
+  // [v2.9] 正文增强（FETCH_BODY=1 时）。
+  // 只抓全库最新的若干条，不按域分配——避免某个域把额度占满而最新的那条没抓到。
+  if (opts.wantBody ?? process.env.FETCH_BODY === '1') {
+    const all = [];
+    for (const d of Object.values(out)) all.push(...d.news);
+    all.sort((a, b) => String(b.pubDate || '').localeCompare(String(a.pubDate || '')));
+    const st = await enrichWithBody(all);
+    console.log(`  [body] 正文增强: 尝试 ${st.attempted} 条, 成功 ${st.succeeded} 条`);
+    if (st.succeeded === 0 && st.attempted > 0) {
+      console.log('  [WARN] 正文增强 0 成功：可能是站点反爬或网络问题。'
+        + '下游将只有 RSS 摘要，时间轴与口径错位检测可能证据不足（已按降级处理）');
+    }
   }
   return out;
 }
@@ -223,4 +381,10 @@ if (require.main === module) {
   main();
 }
 
-module.exports = { collectAll, loadFromKnowledgeBase, fetchAll, parseFeed };
+// [v2.9] extractMainContent / stripHtml / enrichWithBody 一并导出：
+// 测试要能直接验证「跳过站点头部」这段逻辑，不必每次真联网。
+// 不导出的话，正文抓取的正确性只能靠跑完整 pipeline 观察，那太晚也太贵。
+module.exports = {
+  collectAll, loadFromKnowledgeBase, fetchAll, parseFeed,
+  fetchBody, enrichWithBody, extractMainContent, stripHtml,
+};

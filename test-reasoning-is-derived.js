@@ -357,3 +357,148 @@ if (f28 > 0) {
 } else {
   console.log('结论：v2.8 四项缺口修复均有回归保护。');
 }
+
+// ════════════════════════════════════════════════════════════════
+// v2.9 新增断言：正文抓取 + 两处断链，全部对应实测缺口。
+// ════════════════════════════════════════════════════════════════
+const { extractMainContent, stripHtml } = require('./scripts/collect-news.js');
+
+const v29 = [];
+function c29(name, ok, detail) { v29.push({ name, ok, detail }); }
+
+// 缺口 A：extractMainContent 必须跳过站点头部导航，取到正文主体。
+// 实测依据：DeepMind 博客页前约 7900 字符是导航，DeepSWE 77.9% 在 8042 处。
+// fixture 必须复现这个比例：导航块要足够长（>6000 字符，超过 BODY_MAX_CHARS），
+// 否则「简单截断前 N 字符」也能覆盖到正文，测试就失去区分力——
+// v2.9 第一版 fixture 只放了约 400 字符导航，反向验证时摘除导航跳过逻辑
+// 测试仍然全过，等于没测。
+c29('extractMainContent 跳过站点头部取到正文主体', (() => {
+  // 构造一个 DeepMind 形态的输入：长导航块（无句末标点）+ 正文
+  // 导航块重复到 7000+ 字符，超过 BODY_MAX_CHARS(6000)，
+  // 这样只有真正跳过导航才能取到正文。
+  const navUnit = 'Innovation & AI Products & platforms Company news Feed Newsletter '
+    + 'See all in Innovation & AI Models & Research Google DeepMind Google Research '
+    + 'Google Labs Gemini models Quantum computing See all Products Developer tools '
+    + 'Gemini app Gemini Notebook See all Infrastructure & cloud Global network '
+    + 'Google Cloud See all Technology Safety & Security Health See all Learn more: '
+    + 'Google DeepMind blog Google Research blog Google Developers blog ';
+  let nav = '';
+  while (nav.length < 7200) nav += navUnit;
+  const body = 'Gemini 4 Argon is a frontier model. It sets a new state of the art on '
+    + 'DeepSWE v1.1 (77.9%), which measures real-world long-horizon software engineering. '
+    + 'On AutomationBench, Argon ranks #1 with a score of 51.3%.';
+  const text = 'Introducing Gemini 4 Argon Skip to main content ' + nav + body;
+  const main = extractMainContent(text);
+  return main.includes('DeepSWE') && main.includes('77.9');
+})(), '应跳过 7200+ 字符导航块并取到 DeepSWE 77.9%');
+
+// 缺口 A 反例：正文尾部的 "Read more from" 不该把切割点推到末尾。
+// 第二版实测：切割点被推到末尾，只剩 1118 字符，正文全丢。
+c29('正文尾部的 Related stories 不参与切割', (() => {
+  const nav = 'Skip to main content Site nav See all in Section A See all in Section B ';
+  const body = 'The model achieves 91.7% on LVBench for long video understanding tasks. '
+    + 'It also ranks first on AutomationBench with a score of 51.3%.';
+  const footer = ' Related stories Read more from Koray Kavukcuoglu Posted in Gemini models ';
+  const text = 'Title ' + nav + body + footer;
+  const main = extractMainContent(text);
+  return main.includes('LVBench') && main.includes('91.7');
+})(), 'LVBench 91.7% 应保留在取到的正文里');
+
+// 缺口 B：buildClaimMismatches 读的字段名必须与 detectMismatch 返回一致。
+// 实测依据：v2.9 之前读 r.hits / Array.isArray(r)，而检测器返回 {matched,...}，
+// 导致口径错位检测从 v2.4 接入起从未产出任何命中。
+c29('口径错位检测真的能产出命中（不是恒 0）', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const data = {
+    tech: {
+      domain: 'tech', name: '科技',
+      news: [{
+        title: 'Probe model sets state of the art',
+        description: 'It sets a new state of the art on DeepSWE v1.1 (77.9%) and is rolling out to trusted testers before general availability',
+        body: 'The model ranks #1 with a score of 51.3% on AutomationBench. It beats the published baseline by 40%.',
+        source: 'Probe Vendor Blog', link: 'https://example.com/probe',
+        pubDate: 'Mon, 19 Oct 2026 10:00:00 +0000', origin: 'live',
+      }],
+    },
+  };
+  const eng = new ProjectionEngine({ newsData: data });
+  const cm = eng.buildClaimMismatches();
+  return cm.available === true && cm.count >= 1
+    && cm.hits[0].mismatches.some(m => m.id === 'benchmark-vs-capability');
+})(), '含跑分+百分号的正文应命中 benchmark-vs-capability');
+
+// 缺口 B 反例：干净文本不应误报。
+c29('无口径错位的文本不误报', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const data = {
+    tech: {
+      domain: 'tech', name: '科技',
+      news: [{
+        title: 'Routine maintenance notice',
+        description: 'The service will undergo scheduled maintenance on Sunday evening.',
+        source: 'Probe Ops', link: 'https://example.com/ops',
+        pubDate: 'Mon, 19 Oct 2026 10:00:00 +0000', origin: 'live',
+      }],
+    },
+  };
+  const eng = new ProjectionEngine({ newsData: data });
+  return eng.buildClaimMismatches().count === 0;
+})(), '运维公告不应命中任何口径错位模式');
+
+// 缺口 C：时间轴必须能用上发布日期（v2.8/v2.9 反复抓不到前瞻声明时，
+// 发布日期是唯一可用的时间维度）。
+c29('时间轴纳入发布日期并可排序', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const data = {
+    tech: {
+      domain: 'tech', name: '科技',
+      news: [
+        { title: 'Product A released', description: 'Announcing Product A on Sep 30, 2026 for developers.',
+          body: '', source: 'Vendor A', link: 'https://example.com/a',
+          pubDate: 'Mon, 19 Oct 2026 10:00:00 +0000', origin: 'live' },
+        { title: 'Product B released', description: 'Announcing Product B on October 14, 2026 with new pricing.',
+          body: '', source: 'Vendor A', link: 'https://example.com/b',
+          pubDate: 'Mon, 19 Oct 2026 10:00:00 +0000', origin: 'live' },
+      ],
+    },
+  };
+  const eng = new ProjectionEngine({ newsData: data });
+  const tl = eng.buildTimelineConflicts();
+  return tl.available === true
+    && tl.summary.total >= 2
+    && tl.summary.verified >= 2
+    && tl.ordered.some(s => /已发布/.test(s));
+})(), '两条带发布日期的条目应产出可排序时间轴且标记已发布');
+
+// 缺口 D：正文抓取失败时不得污染 description，也不得抛错。
+c29('正文缺失时降级为只有摘要，不抛错', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const data = {
+    tech: {
+      domain: 'tech', name: '科技',
+      news: [{
+        title: 'No body item', description: '摘要只有这一句，没有正文字段。',
+        source: 'Probe', link: 'https://example.com/nb',
+        pubDate: 'Mon, 19 Oct 2026 10:00:00 +0000', origin: 'live',
+      }],
+    },
+  };
+  const eng = new ProjectionEngine({ newsData: data });
+  const it = eng.signals.items[0];
+  return it.hasBody === false && it.body === '' && /摘要只有这一句/.test(it.text);
+})(), '无 body 时 hasBody=false、body 为空串、text 仍含摘要');
+
+// ── v2.9 汇总 ──────────────────────────────────────────────────
+let f29 = 0;
+for (const c of v29) {
+  console.log(`${c.ok ? '✓' : '✗'} ${c.name}${c.ok ? '' : '  —— ' + c.detail}`);
+  if (!c.ok) f29++;
+}
+console.log(`\nv2.9: ${v29.length - f29} 通过, ${f29} 失败, 共 ${v29.length} 个`);
+if (f29 > 0) {
+  console.log('结论：v2.9 正文抓取或断链修复未守住。');
+  console.log('修法：见 test-reasoning-is-derived.js 里 c29() 各条对应的实测缺口注释。');
+  process.exitCode = 1;
+} else {
+  console.log('结论：v2.9 正文抓取与两处断链修复均有回归保护。');
+}

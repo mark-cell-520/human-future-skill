@@ -47,6 +47,40 @@ const MISMATCH_PATTERNS = [
     test: (t) => /(roadmap|路线图|计划|target|目标|guidance)/i.test(t) && /(demonstrat|已实跑|已验证|shipped)/i.test(t),
     severity: 'high',
     guidance: 'roadmap 是意图，结果是事实。只报其一即为选择性呈现。'
+  },
+  // [v2.9 增补] 专项大模型域最高发的口径错位。前面 5 个模式都是 v2.4 按
+  // 产能/量子/航天/生物写的，没有一个是模型公告的典型形态。
+  // 实测依据：DeepMind 的 Gemini 4 Argon 公告正文里有 8 处这类表述——
+  // "sets a new state of the art on DeepSWE v1.1 (77.9%)"、
+  // "AutomationBench ... ranks #1 with a score of 51.3%"、
+  // "beats the published baseline by 40%"。全是单一基准跑分，没有一句说明
+  // 通用能力。这正是「跑分 ≠ 通用能力」的活样本。
+  {
+    id: 'benchmark-vs-capability',
+    label: '单一基准跑分 vs 通用能力',
+    test: (t) => /(benchmark|state of the art|sota|ranks? #|top score|outperform|beats?|leaderboard)/i.test(t)
+      && /(\d{1,3}(?:\.\d)?\s?%|score of \d|points?)/i.test(t),
+    severity: 'high',
+    guidance: '单一基准的分数只说明该任务上的表现，不构成通用能力提升。必须同时说明：'
+      + '测的是哪个任务、提示与样本条件、是否有第三方复现。缺任一项即为选择性呈现。'
+  },
+  {
+    id: 'demo-vs-ga',
+    label: '演示/预览 vs 正式可用',
+    test: (t) => /(demo|demonstration|preview|early access|limited|pilot|rolled out to|rolling out to|waitlist)/i.test(t)
+      && /(available|availability|launch|GA|general availability|now shipping|released)/i.test(t),
+    severity: 'medium',
+    guidance: 'demo/preview/限量灰度与 GA 是不同可用性层级。把「正在向可信测试者灰度」'
+      + '写成「已可用」是最常见的完成态误导。必须写明当前层级与开放范围。'
+  },
+  {
+    id: 'vendor-selfreport-vs-verification',
+    label: '厂商自述 vs 独立验证',
+    test: (t) => /(we (?:found|showed|demonstrated|achieved)|our (?:internal|research)|according to (?:us|our))/i.test(t)
+      && /(safety|secure|alignment|resilien|robust|protect)/i.test(t),
+    severity: 'medium',
+    guidance: '安全与对齐声明来自厂商自己时不是独立验证。第三方复测、红队报告或'
+      + '监管认证才算验证；厂商自评只能标注为「厂商自述」。'
   }
 ];
 

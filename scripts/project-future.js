@@ -112,12 +112,18 @@ class ProjectionEngine {
         if (n.origin !== 'live' && n.origin !== 'live-search') continue;
         items.push({
           title: String(n.title || ''),
-          text: `${n.title || ''} ${n.description || ''}`,
+          // [v2.9] text 含正文（若抓到）：时间轴抽取与口径错位检测都需要
+          // RSS 摘要里没有的数字和发布声明。body 为空时退化为原行为。
+          text: `${n.title || ''} ${n.description || ''} ${n.body || ''}`,
           // [v2.8] description 必须单独保留：buildTimelineConflicts() 要按
           // 「标题 vs 摘要」区别对待（标题里的 2026-10 是发布声明，摘要里的多
           // 为例程日期）。v2.8 第一版只读 it.description，而这里从未挂过该字段，
           // 于是抽取恒为空、时间轴连续不可用。测试用例（摘要含 by 2028）抓到了它。
           description: String(n.description || ''),
+          // [v2.9] 正文单独保留，且带长度标记：下游要能区分「这句来自摘要」
+          // 与「这句来自正文」，两者可信度不同（摘要是源方写的导语，正文是全文）。
+          body: String(n.body || ''),
+          hasBody: !!(n.body && String(n.body).length > 200),
           source: n.source || '(未标注)',
           link: n.link || '',
           pubDate: n.pubDate || '',
@@ -467,7 +473,13 @@ class ProjectionEngine {
     const STRUCTURED = /(20\d{2})(-Q[1-4]|-H[12])(?![-\d])/g;
     const YEAR_MONTH = /(20\d{2})-(\d{2})(?![\d])/g;
     for (const it of this.signals.items) {
-      const text = `${it.title || ''} ${(it.description || '').slice(0, 400)}`;
+      // [v2.9] 抽取范围：标题 + 正文（若有）+ 摘要。
+      // 正文优先于摘要，因为 v2.8 实测 RSS 摘要只给导语——DeepMind 的
+      // Gemini 4 Argon 公告在正文里有 "Argon is currently rolling out to trusted
+      // cyber defenders through the Fairwind Program"、"Argon will launch at an
+      // introductory price" 等发布形态声明，摘要里一个都没有。
+      // 有正文时仍要保留摘要：摘要可能是源方特意提炼的时间点，正文里反而没有。
+      const text = `${it.title || ''} ${it.body || ''} ${(it.description || '').slice(0, 400)}`;
       const found = [];
       // 1) 强前瞻词 + 年份（最高可信：是声明不是引用）
       let m;
@@ -511,10 +523,43 @@ class ProjectionEngine {
       }
       if (milestones.length >= 12) break;
     }
+    // [v2.9] 补一类被完全漏掉的时间信息：**发布日期本身**。
+    //
+    // 为什么加：v2.8/v2.9 反复抓不到「前瞻性时间声明」——实测 Argon 公告正文里
+    // 只有 "as soon as possible"（无具体时间点）和发布日期 "Sep 30, 2026"。
+    // 但发布日期本身就是时间轴上最有价值的一维：同一厂商多款产品的发布间隔、
+    // 某域的发布密度随周变化，都只能从发布日期算出来。
+    //
+    // 第一版只扫 title+description，实测 0 命中：DeepMind 的发布日期
+    // （"Sep 30, 2026"）写在正文里，RSS 摘要不含它。所以必须连 body 一起扫。
+    //
+    // 纪律：发布日期是已发生事实，与前瞻声明性质不同，必须分开存：
+    //   - claimed 用 "2026-09-30" 这种可排序形式（parseWindow 认 -MM）
+    //   - label 加「已发布」前缀，ordered 里能与前瞻声明区分
+    //   - verified=true——发布日期是源方标注的事实，不是声称
+    const PUB_DATE = /((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2},?\s+20\d{2})|(20\d{2}-\d{2}-\d{2})/i;
+    for (const it of this.signals.items) {
+      const src = `${it.title || ''} ${it.body || ''} ${(it.description || '').slice(0, 300)}`;
+      const pm = PUB_DATE.exec(src);
+      if (!pm) continue;
+      const t = Date.parse(pm[1] || pm[2]);
+      if (isNaN(t)) continue;
+      const claimed = new Date(t).toISOString().slice(0, 10);
+      const id = `${it.source}:pub:${claimed}:${it.title.slice(0, 20)}`;
+      if (seen.has(id)) continue;
+      seen.add(id);
+      milestones.push({
+        id, label: `[已发布] ${it.title.slice(0, 70)}`, claimed,
+        verified: true,
+        source: it.source, link: it.link,
+      });
+      if (milestones.length >= 16) break;
+    }
+
     if (milestones.length < 2) {
       return {
         available: false,
-        reason: `从 ${this.signals.items.length} 条 live 信号的标题与摘要中，未抽到 2 个以上前瞻性时间声明`,
+        reason: `从 ${this.signals.items.length} 条 live 信号中，未抽到 2 个以上可排序时间点（前瞻声明或发布日期）`,
       };
     }
     const res = detectTimelineConflicts(milestones);
@@ -553,17 +598,33 @@ class ProjectionEngine {
   buildClaimMismatches() {
     const hits = [];
     for (const it of this.signals.items) {
-      const r = detectMismatch(it.text || it.title);
-      const arr = Array.isArray(r) ? r : (r && r.hits) || [];
+      // [v2.9 修断链] detectMismatch() 返回 {matched, verdict, score}，
+      // 旧代码读的是 r.hits / Array.isArray(r)——两个都不存在，于是
+      // arr 恒为空数组，口径错位检测从 v2.4 接入起就从未产出过任何命中。
+      // 实测佐证：v2.9 给 Argon 正文跑 detectMismatch 明确返回 2 个
+      // matched（benchmark-vs-capability / demo-vs-ga），而同期报告
+      // claimMismatches.count 仍是 0。字段名不匹配是唯一原因。
+      const r = detectMismatch(it.text || it.title) || {};
+      const arr = Array.isArray(r.matched) ? r.matched : [];
       if (arr.length) {
-        hits.push({ title: it.title.slice(0, 100), source: it.source, link: it.link, mismatches: arr });
+        hits.push({
+          title: it.title.slice(0, 100), source: it.source, link: it.link,
+          verdict: r.verdict, score: r.score,
+          // hasBody 标明这条命中的依据来自正文还是只有摘要：
+          // 摘要命中的可信度低于正文命中（摘要是源方导语，可能是提炼过的）
+          hasBody: !!it.hasBody,
+          mismatches: arr.map(m => ({
+            id: m.id, label: m.label, severity: m.severity, guidance: m.guidance,
+          })),
+        });
       }
     }
     return {
       available: true,
       count: hits.length,
       hits: hits.slice(0, 8),
-      note: '口径错位检测：识别"设计产能 vs 实际订单"这类数字达标但能力未达标的表述',
+      note: '口径错位检测：识别「设计产能 vs 实际订单」这类数字达标但能力未达标的表述。'
+        + 'hasBody=true 表示命中依据来自抓到的正文，false 表示只有 RSS 摘要',
     };
   }
 
@@ -1304,10 +1365,13 @@ function formatReport(report) {
   lines.push('');
   if (!cm || !cm.available || cm.count === 0) {
     lines.push('未检测到「产能 vs 订单」「检测 vs 纠正」类口径错位表述。');
+    lines.push('');
+    lines.push('> 注意：本项检测依赖条目里的数字与完成态措辞。若本期 RSS 摘要普遍不含数字，');
+    lines.push('  0 命中更可能是「没数据可检」而非「没问题」——开启 FETCH_BODY=1 抓正文后复验。');
   } else {
     lines.push(`命中 ${cm.count} 条:`);
     for (const h of cm.hits) {
-      lines.push(`- ${h.title} — ${h.source}`);
+      lines.push(`- ${h.title} — ${h.source}${h.hasBody ? '' : '（仅 RSS 摘要，证据强度较低）'}`);
       for (const m of h.mismatches) {
         lines.push(`  - ${m.label || m.id}（${m.severity || '未标级'}）: ${m.guidance || m.detail || ''}`);
       }
