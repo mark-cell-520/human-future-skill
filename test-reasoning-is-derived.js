@@ -1180,3 +1180,58 @@ c213f('会议注册截止不算预测', (() => {
     console.log('结论：义务句式与月份年份时点已能辨别，实体解码正常。');
   }
 })();
+
+// ════════════════════════════════════════════════════════════════
+// v2.13g 新增断言：结算点早于发布日的预测不得登记。
+// 实测依据：修「裸年份前置月份检测」前后，EU AI Act 同一条预测的 dueOn
+// 从 2026-Q4 变成 2026-Q3，因为 id 含 dueOn，两次产生不同 id，
+// 台账里留下两条矛盾条目（既有 2026-12-31 又有 2026-09-30）。
+// 通用防护：预测的兑现时点不可能早于它被做出的时间。
+// ════════════════════════════════════════════════════════════════
+const v213g = [];
+function c213g(name, ok, detail) { v213g.push({ name, ok, detail }); }
+
+const fsG = require('fs');
+const LEDGER_G = path.join(__dirname, 'human-future/data/prediction-ledger.json');
+const readLedgerG = () => JSON.parse(fsG.readFileSync(LEDGER_G, 'utf-8')).predictions;
+
+c213g('结算点早于发布日的预测不登记', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const inst = new ProjectionEngine({});
+  inst.signals = { items: [{
+    title: 'T',
+    // 发布日 2026-10-13，但预测说 "by March 2025"——结算点早于发布日，必是解析错
+    body: 'Providers must comply with the documentation obligations by March 2025. '
+      + 'The framework requires all deployers to ensure transparency before that date.',
+    description: '', source: 'Test Source', category: 'governance',
+    pubDate: 'Tue, 13 Oct 2026 00:44:16 GMT',
+  }] };
+  const r = inst.buildForecastDiscrimination();
+  const reg = r.ledgerRegistration || { registered: [], skipped: [] };
+  // 断言必须**同时**满足三条，不能用 ||——用 || 时「没抽出」也会让断言恒真
+  // （实测踩过：反向验证报空转）。
+  //   1. 该句确实被抽出了（否则校验分支从未执行）
+  //   2. 它被 skipped，且原因明确是结算点早于发布日
+  //   3. 它没有被登记
+  const wasExtracted = (r.results || []).some(x => /March 2025/.test(x.claimSentence || x.text || ''));
+  const blockedByDate = reg.skipped.some(s => /早于发布日/.test(s.reason || ''));
+  const notRegistered = !reg.registered.some(x => /test-source/.test(x.id));
+  return wasExtracted && blockedByDate && notRegistered;
+})(), '兑现时点不可能早于预测被做出的时间');
+
+(async () => {
+  const results = await Promise.all(v213g.map(c => Promise.resolve(c.ok)));
+  let f = 0;
+  v213g.forEach((c, i) => {
+    const ok = results[i];
+    if (!ok) f++;
+    console.log(`${ok ? '✓' : '✗'} ${c.name}${ok ? '' : '  —— ' + c.detail}`);
+  });
+  console.log(`\nv2.13g: ${v213g.length - f} 通过, ${f} 失败, 共 ${v213g.length} 个`);
+  if (f > 0) {
+    console.log('结论：结算点合理性校验缺失。');
+    process.exitCode = 1;
+  } else {
+    console.log('结论：结算点早于发布日的预测已被拦截。');
+  }
+})();

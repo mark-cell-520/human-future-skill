@@ -1252,6 +1252,23 @@ class ProjectionEngine {
       const dueDate = r.dueOn && /^\d{4}-Q([1-4])$/.test(r.dueOn)
         ? `${r.dueOn.slice(0, 4)}-${['03-31', '06-30', '09-30', '12-31'][Number(r.dueOn.slice(-1)) - 1]}`
         : (r.dueOn || null);
+      // [v2.13] 登记前校验：结算点不得早于发布日。
+      //
+      // 实测踩坑：修「裸年份前置月份检测」之前，EU AI Act 的
+      // "must do by August 2026" 被解析成 2026-Q4（dueDate 2026-12-31）；
+      // 修好之后解析成 2026-Q3（dueDate 2026-09-30）。因为 id 里含 dueOn，
+      // 两次产生了不同 id，台账里同一条预测留下两条矛盾条目
+      // （既有 2026-12-31 又有 2026-09-30）。
+      //
+      // 防护：结算点早于发布日的预测不登记——那一定是解析错了
+      // （预测的兑现时点不可能在它被做出之前）。这条规则与具体 bug 无关，
+      // 是通用的合理性校验。
+      const pubTime = r.date ? Date.parse(r.date) : NaN;
+      const dueTime = dueDate ? Date.parse(dueDate) : NaN;
+      if (!isNaN(pubTime) && !isNaN(dueTime) && dueTime < pubTime) {
+        skipped.push({ id, reason: `结算点 ${dueDate} 早于发布日，解析可疑，不登记` });
+        continue;
+      }
       try {
         const rec = predictionLedger.record({
           id,
