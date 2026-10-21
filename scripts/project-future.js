@@ -178,6 +178,16 @@ class ProjectionEngine {
         byDomain.frontier_models.push(it);
         matched.push('frontier_models');
       }
+      // [v2.13] 经济采集域同样按来源归类。
+      // 与 frontier_models 同理：Fed 的 FOMC 声明、NBER 的论文标题里
+      // 往往不含「经济/就业/通胀」这类关键词（如 "Minutes of the Federal Open
+      // Market Committee"、"Export Controls and the Economics of National
+      // Security"），纯靠关键词会全落进 undomained。
+      // 「来自央行/经济学研究源」本身就是最可靠的归类信号。
+      if (it.bucket === 'economy' && !matched.includes('economy_labor')) {
+        byDomain.economy_labor.push(it);
+        matched.push('economy_labor');
+      }
       it.domains = matched;
     }
 
@@ -1235,19 +1245,25 @@ class ProjectionEngine {
     const skipped = [];
     for (const r of (res.results || [])) {
       if (!r.settleable) continue;
-      // [v2.13] id 只用**稳定字段**：来源 + 发布日期 + 结算点。
+      // [v2.13] id 只用**稳定字段**：来源 + 结算点（+ URL 兜底）。
       //
-      // 实测踩坑：第一版 id 里含 claimSentence 前 40 字符，但 claimSentence
-      // 会变——同一篇 Anthropic 文章，一次抽到纯句子
-      // "If small models improve..."，另一次抽到 "Self Replicating Ai If small
-      // models improve..."（标题被拼进来，因为抽取改为送 3 句上下文后
-      // 命中句位置变了）。结果同一条预测产生两个 id，幂等失效，
-      // 台账里出现 2 条重复条目。
+      // 实测踩坑（三次，每次原因不同）：
+      //   1. id 含 claimSentence 前 40 字符 → claimSentence 会变（标题是否拼进
+      //      正文开头取决于命中句位置），同一条预测产生两个 id。
+      //   2. id 含 r.date（pubDate）→ **sitemap 源的 lastmod 是「页面最后修改
+      //      时间」不是发布时间**，页面一修订 lastmod 就变。实测同一条
+      //      Anthropic 预测：10-13 那轮 lastmod=10-13，今天 lastmod=10-21，
+      //      于是产生 fc-anthropic-...-13202600-2026-q4 与
+      //      fc-anthropic-...-21202617-2026-q4 两条重复条目。
+      //      （fetchSitemap 的注释里早就写明 lastmod 不是发布时间，
+      //       但 id 还是用了它——知道不等于做到。）
       //
-      // 规律：id 绝不能含会随抽取逻辑变化的文本。来源+日期+结算点
-      // 三者组合足以定位「某来源在某日发布的、在某时点结算的那条预测」。
+      // 规律：id 绝不能含会变的字段。最终方案：
+      //   来源 + 结算点 + URL 末段。
+      // URL 是文章的永久地址，最稳定；结算点区分同一来源的不同预测。
+      const urlTail = (r.url || '').replace(/\/$/, '').split('/').pop() || '';
       const id = `fc-${(r.source || 'unknown').replace(/[^a-z0-9]+/gi, '-').toLowerCase()}`
-        + `-${(r.date || '').replace(/[^0-9]/g, '').slice(0, 8) || 'nodate'}`
+        + `-${urlTail.replace(/[^a-z0-9]+/gi, '-').toLowerCase().slice(0, 40) || 'nourl'}`
         + `-${(r.dueOn || 'nodue').replace(/[^a-z0-9]+/gi, '-').toLowerCase()}`;
       const dueDate = r.dueOn && /^\d{4}-Q([1-4])$/.test(r.dueOn)
         ? `${r.dueOn.slice(0, 4)}-${['03-31', '06-30', '09-30', '12-31'][Number(r.dueOn.slice(-1)) - 1]}`

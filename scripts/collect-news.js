@@ -79,6 +79,34 @@ const RSS_SOURCES = {
   ],
   psychology: [],
   philosophy: [],
+  // ── 宏观经济域 ────────────────────────────────────────────────
+  // [v2.13] 补上长期空缺的经济域采集源。
+  //
+  // 背景：economy_labor（经济与就业）域在推演引擎里有 32 个关键词，
+  // 但 RSS_SOURCES 里从来没有对应源——SKILL.md 的「已知边界」写着
+  // 「psychology / philosophy 两个域暂无 RSS 源」，经济域同样没有，
+  // 只是没写进去。结果经济域每轮都只读到知识库，没有 live 数据。
+  //
+  // 选源过程（实测 20+ 个候选，大多数不可用）：
+  //   BLS / Census / IMF / OECD / World Bank / WSJ / Economist / FT / Reuters
+  //   → 全部 403 或连接失败（反爬或 geo-block）
+  //   FRED API → 返回 Site Maintenance 页面（服务端维护中）
+  //   FRED fredgraph.csv → 连接失败
+  // 最终确认可用且内容对口的 4 个：
+  //   Federal Reserve press_monetary → FOMC 声明与经济预测（一手政策数据）
+  //   ECB press → 欧元区货币政策与监管（含 pubDate 与 link）
+  //   NBER → 经济学工作论文（学术口径，非媒体转述）
+  //   EconBrowser → 宏观数据分析（含实际数据解读）
+  //
+  // 诚实性说明：这些是**政策公告与研究解读**，不是原始统计序列
+  // （失业率、CPI 等数值需 FRED/BLS，当前不可用）。
+  // 报告里不得把它们当成统计数据引用，只能当「政策与研究动向」。
+  economy: [
+    { name: 'Federal Reserve (Monetary)', url: 'https://www.federalreserve.gov/feeds/press_monetary.xml' },
+    { name: 'ECB Press', url: 'https://www.ecb.europa.eu/rss/press.html' },
+    { name: 'NBER Working Papers', url: 'https://www.nber.org/rss/new.xml' },
+    { name: 'EconBrowser', url: 'https://econbrowser.com/feed' },
+  ],
 };
 
 const DOMAIN_NAMES = {
@@ -87,6 +115,7 @@ const DOMAIN_NAMES = {
   frontier_models: '专项大模型',
   psychology: '心理',
   philosophy: '哲学',
+  economy: '宏观经济',
 };
 
 const FETCH_TIMEOUT_MS = 8000;

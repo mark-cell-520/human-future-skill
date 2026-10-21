@@ -1297,3 +1297,125 @@ c213h('第二次抓取命中缓存且明显更快', (() => {
     console.log('结论：慢源缓存生效，EU AI Act 不再拖累每轮采集。');
   }
 })();
+
+// ════════════════════════════════════════════════════════════════
+// v2.13i 新增断言：宏观经济域必须真的采到数据并归入推演。
+// 背景：economy_labor（经济与就业）域在推演引擎里有 32 个关键词，
+// 但 RSS_SOURCES 从来没有对应源——经济域每轮只读知识库，没有 live 数据。
+// SKILL.md 的「已知边界」只写了 psychology/philosophy，漏了经济域。
+// ════════════════════════════════════════════════════════════════
+const v213i = [];
+function c213i(name, ok, detail) { v213i.push({ name, ok, detail }); }
+
+const fsI = require('fs');
+const pathI = require('path');
+
+c213i('经济采集域已注册 4 个源', (() => {
+  const src = fsI.readFileSync(pathI.join(__dirname, 'scripts/collect-news.js'), 'utf-8');
+  return /economy:\s*\[/.test(src)
+    && /federalreserve\.gov\/feeds\/press_monetary\.xml/.test(src)
+    && /ecb\.europa\.eu\/rss\/press\.html/.test(src)
+    && /nber\.org\/rss\/new\.xml/.test(src)
+    && /econbrowser\.com\/feed/.test(src);
+})(), '应有 Fed / ECB / NBER / EconBrowser 四个源');
+
+c213i('DOMAIN_NAMES 有 economy 中文名', (() => {
+  const src = fsI.readFileSync(pathI.join(__dirname, 'scripts/collect-news.js'), 'utf-8');
+  return /economy:\s*'宏观经济'/.test(src);
+})(), 'economy 应映射为「宏观经济」');
+
+c213i('经济采集域按来源归入 economy_labor 主题域', (() => {
+  const src = fsI.readFileSync(pathI.join(__dirname, 'scripts/project-future.js'), 'utf-8');
+  return /it\.bucket === 'economy' && !matched\.includes\('economy_labor'\)/.test(src)
+    && /byDomain\.economy_labor\.push\(it\)/.test(src);
+})(), 'Fed/NBER 标题多不含经济关键词，必须按来源归类');
+
+c213i('真能采到经济域 live 数据', (() => {
+  const { fetchAll } = require('./scripts/collect-news.js');
+  return fetchAll().then(out => {
+    const eco = out.economy;
+    if (!eco || !Array.isArray(eco.news)) return false;
+    const live = eco.news.filter(n => n.origin === 'live');
+    // 至少 3 个源成功，每个源至少 1 条
+    const srcs = new Set(live.map(n => n.source));
+    return live.length >= 10 && srcs.size >= 3;
+  });
+})(), '应采到 10+ 条 live 经济数据，来自 3+ 个源');
+
+(async () => {
+  const results = await Promise.all(v213i.map(c => Promise.resolve(c.ok)));
+  let f = 0;
+  v213i.forEach((c, i) => {
+    const ok = results[i];
+    if (!ok) f++;
+    console.log(`${ok ? '✓' : '✗'} ${c.name}${ok ? '' : '  —— ' + c.detail}`);
+  });
+  console.log(`\nv2.13i: ${v213i.length - f} 通过, ${f} 失败, 共 ${v213i.length} 个`);
+  if (f > 0) {
+    console.log('结论：宏观经济域未接上。');
+    process.exitCode = 1;
+  } else {
+    console.log('结论：宏观经济域已接入并归入推演。');
+  }
+})();
+
+// ════════════════════════════════════════════════════════════════
+// v2.13j 新增断言：台账 id 不得含 pubDate 日期段。
+// 实测依据：sitemap 源的 lastmod 是「页面最后修改时间」不是发布时间，
+// 页面一修订 lastmod 就变。同一条 Anthropic 预测在 10-13 与 10-21 两轮
+// 产生 fc-anthropic-...-13202600-2026-q4 与 ...-21202617-2026-q4 两条重复。
+// （fetchSitemap 注释里早写明 lastmod 不是发布时间，但 id 还是用了它。）
+// 正确方案：id 用 来源 + URL 末段 + 结算点，URL 是永久地址最稳定。
+// ════════════════════════════════════════════════════════════════
+const v213j = [];
+function c213j(name, ok, detail) { v213j.push({ name, ok, detail }); }
+
+const fsJ = require('fs');
+const pathJ = require('path');
+
+c213j('id 构造不含 r.date（pubDate 会变）', (() => {
+  const src = fsJ.readFileSync(pathJ.join(__dirname, 'scripts/project-future.js'), 'utf-8');
+  const start = src.indexOf('const urlTail =');
+  const block = src.slice(start, start + 500);
+  // id 构造块必须用 urlTail，且不得引用 r.date
+  return start > 0 && /urlTail/.test(block) && !/r\.date/.test(block);
+})(), 'id 应基于 URL 末段而非 pubDate');
+
+c213j('sitemap 源的 lastmod 变化不产生新 id', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  // 同一篇文章，两次 pubDate 不同（模拟 lastmod 变化），应产生同一 id
+  const mk = (pubDate) => {
+    const inst = new ProjectionEngine({});
+    inst.signals = { items: [{
+      title: 'Self Replicating Ai',
+      body: 'If small models improve at their historical rate, they\u2019ll match this capability level by the end of this year. '
+        + 'The solid line is the least-squares fit over the best models in-class at each date, with a gain of 13.7 ECI per year (R 2 of 0.95).',
+      description: '', source: 'Anthropic News (sitemap)', category: 'frontier_models',
+      pubDate,
+      link: 'https://www.anthropic.com/research/self-replicating-ai',
+    }] };
+    return inst;
+  };
+  const r1 = mk('Tue, 13 Oct 2026 00:44:16 GMT').buildForecastDiscrimination();
+  const r2 = mk('Wed, 21 Oct 2026 10:00:00 GMT').buildForecastDiscrimination();
+  const id1 = (r1.ledgerRegistration.registered[0] || r1.ledgerRegistration.skipped[0] || {}).id;
+  const id2 = (r2.ledgerRegistration.registered[0] || r2.ledgerRegistration.skipped[0] || {}).id;
+  return !!id1 && id1 === id2;
+})(), 'lastmod 从 10-13 变到 10-21 应仍是同一 id');
+
+(async () => {
+  const results = await Promise.all(v213j.map(c => Promise.resolve(c.ok)));
+  let f = 0;
+  v213j.forEach((c, i) => {
+    const ok = results[i];
+    if (!ok) f++;
+    console.log(`${ok ? '✓' : '✗'} ${c.name}${ok ? '' : '  —— ' + c.detail}`);
+  });
+  console.log(`\nv2.13j: ${v213j.length - f} 通过, ${f} 失败, 共 ${v213j.length} 个`);
+  if (f > 0) {
+    console.log('结论：id 仍含会变的 pubDate，幂等会失效。');
+    process.exitCode = 1;
+  } else {
+    console.log('结论：id 基于 URL 末段，sitemap lastmod 变化不影响幂等。');
+  }
+})();
