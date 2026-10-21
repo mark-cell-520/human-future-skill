@@ -1259,9 +1259,21 @@ class ProjectionEngine {
       //       但 id 还是用了它——知道不等于做到。）
       //
       // 规律：id 绝不能含会变的字段。最终方案：
-      //   来源 + 结算点 + URL 末段。
+      //   来源 + URL 末段 + 结算点。
       // URL 是文章的永久地址，最稳定；结算点区分同一来源的不同预测。
-      const urlTail = (r.url || '').replace(/\/$/, '').split('/').pop() || '';
+      //
+      // [v2.13] 取末段前必须**剥掉查询串与 hash**。
+      // 实测踩坑：EU AI Act 的 feed 给的文章链接带 UTM 跟踪参数
+      //   https://artificialintelligenceact.eu/the-scientific-panel/?utm_source=rss&utm_medium=rss...
+      // 直接 split('/').pop() 拿到的是 "?utm_source=rss&utm_medium=rss&utm_campaign=rss"
+      // 而不是文章名 the-scientific-panel。后果：同源所有文章的 URL 末段
+      // 完全相同（UTM 是 feed 统一加的），id 只剩「来源+结算点」两个维度——
+      // 实测两篇不同文章产生同一个 id，第二篇被误判「已登记」而永久跳过。
+      // 这是比重复登记更糟的错：**漏登记**。
+      const urlTail = (r.url || '')
+        .replace(/[?#].*$/, '')        // 剥查询串与 hash
+        .replace(/\/$/, '')
+        .split('/').pop() || '';
       const id = `fc-${(r.source || 'unknown').replace(/[^a-z0-9]+/gi, '-').toLowerCase()}`
         + `-${urlTail.replace(/[^a-z0-9]+/gi, '-').toLowerCase().slice(0, 40) || 'nourl'}`
         + `-${(r.dueOn || 'nodue').replace(/[^a-z0-9]+/gi, '-').toLowerCase()}`;

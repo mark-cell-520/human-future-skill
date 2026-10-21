@@ -1419,3 +1419,81 @@ c213j('sitemap 源的 lastmod 变化不产生新 id', (() => {
     console.log('结论：id 基于 URL 末段，sitemap lastmod 变化不影响幂等。');
   }
 })();
+
+// ════════════════════════════════════════════════════════════════
+// v2.13k 新增断言：URL 末段必须剥掉查询串，否则同源文章 id 碰撞导致漏登记。
+// 实测依据：EU AI Act 的 feed 给的文章链接带 UTM 跟踪参数
+//   .../the-scientific-panel/?utm_source=rss&utm_medium=rss&utm_campaign=rss
+// 直接 split('/').pop() 拿到的是 UTM 串而不是文章名——同源所有文章的
+// 末段完全相同，id 只剩「来源+结算点」两维。实测两篇不同文章产生同一 id，
+// 第二篇被误判「已登记」而永久跳过。这比重复登记更糟：漏登记。
+// ════════════════════════════════════════════════════════════════
+const v213k = [];
+function c213k(name, ok, detail) { v213k.push({ name, ok, detail }); }
+
+const fsK = require('fs');
+const pathK = require('path');
+
+c213k('id 构造剥掉了 URL 查询串', (() => {
+  const src = fsK.readFileSync(pathK.join(__dirname, 'scripts/project-future.js'), 'utf-8');
+  return /const urlTail = \(r\.url \|\| ''\)\s*\n\s*\.replace\(\/\[\?#\]\.\*\$\/, ''\)/.test(src);
+})(), '应有 .replace(/[?#].*$/, "") 剥查询串与 hash');
+
+c213k('同源两篇不同文章（带 UTM）产生不同 id', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const mk = (link) => {
+    const inst = new ProjectionEngine({});
+    inst.signals = { items: [{
+      title: 'EU AI Act',
+      body: 'Providers and deployers must comply with the documentation obligations by August 2026. '
+        + 'The framework requires all deployers to ensure transparency before that date.',
+      description: '', source: 'EU AI Act Timeline', category: 'governance',
+      pubDate: 'Thu, 14 May 2026 23:11:21 GMT',
+      link,
+    }] };
+    return inst;
+  };
+  const UTM = '?utm_source=rss&utm_medium=rss&utm_campaign=rss';
+  const r1 = mk(`https://artificialintelligenceact.eu/the-scientific-panel/${UTM}`)
+    .buildForecastDiscrimination();
+  const r2 = mk(`https://artificialintelligenceact.eu/the-advisory-forum/${UTM}`)
+    .buildForecastDiscrimination();
+  const id1 = (r1.ledgerRegistration.registered[0] || r1.ledgerRegistration.skipped[0] || {}).id;
+  const id2 = (r2.ledgerRegistration.registered[0] || r2.ledgerRegistration.skipped[0] || {}).id;
+  // 两条都必须存在，且必须不同（相同 = 第二篇会被漏登记）
+  return !!id1 && !!id2 && id1 !== id2;
+})(), '不同文章不得因 UTM 相同而产生同一 id');
+
+c213k('带 UTM 的 id 不含 utm 字样', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const inst = new ProjectionEngine({});
+  inst.signals = { items: [{
+    title: 'EU AI Act',
+    body: 'Providers and deployers must comply with the documentation obligations by August 2026. '
+      + 'The framework requires all deployers to ensure transparency before that date.',
+    description: '', source: 'EU AI Act Timeline', category: 'governance',
+    pubDate: 'Thu, 14 May 2026 23:11:21 GMT',
+    link: 'https://artificialintelligenceact.eu/the-scientific-panel/?utm_source=rss&utm_medium=rss&utm_campaign=rss',
+  }] };
+  const r = inst.buildForecastDiscrimination();
+  const id = (r.ledgerRegistration.registered[0] || r.ledgerRegistration.skipped[0] || {}).id || '';
+  // id 里应含文章名，且不含 utm
+  return /the-scientific-panel/.test(id) && !/utm/i.test(id);
+})(), 'id 应含文章名而非跟踪参数');
+
+(async () => {
+  const results = await Promise.all(v213k.map(c => Promise.resolve(c.ok)));
+  let f = 0;
+  v213k.forEach((c, i) => {
+    const ok = results[i];
+    if (!ok) f++;
+    console.log(`${ok ? '✓' : '✗'} ${c.name}${ok ? '' : '  —— ' + c.detail}`);
+  });
+  console.log(`\nv2.13k: ${v213k.length - f} 通过, ${f} 失败, 共 ${v213k.length} 个`);
+  if (f > 0) {
+    console.log('结论：URL 末段未剥查询串，同源文章 id 会碰撞。');
+    process.exitCode = 1;
+  } else {
+    console.log('结论：URL 末段已剥查询串，同源不同文章得到不同 id。');
+  }
+})();
