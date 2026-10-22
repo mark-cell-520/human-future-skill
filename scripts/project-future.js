@@ -47,6 +47,11 @@ const predictionLedger = require(path.join(HF, 'prediction-ledger.js'));
 // [v2.13] 预测辨别器：引擎不再自己生成未来，改为辨别他人关于未来的主张。
 // 这是 v2.13 的方向转变——见 SKILL.md「v2.13 方向转变」一节。
 const { discriminateAll: discriminateForecasts } = require(path.join(HF, 'forecast-discriminator.js'));
+// [v3.0.0] 商业主张辨别器：心虫商业未来推演的核心新能力。
+// 与 forecast-discriminator 的分工：后者辨别「关于未来的预测」（要时点），
+// 前者辨别「关于市场的陈述」（要量化与证据等级）。商业推演面对的绝大多数
+// 主张是后者——"企业正在采用 AI agent"、"开源将杀死付费产品"这类。
+const { discriminateCommercial } = require(path.join(HF, 'commercial-discriminator.js'));
 
 /** 主题域定义：关键词命中即归入该域。顺序即优先级。 */
 // [v2.7 新增] frontier_models「专项大模型」：
@@ -85,6 +90,36 @@ const DOMAINS = [
     kw: ['breach', 'leak', 'ransomware', 'malware', 'phishing', 'privacy', 'surveillance', 'zero-day', 'cve', 'encryption'] },
   { id: 'society_culture', name: '社会与人文',
     kw: ['education', 'mental health', 'psychology', 'philosophy', 'society', 'culture', 'humanities', 'ethics'] },
+  // ── 商业主题域（v3.0.0 心虫商业未来推演）─────────────────────
+  //
+  // 为什么单列 5 个而不是复用 economy_labor：economy_labor 的关键词是
+  // job/gdp/inflation 这类宏观劳动力指标，而心虫要回答的是商业决策问题——
+  // 市场主张站不站得住、竞品在做什么、钱往哪流、客户在买什么、合规创造什么
+  // 需求。这五类各有独立的辨别维度，混在一个域里会互相稀释热度。
+  //
+  // 纪律：这些域只做「信号归类 + 热度 + 主张辨别」，不生成「心虫应该怎么做」。
+  // 商业结论由报告 agent 依据这些信号自行判断并标注归属，引擎不代劳。
+  { id: 'market_claims', name: '市场主张',
+    kw: ['market', 'demand', 'adoption', 'enterprise', 'procurement', 'replace',
+      'disrupt', 'tam', 'market size', 'willingness to pay', 'roi', 'survey',
+      'analyst', 'gartner', 'forecast', 'projected market', 'boom', 'bubble'] },
+  { id: 'competitor_moves', name: '竞品与替代方案',
+    kw: ['competitor', 'rival', 'launch', 'launches', 'release', 'released',
+      'generally available', 'pricing', 'price cut', 'free tier', 'open source',
+      'open-weight', 'acquire', 'acquisition', 'acquihire', 'partnership',
+      'benchmark', 'sota', 'state of the art', 'beats', 'outperform'] },
+  { id: 'capital_flow', name: '资本与商业模式',
+    kw: ['funding', 'raises', 'raised', 'series a', 'series b', 'series c',
+      'seed round', 'valuation', 'ipo', 'revenue', 'arr', 'burn rate', 'investors',
+      'venture', 'vc', 'unicorn', 'profitab', 'margin', 'monetiz'] },
+  { id: 'customer_adoption', name: '客户采用与场景',
+    kw: ['deployment', 'deploy', 'pilot', 'case study', 'use case', 'rollout',
+      'integration', 'api', 'sdk', 'developer', 'enterprise customers', 'churn',
+      'renewal', 'contract', 'proof of concept', 'poc'] },
+  { id: 'compliance_demand', name: '合规需求',
+    kw: ['compliance', 'audit', 'certification', 'liability', 'attestation',
+      'disclosure', 'transparency requirement', 'conformity', 'assessment',
+      'eu ai act', 'regulator', 'enforcement', 'penalty', 'fine'] },
 ];
 
 /** 阶段模板：只决定"取第几热的域"，内容由信号填充 */
@@ -183,10 +218,27 @@ class ProjectionEngine {
       // 往往不含「经济/就业/通胀」这类关键词（如 "Minutes of the Federal Open
       // Market Committee"、"Export Controls and the Economics of National
       // Security"），纯靠关键词会全落进 undomained。
-      // 「来自央行/经济学研究源」本身就是最可靠的归类信号。
+      // 「来自央行/经济学研究源」本身就是比正文更可靠的归类信号。
       if (it.bucket === 'economy' && !matched.includes('economy_labor')) {
         byDomain.economy_labor.push(it);
         matched.push('economy_labor');
+      }
+      // [v3.0.0] 商业采集域：先靠商业主题域关键词匹配（融资/竞品/采用/合规
+      // 各有专门关键词），匹配不上才兜底到 market_claims。
+      //
+      // 为什么不直接按来源分派：business 的 4 个源话题跨度大——
+      // TechCrunch 同时有融资（"raises $15B"）和竞品（"Claude Duet app"），
+      // ProductHunt 全是产品发布。关键词能分开它们，来源不能。
+      // 兜底到 market_claims 而不是 undomained：商业新闻本质都是关于市场的
+      // 主张或动作，归进「市场主张」比「未归类」诚实。
+      if (it.bucket === 'business') {
+        const commercialDomains = ['market_claims', 'competitor_moves',
+          'capital_flow', 'customer_adoption', 'compliance_demand'];
+        const hitCommercial = commercialDomains.filter(d => matched.includes(d));
+        if (hitCommercial.length === 0) {
+          byDomain.market_claims.push(it);
+          matched.push('market_claims');
+        }
       }
       it.domains = matched;
     }
@@ -258,6 +310,8 @@ class ProjectionEngine {
       report.sourceAdjudication = this.buildSourceAdjudication();
       report.claimMismatches = this.buildClaimMismatches();
       report.forecastDiscrimination = this.buildForecastDiscrimination();
+      // [v3.0.0] 商业主张辨别：心虫商业未来推演的核心新段
+      report.commercialDiscrimination = this.buildCommercialDiscrimination();
       report.frontierModelSection = this.buildFrontierModelSection();
       report.formulaAssessment = this.buildFormulaAssessment();
       report.lowConfidenceGate = this.applyLowConfidenceGate(report);
@@ -1333,6 +1387,97 @@ class ProjectionEngine {
   }
 
   // ───────────────────────────────────────────────────────────────
+  // v3.0.0 商业主张辨别：心虫商业未来推演的核心能力
+  //
+  // 与 buildForecastDiscrimination 的分工：
+  //   前者辨别「关于未来的预测」——判据是时点与可结算性
+  //   本方法辨别「关于市场的陈述」——判据是量化与证据等级
+  //
+  // 为什么必须分开：商业推演面对的绝大多数主张不是预测而是陈述。
+  // "Enterprises are adopting AI agents" 没有时点，用 forecast 判据会全判
+  // 「不可证伪：无时间点」——但这句话真正的问题不是没时点，是**没量化、
+  // 没出处**。用错判据会把有价值的商业信号当噪音滤掉。
+  //
+  // 纪律（心虫铁律）：只辨别主张的表述与证据质量，不生成商业建议。
+  // 「这对心虫意味着什么」由报告 agent 判断并标注归属，引擎不代劳。
+  // ───────────────────────────────────────────────────────────────
+  buildCommercialDiscrimination() {
+    // [v3.0.0] 优先 business 域，economy 只作补充。
+    //
+    // 实测踩坑（第一版）：business 与 economy 混在一起按 signals.items 顺序取，
+    // 结果 24 个候选里 14 个来自 Fed/ECB/NBER——全是公告标题与论文标题
+    // （"Minutes of the Federal Open Market Committee"），它们**不是商业主张**，
+    // 是事实公告。而真正的商业主张（TechCrunch 的融资、ProductHunt 的发布）
+    // 反而排不进来。
+    //
+    // 修法：先取 business 全部候选，再用 economy 补足到上限。
+    const PICK_BUSINESS_FIRST = ['business', 'economy'];
+    const byBucket = { business: [], economy: [] };
+    for (const it of this.signals.items) {
+      if (!PICK_BUSINESS_FIRST.includes(it.bucket)) continue;
+      // 送命中句 + 后 2 句上下文（与 forecast 一致）：证据词常在后续句里
+      const norm = `${it.title || ''} ${it.body || ''} ${it.description || ''}`
+        .replace(/[\u2018\u2019\u201A\u201B\u2032]/g, "'")
+        .replace(/[\u201C\u201D\u201E\u201F\u2033]/g, '"');
+      const sents = norm.split(/(?<=[.!?。！？])\s+/);
+      // 找第一句含商业主张线索的（金额/百分比/市场词/融资词）
+      const idx = sents.findIndex(s => {
+        if (s.length < 25 || s.length > 400) return false;
+        return /(\$\s*[\d.]+|\d+\s*%|market|enterprises?|customers?|funding|raises?|valuation|adoption|deploy|regulator|compliance|survey|competitor|rival|open[\s-]?(source|weight))/i.test(s);
+      });
+      if (idx < 0) continue;
+      byBucket[it.bucket].push({
+        text: sents.slice(idx, idx + 3).join(' ').trim().slice(0, 600),
+        claimSentence: sents[idx].trim(),
+        source: it.source,
+        date: it.pubDate,
+        url: it.link,
+        category: (it.domains || [])[0] || 'market_claims',
+      });
+    }
+    // business 优先取满，economy 补足
+    const candidates = [...byBucket.business.slice(0, 16), ...byBucket.economy.slice(0, 8)];
+    if (candidates.length === 0) {
+      return {
+        available: false,
+        reason: `本期 ${this.signals.items.length} 条 live 信号中（商业域 business/economy）未抽到含商业主张的条目`,
+        note: '只辨别含市场陈述结构（采用/需求/替代/规模/融资/估值/竞品/合规/信任）的条目。',
+      };
+    }
+    const results = candidates.map(c => discriminateCommercial(c));
+
+    // 按 verdict 汇总
+    const byVerdict = {};
+    for (const r of results) byVerdict[r.verdict] = (byVerdict[r.verdict] || 0) + 1;
+    const byEvidence = {};
+    for (const r of results) byEvidence[r.evidence.label] = (byEvidence[r.evidence.label] || 0) + 1;
+    const byKind = {};
+    for (const r of results) if (r.kind !== 'unclassified') byKind[r.kind] = (byKind[r.kind] || 0) + 1;
+
+    // 决策相关 = 证据等级 >=3 或推理 >=2，且非不可证伪
+    const decisionRelevant = results.filter(r => r.decisionRelevant);
+
+    return {
+      available: true,
+      audited: results.length,
+      summary: {
+        audited: results.length,
+        byVerdict,
+        byEvidence,
+        byKind,
+        decisionRelevantCount: decisionRelevant.length,
+        factualCount: byVerdict.factual || 0,
+        unfalsifiableCount: byVerdict.unfalsifiable || 0,
+        wellFormedCount: byVerdict['well-formed'] || 0,
+      },
+      results: results.slice(0, 16),
+      note: '本段只辨别商业主张的表述与证据质量（可证伪性/证据等级/推理有效性/证伪条件），'
+        + '不判断主张内容真假，也不生成「心虫应该怎么做」的商业建议。'
+        + '证据等级：独立验证(4) > 第三方调查/公开财报(3) > 厂商自述/媒体报道(2) > 无出处(1)。',
+    };
+  }
+
+  // ───────────────────────────────────────────────────────────────
   // 机会：从非风险类域推导，同样要求信号量
   // ───────────────────────────────────────────────────────────────
   identifyOpportunities() {
@@ -1750,6 +1895,54 @@ function formatReport(report) {
     }
     lines.push('');
     lines.push(`> ${fd.note}`);
+  }
+  lines.push('');
+
+  // [v3.0.0] 商业主张辨别段：心虫商业未来推演的核心产出。
+  // 与上面的「预测辨别」分工：那条辨别关于未来的预测（要时点），
+  // 这条辨别关于市场的陈述（要量化与证据等级）。
+  const cdsc = report.commercialDiscrimination;
+  lines.push('## 商业主张辨别（市场陈述哪些站得住脚）');
+  lines.push('');
+  if (!cdsc || !cdsc.available) {
+    lines.push(`（${(cdsc && cdsc.reason) || '未运行'}）`);
+    lines.push('');
+    lines.push(`> ${(cdsc && cdsc.note) || ''}`);
+  } else {
+    const s = cdsc.summary;
+    lines.push(`本期从商业域（融资/竞品/宏观）抽到 ${cdsc.audited} 条含市场陈述的条目，逐条辨别：`);
+    lines.push(`  决策相关 ${s.decisionRelevantCount} 条 | 有出处事实 ${s.factualCount} 条`
+      + ` | 结构完整 ${s.wellFormedCount} 条 | 不可证伪 ${s.unfalsifiableCount} 条`);
+    const ev = Object.entries(s.byEvidence).map(([k, v]) => `${k} ${v}`).join(' | ');
+    lines.push(`  证据等级分布: ${ev}`);
+    lines.push('');
+    const VERDICT_CN = {
+      'unfalsifiable': '不可证伪', 'weak-evidence': '证据不足',
+      'thin-reasoning': '推理单薄', 'well-formed': '结构完整',
+      'factual': '有出处事实',
+    };
+    const KIND_CN = {
+      'adoption': '采用主张', 'demand': '需求主张', 'replacement': '替代主张',
+      'market-size': '市场规模', 'funding': '融资陈述', 'valuation': '估值陈述',
+      'capital-signal': '资本信号解读', 'competitive': '竞品能力', 'oss-threat': '开源威胁',
+      'compliance': '合规需求', 'trust': '信任需求', 'unclassified': '未归类',
+    };
+    for (const r of cdsc.results.slice(0, 12)) {
+      const rel = r.decisionRelevant ? '★决策相关' : '  ';
+      lines.push(`${rel} [${VERDICT_CN[r.verdict] || r.verdict}] ${(r.claimSentence || r.text).slice(0, 105)}`);
+      lines.push(`    类型: ${KIND_CN[r.kind] || r.kind} | 来源: ${r.source}`
+        + ` | 证据: ${r.evidence.label}(${r.evidence.weight})`
+        + ` | 推理: ${r.reasoning.score}/3`);
+      if (r.reasoning.missing.length) {
+        lines.push(`    推理缺: ${r.reasoning.missing.map(m => m.label).join('、')}`);
+      }
+      if (r.falsifiability.problems.length) {
+        lines.push(`    不可证伪: ${r.falsifiability.problems.map(p => p.label).join('；')}`);
+      }
+      lines.push(`    证伪条件: ${r.falsification}`);
+    }
+    lines.push('');
+    lines.push(`> ${cdsc.note}`);
   }
   lines.push('');
 

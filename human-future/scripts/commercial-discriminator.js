@@ -1,0 +1,245 @@
+#!/usr/bin/env node
+'use strict';
+
+/**
+ * 商业主张辨别器 — human-future v3.0.0 第 10 个新模块
+ *
+ * 为什么需要：v2.13 的 forecast-discriminator 辨别的是「关于未来的预测」，
+ * 判据是可证伪性/基准概率/推理有效性/证伪条件。但心虫商业推演面对的
+ * 绝大多数主张**不是预测，而是市场陈述**：
+ *
+ *   "企业正在大规模采用 AI agent"
+ *   "开源模型将杀死付费 AI 产品"
+ *   "市场需要可验证的 AI 输出"
+ *   "DeepSeek 融资 $15B，说明资本看好开源路线"
+ *
+ * 这些主张同样需要辨别，但判据不同：
+ *   - 预测看「有没有时点」，市场主张看「有没有量化与证据等级」
+ *   - 预测看「同类历史兑现率」，市场主张看「是调查自述、厂商口径还是独立验证」
+ *   - 预测看「机制/先行指标/反例」，市场主张看「样本/对照/反例」
+ *
+ * 定位纪律（心虫铁律）：本模块只辨别主张的**表述与证据质量**，
+ * 不判断「心虫该不该做某件事」，不生成商业建议。
+ * 「这对心虫意味着什么」由报告 agent 自行判断并标注归属。
+ *
+ * 四维判别（商业向）：
+ *   1. 可证伪性 —— 有主体 + 有量化 + 有时点/范围
+ *   2. 证据等级 —— 独立验证 > 第三方调查 > 厂商自述 > 无出处修辞
+ *   3. 推理有效性 —— 样本/对照/反例三要素
+ *   4. 证伪条件 —— 观察到什么就说明这条主张错了
+ */
+
+/** 商业主张的形态：用于识别「这句是在做市场陈述」 */
+const COMMERCIAL_CLAIM_PATTERNS = [
+  // ── 市场采用类 ──
+  { id: 'adoption-claim', re: /(enterprises?|companies|businesses?|firms?|organizations?)\s+(are|is|have been|has been)?\s*(adopting|deploying|using|rolling out|embracing|buying|purchasing)/i,
+    kind: 'adoption', label: '采用主张' },
+  // [v3.0.0] 调查/研究发现类：商业世界最高频的主张形态，第一版漏了。
+  // 实测 "A survey of 1,200 enterprises found 34% had deployed LLMs" 无命中。
+  { id: 'survey-finding', re: /(survey|study|poll|report|research|analysis|census)\s+(of|by|from|found|shows?|reveals?|indicates?|suggests?)/i,
+    kind: 'adoption', label: '调查研究主张' },
+  { id: 'finding-with-number', re: /\b\d+(?:\.\d+)?\s*%\s*(?:of\s+)?(enterprises?|companies|firms?|respondents?|users?|developers?|businesses?)/i,
+    kind: 'adoption', label: '量化采用数据' },
+  { id: 'market-demand-claim', re: /(market|demand|enterprises?|customers?|buyers?)\s+(want|needs?|demands?|is looking for|are looking for|requires?|is demanding)/i,
+    kind: 'demand', label: '需求主张' },
+  { id: 'replacement-claim', re: /(will|to|could|would)\s+(replace|displace|kill|obsolete|eliminate|disrupt|undercut)\s+(saas|software|services?|jobs?|workers?|vendors?|incumbents?|subscriptions?)/i,
+    kind: 'replacement', label: '替代主张' },
+  // [v3.0.0] 开源威胁类：第一版要求 open-source 后有 will/could 等情态动词，
+  // 但真实句子是 "Open-weight models will kill paid AI products"——
+  // 主语是 open-weight models 不是 open source。改为「开源类主语 + 威胁动词」。
+  { id: 'open-source-threat', re: /(open[\s-]?(?:source|weight)s?|free models?|open models?|open[\s-]weight releases?)[^.]{0,40}\s+(will|could|would|to|is going to|are going to)?\s*(kill|replace|undercut|erode|threaten|destroy|eat|disrupt)/i,
+    kind: 'oss-threat', label: '开源威胁主张' },
+  { id: 'market-size-claim', re: /(market|tam|opportunity|sector)\s+(is|will be|to reach|projected|expected|estimated)\s*(at\s*)?\$?\s*[\d.]+\s*(billion|trillion|million|bn|b\b|t\b)/i,
+    kind: 'market-size', label: '市场规模主张' },
+  // ── 资本类 ──
+  { id: 'funding-claim', re: /(raises?|raised|secures?|secured|closes?|closed)\s+\$?[\d.]+\s*(billion|million|bn|m\b|b\b)/i,
+    kind: 'funding', label: '融资陈述' },
+  { id: 'valuation-claim', re: /(valuation|valued at|worth)\s*(of\s*)?\$?[\d.]+\s*(billion|trillion|million|bn|b\b|t\b)/i,
+    kind: 'valuation', label: '估值陈述' },
+  { id: 'signal-from-capital', re: /(signals?|shows?|proves?|demonstrates?|indicates?|suggests?)\s+(that\s+)?(investors?|the market|capital|vc|venture)/i,
+    kind: 'capital-signal', label: '资本信号解读' },
+  // ── 竞品类 ──
+  { id: 'competitive-claim', re: /(beats?|outperforms?|surpasses?|exceeds?|defeats?|ahead of|leads?)\s+(openai|anthropic|google|meta|microsoft|deepseek|qwen|mistral|gpt|claude|gemini|the competition|rivals?|competitors?|sota)/i,
+    kind: 'competitive', label: '竞品能力主张' },
+  // ── 合规类 ──
+  { id: 'compliance-demand', re: /(compliance|regulatory|regulators?|auditors?|liability)\s+(will|could|would|to|is going to)?\s*(require|demand|force|mandate|drive|create|spur|fuel)/i,
+    kind: 'compliance', label: '合规需求主张' },
+  { id: 'trust-demand', re: /(trust|verification|verifiable|accountability|audit|transparency|provenance|attestation)\s+(is|are|will be|becomes?|grows?)\s+(critical|essential|important|necessary|a requirement|the differentiator|table stakes)/i,
+    kind: 'trust', label: '信任需求主张' },
+];
+
+/** 不可证伪的商业措辞：无主体、无量化、纯修辞 */
+const UNFALSIFIABLE_COMMERCIAL_PATTERNS = [
+  { id: 'no-quantity', test: (t) => !/\d/.test(t)
+      && !/(few|some|many|most|several|majority|minority)/i.test(t),
+    label: '无量化（「很多企业在用」没有基数，任何结果都能被说成应验）',
+    guidance: '商业主张至少要给出可数的量：多少家、多少百分比、多少金额。' },
+  { id: 'no-subject', test: (t) => /^(the market|enterprises|companies|businesses|everyone|nobody|people|industry)\s+(wants?|needs?|thinks?|believes?|is moving)/i.test(t)
+      && !/(according to|survey|report|study|data from|research by)/i.test(t),
+    label: '主体模糊（「市场想要 X」没说是谁统计的）',
+    guidance: '「市场」不会说话。必须指明是调查、财报、订单还是某人之口。' },
+  { id: 'unfalsifiable-trend', test: (t) => /(accelerating|explosive|unstoppable|inevitable|transformative|revolutionary|paradigm|game[\s-]changer|seismic|unprecedented)/i.test(t)
+      && !/\d/.test(t),
+    label: '趋势修辞（「不可阻挡的趋势」没有可观测的判据）',
+    guidance: '形容词不是证据。要么给数字，要么给可观察的先行指标。' },
+  { id: 'no-evidence-source', test: (t) => !/(according to|survey|report|study|research|data|filing|earnings|announced|disclosed|per |said|told|cited)/i.test(t)
+      && /(is|are|has been|have been)\s+(growing|rising|declining|surging|collapsing|booming)/i.test(t),
+    label: '无出处（「X 在增长」没说是谁的数据）',
+    guidance: '增长类主张必须带数据来源，否则无法验证。' },
+];
+
+  // [v3.0.0] 证据等级匹配顺序很重要：**先匹配出处词，再匹配内容词**。
+  // 实测踩坑："Regulators will require AI systems to be independently verified"
+  // 里的 "independently verified" 是**主张内容**（要求做什么），
+  // 不是**证据来源**（谁验证的）。第一版 independent-verification 排在最前，
+  // 结果这句被判「独立验证(4)」，而它其实无任何出处。
+  // 规则：独立验证必须与出处标记共现（如 "independently verified by X"、
+  // "third-party audit found"），单独出现的内容词不算证据。
+  const EVIDENCE_TIERS = [
+  { id: 'independent-verification', label: '独立验证', weight: 4,
+    test: (t) => /((?:independently|externally)\s+(?:verified|confirmed|audited|reproduced)\s+by|third[\s-]party\s+(?:audit|verification|analysis|review)\s+(?:by|of|found|showed)|peer[\s-]reviewed\s+(?:by|in)|reproduced\s+by|external\s+audit\s+(?:by|found))/i.test(t) },
+  { id: 'third-party-survey', label: '第三方调查', weight: 3,
+    test: (t) => /(survey|poll|census|study by|research by|according to (?:gartner|idc|forrester|mckinsey|deloitte|analyst|report))/i.test(t) },
+  { id: 'public-filing', label: '公开财报/公告', weight: 3,
+      // [v3.0.0] 补 announcement(s)/statement(s)：实测融资句
+      // "according to a company announcement" 因只认 announced 而漏配，
+      // 证据等级掉到「无出处(1)」，融资事实被判成 weak-evidence。
+    test: (t) => /(earnings|quarterly results|filing|10-[kq]|sec filing|annual report|press release|announced|announcement|statement|disclosed|confirmation|confirmed)/i.test(t) },
+  { id: 'vendor-selfreport', label: '厂商自述', weight: 2,
+    test: (t) => /(we|our|the company)\s+(expect|believe|estimate|project|anticipate|aim|plan|target)/i.test(t) },
+  { id: 'media-report', label: '媒体报道', weight: 2,
+    test: (t) => /(reported|reportedly|sources? (?:say|said|tell|told)|people familiar|according to (?:a |an )?(?:person|source))/i.test(t) },
+  { id: 'no-source', label: '无出处', weight: 1,
+    test: () => true },
+  ];
+
+/** 推理有效性：商业主张的三要素 */
+const REASONING_CHECKS = [
+  { id: 'has-sample', label: '给出样本（多少家/多少用户/多少钱）',
+    test: (t) => /(\d+\s*(?:companies|enterprises|firms|customers|users|developers|respondents|percent|%|million|billion)|\$[\d.]+|n\s*=\s*\d+)/i.test(t) },
+  { id: 'has-comparison', label: '给出对照（和谁比/和什么时候比）',
+    test: (t) => /(compared to|versus|vs\.?|up from|down from|year[\s-]over[\s-]year|yoy|qoq|against|relative to|than (?:last|previous))/i.test(t) },
+  { id: 'has-counterexample', label: '承认反例（什么情况下不成立）',
+    test: (t) => /(however|but|although|despite|yet|while|except|unless|if not|conversely|on the other hand|不过|但是|尽管|除非)/i.test(t) },
+];
+
+/**
+ * 辨别一条商业主张。
+ * @param {{text, source?, date?, url?, category?}} claim
+ * @param {{ledger?: Array}} opts
+ */
+function discriminateCommercial(claim, opts = {}) {
+  const text = String(claim.text || '');
+  const problems = [];
+  const matchedPatterns = [];
+
+  // 1. 识别主张形态
+  for (const p of COMMERCIAL_CLAIM_PATTERNS) {
+    try {
+      if (p.re.test(text)) matchedPatterns.push({ id: p.id, kind: p.kind, label: p.label });
+    } catch (_) { /* 正则异常不当真 */ }
+  }
+
+  // 2. 不可证伪性
+  for (const p of UNFALSIFIABLE_COMMERCIAL_PATTERNS) {
+    try {
+      if (p.test(text)) problems.push({ id: p.id, label: p.label, guidance: p.guidance });
+    } catch (_) { /* 同上 */ }
+  }
+
+  // 3. 证据等级
+  let evidence = EVIDENCE_TIERS[EVIDENCE_TIERS.length - 1];
+  for (const t of EVIDENCE_TIERS) {
+    try { if (t.test(text)) { evidence = t; break; } } catch (_) { /* 同上 */ }
+  }
+
+  // 4. 推理有效性
+  const met = [];
+  const missing = [];
+  for (const c of REASONING_CHECKS) {
+    try {
+      if (c.test(text)) met.push(c.id);
+      else missing.push({ id: c.id, label: c.label });
+    } catch (_) { missing.push({ id: c.id, label: c.label }); }
+  }
+
+  // ── 综合判定 ──
+  // 注意顺序：evidence.weight>=3 会把「公开财报」也判成 well-formed，
+  // 但财报类陈述（融资 $X）本质是事实不是主张——单独归为 factual。
+  const isFactual = matchedPatterns.some(p => p.kind === 'funding' || p.kind === 'valuation')
+    && evidence.weight >= 3;
+  const reasoningScore = met.length;
+  let verdict;
+  if (isFactual) {
+    verdict = 'factual';           // 有出处的融资/估值陈述：事实，不需要辨别真伪
+  } else if (problems.length > 0) {
+    verdict = 'unfalsifiable';     // 无量化/无主体/纯修辞
+  } else if (evidence.weight <= 2) {
+    verdict = 'weak-evidence';     // 可证伪但证据等级低（厂商自述/媒体）
+  } else if (reasoningScore < 2) {
+    verdict = 'thin-reasoning';    // 证据够但推理要素不足
+  } else {
+    verdict = 'well-formed';       // 样本/对照/反例齐备且证据等级高
+  }
+
+  // 5. 证伪条件
+  const falsification = buildFalsification(matchedPatterns, text);
+
+  return {
+    text,
+    kind: matchedPatterns.length ? matchedPatterns[0].kind : 'unclassified',
+    kinds: matchedPatterns.map(p => p.kind),
+    source: claim.source || '(未标注)',
+    date: claim.date || '',
+    url: claim.url || '',
+    category: claim.category || inferCommercialCategory(text, matchedPatterns),
+    verdict,
+    falsifiability: { problems, ok: problems.length === 0 },
+    evidence: { id: evidence.id, label: evidence.label, weight: evidence.weight },
+    reasoning: { met, missing, score: reasoningScore },
+    falsification,
+    // 是否值得心虫关注：证据等级 >=3 或推理 >=2 的商业主张才有决策价值
+    decisionRelevant: (evidence.weight >= 3 || reasoningScore >= 2)
+      && verdict !== 'unfalsifiable',
+  };
+}
+
+function buildFalsification(patterns, text) {
+  const kind = patterns.length ? patterns[0].kind : 'unclassified';
+  const FALSIFICATION_BY_KIND = {
+    'adoption': '观察到目标客群的实际采购/部署数据低于主张值，或抽样企业里多数未进入生产',
+    'demand': '观察到目标客群的询价/订单/续费率不支持该需求，或采购方明确表示无此需求',
+    'replacement': '观察到被替代方的收入/份额在主张时点后未下降，反而增长',
+    'market-size': '观察到独立机构的同口径测算显著低于该数字，或该数字的统计口径被公开质疑',
+    'funding': '观察到交割公告、监管文件或投资方确认与主张金额不一致',
+    'valuation': '观察到后续融资、二级市场交易或财报披露的估值与该数字矛盾',
+    'capital-signal': '观察到同一资本方在同类标的上减仓、或该解读被资本方本人否认',
+    'competitive': '观察到第三方在相同任务、相同口径下的复现结果不支持该领先幅度',
+    'oss-threat': '观察到付费产品在主张时点后的收入/份额未受侵蚀，或开源方案的实际采用数据很低',
+    'compliance': '观察到监管最终文本不含该义务，或执法记录显示无相关处罚/要求',
+    'trust': '观察到采购方在无验证能力的情况下仍大量采购，或验证能力未进入采购评估项',
+    'unclassified': '无明确证伪路径——这本身就是问题',
+  };
+  return FALSIFICATION_BY_KIND[kind] || FALSIFICATION_BY_KIND.unclassified;
+}
+
+function inferCommercialCategory(text, patterns) {
+  if (patterns.length) {
+    const k = patterns[0].kind;
+    const M = { adoption: 'market_claims', demand: 'market_claims',
+      replacement: 'market_claims', 'market-size': 'market_claims',
+      funding: 'capital_flow', valuation: 'capital_flow', 'capital-signal': 'capital_flow',
+      competitive: 'competitor_moves', 'oss-threat': 'competitor_moves',
+      compliance: 'compliance_demand', trust: 'compliance_demand' };
+    return M[k] || 'market_claims';
+  }
+  return 'market_claims';
+}
+
+module.exports = {
+  discriminateCommercial,
+  COMMERCIAL_CLAIM_PATTERNS,
+  UNFALSIFIABLE_COMMERCIAL_PATTERNS,
+  EVIDENCE_TIERS,
+  REASONING_CHECKS,
+};

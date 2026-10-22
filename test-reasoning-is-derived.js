@@ -1070,10 +1070,33 @@ c213e('同一预测在不同抽取形态下产生同一台账 id', (() => {
 })(), '两种 claimSentence 形态应得到同一 id（幂等不失效）');
 
 c213e('台账里同一条预测不出现重复条目', (() => {
-  const fc = readLedgerE().filter(p => /^fc-anthropic/.test(p.id));
-  const ids = fc.map(p => p.id);
-  return ids.length === new Set(ids).size && fc.length <= 1;
-})(), '同一来源+日期+结算点的预测只允许 1 条');
+  // [v3.0.0] 不能依赖台账当前内容——同文件的 v2.13j 断言会真的调用
+  // buildForecastDiscrimination() 并登记条目，执行顺序变化时
+  // fc-anthropic 可能是 0/1/2 条。实测踩过：断言写死「<=1」会因
+  // 前序断言登记而假失败。
+  //
+  // 改为直接验证幂等性：连调两次，台账里同 id 不得出现 2 次。
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const mk = () => {
+    const inst = new ProjectionEngine({});
+    inst.signals = { items: [{
+      title: 'Self Replicating Ai',
+      body: 'If small models improve at their historical rate, they\u2019ll match this capability level by the end of this year. '
+        + 'The solid line is the least-squares fit over the best models in-class at each date, with a gain of 13.7 ECI per year (R 2 of 0.95).',
+      description: '', source: 'Anthropic News (sitemap)', category: 'frontier_models',
+      pubDate: 'Tue, 13 Oct 2026 00:44:16 GMT',
+      link: 'https://www.anthropic.com/research/self-replicating-ai',
+    }] };
+    return inst;
+  };
+  mk().buildForecastDiscrimination();
+  mk().buildForecastDiscrimination();
+  const all = readLedgerE();
+  const counts = {};
+  for (const p of all) counts[p.id] = (counts[p.id] || 0) + 1;
+  const dupes = Object.entries(counts).filter(([, c]) => c > 1);
+  return dupes.length === 0;
+})(), '同一来源+URL+结算点的预测只允许 1 条（连调两次验证幂等）');
 
 c213e('id 不含会变化的 claim 文本', (() => {
   const src = fsE.readFileSync(path.join(__dirname, 'scripts/project-future.js'), 'utf-8');
@@ -1495,5 +1518,143 @@ c213k('带 UTM 的 id 不含 utm 字样', (() => {
     process.exitCode = 1;
   } else {
     console.log('结论：URL 末段已剥查询串，同源不同文章得到不同 id。');
+  }
+})();
+
+// ════════════════════════════════════════════════════════════════
+// v3.0.0 新增断言：商业主张辨别器 + 商业采集域。
+// 背景：推演目的从「人类文明未来」转为「心虫商业未来」——
+// 为了让心虫在未来商业中拿到结果。文明级信号无法回答商业决策问题。
+// ════════════════════════════════════════════════════════════════
+const v300 = [];
+function c300(name, ok, detail) { v300.push({ name, ok, detail }); }
+
+const fsV3 = require('fs');
+const pathV3 = require('path');
+
+// ── 采集层 ──
+c300('商业采集域已注册 4 个源', (() => {
+  const src = fsV3.readFileSync(pathV3.join(__dirname, 'scripts/collect-news.js'), 'utf-8');
+  return /business:\s*\[/.test(src)
+    && /techcrunch\.com\/category\/artificial-intelligence/.test(src)
+    && /theinformation\.com\/feed/.test(src)
+    && /lastweekin\.ai\/feed/.test(src)
+    && /producthunt\.com\/feed/.test(src);
+})(), '应有 TechCrunch/TheInformation/LastWeekInAI/ProductHunt');
+
+c300('DOMAIN_NAMES 有 business 中文名', (() => {
+  const src = fsV3.readFileSync(pathV3.join(__dirname, 'scripts/collect-news.js'), 'utf-8');
+  return /business:\s*'商业动态'/.test(src);
+})(), 'business 应映射为「商业动态」');
+
+// ── 主题域 ──
+c300('推演引擎新增 5 个商业主题域', (() => {
+  const src = fsV3.readFileSync(pathV3.join(__dirname, 'scripts/project-future.js'), 'utf-8');
+  return /id:\s*'market_claims'/.test(src)
+    && /id:\s*'competitor_moves'/.test(src)
+    && /id:\s*'capital_flow'/.test(src)
+    && /id:\s*'customer_adoption'/.test(src)
+    && /id:\s*'compliance_demand'/.test(src);
+})(), '应有市场主张/竞品/资本/客户采用/合规五个域');
+
+c300('business 采集域归入商业主题域', (() => {
+  const src = fsV3.readFileSync(pathV3.join(__dirname, 'scripts/project-future.js'), 'utf-8');
+  return /it\.bucket === 'business'/.test(src)
+    && /byDomain\.market_claims\.push\(it\)/.test(src);
+})(), '商业条目应归入商业主题域（关键词优先，兜底 market_claims）');
+
+// ── 商业主张辨别器 ──
+c300('商业主张辨别器模块存在且导出', (() => {
+  const m = require('./human-future/scripts/commercial-discriminator.js');
+  return typeof m.discriminateCommercial === 'function'
+    && Array.isArray(m.COMMERCIAL_CLAIM_PATTERNS)
+    && Array.isArray(m.EVIDENCE_TIERS);
+})(), '应导出 discriminateCommercial 与模式表');
+
+c300('厂商自述无量化的采用主张判为不可证伪', (() => {
+  const { discriminateCommercial } = require('./human-future/scripts/commercial-discriminator.js');
+  const r = discriminateCommercial({
+    text: 'Enterprises are adopting AI agents at an unprecedented rate across every industry.',
+    source: 'test',
+  });
+  return r.verdict === 'unfalsifiable' && r.kind === 'adoption'
+    && r.evidence.weight === 1;
+})(), '「史无前例地采用」无量化无出处，应判不可证伪');
+
+c300('有出处的融资陈述判为事实（不需辨别真伪）', (() => {
+  const { discriminateCommercial } = require('./human-future/scripts/commercial-discriminator.js');
+  const r = discriminateCommercial({
+    text: 'DeepSeek raises $15B in a round led by state-backed investors, according to a company announcement.',
+    source: 'test',
+  });
+  return r.verdict === 'factual' && r.kind === 'funding'
+    && r.evidence.weight >= 3;
+})(), '有出处的融资金额是事实，不是待辨别的主张');
+
+c300('有样本有对照的调查主张判为结构完整', (() => {
+  const { discriminateCommercial } = require('./human-future/scripts/commercial-discriminator.js');
+  const r = discriminateCommercial({
+    text: 'A survey of 1,200 enterprises found 34% had deployed LLMs in production, up from 12% a year ago, although only 8% reported measurable ROI.',
+    source: 'test',
+  });
+  return r.verdict === 'well-formed' && r.reasoning.score === 3
+    && r.decisionRelevant === true;
+})(), '样本/对照/反例齐备且证据等级高，应判结构完整且决策相关');
+
+c300('开源威胁主张被识别', (() => {
+  const { discriminateCommercial } = require('./human-future/scripts/commercial-discriminator.js');
+  const r = discriminateCommercial({
+    text: 'Open-weight models will kill paid AI products because they are nearly as good and free.',
+    source: 'test',
+  });
+  return r.kind === 'oss-threat' && r.verdict === 'unfalsifiable';
+})(), '「开源将杀死付费产品」应识别为开源威胁主张');
+
+c300('合规需求句里的 independently verified 不被误判为证据来源', (() => {
+  // 实测踩坑：\"Regulators will require AI systems to be independently verified\"
+  // 里的 independently verified 是主张内容（要求做什么），不是证据来源。
+  // 第一版独立验证正则排最前，这句被判「独立验证(4)」，其实无任何出处。
+  const { discriminateCommercial } = require('./human-future/scripts/commercial-discriminator.js');
+  const r = discriminateCommercial({
+    text: 'Regulators will require AI systems to be independently verified before deployment.',
+    source: 'test',
+  });
+  return r.evidence.weight === 1 && r.evidence.id === 'no-source';
+})(), '内容词不得当证据来源，独立验证必须与出处标记共现');
+
+// ── 引擎集成 ──
+c300('buildCommercialDiscrimination 优先 business 域', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const mk = (source, bucket) => {
+    const inst = new ProjectionEngine({});
+    inst.signals = { items: [{
+      title: source, body: 'We plan to raise $50M next quarter according to a company announcement.',
+      description: '', source, bucket,
+      pubDate: 'Tue, 13 Oct 2026 00:44:16 GMT',
+      domains: ['capital_flow'], link: 'https://x.com/a',
+    }] };
+    return inst;
+  };
+  // 只喂 business 域：应能抽出
+  const rb = mk('TechCrunch AI', 'business').buildCommercialDiscrimination();
+  // 只喂 frontier_models 域：应抽不到（技术域不是商业主张源）
+  const rf = mk('OpenAI News', 'frontier_models').buildCommercialDiscrimination();
+  return rb.available === true && rf.available === false;
+})(), 'business 域应抽出主张，frontier_models 域应跳过');
+
+(async () => {
+  const results = await Promise.all(v300.map(c => Promise.resolve(c.ok)));
+  let f = 0;
+  v300.forEach((c, i) => {
+    const ok = results[i];
+    if (!ok) f++;
+    console.log(`${ok ? '✓' : '✗'} ${c.name}${ok ? '' : '  —— ' + c.detail}`);
+  });
+  console.log(`\nv3.0.0: ${v300.length - f} 通过, ${f} 失败, 共 ${v300.length} 个`);
+  if (f > 0) {
+    console.log('结论：商业心虫未来推演改造未完成。');
+    process.exitCode = 1;
+  } else {
+    console.log('结论：商业采集域、商业主题域、商业主张辨别器均已接入。');
   }
 })();

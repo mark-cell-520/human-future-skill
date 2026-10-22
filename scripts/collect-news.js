@@ -107,6 +107,32 @@ const RSS_SOURCES = {
     { name: 'NBER Working Papers', url: 'https://www.nber.org/rss/new.xml' },
     { name: 'EconBrowser', url: 'https://econbrowser.com/feed' },
   ],
+  // ── 商业域 ────────────────────────────────────────────────────
+  // [v3.0.0] 心虫商业未来推演专用采集域。
+  //
+  // 为什么加：v2.13 及以前的推演对象是「人类文明」——AI 能力、生物技术、
+  // 太空、治理。用户明确推演目的已变：**为了让心虫在未来商业中拿到结果**。
+  // 文明级信号无法回答「心虫该做什么商业决策」，需要的是市场主张、竞品动向、
+  // 资本流向、客户采用、合规需求这五类商业信号。
+  //
+  // 选源（实测 12 个候选，全部验证过可达性与内容对口）：
+  //   TechCrunch AI → 融资/产品发布/竞品动作（实测含 DeepSeek $15B、
+  //     Anthropic Claude Duet 等一手商业事件）
+  //   The Information → 商业科技深度新闻（实测含 Nvidia B300、a16z、
+  //     Meta 股票、Tesla capex 等资本市场信号）
+  //   LastWeekInAI → 每周 AI 摘要（实测含 misalignment incidents 计数——
+  //     这是「辨别/信任」需求是否真实存在的直接证据）
+  //   ProductHunt → 产品发布（实测含 Claude Duet 等——看什么在出货、
+  //     怎么定位、怎么定价）
+  //
+  // 与 economy 域的分工：economy 是宏观政策与研究（央行/学术），
+  // business 是微观商业动作（融资/竞品/产品）。两者都进商业辨别层。
+  business: [
+    { name: 'TechCrunch AI', url: 'https://techcrunch.com/category/artificial-intelligence/feed/' },
+    { name: 'The Information', url: 'https://www.theinformation.com/feed' },
+    { name: 'Last Week in AI', url: 'https://lastweekin.ai/feed' },
+    { name: 'ProductHunt', url: 'https://www.producthunt.com/feed' },
+  ],
 };
 
 const DOMAIN_NAMES = {
@@ -116,6 +142,7 @@ const DOMAIN_NAMES = {
   psychology: '心理',
   philosophy: '哲学',
   economy: '宏观经济',
+  business: '商业动态',
 };
 
 const FETCH_TIMEOUT_MS = 8000;
