@@ -1658,3 +1658,68 @@ c300('buildCommercialDiscrimination 优先 business 域', (() => {
     console.log('结论：商业采集域、商业主题域、商业主张辨别器均已接入。');
   }
 })();
+
+// ════════════════════════════════════════════════════════════════
+// v3.0.0b 新增断言：不得再登记「方向保持活跃」类伪预测。
+// 实测依据：v2.13 方向转变时把这类登记列为「假推演」的证据之一，但当时只改了
+// stages 的标签，没停 recordPredictions()。结果每轮 pipeline 仍往台账写这类
+// 条目，实测攒了 84 条（cron 每 2 小时跑一次，每轮约 7 条）。
+// 它是伪预测：对当前状态的描述 + 不可证伪 + rationale 自称「非统计概率」
+// 却给数字 probability。
+// ════════════════════════════════════════════════════════════════
+const v300b = [];
+function c300b(name, ok, detail) { v300b.push({ name, ok, detail }); }
+
+c300b('recordPredictions 不再登记伪预测', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const inst = new ProjectionEngine({});
+  // 喂足够的 stages，旧逻辑会据此登记 7 条伪预测
+  inst.timestamp = '2026-10-22T00:00:00Z';
+  inst._lastReport = { stages: [
+    { period: '第一阶段', domains: ['AI 能力边界'], confidence: 0.6, sufficient: true,
+      evidence: [1, 2, 3], _domainIds: ['ai_capability'] },
+    { period: '第二阶段', domains: ['算力与能源'], confidence: 0.5, sufficient: true,
+      evidence: [1, 2], _domainIds: ['compute_energy'] },
+  ] };
+  const before = require('./human-future/data/prediction-ledger.json');
+  const beforeCount = (before.predictions || []).length;
+  const r = inst.recordPredictions();
+  const after = require('./human-future/data/prediction-ledger.json');
+  const afterCount = (after.predictions || []).length;
+  // 断言两层：一条都没登记，且返回里带说明（不是静默空返回）
+  return r.count === 0 && r.recorded.length === 0
+    && afterCount === beforeCount
+    && typeof r.note === 'string' && r.note.length > 0;
+})(), '喂 2 个 stage 也不得产生新登记，且必须返回说明');
+
+c300b('台账里不存在「方向在本期内保持活跃」条目', (() => {
+  const d = require('./human-future/data/prediction-ledger.json');
+  const bad = (d.predictions || []).filter(p =>
+    /方向在本期内保持活跃/.test(p.claim || '') || /^proj-/.test(p.id));
+  return bad.length === 0;
+})(), '历史 84 条伪预测应已清理，且不得复发');
+
+c300b('台账只剩可结算的他人主张（fc- 前缀）', (() => {
+  const d = require('./human-future/data/prediction-ledger.json');
+  const ps = d.predictions || [];
+  // 每条都应有：fc- 前缀、dueOn、来源型 rationale
+  return ps.length > 0 && ps.every(p =>
+    /^fc-/.test(p.id) && p.dueOn && /他人主张/.test(p.rationale || ''));
+})(), '台账内容应全部是辨别出的 settleable 他人主张');
+
+(async () => {
+  const results = await Promise.all(v300b.map(c => Promise.resolve(c.ok)));
+  let f = 0;
+  v300b.forEach((c, i) => {
+    const ok = results[i];
+    if (!ok) f++;
+    console.log(`${ok ? '✓' : '✗'} ${c.name}${ok ? '' : '  —— ' + c.detail}`);
+  });
+  console.log(`\nv3.0.0b: ${v300b.length - f} 通过, ${f} 失败, 共 ${v300b.length} 个`);
+  if (f > 0) {
+    console.log('结论：伪预测登记链路未停。');
+    process.exitCode = 1;
+  } else {
+    console.log('结论：伪预测已停登，台账只剩可结算他人主张。');
+  }
+})();

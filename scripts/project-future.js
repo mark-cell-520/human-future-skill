@@ -877,47 +877,38 @@ class ProjectionEngine {
   }
 
   // ───────────────────────────────────────────────────────────────
-  // v3：把本次推演的概率预测登记进台账，到期后才能结算出 Brier 分数。
-  // 只登记信号充足的阶段——把"基于 2 条信号的预测"登记进去会污染度量。
-  // 幂等：同一天同一域重复跑不会写两条。
+  // [v2.13 修正] 不再登记「方向保持活跃」类伪预测。
+  //
+  // 为什么停：v2.13 方向转变时，明确把这类登记列为「假推演」的证据之一——
+  //   「predictionLedger 登记的『预测』是『X 方向在本期内保持活跃』，
+  //     到期日 2027，sample=0」
+  // 但当时只改了 stages 的标签，没停这个方法。结果每一轮 pipeline 仍在往台账里
+  // 写这类条目，实测攒了 84 条（cron 每 2 小时跑一次，每轮约 7 条）。
+  //
+  // 它为什么是伪预测：
+  //   - 「方向在本期内保持活跃」是**对当前状态的描述**，不是对未来的预测
+  //   - 到期日设为 1-3 年后，但主张本身没有可证伪的条件——
+  //     「保持活跃」在任何结果下都能被解释成应验
+  //   - rationale 自己写着「域热度推导，非统计概率」，probability 却是数字
+  //
+  // 现在的登记路径只有一条：buildForecastDiscrimination() 里
+  // settleable=true 的**他人主张**（有主体、有事件、有时点，可到期结算）。
+  // 那才是 v2.13 之后台账该有的内容。
+  //
+  // 幂等说明：历史上的 84 条 proj- 条目已单独清理，不影响本条改动。
   // ───────────────────────────────────────────────────────────────
   recordPredictions() {
-    const recorded = [];
-    let skipped = null;
-    const day = this.timestamp.slice(0, 10);
-    for (const s of (this._lastReport && this._lastReport.stages) || []) {
-      if (s.sufficient === false) continue;   // 证据不足的不登记
-      if (typeof s.confidence !== 'number' || s.confidence <= 0) continue;
-      const dom = s.domains.join('+') || 'unknown';
-      // id 用域 id（英文）而不是中文域名：sanitize 会把中文全抹掉，
-      // 导致 id 变成 proj-2026-10-09-AI______，无法区分不同域组合。
-      const domKey = ((s._domainIds) || []).join('+') || 'unknown';
-      const id = `proj-${day}-${domKey}`.replace(/[^\w-]/g, '_');
-      try {
-        predictionLedger.record({
-          id,
-          claim: `${s.period}：${s.domains.join('、')} 方向在本期内保持活跃`,
-          probability: Math.min(0.95, s.confidence),
-          dueOn: this.dueDateFor(s.period),
-          domain: dom,
-          rationale: `${s.evidence ? s.evidence.length : 0} 条 live 证据；域热度推导，非统计概率`,
-        });
-        recorded.push(id);
-      } catch (e) {
-        // 不静默吞错：id 已存在（今天已登记）是正常幂等跳过，
-        // 其他错误必须显式记录，否则"登记成功"会变成假宣称。
-        if (/已存在/.test(e.message)) {
-          // 幂等跳过也要报出来：否则同一天第二次运行时 recorded 为空，
-          // 报告会显示"本次登记 0 条"，看起来像登记失败。
-          (skipped || (skipped = [])).push(id);
-        } else {
-          this._recordErrors = this._recordErrors || [];
-          this._recordErrors.push({ id, error: e.message });
-        }
-      }
-    }
-    return { recorded, count: recorded.length,
-             skipped: skipped || [], errors: this._recordErrors || [] };
+    // 显式返回说明而不是静默返回空——否则报告里「本次登记 0 条」
+    // 看起来像登记失败，而实际上是设计如此。
+    return {
+      recorded: [],
+      count: 0,
+      skipped: [],
+      errors: [],
+      note: 'v2.13 起不再登记「方向在本期内保持活跃」类伪预测（那是对当前状态的'
+        + '描述，不是可证伪的预测）。台账只登记 buildForecastDiscrimination()'
+        + '辨别出的 settleable 他人主张——有主体、有事件、有时点，可到期结算。',
+    };
   }
 
   dueDateFor(period) {
