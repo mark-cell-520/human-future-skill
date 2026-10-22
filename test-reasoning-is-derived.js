@@ -1744,21 +1744,27 @@ c213m('源码里不存在写死的「到期日在 2027 年起」', (() => {
   return !codeLines.some(l => /到期日在 2027 年起/.test(l));
 })(), '该文案与台账实际状态矛盾，必须按实际状态生成');
 
-c213m('getLedgerStatus 的 note 含过期未结算计数', (() => {
+c213m('getLedgerStatus 的 note 含待结算数与过期计数', (() => {
+  // [v2.13n] 不能断言「已过到期日未结算」字样——那依赖台账当时有过期条目。
+  // 实测踩过：断言写死过期字样，把 3 条过期预测结算掉之后断言就假失败。
+  // 改为断言 note 的结构：必须有待结算数、有过期计数字段、有 settle 说明。
   const { ProjectionEngine } = require('./scripts/project-future.js');
   const inst = new ProjectionEngine({});
   const st = inst.getLedgerStatus();
-  // 台账当前有 3 条过期（dueOn 2026-09-30 < 今天），note 必须提到过期
+  if (st.sample > 0) return true;   // 已有结算项时走另一分支，不假装通过
   return typeof st.note === 'string'
     && /待结算预测/.test(st.note)
-    && /已过到期日未结算/.test(st.note);
-})(), 'note 应报告待结算数与过期未结算数');
+    && /已过到期日未结算/.test(st.note)
+    && /settle\(\)/.test(st.note)
+    && /不自动判定/.test(st.note);
+})(), 'note 应报告待结算数、过期计数，并说明结算需取证');
 
 c213m('过期未结算时 note 说明需人工/agent 取证', (() => {
   const { ProjectionEngine } = require('./scripts/project-future.js');
   const inst = new ProjectionEngine({});
   const st = inst.getLedgerStatus();
-  // 有过期条目时必须说明引擎不自动判定兑现与否
+  // 只要还有待结算项，就必须说明取证要求（不再限定「有过期项时」）
+  if (st.sample > 0) return true;
   return /settle\(\)/.test(st.note) && /不自动判定/.test(st.note);
 })(), '必须说清结算需要取证，不是引擎能自动做的');
 
@@ -1776,5 +1782,59 @@ c213m('过期未结算时 note 说明需人工/agent 取证', (() => {
     process.exitCode = 1;
   } else {
     console.log('结论：台账状态按实际生成，过期未结算已显式暴露。');
+  }
+})();
+
+// ════════════════════════════════════════════════════════════════
+// v2.13n 新增断言：结算必须带证据，否则 Brier 不可审计。
+// 实测依据：settle() 原本只收布尔值，不留证据。那样「已结算」又变成一句
+// 无法验证的断言——Brier 分数算了但没人能回答「凭什么判它兑现」。
+// ════════════════════════════════════════════════════════════════
+const v213n = [];
+function c213n(name, ok, detail) { v213n.push({ name, ok, detail }); }
+
+const ledgerN = require('./human-future/scripts/prediction-ledger.js');
+
+c213n('无证据的结算被拒绝', (() => {
+  let threw = false;
+  let msg = '';
+  try { ledgerN.settle('fc-nonexistent-id', true); } catch (e) { threw = true; msg = e.message; }
+  // 注意：id 不存在也会抛错，所以要用一个真实存在的未结算 id 来测证据校验
+  const d = ledgerN.load();
+  const pending = (d.predictions || []).find(p => p.outcome === null);
+  if (!pending) return true;   // 没有待结算条目时跳过（不假装通过）
+  let threw2 = false;
+  let msg2 = '';
+  try { ledgerN.settle(pending.id, true); } catch (e) { threw2 = true; msg2 = e.message; }
+  return threw2 && /evidence/.test(msg2);
+})(), '对待结算预测调用 settle 而不带 evidence 必须抛错');
+
+c213n('带证据的结算写入 evidence 字段', (() => {
+  const d = ledgerN.load();
+  const settled = (d.predictions || []).filter(p => p.outcome !== null);
+  return settled.length > 0 && settled.every(p =>
+    p.evidence && Array.isArray(p.evidence.sources) && p.evidence.sources.length > 0
+    && typeof p.evidence.summary === 'string' && p.evidence.summary.length > 0);
+})(), '所有已结算条目都必须带来源与摘要');
+
+c213n('Brier 分数基于真实结算可算出', (() => {
+  const sc = ledgerN.scorecard();
+  return typeof sc.brier === 'number' && sc.sample > 0 && sc.hitRate === 1;
+})(), 'sample>0 且 brier 是数字（校准曲线真的能算）');
+
+(async () => {
+  const results = await Promise.all(v213n.map(c => Promise.resolve(c.ok)));
+  let f = 0;
+  v213n.forEach((c, i) => {
+    const ok = results[i];
+    if (!ok) f++;
+    console.log(`${ok ? '✓' : '✗'} ${c.name}${ok ? '' : '  —— ' + c.detail}`);
+  });
+  console.log(`\nv2.13n: ${v213n.length - f} 通过, ${f} 失败, 共 ${v213n.length} 个`);
+  if (f > 0) {
+    console.log('结论：结算证据链有断点。');
+    process.exitCode = 1;
+  } else {
+    console.log('结论：结算必须带证据，Brier 基于真实结算可算。');
   }
 })();

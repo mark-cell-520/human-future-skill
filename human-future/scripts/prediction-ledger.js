@@ -53,14 +53,35 @@ function record(p) {
   return ledger.predictions[ledger.predictions.length - 1];
 }
 
-/** 结算一条到期预测 */
-function settle(id, outcome) {
+/**
+ * 结算一条到期预测。
+ *
+ * [v2.13] evidence 必填理由：结算不留证据，Brier 分数就不可审计——
+ * 「已结算」会变成一句无法验证的断言。必须能回答「凭什么判它兑现/未兑现」。
+ *
+ * @param {string} id
+ * @param {boolean} outcome
+ * @param {{sources?: string[], summary?: string, settledBy?: string}} [evidence]
+ */
+function settle(id, outcome, evidence) {
   const ledger = load();
   const p = ledger.predictions.find((x) => x.id === id);
   if (!p) throw new Error(`找不到预测: ${id}`);
   if (typeof outcome !== 'boolean') throw new Error('outcome 必须是布尔值');
+  // [v2.13] 证据必填：至少给出来源或摘要，否则拒绝结算。
+  // 不静默填充默认值——那会让「无证据结算」看起来像正常流程。
+  if (!evidence || typeof evidence !== 'object'
+      || (!Array.isArray(evidence.sources) || evidence.sources.length === 0)
+      && typeof evidence.summary !== 'string') {
+    throw new Error('结算必须带 evidence（sources 数组或 summary 字符串）——不留证据的结算不可审计');
+  }
   p.outcome = outcome;
   p.settledAt = new Date().toISOString();
+  p.evidence = {
+    sources: Array.isArray(evidence.sources) ? evidence.sources.slice(0, 8) : [],
+    summary: String(evidence.summary || '').slice(0, 500),
+    settledBy: String(evidence.settledBy || 'unspecified'),
+  };
   save(ledger);
   return p;
 }
