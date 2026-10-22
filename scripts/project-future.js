@@ -867,9 +867,20 @@ class ProjectionEngine {
       pending: (predictionLedger.load().predictions || []).filter(p => p.outcome === null).length,
       note: sc.sample === 0
         ? (() => {
-            const pend = (predictionLedger.load().predictions || []).filter(p => p.outcome === null).length;
-            return pend > 0
-              ? `台账已有 ${pend} 条待结算预测（到期日在 2027 年起），暂无已结算项，故 Brier 暂不可算——不是没登记`
+            const now = new Date().toISOString().slice(0, 10);
+            const all = predictionLedger.load().predictions || [];
+            const pend = all.filter(p => p.outcome === null);
+            // [v2.13] 过期未结算要单独计数并显式暴露。
+            // 实测踩坑：旧文案写死「到期日在 2027 年起」，但清理伪预测后
+            // 台账里最早的到期日是 2026-09-30——已有 3 条过期未结算。
+            // 文案说 2027 会让读者以为还没到结算时间，实际是**该结算没结算**。
+            const overdue = pend.filter(p => p.dueOn && p.dueOn < now).length;
+            return pend.length > 0
+              ? `台账已有 ${pend.length} 条待结算预测`
+                + `（其中 ${overdue} 条已过到期日未结算），暂无已结算项，`
+                + `故 Brier 暂不可算——不是没登记`
+                + (overdue > 0 ? '。已过期未结算的预测需要人工/agent 取证后调用 settle()，'
+                  + '引擎不自动判定兑现与否——那需要证据，不是规则能替的' : '')
               : '台账暂无任何预测，无法计算 Brier 分数——推演质量暂不可度量';
           })()
         : `基于 ${sc.sample} 条已结算预测`,
@@ -2016,7 +2027,14 @@ function formatReport(report) {
       ? report.ledgerStatus.pending : null;
     if (pend > 0) {
       lines.push(`台账已有 ${pend} 条待结算预测，暂无已结算项，故 Brier 分数暂不可算。`);
-      lines.push('（待结算 ≠ 未登记：预测的到期日在 2027 年起，到期后 `settle()` 才出 Brier。）');
+      // [v2.13] 不再写死「到期日在 2027 年起」——清理伪预测后台账里最早的
+      // 到期日是 2026-09-30，已有条目过期未结算。按实际状态说。
+      const pendNow = (report.ledgerStatus && report.ledgerStatus.pending) || 0;
+      const settledNow = (report.ledgerStatus && report.ledgerStatus.settled) || 0;
+      lines.push(pendNow > 0
+        ? `（待结算 ${pendNow} 条 ≠ 未登记：到期后需人工/agent 取证调用 settle() 才出 Brier。`
+        + `引擎不自动判定兑现与否——那需要证据，不是规则能替的。）`
+        : `（已结算 ${settledNow} 条，Brier 分数基于实际结算结果。）`);
     } else {
       lines.push('台账暂无任何预测——推演质量目前不可度量。');
       lines.push('');

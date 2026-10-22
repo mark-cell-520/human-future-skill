@@ -1723,3 +1723,58 @@ c300b('台账只剩可结算的他人主张（fc- 前缀）', (() => {
     console.log('结论：伪预测已停登，台账只剩可结算他人主张。');
   }
 })();
+
+// ════════════════════════════════════════════════════════════════
+// v2.13m 新增断言：台账状态文案不得写死「到期日在 2027 年起」。
+// 实测依据：清理 84 条伪预测后，台账里最早的到期日是 2026-09-30，
+// 已有 3 条过期未结算。旧文案说「2027 年起」会让读者以为还没到结算时间，
+// 实际是该结算没结算。且过期状态必须显式暴露。
+// ════════════════════════════════════════════════════════════════
+const v213m = [];
+function c213m(name, ok, detail) { v213m.push({ name, ok, detail }); }
+
+const fsM = require('fs');
+const pathM = require('path');
+
+c213m('源码里不存在写死的「到期日在 2027 年起」', (() => {
+  const src = fsM.readFileSync(pathM.join(__dirname, 'scripts/project-future.js'), 'utf-8');
+  // 只查代码行，不查注释——注释里引用旧文案是踩坑记录的需要
+  //（实测踩过：第一版断言连注释一起匹配，被自己的踩坑注释搞失败）。
+  const codeLines = src.split('\n').filter(l => !/^\s*(\/\/|\*|\/\*)/.test(l));
+  return !codeLines.some(l => /到期日在 2027 年起/.test(l));
+})(), '该文案与台账实际状态矛盾，必须按实际状态生成');
+
+c213m('getLedgerStatus 的 note 含过期未结算计数', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const inst = new ProjectionEngine({});
+  const st = inst.getLedgerStatus();
+  // 台账当前有 3 条过期（dueOn 2026-09-30 < 今天），note 必须提到过期
+  return typeof st.note === 'string'
+    && /待结算预测/.test(st.note)
+    && /已过到期日未结算/.test(st.note);
+})(), 'note 应报告待结算数与过期未结算数');
+
+c213m('过期未结算时 note 说明需人工/agent 取证', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const inst = new ProjectionEngine({});
+  const st = inst.getLedgerStatus();
+  // 有过期条目时必须说明引擎不自动判定兑现与否
+  return /settle\(\)/.test(st.note) && /不自动判定/.test(st.note);
+})(), '必须说清结算需要取证，不是引擎能自动做的');
+
+(async () => {
+  const results = await Promise.all(v213m.map(c => Promise.resolve(c.ok)));
+  let f = 0;
+  v213m.forEach((c, i) => {
+    const ok = results[i];
+    if (!ok) f++;
+    console.log(`${ok ? '✓' : '✗'} ${c.name}${ok ? '' : '  —— ' + c.detail}`);
+  });
+  console.log(`\nv2.13m: ${v213m.length - f} 通过, ${f} 失败, 共 ${v213m.length} 个`);
+  if (f > 0) {
+    console.log('结论：台账状态文案仍与实际情况矛盾。');
+    process.exitCode = 1;
+  } else {
+    console.log('结论：台账状态按实际生成，过期未结算已显式暴露。');
+  }
+})();
