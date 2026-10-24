@@ -80,6 +80,16 @@
       "lesson": "接入既有模块前，必须实跑它的 API 核对真实输出，不能信 docstring 的字段枚举——文档外取值（critical）会让严格相等过滤静默漏计，且这种漏计不报错、只是数字变小。判别「声明 vs 实现」要对具体数据跑一遍，这正是 v2.4 假能力审计的同一条教训的第二次实证。",
       "severity": "medium",
       "recordedAt": "2026-10-24T17:18:26.323Z"
+    },
+    {
+      "id": "corr-2026-009",
+      "reportVersion": "v3.1.1",
+      "wrongClaim": "口径错位检测段（claimMismatches）的报告命中是可信的：2026-10-25 轮显示「命中 14 条」，读者会认为这 14 条都是「数字达标 vs 能力达标」的表述；且该段已随 formatReport 渲染进报告文件，视为已交付",
+      "rightClaim": "逐条复核 14 条命中，至少 7 条是误报：「Order of Dostyk」友谊勋章被 /订单|order/ 当成采购订单（capacity 在讲 500MW 基础设施规模，两者相隔 1300+ 字符）；democracy/democrat 里的 demo 子串；gigawatts/average/navigation 里的 GA 子串；「limited to two players」数量限制被当成灰度；「available in preview」与「we launched Claude Mythos Preview」是正确表述；「on target + demonstrate the proposition」跨句两件事；「our researchers + safety at the frontier」相隔 2000+ 字符；benchmark 主张与促销页脚「15% off」相隔 1200+ 字符。根因是两侧词族在整段文本里共现即判定，而 RSS 正文动辄 6000 字符跨十几个话题。修复（v3.1.1）：五个模式启用同句判定 sentenceScoped，demo-vs-ga 加 \\b 词边界+完成态可用性断言+灰度语义收紧，capacity B 侧只认采购语义，命中带触发句可复核；同轮数据重跑 14 条→1 条真命中（DeepMind ForTy 森林制图跑分主张）。另发现该段自 v2.4 接入起 cron 注入脚本从未读 proj.claimMismatches——引擎产出+报告渲染都有、agent 完全看不到，是 v2.9/v2.13/v2.17/v3.0.0c 之后第五次同型断链，v3.1.1 已补注入段",
+      "evidence": "2026-10-25 轮 full-report-1792868133308.json：claimMismatches.count=14，逐条取触发文本复核；修复后同 newsData 重跑 count=1（Beyond tree cover，触发句 \"ForTy picked the right forest type 90% of the time... outperforming other global forest maps\"）；~/.hermes/scripts/hf-cron-fetch.sh 无 claimMismatches 读取（grep 实证），v3.1.1 已补；测试 171→183 项，5 轮反向验证全部精确失败",
+      "lesson": "两条教训。① 检测器判据的精度要和召回一起审计：一个模式「能命中」不等于「命中的是对的」——拿当期全部命中逐条看触发文本，是发现误报的唯一办法；误报比漏报更伤辨别力，因为读者会连真命中一起跳过。② 「新报告段 ≠ 交付完成」不只适用于新段：口径错位段存在了 10 个版本、渲染一直正常，注入脚本里始终没有它。每一段交付时都要问「注入脚本里有没有、agent prompt 里能不能看到」，端到端判据不是「引擎产出了没有」。",
+      "severity": "high",
+      "recordedAt": "2026-10-24T19:22:09.962Z"
     }
   ]
 }

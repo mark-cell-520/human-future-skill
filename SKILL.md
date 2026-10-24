@@ -1,8 +1,32 @@
 ---
 name: human-future-v2
-title: "人类未来 · 文明推演引擎 v3.1.0"
-version: "3.1.0"
+title: "人类未来 · 文明推演引擎 v3.1.1"
+version: "3.1.1"
 description: |-
+  人类未来技能 v3.1.1 — 口径错位检测段：精度修复 + 端到端接通：
+  v3.1.1（2026-10-25）修 2026-10-25 live 轮逐条复核出来的 7 条误报——
+  友谊勋章「Order of Dostyk」被 capacity 侧 /订单|order/ 当成采购订单、
+  democracy/democrat 里的 demo 子串、gigawatts/average/navigation 里的
+  GA 子串、「limited to two players」被当成灰度、「available in preview」
+  与产品名带 Preview 的正确表述被判错位、「on target + demonstrate」
+  跨句两件事、「our researchers + safety at the frontier」相隔 2000+ 字符、
+  benchmark 主张与促销页脚「15% off」相隔 1200+ 字符。修法：五个模式
+  （capacity-vs-order / benchmark-vs-capability / demo-vs-ga /
+  roadmap-vs-result / vendor-selfreport-vs-verification）启用同句判定
+  sentenceScoped（口径错位是「同一句话里把两件事说成一件事」，跨句共现
+  常是两件不相关的事），demo-vs-ga 加 \b 词边界 + 只认完成态可用性断言
+  + 灰度语义收紧，capacity B 侧只认采购语义；另三个模式无 live 误报
+  实证，保持整段判定——没有证据就改判据是另一种不严谨。命中带触发句
+  （evidenceSentence），报告与注入都可逐条复核。同时补 cron 注入段读取
+  proj.claimMismatches——这是 v2.9/v2.13/v2.17/v3.0.0c 之后第五次同型
+  断链（引擎产出 + formatReport 渲染都有，注入脚本从未读，agent 完全
+  看不到；该段引用纪律「同一句内带限定」的材料一直都在报告文件里躺着）。
+  测试 171→183 项；5 轮反向验证全部精确失败（摘除 demo-vs-ga 修复→5 条、
+  摘除 capacity 修复→1 条、摘除同句判定→1 条、摘除 cron 注入段→1 条、
+  摘除触发句透传→2 条）。live 实测：同轮数据重跑，口径错位命中 14 条→
+  1 条真命中（DeepMind ForTy 森林制图 90%/95% 跑分主张，触发句在产物里）。
+  版本号理由：修 bug + 断链修复 = 末位补丁，不涨 x.0；本轮没有新辨别维度。
+
   人类未来技能 v3.1.0 — 心虫商业未来推演（v3.1 接入 0 调用模块自我修正登记簿）：
   v3.1（2026-10-25）接入 self-correction-ledger——该模块自 v2.4 存在、
   data/self-corrections.json 有 7 条真实修正（绕月≠登月 / v2.4 假能力三项审计 /
@@ -146,10 +170,10 @@ description: |-
 
 ---
 
-## 当前状态（v3.1 实测）
+## 当前状态（v3.1.1 实测）
 
-以下数字全部来自 2026-10-25 一次 `FETCH=1 FETCH_BODY=1 node scripts/run-pipeline.js` 实跑
-（258 条 live 信号；本轮 v3.1 接入自我修正登记簿后的完整轮次），不是宣称值。
+以下数字全部来自 2026-10-25 的 `FETCH=1 FETCH_BODY=1 node scripts/run-pipeline.js` 实跑
+（v3.1.1 轮 270 条 live 信号；v3.1 轮 258 条），不是宣称值。
 v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见 frontmatter 历史记录。
 
 **采集层**
@@ -159,7 +183,8 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   v3.1 按代码实际修正——这是文档维护，不是能力变化）
 - 并行抓取：`Promise.all`，实测约 4 秒（旧串行最坏 104 秒）
 - 正文增强：`FETCH_BODY=1` 时抓最新 24 条，实测 17 条成功（openai.com 403 / arstechnica 405 / interconnects 链接失效）
-- 实测产出：258 条 live（2026-10-25 v3.1 轮；2026-10-24 v3.0.0c 轮 248 条、同日 v2.17 轮 258 条），其中专项大模型域与商业域为主体
+- 实测产出：270 条 live（2026-10-25 v3.1.1 轮；同日 v3.1 轮 258 条、v3.0.0c 轮 248 条），
+  其中专项大模型域与商业域为主体
 
 **商业采集层（v3.0.0 新增）**
 - business 域 4 源：TechCrunch AI / The Information / Last Week in AI / ProductHunt
@@ -188,10 +213,36 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   self-correction-ledger（v3.1，0 调用模块接入，无条件执行——簿子读不到时
   available=false 且原因写明，不静默返回空）
 - 实测各模块可用性：因果链 ✅（共现兜底）/ 跨域传导 ✅ / 趋势判定 ✅（源归一化）/
-  时间轴 ✅（16 点，需正文）/ 来源分级 ✅（T1 47 / T2 45 / T3 48 / T4 0）/ 口径错位 ✅（9 条命中）/
+  时间轴 ✅（16 点，需正文）/ 来源分级 ✅（T1 47 / T2 45 / T3 48 / T4 0）/
+  口径错位 ✅（v3.1.1 精度门后：2026-10-25 轮 270 条 live 实测 1 条真命中带触发句；
+  修复前同型数据 14 条命中里 7 条经逐条复核为误报——勋章当订单、democracy 里的
+  demo、gigawatts 里的 GA、limited to two players、on target+demonstrate、
+  our researchers+safety、benchmark+促销页脚；五个模式同句判定，另三个无实证
+  不改判据）/
   外部预测基准 ✅（32 个开放问题，per-claim 主题匹配本轮 0/7，如实展示）/
   商业主张辨别 ✅（6 条，精度门后；修复前 19 条里 18 条 kind=unclassified）/
-  自我修正登记簿 ✅（7 条修正：critical 2 / high 4 / medium 1，critical 排最前）
+  自我修正登记簿 ✅（8 条修正：critical 2 / high 5 / medium 1，critical 排最前；
+  v3.1.1 登记 corr-2026-009：口径错位检测 7 条误报 + 第五次同型断链）
+
+**口径错位检测层（v3.1.1：精度门 + 端到端接通）**
+- 精度门（sentenceScoped）：口径错位是「同一句话里把两件事说成一件事」。五个模式
+  （capacity-vs-order / benchmark-vs-capability / demo-vs-ga / roadmap-vs-result /
+  vendor-selfreport-vs-verification）要求两侧在同一句内共现；另三个
+  （detection-vs-correction / flyby-vs-landing / trial-vs-approval）没有 live
+  误报实证，保持整段判定——没有证据就改判据是另一种不严谨。
+- 语义收紧（demo-vs-ga）：\b 词边界（demo 不碰 democracy/democrat、GA 不碰
+  gigawatts/average/navigation）；limited 只认灰度语义（limited access/rollout/
+  beta/testing，「limited to two players」不是灰度）；B 侧只认完成态可用性断言
+  （is now available / general availability / now shipping），「available in
+  preview」与「we launched X Preview」是正确表述不是错位。
+- 采购语义收紧（capacity-vs-order B 侧）：中文订单/交付、shipped、pre-order、
+  order book、backlog、orders for <数字>；「Order of Dostyk」友谊勋章与
+  "in order to" 不再是订单。
+- 触发句（evidenceSentence）：每条命中带「是哪句话触发的」，报告与 cron 注入
+  都可逐条复核——命中可审计，不是只给一个标签。
+- 端到端：cron 注入脚本第 6.5 段读 proj.claimMismatches（v2.9/v2.13/v2.17/
+  v3.0.0c 之后第五次同型断链修复：引擎产出 + formatReport 渲染都有，注入脚本
+  从未读，agent 完全看不到）。注入带口径限定（只判表述形态、引用必须同句带限定）。
 
 **商业推演层（v3.0.0 新增，v3.0.0c 修复端到端断链）**
 - 定位：v3.0.0 起引擎双轨——文明级信号（人类未来，11 域）+ 商业级辨别（心虫商业未来，5 域）。
@@ -213,6 +264,10 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   formatReport 渲染「商业主张辨别」段，但 cron 注入脚本从未读取该字段——
   报告文件里躺着、agent 完全看不到。这是 v2.9/v2.13/v2.17 之后第四次同型断链。
   本轮补上注入段（含口径限定与证据图例），测试加源级断言防复发。
+  [v3.1.1 补记] 同型断链第五次发生在口径错位检测段（claimMismatches，v2.4
+  接入、v2.9 修好字段断链，14 条命中/轮但注入脚本从未读）。教训升级：
+  「新报告段 ≠ 交付完成」不只适用于新段——**每一段交付时都要问注入脚本里
+  有没有**，否则端到端判据（agent prompt 里能不能看到）永远有漏。
 - 纪律（心虫铁律）：只辨别主张的表述与证据质量，不判断内容真假，
   不生成「心虫应该怎么做」的商业建议——那由报告 agent 判断并标注归属。
 
@@ -308,8 +363,24 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   引擎不代劳——这是心虫铁律，不是能力缺失。
 
 **测试**
-- `npm test`：**171 项断言**（实测各 section 汇总；v2.17 的 155 + v3.0.0c 新增 9 +
-  v3.1 新增 7：
+- `npm test`：**183 项断言**（实测各 section 汇总；v3.1 的 171 + v3.1.1 新增 12：
+  6 项误报回归（勋章当订单 / democracy 含 demo / gigawatts 含 GA /
+  limited to two players / available in preview 与产品名带 Preview /
+  跨句共现三种形态，每条对应一个 live 实证误报，修复后必须不命中）+
+  1 项 Gemini 4 Argon 同句真命中保留（benchmark 与 demo 两个模式都必须命中）+
+  1 项其余四个 sentenceScoped 模式同句真命中保留 +
+  1 项 splitSentences 不在小数点处拆句 +
+  1 项引擎级（误报条目计数 0 + 真命中保留 + 命中带触发句）+
+  1 项端到端渲染（报告 markdown 出现口径错位段与触发句）+
+  1 项注入脚本源级（读 ~/.hermes/scripts/hf-cron-fetch.sh 验 claimMismatches /
+  口径限定 / 0 命中路径 / 不可用路径 / 旧版报告路径））。
+  v3.1.1 五轮反向验证全部精确失败：摘除 demo-vs-ga 修复（恢复旧正则）→5 条失败；
+  摘除 capacity 修复→1 条；摘除同句判定（sentenceScoped 全置 false）→1 条；
+  摘除 cron 注入段→1 条；摘除触发句透传与渲染→2 条。
+  反向验证中抓到过一次断言空转并已修：误报回归 #2/#4 第一版把 A/B 两侧放在
+  不同句，旧正则下 B 侧压根不匹配、断言恒真通过——已改为同句用例，摘除修复
+  后才真正失败。
+  v3.1 新增 7 项（自我修正登记簿接入）：
   1 项引擎源级接线（require self-correction-ledger + 调 load/recurringPatterns
   + report.selfCorrectionLedger 落位 + 接入组件清单）+
   1 项产出与数据文件逐条一致（total/highSeverity/bySeverity/lessons 对得上
@@ -342,6 +413,8 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
 - 跑法：`FETCH=1 FETCH_BODY=1 node scripts/run-pipeline.js` → 提取摘要 → 心虫 think()
 - 注入段（按序）：心虫 stateless 检查器 / live 条目 / 推演 summary / 推演阶段 /
   预测辨别 / **商业主张辨别（v3.0.0c 补入，第 6 段）** /
+  **口径错位检测（v3.1.1 补入，第 6.5 段，含触发句与口径限定——此前引擎产出+
+  报告渲染都有，注入脚本从未读，第五次同型断链）** /
   **外部预测基准（v2.17 新增，第 7 段）** /
   **自我修正登记簿（v3.1 新增，第 8 段，含口径限定）** /
   live 新闻宣称辨伪 / KB 条目数

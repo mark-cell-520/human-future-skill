@@ -2907,3 +2907,224 @@ c31('登记簿高危计数含 critical（口径修复）', (() => {
     console.log('结论：登记簿已接入 live pipeline（引擎产出+报告渲染+cron 注入），计数口径含 critical，端到端可达。');
   }
 })();
+
+// ════════════════════════════════════════════════════════════════
+// v3.1.1 新增断言：口径错位检测段——精度修复 + 端到端接通 cron 注入。
+//
+// 背景（2026-10-25 live 轮实测）：claimMismatches 自 v2.4 接入、v2.9 修好
+// 字段断链后每轮真产出命中，但 2026-10-25 轮逐条复核发现 14 条命中里至少
+// 7 条是误报，且 cron 注入脚本从未读 proj.claimMismatches——引擎产出了、
+// 报告 md 渲染了，agent 完全看不到（v2.9/v2.13/v2.17/v3.0.0c 之后第五次
+// 同型断链：接口存在 ≠ 端到端到达）。
+//
+// 误报实证（全部来自 2026-10-25 轮 live 数据，可回溯到当轮 full-report）：
+//   ① NVIDIA Blog「Kazakhstan Expands Compute」：capacity 在讲 500MW
+//      基础设施规模，"Order of Dostyk, First Class"（友谊勋章）被
+//      /订单|order|shipped|交付/ 当成采购订单，相隔 1300+ 字符；
+//   ② MIT News「Martha Minow speaks on sustaining democracy」：
+//      democracy 里的 demo 子串命中；
+//   ③ MIT TR「AI's hidden storage bill」：gigawatts 里的 GA 子串 +
+//      waitlist 命中；
+//   ④ Simon Willison「battledrones v14」：「limited to two players」
+//      （数量限制）被当成灰度 + 跨句的 Release 命中；
+//   ⑤ EconBrowser「Forward Price Earnings Ratios」：on target（估值
+//      达标惯语）+ demonstrate the proposition（论述演示）跨句命中；
+//   ⑥ Anthropic「Expectations For The Future」：our researchers（研究
+//      流程）+ safety at the frontier（使命宣言）相隔 2000+ 字符命中；
+//   ⑦ LWiAI #346：benchmark 主张与「promo code 15% off」促销页脚
+//      相隔 1200+ 字符命中。
+//
+// 本节断言分三组：① 模块级精度（每条误报一个断言，全部要求修复后
+// 不命中）；② 真命中不许被修死（同句真形态逐模式保留）；③ 端到端
+// （引擎产出带触发句 + 报告渲染 + cron 注入读该字段）。
+// ════════════════════════════════════════════════════════════════
+const v311 = [];
+function c311(name, ok, detail) { v311.push({ name, ok, detail }); }
+
+const fs311 = require('fs');
+const path311 = require('path');
+const { detectMismatch, splitSentences } = require('./human-future/scripts/claim-mismatch-detector.js');
+
+// ── 组 1：误报回归（每条对应一个 live 实证误报，修复后必须不命中）──
+// 1. 勋章当订单：capacity B 侧只认采购语义。恢复旧正则 /订单|order|shipped|交付/
+//    → "Order of Dostyk" 重新命中，本断言失败。
+c311('勋章与 in order to 不再是采购订单（capacity B 侧语义收紧）', (() => {
+  const r = detectMismatch(
+    'Firebird would bring total potential AI infrastructure capacity in Kazakhstan to approximately 500 megawatts. '
+    + 'Later that evening, President Tokayev presented Huang with the Order of Dostyk, First Class, for his contribution. '
+    + 'In order to meet demand, the company plans to expand.');
+  return r.matched.every(m => m.id !== 'capacity-vs-order');
+})(), '"Order of Dostyk"（友谊勋章）与 "in order to" 都不是订单');
+
+// 2. democracy/democrat 不再命中 demo（\b 词边界）。去掉 \b → 重新命中。
+//    注意：B 侧（available）必须与 A 侧（democracy）同句，否则测的是
+//    句子级判定而不是词边界——v3.1.1 第一版就把两者放不同句，反向验证时
+//    断言空转（旧正则下 B 侧压根没匹配，恒真通过）。
+c311('democracy/democrat 不再触发 demo-vs-ga（词边界）', (() => {
+  const r = detectMismatch(
+    'At MIT, Martha Minow speaks on sustaining democracy, both by using and overcoming AI, '
+    + 'and the lecture recording is now available on the MIT News site.');
+  return r.matched.every(m => m.id !== 'demo-vs-ga');
+})(), 'democracy 与 democrat 都含 demo 子串，无边界匹配是误报源');
+
+// 3. gigawatts 不再触发 GA（词边界 + 完成态 B 侧）。恢复旧 B 侧 → 重新命中。
+//    用 live 原句（waitlist 与 gigawatts 同在的一句），不额外加 B 词——
+//    否则测的是句子级判定而不是词边界。
+c311('gigawatts/average/navigation 不再触发 demo-vs-ga', (() => {
+  const r = detectMismatch(
+    'Ask most executives to picture the cost of AI and they will likely see GPUs—racks of '
+    + 'accelerators with gigawatts of power—and a waitlist for silicon.');
+  return r.matched.every(m => m.id !== 'demo-vs-ga');
+})(), 'gigawatts/navigation 含 GA 子串、average 含 ga 子串，旧正则全部误命中');
+
+// 4. limited to two players 不是灰度（灰度语义收紧）。恢复裸 limited → 重新命中。
+//    同句带上完成态 B 侧（now shipping），否则测的是句子级判定而不是语义收紧。
+c311('limited to two players 不再触发 demo-vs-ga（只认灰度语义）', (() => {
+  const r = detectMismatch(
+    'Release: battledrones v14: Compass Rose, a four player map, now shipping with previous '
+    + 'maps limited to two players.');
+  return r.matched.every(m => m.id !== 'demo-vs-ga');
+})(), '数量限制不是可用性层级');
+
+// 5. available in preview / launched X Preview 是正确表述（完成态可用性断言）。
+//    恢复旧 B 侧 /(available|launch|released)/ → 两条都重新命中。
+c311('available in preview 与产品名带 Preview 不再判错位', (() => {
+  const r1 = detectMismatch(
+    'French company Mistral released Mistral Large 4, a 1-trillion-parameter multimodal model '
+    + 'available in preview with a final version due by the end of the month.');
+  const r2 = detectMismatch(
+    'When we launched Claude Mythos Preview, we showed it was able to autonomously find and exploit '
+    + 'vulnerabilities in almost every piece of software we pointed it at.');
+  return r1.matched.every(m => m.id !== 'demo-vs-ga')
+    && r2.matched.every(m => m.id !== 'demo-vs-ga');
+})(), '正确表述被判成错位比漏报更伤辨别力');
+
+// 6. 跨句共现不再命中（sentenceScoped 机制）。把 sentenceScoped 全部置 false
+//    → 下面两条跨句文本重新命中，本断言失败。
+c311('跨句共现不再命中（roadmap/vendor/benchmark 同句判定）', (() => {
+  const roadmap = detectMismatch(
+    'Analyst estimates were on target for the quarter, with a beat rate of 70%. '
+    + 'He then goes on to demonstrate the above proposition by means of a scatter plot.');
+  const vendor = detectMismatch(
+    'When our researchers follow the same employee over time, they find stable patterns. '
+    + 'Our mission is to put safety at the frontier of AI research and products.');
+  const bench = detectMismatch(
+    'The newsletter covers many models this week. Promo code LWAI takes an additional 15% off any pass. '
+    + 'DeepSeek V4.1 matches Z.ai GLM-5.2 on advanced reasoning benchmarks and beats leading open models.');
+  return roadmap.matched.every(m => m.id !== 'roadmap-vs-result')
+    && vendor.matched.every(m => m.id !== 'vendor-selfreport-vs-verification')
+    && bench.matched.every(m => m.id !== 'benchmark-vs-capability');
+})(), 'on target+demonstrate / our researchers+safety / benchmark+促销页脚 都是跨句两件事');
+
+// ── 组 2：真命中不许被修死 ──
+// 7. v2.9 Gemini 4 Argon 形态：同句双侧共现，benchmark 与 demo 两个模式
+//    都必须仍命中。摘除任何一处收紧过度 → 本断言失败。
+c311('真命中保留：Gemini 4 Argon 同句形态仍命中两个模式', (() => {
+  const r = detectMismatch(
+    'It sets a new state of the art on DeepSWE v1.1 (77.9%) and is rolling out to trusted testers '
+    + 'before general availability');
+  return r.matched.some(m => m.id === 'benchmark-vs-capability')
+    && r.matched.some(m => m.id === 'demo-vs-ga');
+})(), 'v2.9 起受保护的真命中不能被精度修死');
+
+// 8. 其余四个 sentenceScoped 模式的同句真形态各保留一条。
+//    任一侧收紧过度（如把目标句也切掉）→ 本断言失败。
+c311('真命中保留：capacity/roadmap/vendor 同句真形态', (() => {
+  const cap = detectMismatch('Tesla Fremont 线设计产能 100 万台/年，已下 5000 台部件订单，目标 2026 年产 50000 台');
+  const road = detectMismatch('Our roadmap targets GA in Q3 2027 and we have demonstrated a working prototype running end-to-end.');
+  const ven = detectMismatch('Our internal evaluations show the model is robust against jailbreaks and aligned with our safety guidelines.');
+  return cap.matched.some(m => m.id === 'capacity-vs-order')
+    && road.matched.some(m => m.id === 'roadmap-vs-result')
+    && ven.matched.some(m => m.id === 'vendor-selfreport-vs-verification');
+})(), '四个新启用同句判定的模式都必须有受保护的真命中');
+
+// 9. 句子切分本身：77.9% / v1.1 的小数点不拆句，句末标点才拆。
+c311('splitSentences 不在小数点处拆句', (() => {
+  const s = splitSentences('It scores 77.9% on DeepSWE v1.1 and ranks #1. The next model ships soon.');
+  return s.length === 2 && s[0].includes('77.9%') && s[0].includes('v1.1');
+})(), '小数点被当句末会把同句主张拆散，同句判定随之失效');
+
+// ── 组 3：端到端（引擎产出带触发句 + 报告渲染 + cron 注入）──
+// 10. 引擎级：live 形态误报条目计数归零、真命中条目保留、命中带触发句。
+//     摘除 evidenceSentence 透传或摘除精度修 → 本断言失败。
+c311('引擎级：误报条目计数 0、真命中保留、命中带触发句', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const fpItems = [
+    { title: 'At MIT, Martha Minow speaks on sustaining democracy, both by using and overcoming AI',
+      description: 'In Compton Lecture, the distinguished legal scholar warns of potential loss of the Enlightenment.',
+      body: '', source: 'MIT News - AI', link: 'https://news.mit.edu/e', origin: 'live',
+      pubDate: 'Mon, 19 Oct 2026 10:00:00 +0000' },
+    { title: 'battledrones v14: Compass Rose, a four player map',
+      description: 'I added four player online mode - previous maps were limited to two.',
+      body: '', source: 'Simon Willison', link: 'https://simonwillison.net/e', origin: 'live',
+      pubDate: 'Mon, 19 Oct 2026 10:00:00 +0000' },
+  ];
+  const tpItems = [
+    { title: 'ForTy: a global forest types map',
+      description: 'A global map categorizing every 10-meter patch of land on Earth into distinct forest types.',
+      body: 'ForTy picked the right forest type 90% of the time, outperforming other global forest maps.',
+      source: 'Google DeepMind Blog', link: 'https://deepmind.google/e', origin: 'live',
+      pubDate: 'Mon, 19 Oct 2026 10:00:00 +0000' },
+  ];
+  const engFp = new ProjectionEngine({ newsData: { tech: { news: fpItems } } });
+  const engTp = new ProjectionEngine({ newsData: { tech: { news: tpItems } } });
+  const cmFp = engFp.buildClaimMismatches();
+  const cmTp = engTp.buildClaimMismatches();
+  return cmFp.available === true && cmFp.count === 0
+    && cmTp.count === 1
+    && cmTp.hits[0].mismatches.some(m => m.id === 'benchmark-vs-capability')
+    && typeof cmTp.hits[0].evidenceSentence === 'string'
+    && cmTp.hits[0].evidenceSentence.includes('90%');
+})(), '误报归零 + 真命中带可复核触发句，两头都算数');
+
+// 11. 端到端渲染：formatReport 产物里出现口径错位段与触发句。
+//     摘除报告渲染或触发句渲染 → 本断言失败。
+c311('端到端：报告 markdown 渲染口径错位段与触发句', (() => {
+  const { ProjectionEngine, formatReport } = require('./scripts/project-future.js');
+  const items = [
+    { title: 'ForTy: a global forest types map',
+      description: 'A global map categorizing every 10-meter patch of land on Earth into distinct forest types.',
+      body: 'ForTy picked the right forest type 90% of the time, outperforming other global forest maps.',
+      source: 'Google DeepMind Blog', link: 'https://deepmind.google/e', origin: 'live',
+      pubDate: 'Mon, 19 Oct 2026 10:00:00 +0000' },
+  ];
+  const rep = new ProjectionEngine({ newsData: { tech: { news: items } } }).generate();
+  const md = formatReport(rep);
+  return md.includes('## 口径错位检测')
+    && md.includes('触发句:')
+    && md.includes('outperforming other global forest maps');
+})(), '报告层必须能展示触发句，否则命中不可复核');
+
+// 12. cron 注入脚本源级：读 proj.claimMismatches，带口径限定、0 命中路径、
+//     不可用路径与旧版报告路径。摘除注入段 → 本断言失败（第五次同型断链的
+//     复发防护：v2.9/v2.13/v2.17/v3.0.0c 都是「引擎产出了但注入没读」）。
+c311('cron 注入脚本读取 claimMismatches 且带口径限定', (() => {
+  const p = path311.join(require('os').homedir(), '.hermes/scripts/hf-cron-fetch.sh');
+  if (!fs311.existsSync(p)) return false;
+  const src = fs311.readFileSync(p, 'utf-8');
+  return /const cm = proj\.claimMismatches/.test(src)
+    && /### 口径错位检测/.test(src)
+    && /未包含 claimMismatches 字段/.test(src)          // 旧版报告路径
+    && /不可用 —— /.test(src)                            // 不可用路径
+    && /未检测到「产能 vs 订单」/.test(src)                // 0 命中路径
+    && /不判定新闻内容真假/.test(src)                      // 口径限定
+    && /必须在同一句内带上限定/.test(src);                 // 引用纪律
+})(), '注入脚本必须读 proj.claimMismatches 并带口径限定/各降级路径');
+
+// ── v3.1.1 汇总 ──
+(async () => {
+  const results = await Promise.all(v311.map(c => Promise.resolve(c.ok)));
+  let f = 0;
+  v311.forEach((c, i) => {
+    const ok = results[i];
+    if (!ok) f++;
+    console.log(`${ok ? '✓' : '✗'} ${c.name}${ok ? '' : '  —— ' + c.detail}`);
+  });
+  console.log(`\nv3.1.1: ${v311.length - f} 通过, ${f} 失败, 共 ${v311.length} 个`);
+  if (f > 0) {
+    console.log('结论：口径错位检测的精度修复或端到端接通不完整（误报回归/真命中/注入有缺）。');
+    process.exitCode = 1;
+  } else {
+    console.log('结论：误报回归全清、真命中保留、该段已进 cron 注入（引擎产出+报告渲染+agent 可见）。');
+  }
+})();

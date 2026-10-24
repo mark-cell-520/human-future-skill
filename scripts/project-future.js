@@ -320,7 +320,7 @@ class ProjectionEngine {
     }
     const report = {
       meta: {
-        version: '3.1.0',
+        version: '3.1.1',
         heartflowVersion: this.analysis.engineVersion,
         timestamp: this.timestamp,
         modulesLoaded: this.analysis.modulesLoaded,
@@ -888,8 +888,11 @@ class ProjectionEngine {
         hits.push({
           title: it.title.slice(0, 100), source: it.source, link: it.link,
           verdict: r.verdict, score: r.score,
-          // hasBody 标明这条命中的依据来自正文还是只有摘要：
-          // 摘要命中的可信度低于正文命中（摘要是源方导语，可能是提炼过的）
+          // [v3.1.1] 触发句：把「是哪句话触发的」带进产物，命中才可审计。
+          // 只展示不裁掉正文数字——读者要能自己复核判定依据。
+          evidenceSentence: (Array.isArray(r.triggerSentences) && r.triggerSentences[0]
+            ? String(r.triggerSentences[0]).replace(/\s+/g, ' ').slice(0, 220) : null),
+          // hasBody 标明这条命中的依据来自正文还是只有摘要：摘要命中的可信度低于正文命中（摘要是源方导语，可能是提炼过的）
           hasBody: !!it.hasBody,
           mismatches: arr.map(m => ({
             id: m.id, label: m.label, severity: m.severity, guidance: m.guidance,
@@ -902,7 +905,14 @@ class ProjectionEngine {
       count: hits.length,
       hits: hits.slice(0, 8),
       note: '口径错位检测：识别「设计产能 vs 实际订单」这类数字达标但能力未达标的表述。'
-        + 'hasBody=true 表示命中依据来自抓到的正文，false 表示只有 RSS 摘要',
+        + 'hasBody=true 表示命中依据来自抓到的正文，false 表示只有 RSS 摘要。'
+        + '[v3.1.1] 精度门：capacity-vs-order / benchmark-vs-capability / demo-vs-ga / '
+        + 'roadmap-vs-result / vendor-selfreport-vs-verification 五个模式要求两侧在同一句内'
+        + '共现（跨句共现常是两件不相关的事，live 实测把「Order of Dostyk 友谊勋章」当成'
+        + '采购订单、把「on target + demonstrate」当成路线图vs结果），且 demo-vs-ga 只认'
+        + '完成态可用性断言与灰度语义（democracy/democrat、gigawatts、limited to two players、'
+        + 'available in preview 均不再命中）。另三个模式无 live 误报实证，保持整段判定。'
+        + '命中带触发句，可逐条复核。',
     };
   }
 
@@ -2292,6 +2302,8 @@ function formatReport(report) {
     lines.push(`命中 ${cm.count} 条:`);
     for (const h of cm.hits) {
       lines.push(`- ${h.title} — ${h.source}${h.hasBody ? '' : '（仅 RSS 摘要，证据强度较低）'}`);
+      // [v3.1.1] 触发句：判定依据可复核，不是只给一个标签。
+      if (h.evidenceSentence) lines.push(`  触发句: ${h.evidenceSentence}`);
       for (const m of h.mismatches) {
         lines.push(`  - ${m.label || m.id}（${m.severity || '未标级'}）: ${m.guidance || m.detail || ''}`);
       }
