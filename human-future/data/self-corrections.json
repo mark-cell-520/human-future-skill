@@ -102,6 +102,18 @@
       "recordedAt": "2026-10-25T00:00:00.000Z",
       "resolvedAt": "2026-10-25T00:00:00.000Z",
       "fix": "① buildFormulaAssessment 改用 predictionLedger.dedupeSameObligation(settledRaw).entries，note 注明「原始登记 N 条 → 去重后 M 条」；测试加断言（3 条登记=2 个义务，sample===2），摘除去重→断言失败。② SKILL.md/代码注释按代码实测改为真实条数（新增后 14），并记录计数纠错来历。③ 测试文件开头加夹具签名自愈（探针 id / -nourl- id / 夹具来源名 / example.com / 探针 claim / v2.16 测试 #6 夹具 claim 前缀，只认签名不碰真实条目）+ v2.16 record() 探针改为先删后登；SIGKILL 复现验证自愈生效（7→5）。另：本轮主升级为商业主张辨别器新增产能/供给约束形态（capacity-claim），属新辨别维度，不是本登记簿的错误修正。"
+    },
+    {
+      "id": "corr-2026-011",
+      "reportVersion": "v3.2.1",
+      "wrongClaim": "（沿用假设）ledgerStatus 与 formulaAssessment 两个段从 v2.13 起每轮真产出、formatReport 一直正常渲染「预测台账」「认知公式评估」段，视为已交付——报告文件里有，能力就在。",
+      "rightClaim": "2026-10-25 断链审计（最新 full-report 的 projection 全字段 vs cron 注入脚本读取字段做差集）发现 15 个段「引擎产出了、报告渲染了、注入脚本从未读」，其中 ledgerStatus（Brier/兑现率/待结算/逾期）与 formulaAssessment（贝叶斯 posterior/Brier/折扣/风险）是实质内容最多的两个：v2.13 方向转变的核心承诺「长期跟踪结算、建立校准曲线」的唯一数据出口没接进 agent prompt——转变只做了一半；且 v3.2 刚修好的 Brier 同义务去重口径（公式段样本 3→1 与台账段对齐），agent 看不到修好的数字。这是 v2.9/v2.13/v2.17/v3.0.0c/v3.1.1 之后第六次同型断链（接口存在 ≠ 端到端到达）。",
+      "evidence": "差集审计输出：projection 25 段 vs 注入脚本读 8 段；端到端实跑修复后 hf-cron-fetch.sh 输出含「预测校准与台账状态」段（Brier 0.3025/样本 1/兑现率 100%/待结算 2，公式段 posterior 0.6547 且 Brier 样本与台账段一致）；测试 192→195 项，5 轮反向验证全部精确失败（摘除整段→1/摘除 formulaAssessment 读取→1/摘除口径限定→1/摘除同义务去重→1/写死 brier→1）",
+      "lesson": "「每一段交付时都要问注入脚本里有没有」这条纪律（v3.1.1 立）执行了两轮后又失守——v3.1.1 只补了当期审计发现的 claimMismatches 一段，没有把「全字段差集审计」固化为每轮动作，于是 ledgerStatus/formulaAssessment 这类从第一天起就没注入的老段继续躺了两个版本。纪律升级：断链审计必须是 projection 全字段 vs 注入脚本的系统性差集，不是「想起来查一下」；差集里每一段都要逐个确认是有意省略还是断链，不许默认「渲染了就算交付」。另：注入新段必须同时带口径限定（小样本不具统计性、公式段是方法演示、引擎不自动结算）——把没有限定的原始数字递给 agent，比不递更危险。",
+      "severity": "high",
+      "recordedAt": "2026-10-25T12:00:00.000Z",
+      "resolvedAt": "2026-10-25T12:00:00.000Z",
+      "fix": "hf-cron-fetch.sh 补「预测校准与台账状态」注入段（第 8.5 段，自我修正登记簿之后）：读 proj.ledgerStatus 与 proj.formulaAssessment，渲染 Brier/兑现率/待结算/逾期/本轮新登记 + 贝叶斯 posterior/折扣/风险期望值，带三条口径限定与旧版报告/不可用降级路径；测试加 3 项断言（注入源级/引擎产出与台账文件一致/两段样本口径一致），npm test 192→195 项全过。"
     }
   ]
 }

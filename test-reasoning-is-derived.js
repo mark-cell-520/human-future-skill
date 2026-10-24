@@ -3370,3 +3370,105 @@ c32('公式桥 Brier 样本按同义务去重（与台账段一致）', (() => {
     console.log('结论：产能/供给约束主张已进形态库与端到端产物（引擎+报告+cron 注入），精度回归全清，公式桥样本口径已对齐。');
   }
 })();
+
+// ════════════════════════════════════════════════════════════════
+// v3.2.1 新增断言：预测校准与台账状态端到端接通 cron 注入（断链修复）。
+//
+// 背景（2026-10-25 断链审计实测）：把最新 full-report 的 projection 全字段
+// 与注入脚本读取的字段做差集，发现 15 个段「引擎产出了、formatReport 渲染
+// 了、注入脚本从未读」。其中最有实质内容且直击引擎定位的是两个：
+//   ledgerStatus —— Brier/兑现率/待结算/逾期（v2.13 起产出）
+//   formulaAssessment —— 贝叶斯 posterior/Brier/折扣/风险（认知公式桥）
+// v2.13 方向转变的核心承诺是「辨别他人预测 + 长期跟踪结算、建立校准曲线」，
+// 台账结算状态是这件事的唯一数据出口；出口没接进 agent prompt，等于转变
+// 只做了一半。且 v3.2 刚修好的 Brier 同义务去重口径（公式段样本 3→1 与
+// 台账段对齐），agent 看不到修好的数字。这是 v2.9/v2.13/v2.17/v3.0.0c/
+// v3.1.1 之后第六次同型断链（接口存在 ≠ 端到端到达）。
+//
+// 本节断言分三组：① 注入脚本源级（两个字段+旧版/不可用路径+口径限定）；
+// ② 引擎产出与数据文件逐条一致（防注入层编数字）；③ 两段样本口径一致
+// （v3.2 修复不得回退——注入后 agent 会同时看到两个数，必须相等）。
+// ════════════════════════════════════════════════════════════════
+const v321 = [];
+function c321(name, ok, detail) { v321.push({ name, ok, detail }); }
+
+const fs321 = require('fs');
+const path321 = require('path');
+const os321 = require('os');
+
+// ── 组 1：注入脚本源级 ──
+// 1. 注入脚本必须读 proj.ledgerStatus 与 proj.formulaAssessment，带口径限定、
+//    不可用路径与旧版报告路径。摘除注入段 → 失败；摘除 formulaAssessment
+//    读取 → 失败；摘除口径限定 → 失败（第六次同型断链的复发防护）。
+c321('cron 注入脚本读取 ledgerStatus 与 formulaAssessment 且带口径限定', (() => {
+  const p = path321.join(os321.homedir(), '.hermes/scripts/hf-cron-fetch.sh');
+  if (!fs321.existsSync(p)) return false;
+  const src = fs321.readFileSync(p, 'utf-8');
+  return /const lsC = proj\.ledgerStatus/.test(src)
+    && /const faC = proj\.formulaAssessment/.test(src)
+    && /### 预测校准与台账状态/.test(src)
+    && /未包含 ledgerStatus\/formulaAssessment 字段/.test(src)   // 旧版报告路径
+    && /不可用 —— /.test(src)                                     // 不可用路径
+    && /Brier/.test(src) && /兑现率/.test(src) && /待结算/.test(src)
+    && /贝叶斯 posterior/.test(src)                               // 公式段真的读了
+    && /样本 <3 时不具统计性/.test(src)                           // 口径限定：小样本
+    && /方法演示，不是校准过的概率/.test(src)                     // 口径限定：公式段性质
+    && /引擎不自动判定兑现与否/.test(src);                        // 口径限定：不自动结算
+})(), '注入脚本必须读 ledgerStatus/formulaAssessment，并带口径限定/各降级路径');
+
+// ── 组 2：引擎产出与数据文件一致（防注入层编数字）──
+// 2. getLedgerStatus() 的 brier/sample/pending/overdue 必须与台账数据文件
+//    去重后对得上。改数字（如把 brier 写死）→ 失败。
+c321('ledgerStatus 产出与台账数据文件逐条一致', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const predictionLedger = require('./human-future/scripts/prediction-ledger.js');
+  const LEDGER = path321.join(__dirname, 'human-future/data/prediction-ledger.json');
+  const book = JSON.parse(fs321.readFileSync(LEDGER, 'utf-8'));
+  const all = book.predictions || [];
+  const sc = predictionLedger.scorecard();
+  const od = predictionLedger.overdue();
+  const inst = new ProjectionEngine({});
+  inst.signals = { totalItems: 0, domains: [], undomained: 0, dateRange: null, items: [] };
+  const ls = inst.getLedgerStatus();
+  return ls.available === true
+    && ls.sample === sc.sample
+    && ls.brier === sc.brier
+    && ls.hitRate === sc.hitRate
+    && ls.pending === all.filter(p => p.outcome === null).length
+    && ls.overdueCount === od.length
+    && (sc.sample === 0 || typeof ls.brier === 'number');
+})(), 'ledgerStatus 的 Brier/样本/待结算/逾期必须与台账文件算出的一致，不得写死');
+
+// ── 组 3：两段样本口径一致（v3.2 修复不得回退）──
+// 3. buildFormulaAssessment() 的 Brier 样本必须等于 getLedgerStatus() 的样本。
+//    实测依据：v3.2 修复前同一份报告公式段样本=3、台账段=1（3 条 EU AI Act
+//    同义务条目）。注入后 agent 会同时看到这两个数——不相等就是口径错位
+//    复发。摘除 buildFormulaAssessment 的同义务去重 → 失败。
+c321('公式段与台账段 Brier 样本口径一致', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const inst = new ProjectionEngine({});
+  inst.signals = { totalItems: 0, domains: [], undomained: 0, dateRange: null, items: [] };
+  const fa = inst.buildFormulaAssessment();
+  const ls = inst.getLedgerStatus();
+  return fa.available === true
+    && fa.formulas && fa.formulas.brier
+    && ls.sample === fa.formulas.brier.sample;
+})(), '公式桥 Brier 样本必须与台账段样本相等（同义务去重口径不得回退）');
+
+// ── v3.2.1 汇总 ──
+(async () => {
+  const results = await Promise.all(v321.map(c => Promise.resolve(c.ok)));
+  let f = 0;
+  v321.forEach((c, i) => {
+    const ok = results[i];
+    if (!ok) f++;
+    console.log(`${ok ? '✓' : '✗'} ${c.name}${ok ? '' : '  —— ' + c.detail}`);
+  });
+  console.log(`\nv3.2.1: ${v321.length - f} 通过, ${f} 失败, 共 ${v321.length} 个`);
+  if (f > 0) {
+    console.log('结论：预测校准与台账状态的端到端接通不完整（注入/产出一致性/口径对齐有缺）。');
+    process.exitCode = 1;
+  } else {
+    console.log('结论：校准跟踪已进 cron 注入（引擎产出+口径限定+agent 可见），公式段与台账段样本口径一致。');
+  }
+})();
