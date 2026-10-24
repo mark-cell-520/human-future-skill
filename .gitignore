@@ -14,6 +14,7 @@ reports/full-report-*.json
 reports/full-report-*.md
 reports/report-*.md
 reports/projection-*.md
+reports/projection-*.json
 reports/latest.json
 reports/latest.md
 
