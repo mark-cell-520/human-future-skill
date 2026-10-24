@@ -30,6 +30,43 @@ function save(ledger) {
 }
 
 /**
+ * [v2.16] 同义务去重：同一现实事件被多个页面重复登记时只计一次。
+ *
+ * 实测依据（2026-10-24 台账实况）：3 条 EU AI Act 已结算条目来自
+ * artificialintelligenceact.eu 的三个页面（the-scientific-panel /
+ * the-advisory-forum / transparency-rules-article-50），是同一义务
+ * （Article 50 透明度要求 2026-08 生效），5 个结算证据来源完全相同。
+ * 不去重就把一次兑现计成三次——基准概率虚高到 100%，Brier 与校准
+ * 曲线同样失真。SKILL.md v2.15 已把这条列为先决条件：「必须先做
+ * 同义务去重再激活本地台账基准概率分支」。
+ *
+ * 判据（同一结算事件的签名，带上 category 防跨类目误合）：
+ *   1. 有 evidence.sources → 排序后的来源集合（同一事件 = 同一组证据；
+ *      连页面文案都不同的条目，只要结算证据相同就是同一事件）
+ *   2. 无 evidence.sources → 归一化 claim 文本（同文 = 同主张；
+ *      未结算条目的重复登记靠这条合并）
+ *
+ * @param {Array} predictions 台账条目（调用方应只传已结算的）
+ * @returns {{entries: Array, dedupedCount: number}} entries 为去重后保留的条目
+ */
+function dedupeSameObligation(predictions) {
+  const seen = new Set();
+  const entries = [];
+  let dedupedCount = 0;
+  for (const p of (Array.isArray(predictions) ? predictions : [])) {
+    const cat = p.category || p.domain || 'general';
+    const srcs = p.evidence && Array.isArray(p.evidence.sources) ? p.evidence.sources : [];
+    const key = srcs.length > 0
+      ? `ev|${cat}|${srcs.map(s => String(s)).sort().join('|')}`
+      : `cl|${cat}|${String(p.claim || '').toLowerCase().replace(/[^a-z0-9\u4e00-\u9fff]+/g, ' ').trim()}`;
+    if (seen.has(key)) { dedupedCount++; continue; }
+    seen.add(key);
+    entries.push(p);
+  }
+  return { entries, dedupedCount };
+}
+
+/**
  * 登记一条预测。
  * @param {{id, claim, probability, dueOn, rationale?, domain?}} p
  */
@@ -43,6 +80,11 @@ function record(p) {
     claim: p.claim,
     probability: p.probability,
     domain: p.domain || 'general',
+    // [v2.16] category 双写：辨别器按 category 匹配同类历史，而这里
+    // 历史上只写 domain（值域本就是辨别器的类目词）。旧代码读 p.category
+    // 恒为 undefined，「本地台账同类历史」分支自 v2.13 起从未激活。
+    // 双写后新条目两个字段都在；历史条目由辨别器侧兼容读取兜底。
+    category: p.category || p.domain || 'general',
     rationale: p.rationale || '',
     createdAt: new Date().toISOString(),
     dueOn: p.dueOn || null,
@@ -95,7 +137,12 @@ function overdue(now = new Date()) {
 
 /** 评分：Brier + 按置信度分桶的实际命中率 */
 function scorecard() {
-  const settled = load().predictions.filter((p) => p.outcome !== null);
+  // [v2.16] 同义务去重后再算：同一事件被多个页面重复登记时，一个结果
+  // 会被计成多个样本（实测台账 3 条 EU AI Act 同义务条目），Brier 与
+  // 校准曲线全部失真。去重痕迹写进返回值，可审计。
+  const settledRaw = load().predictions.filter((p) => p.outcome !== null);
+  const dedup = dedupeSameObligation(settledRaw);
+  const settled = dedup.entries;
   if (!settled.length) return { brier: null, sample: 0, calibration: [], hitRate: null };
   const brier = settled.reduce((s, p) => s + Math.pow(p.probability - (p.outcome ? 1 : 0), 2), 0) / settled.length;
   const hitRate = settled.filter((p) => p.outcome).length / settled.length;
@@ -109,10 +156,13 @@ function scorecard() {
       expected: (lo + Math.min(hi, 1)) / 2
     };
   });
-  return { brier: Number(brier.toFixed(4)), sample: settled.length, hitRate: Number(hitRate.toFixed(3)), calibration: bins };
+  return { brier: Number(brier.toFixed(4)), sample: settled.length, hitRate: Number(hitRate.toFixed(3)), calibration: bins,
+    // [v2.16] 去重痕迹：原始登记条数与去重后样本数分开记录，
+    // 「样本被合并过」这件事必须可审计，不能静默。
+    settledRaw: settledRaw.length, deduped: dedup.dedupedCount };
 }
 
-module.exports = { record, settle, overdue, scorecard, load, LEDGER_PATH };
+module.exports = { record, settle, overdue, scorecard, load, dedupeSameObligation, LEDGER_PATH };
 
 if (require.main === module) {
   // 自测：跑完自动清理，不污染真实台账

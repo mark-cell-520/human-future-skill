@@ -24,7 +24,10 @@
  *      不可结算、不进台账。实测依据见 REFERENCE_TEXT_PATTERNS 注释。
  * 2. 基准概率（base rate）
  *    - 从历史台账里找同类预测的实际兑现率
- *    - 无同类历史时用「宣布→交付」的通用基准（见 DEFAULT_BASE_RATES）
+ *    - [v2.16] 同类历史按「同义务去重」后计数：同一现实事件被多个页面
+ *      重复登记只算一次（实测 3 条 EU AI Act 条目是同一义务）
+ *    - 无同类历史或去重后样本 <3 时用「宣布→交付」的通用基准
+ *      （见 DEFAULT_BASE_RATES），并如实标注本地台账已结算条数
  *    - 基准概率是辨别的锚：宣称 90% 置信度而同类历史兑现率 30%，即为过度自信
  * 3. 推理有效性（reasoning validity）
  *    - 是否给出机制（为什么）
@@ -40,6 +43,8 @@
  * - 基准概率来自历史台账，样本不足时必须标注 sample size，不得伪装成统计结论。
  * - 不得因为一条预测「结构良好」就判定它「可能为真」——结构良好只说明可结算。
  */
+
+const { dedupeSameObligation } = require('./prediction-ledger.js');
 
 /** 通用基准概率：无同类历史时的默认锚。每个值都注明来源与口径。 */
 const DEFAULT_BASE_RATES = {
@@ -242,7 +247,19 @@ function discriminate(claim, opts = {}) {
   // ── 2. 基准概率 ─────────────────────────────────────────────
   const category = claim.category || inferCategory(text);
   const ledger = Array.isArray(opts.ledger) ? opts.ledger : [];
-  const sameCat = ledger.filter(p => p.category === category && p.outcome !== null && p.outcome !== undefined);
+  // [v2.16] 断链修复：台账条目存的是 domain（project-future.js 登记时
+  // 写的就是 domain: r.category，值域与辨别器类目词一致），旧代码读
+  // p.category 恒为 undefined——「本地台账同类历史」分支自 v2.13 声明
+  // 起从未激活过一次，基准概率永远落在通用先验上。现在两个字段都认：
+  // record() 从 v2.16 起双写 category，历史条目只有 domain 也能匹配。
+  const sameCatRaw = ledger.filter(p => (p.category || p.domain) === category
+    && p.outcome !== null && p.outcome !== undefined);
+  // [v2.16] 同义务去重：同一现实事件被多个页面重复登记时只计一次。
+  // 实测台账里 3 条 EU AI Act 条目（三个页面、5 个证据来源完全相同）
+  // 是同一义务；不去重就把一次兑现计成三次，同类历史兑现率虚高到
+  // 100%——比「永远用先验」更糟的失真。这是 SKILL.md 写明的先决条件。
+  const dedup = dedupeSameObligation(sameCatRaw);
+  const sameCat = dedup.entries;
   let baseRate;
   if (sameCat.length >= 3) {
     const hits = sameCat.filter(p => p.outcome === true).length;
@@ -250,12 +267,25 @@ function discriminate(claim, opts = {}) {
       rate: Math.round((hits / sameCat.length) * 100) / 100,
       sample: sameCat.length,
       source: 'local-ledger',
-      note: `本地台账同类已结算 ${sameCat.length} 条，命中 ${hits} 条`,
+      note: `本地台账同类已结算 ${sameCat.length} 条（同义务去重后，原始登记 ${sameCatRaw.length} 条），命中 ${hits} 条`,
     };
   } else {
     const d = DEFAULT_BASE_RATES[category] || DEFAULT_BASE_RATES.vendor_delivery;
-    baseRate = { rate: d.rate, sample: d.sample, source: 'default-prior', note: d.note };
+    // [v2.16] 样本不足（1-2 条）时仍用通用先验——1 条历史不构成统计
+    // 结论——但不再谎称「无本地历史」：有 1 条就说 1 条，样本不足是
+    // 样本不足，和一条都没有是两件事，note 里分开写。
+    baseRate = sameCat.length > 0
+      ? { rate: d.rate, sample: d.sample, source: 'default-prior',
+          note: `通用先验；本地台账同类已结算 ${sameCat.length} 条（同义务去重后），样本 <3 不作统计结论` }
+      : { rate: d.rate, sample: d.sample, source: 'default-prior', note: d.note };
   }
+  // [v2.16] 本地台账观测值：即使不进基准概率也如实展示，报告层可见。
+  const localLedger = {
+    settledRaw: sameCatRaw.length,
+    settledDistinct: sameCat.length,
+    deduped: dedup.dedupedCount,
+    hits: sameCat.filter(p => p.outcome === true).length,
+  };
 
   // ── 3. 推理有效性 ───────────────────────────────────────────
   const reasoning = REASONING_CHECKS.map(c => {
@@ -320,6 +350,9 @@ function discriminate(claim, opts = {}) {
     dueBasis,
     settleable,
     baseRate,
+    // [v2.16] 本地台账同类历史观测值（去重前后条数、去重数、兑现数）。
+    // 样本不足不进基准概率时也如实展示，报告层渲染。
+    localLedger,
     reasoning: {
       checks: reasoning,
       score: reasoningScore,

@@ -1918,6 +1918,16 @@ function formatReport(report) {
         + `（${r.reasoning.checks.filter(c => c.present).map(c => c.label.split('（')[0]).join('、') || '无'}）`);
       lines.push(`  基准概率: ${Math.round(r.baseRate.rate * 100)}%`
         + `（sample=${r.baseRate.sample}${r.baseRate.source === 'default-prior' ? '，通用先验' : '，本地台账'}）`);
+      // [v2.16] 本地台账同类历史：基准概率维度断链修复后，即使去重后样本
+      // 不足 3、基准概率仍取通用先验，也如实展示本地已结算条数——
+      // 「有 1 条历史」和「一条都没有」在报告里不能再是同一行字。
+      if (r.localLedger && r.localLedger.settledDistinct > 0) {
+        lines.push(`  本地台账同类历史: 已结算 ${r.localLedger.settledDistinct} 条`
+          + `（同义务去重后，原始登记 ${r.localLedger.settledRaw} 条），兑现 ${r.localLedger.hits} 条`
+          + (r.baseRate.source === 'local-ledger'
+            ? '——已作为本条基准概率'
+            : '——样本 <3 不具统计性，基准概率仍取通用先验'));
+      }
       if (r.falsifiability.problems.length) {
         lines.push(`  不可证伪原因: ${r.falsifiability.problems.map(p => `${p.label}——${p.guidance}`).join('；')}`);
       }

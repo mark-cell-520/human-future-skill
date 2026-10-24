@@ -2121,3 +2121,187 @@ c215('报告层渲染「非预测文本」类别', (() => {
     console.log('结论：参考文本与意图声明已分开辨别，指南页不再进台账。');
   }
 })();
+
+// ════════════════════════════════════════════════════════════════
+// v2.16 新增断言：基准概率维度断链修复。
+//
+// 缺陷形态（SKILL.md v2.15「已知边界」已记录为下轮候选）：
+//   ① 字段映射断裂：台账条目存 domain（project-future.js 登记时写的
+//      就是 domain: r.category，值域与辨别器类目词一致），辨别器读
+//      p.category 恒为 undefined——「本地台账同类历史」分支自 v2.13
+//      声明起从未激活过一次，基准概率永远落在通用先验上；
+//   ② 同义务重复登记：台账 3 条 EU AI Act 已结算条目是同一义务
+//      （三个页面、5 个证据来源完全相同）——直接修字段映射会把一次
+//      兑现计成三次，同类历史兑现率虚高到 100%，比不断链更糟。
+// 修复 = 兼容读 category||domain + 同义务去重 + 样本不足诚实降级
+//        + 报告层展示本地台账同类历史。
+//
+// 反向验证：摘除字段映射修复 → 断言 1/6 失败（settledRaw 3→0）；
+// 摘除 dedupeSameObligation 调用 → 断言 2/3 失败（3 条重复激活
+// 100% 本地基准）；摘除报告层渲染 → 断言 6 的 md 断言失败。
+// ════════════════════════════════════════════════════════════════
+const v216 = [];
+function c216(name, ok, detail) { v216.push({ name, ok, detail }); }
+
+const fs216 = require('fs');
+const { discriminate: discriminateOne216 } = require('./human-future/scripts/forecast-discriminator.js');
+const ledgerLib216 = require('./human-future/scripts/prediction-ledger.js');
+
+// 构造一条已结算台账条目（evidence 形态与真实台账一致）
+const settledEntry = (id, outcome, prob, sources, domain) => ({
+  id, claim: `探针预测 ${id}`, probability: prob, domain: domain || 'regulatory_action',
+  dueOn: '2026-09-30', outcome, settledAt: '2026-10-22T00:00:00.000Z',
+  evidence: { sources, summary: '探针结算摘要', settledBy: 'probe' },
+});
+
+// 1. 真实台账：字段映射修复后同类历史真的被匹配上
+c216('真实台账同类历史被匹配（字段映射修复）', (() => {
+  // 2026-10-24 台账实况：regulatory_action 已结算 3 条（EU AI Act
+  // 同一义务的三个页面），去重后 1 条、兑现 1 条。修复前 sameCatRaw
+  // 恒为 0（读 p.category 而条目只有 domain），此断言即反向验证点。
+  const r = discriminateOne216({
+    text: 'The EU AI Act requires providers to comply with the transparency obligations by August 2026.',
+    source: 'Probe', date: '2026-10-24',
+  }, { ledger: readLedger() });
+  return r.available && r.category === 'regulatory_action'
+    && r.localLedger.settledRaw === 3
+    && r.localLedger.settledDistinct === 1
+    && r.localLedger.deduped === 2
+    && r.localLedger.hits === 1;
+})(), '真实台账 3 条同义务条目必须被匹配且去重为 1 条');
+
+// 2. 同义务去重后，本地台账基准概率按去重样本激活
+c216('同义务去重后本地台账基准概率才激活', (() => {
+  const ledger = [
+    settledEntry('p-a', true, 0.5, ['u1', 'u2']),
+    settledEntry('p-b', true, 0.5, ['u2', 'u1']),  // 同义务（证据集合相同、顺序不同）
+    settledEntry('p-c', true, 0.5, ['u1', 'u2']),  // 同义务
+    settledEntry('p-d', false, 0.5, ['u3']),       // 不同义务
+    settledEntry('p-e', true, 0.5, ['u4']),        // 不同义务
+  ];
+  const r = discriminateOne216({
+    text: 'The EU AI Act requires providers to comply by Q4 2027.',
+    source: 'Probe', date: '2026-10-24',
+  }, { ledger });
+  // 去重后 3 条（p-a/b/c 合一 + p-d + p-e），命中 2 → 0.67。
+  // 不去重则样本 5、命中 3 → 0.6，重复登记把样本与概率一起扭曲。
+  return r.available && r.baseRate.source === 'local-ledger'
+    && r.baseRate.sample === 3 && r.baseRate.rate === 0.67
+    && r.localLedger.settledRaw === 5 && r.localLedger.deduped === 2
+    && r.localLedger.hits === 2;
+})(), '5 条登记（3 条同义务）必须去重成 3 条样本、兑现率 2/3');
+
+// 3. 只有同义务重复登记时，不得激活失真的 100% 基准（诚实降级）
+c216('仅同义务重复登记时诚实降级不激活失真基准', (() => {
+  // 复现真实台账污染形态：3 条同义务、全部兑现。无去重时会激活
+  // local-ledger 且 rate=1.0——一次兑现被计成三次，正是 SKILL.md
+  // 警告的「失真的 100% 基准概率」。修复后必须留在通用先验。
+  const ledger = [
+    settledEntry('q-a', true, 0.45, ['u1', 'u2', 'u3', 'u4', 'u5']),
+    settledEntry('q-b', true, 0.45, ['u1', 'u2', 'u3', 'u4', 'u5']),
+    settledEntry('q-c', true, 0.45, ['u1', 'u2', 'u3', 'u4', 'u5']),
+  ];
+  const r = discriminateOne216({
+    text: 'The EU AI Act requires providers to comply by Q4 2027.',
+    source: 'Probe', date: '2026-10-24',
+  }, { ledger });
+  return r.available && r.baseRate.source === 'default-prior'
+    && r.baseRate.rate === 0.45            // regulatory_action 通用先验
+    && r.localLedger.settledDistinct === 1 // 去重后只剩 1 条
+    && /本地台账同类已结算 1 条/.test(r.baseRate.note);
+})(), '样本 <3 必须留在通用先验，且 note 如实写明本地已结算 1 条');
+
+// 4. record() 双写 category：新条目两个字段都在
+// （副作用由文件最开头的全局备份 + process.on('exit') 还原兜底）
+c216('record() 双写 category 字段', (() => {
+  const rec = ledgerLib216.record({
+    id: 'v216-probe-field-dualwrite', claim: '探针：category 双写', probability: 0.4,
+    dueOn: '2027-12-31', domain: 'regulatory_action',
+  });
+  const stored = ledgerLib216.load().predictions.find(p => p.id === 'v216-probe-field-dualwrite');
+  return rec.category === 'regulatory_action'
+    && !!stored && stored.domain === 'regulatory_action' && stored.category === 'regulatory_action';
+})(), '登记时只传 domain，读回时 category 必须同在');
+
+// 5. scorecard() 按去重后样本算 Brier（同步文件交换，finally 还原）
+c216('scorecard 对同义务重复登记只计一次', (() => {
+  const backup = fs216.existsSync(ledgerLib216.LEDGER_PATH)
+    ? fs216.readFileSync(ledgerLib216.LEDGER_PATH) : null;
+  try {
+    fs216.writeFileSync(ledgerLib216.LEDGER_PATH, JSON.stringify({ version: '1.0.0', predictions: [
+      settledEntry('s-x1', true, 0.45, ['u1', 'u2']),
+      settledEntry('s-x2', true, 0.45, ['u1', 'u2']),   // 同义务
+      settledEntry('s-x3', false, 0.9, ['u3'], 'vendor_delivery'),
+    ] }));
+    const sc = ledgerLib216.scorecard();
+    // 3 条登记 = 2 个义务；Brier 必须按去重后 2 条算
+    const expectBrier = (Math.pow(0.45 - 1, 2) + Math.pow(0.9 - 0, 2)) / 2;
+    return sc.sample === 2 && sc.settledRaw === 3 && sc.deduped === 1
+      && Math.abs(sc.brier - expectBrier) < 0.001;
+  } finally {
+    if (backup === null) fs216.unlinkSync(ledgerLib216.LEDGER_PATH);
+    else fs216.writeFileSync(ledgerLib216.LEDGER_PATH, backup);
+  }
+})(), 'Brier 样本数必须去重（3 条登记 → 2 个义务）');
+
+// 6. 端到端：generate() → formatReport，本地台账同类历史出现在报告产物里
+// （「接口存在 ≠ 端到端到达」：localLedger 字段必须在最终 markdown 里可见）
+c216('端到端：报告层展示本地台账同类历史', (() => {
+  const { ProjectionEngine, formatReport } = require('./scripts/project-future.js');
+  const eng = new ProjectionEngine({ newsData: { frontier_models: { domain: 'frontier_models', name: '专项大模型', news: [
+    { title: 'EU AI Act enforcement framework',
+      description: '',
+      body: 'EU member states shall implement the AI Act enforcement framework by Q2 2027. '
+        + 'National authorities are required to establish the necessary procedures.',
+      source: 'EU AI Act Timeline', category: 'governance',
+      link: 'https://artificialintelligenceact.eu/enforcement',
+      pubDate: 'Tue, 20 Oct 2026 00:00:00 GMT', origin: 'live' },
+  ] } } });
+  const rep = eng.generate();
+  const reg = (rep.forecastDiscrimination.results || [])
+    .find(r => r.category === 'regulatory_action');
+  const md = formatReport(rep);
+  return !!reg
+    && reg.localLedger.settledRaw === 3 && reg.localLedger.settledDistinct === 1
+    && /本地台账同类历史: 已结算 1 条/.test(md)
+    && /原始登记 3 条/.test(md)
+    && /样本 <3 不具统计性/.test(md);
+})(), '报告必须出现「已结算 1 条（原始登记 3 条）」且说明样本不足');
+
+// 7. 去重函数单元测试：同证据合并、无证据回退文本、跨类目不误合
+c216('dedupeSameObligation 判据正确（不误合不同义务）', (() => {
+  const mk = (id, sources) => ({ id, claim: 'c' + id, domain: 'regulatory_action', outcome: true, evidence: { sources } });
+  const r1 = ledgerLib216.dedupeSameObligation([
+    mk('a', ['u1', 'u2']), mk('b', ['u2', 'u1']), mk('c', ['u3']),
+  ]);
+  // 无 evidence.sources 时回退归一化 claim 文本（大小写/标点不影响）
+  const r2 = ledgerLib216.dedupeSameObligation([
+    { id: 'd', claim: 'Same Claim Text!', domain: 'regulatory_action', outcome: true },
+    { id: 'e', claim: 'same claim text', domain: 'regulatory_action', outcome: true },
+  ]);
+  // 相同证据但不同类目不得合并（防止跨类目误合）
+  const r3 = ledgerLib216.dedupeSameObligation([
+    mk('f', ['u1']),
+    { id: 'g', claim: 'other', domain: 'vendor_delivery', outcome: true, evidence: { sources: ['u1'] } },
+  ]);
+  return r1.entries.length === 2 && r1.dedupedCount === 1
+    && r2.entries.length === 1 && r2.dedupedCount === 1
+    && r3.entries.length === 2 && r3.dedupedCount === 0;
+})(), '同证据（顺序无关）合并；无证据回退文本；跨类目不误合');
+
+(async () => {
+  const results = await Promise.all(v216.map(c => Promise.resolve(c.ok)));
+  let f = 0;
+  v216.forEach((c, i) => {
+    const ok = results[i];
+    if (!ok) f++;
+    console.log(`${ok ? '✓' : '✗'} ${c.name}${ok ? '' : '  —— ' + c.detail}`);
+  });
+  console.log(`\nv2.16: ${v216.length - f} 通过, ${f} 失败, 共 ${v216.length} 个`);
+  if (f > 0) {
+    console.log('结论：基准概率维度仍有断链，或同义务重复登记会扭曲基准。');
+    process.exitCode = 1;
+  } else {
+    console.log('结论：本地台账同类历史已激活并按同义务去重，报告层可见。');
+  }
+})();
