@@ -633,3 +633,37 @@ v2.7 上线后连着看了 4 份 full-report，发现四个「宣称可用但实
 **最后更新**: 2026-10-08
 **心虫版本**: v6.7.124（实测可用路径 ~/heartflow/src/index.js）
 **架构**: 数据采集（RSS 真联网 / 知识库降级）+ 心虫 stateless 检查器 + 三年推演引擎
+
+---
+
+## v2.16（2026-10-24）修复基准概率维度断链
+
+**缺陷**（SKILL.md v2.15「已知边界」记录的下轮候选，本轮修复）：
+1. 字段映射断裂：`prediction-ledger.record()` 存 `domain`（project-future.js
+   登记时写的就是 `domain: r.category`，值域与辨别器类目词一致），
+   `forecast-discriminator` 读 `p.category` 恒为 undefined——
+   「本地台账同类历史」分支自 v2.13 声明起**从未激活过一次**。
+2. 同义务重复登记：台账 3 条已结算 EU AI Act 条目来自同一网站三个页面
+   （the-scientific-panel / the-advisory-forum / transparency-rules-article-50），
+   5 个结算证据来源完全相同。直接修字段映射会把一次兑现计成三次，
+   同类历史兑现率虚高到 100%——比不断链更糟的失真。
+
+**修复设计**（下轮改此处前必读）：
+- 去重判据 = 结算事件签名：有 `evidence.sources` 用排序后来源集合
+  （同一事件 = 同一组证据，页面文案不同也合）；无证据回退归一化
+  claim 文本；key 带 category 防跨类目误合。`dedupeSameObligation()`
+  导出在 prediction-ledger.js，baseRate 与 scorecard(Brier/校准) 共用。
+- 字段兼容：辨别器读 `p.category || p.domain`；`record()` 双写
+  category。新条目两字段都在，历史条目靠兼容读兜底。
+- 样本 <3 诚实降级：仍用通用先验（1 条历史不构成统计结论），但
+  note 与报告层「本地台账同类历史」行如实展示去重前后条数。
+- 报告层新增行：`本地台账同类历史: 已结算 N 条（同义务去重后，
+  原始登记 M 条），兑现 K 条——样本 <3 不具统计性……`
+
+**验证**：npm test 147 项全过（新增 7 项，v2.16 节）；反向验证
+摘除字段映射→4 项失败、摘除去重→4 项失败、摘除报告渲染→1 项失败；
+FETCH=1 全量 pipeline 实跑，报告产物出现该行，Brier 按去重后
+1 条计算（修复前会显示 3 条）。commit aafbc3f。
+
+**遗留（下轮候选）**：`overdue()` 未去重——同一义务重复登记且未结算
+时，结算其中一条其余仍显示待结算；当前台账无此形态，暂不处理。
