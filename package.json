@@ -1,7 +1,7 @@
 {
   "name": "human-future",
-  "version": "2.17.0",
-  "description": "人类未来 v2.17 - 接入外部预测基准源 Good Judgment Open：9 个查询采集带硬截止日的开放预测问题（实测 32 个），新增报告段「外部预测基准」+ 结构对照（RSS 可结算率 vs 硬截止日问题）+ per-claim 主题相邻匹配（共享实词≥2，主题相邻非同题不构成概率参照）；Metaculus/Manifold/Polymarket/Kalshi 仍不可达，GJOpen crowd forecast 概率需登录未采集；v2.16 修复基准概率维度断链；v2.15 参考文本单列 reference-text；v2.14 sitemap 源改用页面真实发布时间；v2.13 停止假推演，转为辨别他人的预测",
+  "version": "3.0.0",
+  "description": "人类未来 v3.0.0 - 心虫商业未来推演：v3.0.0c 修复商业主张辨别段端到端断链（引擎产出+报告渲染但 cron 注入从未读取，v2.9/v2.13/v2.14 之后又一起同型断链），候选抽取加精度门（旧 $/%/market 关键词触发器混入 Fed 公告/播客/促销页脚，19 条里 18 条 unclassified；现须命中 14 种商业主张形态，标题参与判定，实测 248 条 live → 6 条进辨别），补三处句式召回（raises nearly $16B / $1.25T valuation 两种语序 / beat generalist doctors）与证据等级修正（according to a study 归第三方调查）；测试 155→164 项，7 轮反向验证全部精确失败；v2.17 接入 GJOpen 外部预测基准；v2.16 修复基准概率断链；v2.15 参考文本单列；v2.14 sitemap 源改用页面真实发布时间；v2.13 停止假推演，转为辨别他人的预测",
   "main": "modules/monitor/signal-collector.js",
   "scripts": {
     "start": "node scripts/run-pipeline.js",

@@ -1,8 +1,32 @@
 ---
 name: human-future-v2
-title: "人类未来 · 文明推演引擎 v2.17"
-version: "2.17.0"
+title: "人类未来 · 文明推演引擎 v3.0.0"
+version: "3.0.0"
 description: |-
+  人类未来技能 v3.0.0 — 心虫商业未来推演（v3.0.0c 修复端到端断链）：
+  v3.0.0（f118603，10-22）新增 business 采集域（TechCrunch AI / The Information /
+  Last Week in AI / ProductHunt）与商业主张辨别器 commercial-discriminator——
+  辨别「关于市场的陈述」（可证伪性/证据等级四级/推理三要素/证伪条件），与
+  forecast-discriminator 的「关于未来的预测」分工；5 个商业主题域（市场主张/
+  竞品/资本/客户采用/合规需求）；报告段「商业主张辨别」。
+  2026-10-24 v3.0.0c：① 修复该段端到端断链——引擎产出、formatReport 渲染，
+  但 cron 注入脚本从未读取 proj.commercialDiscrimination（v2.9/v2.13/v2.17
+  之后第四次同型断链，「接口存在 ≠ 端到端到达」），本轮补上注入段并加源级
+  断言防复发；② 候选抽取加精度门：旧触发器「含 $/%/market 关键词即算候选」
+  把 7 条 Fed FOMC 公告、LWiAI 播客、TechCrunch 促销页脚（"Get your pass ...
+  REGISTER NOW"，还因 2/3 推理分被判★决策相关）混入辨别，实测 19 条里 18 条
+  kind=unclassified；现候选题句必须命中 14 种商业主张形态之一（标题参与判定），
+  实测同轮 248 条 live 里 6 条进辨别（估值 2/竞品 1/融资 1/采用 2）；
+  ③ 三处句式召回（raises nearly $16B / "$1.25T valuation" 两种语序 /
+  beat generalist doctors）与证据等级修正（according to a study in Science
+  归第三方调查而非无出处）。测试 155→164 项；7 轮反向验证全部精确失败
+  （摘除注入段→1 条失败、摘除精度门→3 条、摘除副词组→3 条、摘除透传→2 条、
+  摘除竞品目标→1 条、摘除估值语序→1 条、摘除报告渲染→1 条）。
+  已知边界：模式库外真实句式仍会漏（"AWS Largely Sold Out Of Capacity
+  Into 2028" 产能主张）；站点导航/页脚 boilerplate 偶有漏网（本轮 6 条里
+  1 条 EconBrowser 导航文本）；本段不生成商业建议，「心虫该怎么做」由报告
+  agent 判断并标注归属。
+
   人类未来技能 v2.17 — 接入外部预测基准源 Good Judgment Open（gjopen.com）：
   v2.13 起挂在「已知边界」的缺口（RSS 前瞻表述多为意图声明，缺带硬截止日的
   可结算预测）本轮推进——2026-10-24 复测全部外部预测源，只剩 GJOpen 可达
@@ -98,7 +122,7 @@ description: |-
   - 跨域知识吸收与融合
 ---
 
-# 人类未来 · 文明推演引擎 v2.17
+# 人类未来 · 文明推演引擎 v3.0.0
 
 > 数据采集（RSS 真联网 + 可选正文增强 + 外部预测基准 GJOpen）→ 心虫 stateless 检查器 → 三年推演引擎。
 > 当前状态与实测数字见下一节，历史版本记录见 references/upgrade-history.md。
@@ -112,10 +136,14 @@ description: |-
 不是宣称值。
 
 **采集层**
-- RSS 源：13 个（tech 2 + humanities 1 + frontier_models 9 + psychology/philosophy 各 0）
+- RSS 源：17 个（tech 2 + humanities 1 + frontier_models 9 + economy 4 + business 4 + psychology/philosophy 各 0）
 - 并行抓取：`Promise.all`，实测约 4 秒（旧串行最坏 104 秒）
 - 正文增强：`FETCH_BODY=1` 时抓最新 24 条，实测 17 条成功（openai.com 403 / arstechnica 405 / interconnects 链接失效）
-- 实测产出：258 条 live（2026-10-24），其中专项大模型域为主体
+- 实测产出：248 条 live（2026-10-24 v3.0.0c 轮；同日 v2.17 轮 258 条），其中专项大模型域与商业域为主体
+
+**商业采集层（v3.0.0 新增）**
+- business 域 4 源：TechCrunch AI / The Information / Last Week in AI / ProductHunt
+  （实测 12 个候选后选定；Crunchbase/CIO 403、Import AI 连接失败、HN 仅 1 条且非 AI 分类，明确不可用不重复试）
 
 **外部预测基准层（v2.17 新增）**
 - 来源：Good Judgment Open（gjopen.com），专业预测平台；`/questions?q=<词>` 公开可抓
@@ -131,14 +159,39 @@ description: |-
   现有源的 Promise.all 会挤掉慢源的 8 秒超时窗口）
 
 **推演层**（project-future.js，v3 引擎）
-- 主题域：11 个（frontier_models 排在最前，避免被 ai_capability 的同批关键词吞掉）
+- 主题域：16 个（frontier_models 排在最前避免被 ai_capability 同批关键词吞掉；11 个文明级域 + 5 个商业域）
 - 接入组件：causal-graph-engine / cross-domain-conduction / signal-decay-resonance /
   timeline-conflict-detector / source-credibility-grader / claim-mismatch-detector /
   cognitive-formula-bridge / low-confidence-gate / prediction-ledger /
-  prediction-benchmark-collector（v2.17，仅真采到时才写进 meta.reasoningEngines）
+  prediction-benchmark-collector（v2.17，仅真采到时才写进 meta.reasoningEngines）/
+  commercial-discriminator（v3.0.0，商业主张辨别）
 - 实测各模块可用性：因果链 ✅（共现兜底）/ 跨域传导 ✅ / 趋势判定 ✅（源归一化）/
   时间轴 ✅（16 点，需正文）/ 来源分级 ✅（T1 47 / T2 45 / T3 48 / T4 0）/ 口径错位 ✅（9 条命中）/
-  外部预测基准 ✅（32 个开放问题，per-claim 主题匹配本轮 0/7，如实展示）
+  外部预测基准 ✅（32 个开放问题，per-claim 主题匹配本轮 0/7，如实展示）/
+  商业主张辨别 ✅（6 条，精度门后；修复前 19 条里 18 条 kind=unclassified）
+
+**商业推演层（v3.0.0 新增，v3.0.0c 修复端到端断链）**
+- 定位：v3.0.0 起引擎双轨——文明级信号（人类未来，11 域）+ 商业级辨别（心虫商业未来，5 域）。
+  f118603 的目的转变：「文明级信号无法回答商业决策问题」。
+- 5 个商业主题域：市场主张 / 竞品与替代方案 / 资本与商业模式 / 客户采用与场景 / 合规需求。
+  business 桶归类：关键词优先，兜底 market_claims（商业新闻本质都是关于市场的主张或动作）。
+- 商业主张辨别器（commercial-discriminator.js）：辨别「关于市场的陈述」，
+  四维判据与 forecast-discriminator 分工——
+  预测看「有没有时点」，市场主张看「有没有量化与证据等级」；
+  预测看「同类历史兑现率」，市场主张看「是调查自述、厂商口径还是独立验证」。
+  证据等级：独立验证(4) > 第三方调查/公开财报(3) > 厂商自述/媒体报道(2) > 无出处(1)；
+  推理三要素：样本/对照/反例；verdict：factual / unfalsifiable / weak-evidence /
+  thin-reasoning / well-formed；decisionRelevant = 证据≥3 或推理≥2 且非不可证伪。
+- [v3.0.0c] 精度门：候选题句必须命中 14 种商业主张形态（COMMERCIAL_CLAIM_PATTERNS）之一，
+  标题参与判定。实测依据：旧关键词触发器把 7 条 Fed FOMC 公告、LWiAI 播客、
+  TechCrunch 促销页脚（"Get your pass ... REGISTER NOW"，★决策相关）混入，
+  19 条里 18 条 kind=unclassified。修复后同轮 248 条 live → 6 条进辨别。
+- [v3.0.0c] 端到端断链修复：v3.0.0 起引擎产出 commercialDiscrimination、
+  formatReport 渲染「商业主张辨别」段，但 cron 注入脚本从未读取该字段——
+  报告文件里躺着、agent 完全看不到。这是 v2.9/v2.13/v2.17 之后第四次同型断链。
+  本轮补上注入段（含口径限定与证据图例），测试加源级断言防复发。
+- 纪律（心虫铁律）：只辨别主张的表述与证据质量，不判断内容真假，
+  不生成「心虫应该怎么做」的商业建议——那由报告 agent 判断并标注归属。
 
 **心虫层**
 - 入口：`~/heartflow/src/index.js`（74 个 stateless 检查器）
@@ -199,14 +252,32 @@ description: |-
   `p.category`，分支永不激活）并加上同义务去重；样本随台账积累自然
   增长，不需要再改代码。
 
+**商业主张辨别的已知边界（v3.0.0c 如实声明）**：
+- 模式库外的真实主张句式仍会漏：实测本轮 "AWS Largely Sold Out Of Capacity
+  Into 2028"（产能主张）、"Instacart Shares Rally 10%"（市场反应）、
+  ProductHunt 产品发布均不命中 14 种形态，不进辨别。漏掉比把 Fed 公告
+  当商业主张诚实，但覆盖率是真实缺口——扩模式库须逐条配测试。
+- 站点导航/页脚 boilerplate 偶有漏网：本轮 6 条里有 1 条 EconBrowser
+  导航文本（"Skip to content"）因句内含 "analysis of" 命中调查研究形态。
+  促销页脚（"REGISTER NOW"）已被形态门挡掉，导航文本还没有专门过滤器。
+- 无摘要条目（The Information 简报、ProductHunt）只有标题可辨，
+  证据等级多为「无出处(1)」——不是主张没出处，是抽取层只拿到标题。
+- 本段不生成商业建议。「这对心虫意味着什么」由报告 agent 判断并标注归属，
+  引擎不代劳——这是心虫铁律，不是能力缺失。
+
 **测试**
-- `npm test`：**155 项断言**（实测各 section 汇总；v2.16 的 147 + 本轮新增 8：
-  1 项解析器四字段（真实页面夹具）+ 1 项 HTML 实体解码与无截止时间容忍 +
-  1 项跨查询同 id 去重 + 1 项 TTL 内缓存零网络 + 1 项主题匹配精度
-  （≥2 共享实词命中 / 单专名不命中 / 无关文本不命中）+ 1 项端到端
-  （generate→formatReport 出现基准段、问题标题、per-claim 外部基准行、
-  caveat 与结构对照）+ 1 项诚实路径（RSS 全挂时段仍渲染 / 采集全失败
-  不进 reasoningEngines 且报告写明原因）+ 1 项过期缓存 degraded 标注）。
+- `npm test`：**164 项断言**（实测各 section 汇总；v2.17 的 155 + v3.0.0c 新增 9：
+  1 项注入脚本源级（读 ~/.hermes/scripts/hf-cron-fetch.sh 验
+  commercialDiscrimination / 口径限定 / 不可用路径 / 证据图例）+
+  1 项端到端（generate→formatReport 出现商业段、主张句、证伪条件，
+  且 Fed 公告不混入）+ 1 项精度门（Fed 公告/播客/促销页脚/安全新闻整体挡在
+  辨别外）+ 1 项精度门不误杀（标题即主张的无摘要条目仍进辨别且 claimSentence
+  正确）+ 1 项融资句式副词容忍 + 1 项估值两种语序 + 1 项竞品人类目标与
+  according to a study 归第三方调查 + 1 项 claimSentence 透传 +
+  1 项源级门存在性与旧触发器未复活）。
+  v3.0.0c 七轮反向验证全部精确失败：摘除注入段→1 条失败；摘除精度门→3 条；
+  摘除 funding 副词组→3 条；摘除 claimSentence 透传→2 条；摘除竞品目标与
+  survey 扩展→1 条；摘除估值语序→1 条；摘除报告段渲染→1 条。
   每项修复都做过反向验证（摘除修复 → 对应断言失败）：v2.17 实测摘除实体
   解码 → 1 条断言失败；摘除去重 → 3 条失败；摘除缓存新鲜度检查 → 1 条失败；
   minShared 降到 1 → 1 条失败（单专名误命中）；摘除报告段渲染 → 2 条失败；
@@ -215,14 +286,24 @@ description: |-
 **cron 注入脚本**（`~/.hermes/scripts/hf-cron-fetch.sh`，不在本仓、不受版本控制）
 - 跑法：`FETCH=1 FETCH_BODY=1 node scripts/run-pipeline.js` → 提取摘要 → 心虫 think()
 - 注入段（按序）：心虫 stateless 检查器 / live 条目 / 推演 summary / 推演阶段 /
-  预测辨别 / **外部预测基准（v2.17 新增，第 6 段）** / live 新闻宣称辨伪 / KB 条目数
+  预测辨别 / **商业主张辨别（v3.0.0c 补入，第 6 段）** /
+  **外部预测基准（v2.17 新增，第 7 段）** / live 新闻宣称辨伪 / KB 条目数
 - 专项域分区：F 编号明细前 20 条 + 全量按来源/按周聚合概览
 - 排序必须用 `Date.parse` 比较，**不能用 `localeCompare`**：RFC 822 字符串
   （"Wed, 14 Oct 2026"）按字符串比会得到错误顺序，实测 10-19 的条目被排到第 6 位
 - 改动前先备份：`cp ~/.hermes/scripts/hf-cron-fetch.sh{,.bak-$(date +%Y%m%d)}`
 - [v2.17] 外部预测基准段注入纪律：新报告段必须同步进注入脚本，否则「引擎产出了
-  但 agent 看不到」——v2.9 / v2.13 三次踩过同一类断链。注入内容含口径限定
-  （不含群体概率、不回答、主题相邻非同题）与「N 条能匹配」回显
+  但 agent 看不到」——v2.9 / v2.13 / v2.14 已踩过同型断链（字段失配 / 注入漏读 /
+  重建丢字段）。注入内容含口径限定（不含群体概率、不回答、主题相邻非同题）
+  与「N 条能匹配」回显
+- [v3.0.0c] **同型断链再次实证（接口存在 ≠ 端到端到达）**：v3.0.0（f118603）的
+  商业主张辨别段 10-22 落地，引擎产出 + formatReport 渲染都有，唯独 cron 注入
+  脚本没读 proj.commercialDiscrimination——直到 10-24 审计才发现，报告文件里
+  躺着、agent 完全看不到。教训升级为纪律：**新增报告段 ≠ 交付完成；端到端判据是
+  「注入脚本里有没有、agent prompt 里能不能看到」**，不是「引擎产出了没有」。
+  本轮已补注入段 + 源级断言（读 ~/.hermes/scripts/hf-cron-fetch.sh 验
+  commercialDiscrimination），摘除注入段 → 断言失败。注意注入脚本不在本仓、
+  不受版本控制，改它之前先 `cp` 备份（如 .bak-20261024）
 
 
 ### 历史升级与修复清单（v2.5 → v2.11）

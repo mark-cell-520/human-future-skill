@@ -51,7 +51,7 @@ const { discriminateAll: discriminateForecasts } = require(path.join(HF, 'foreca
 // 与 forecast-discriminator 的分工：后者辨别「关于未来的预测」（要时点），
 // 前者辨别「关于市场的陈述」（要量化与证据等级）。商业推演面对的绝大多数
 // 主张是后者——"企业正在采用 AI agent"、"开源将杀死付费产品"这类。
-const { discriminateCommercial } = require(path.join(HF, 'commercial-discriminator.js'));
+const { discriminateCommercial, COMMERCIAL_CLAIM_PATTERNS } = require(path.join(HF, 'commercial-discriminator.js'));
 // [v2.17] 外部预测基准（Good Judgment Open 开放问题）。这是 SKILL.md
 // 「已知边界」里挂了三个版本的缺口：RSS 前瞻表述多为意图声明，缺带硬
 // 截止日的规范预测。2026-10-24 复测只剩 GJOpen 可达（Metaculus 403、
@@ -1529,6 +1529,25 @@ class ProjectionEngine {
     // 修法：先取 business 全部候选，再用 economy 补足到上限。
     const PICK_BUSINESS_FIRST = ['business', 'economy'];
     const byBucket = { business: [], economy: [] };
+    // [v3.0.0c] 精度门：候选题句必须命中商业主张形态。
+    //
+    // 实测依据（2026-10-24 轮，修复前）：旧触发器是「句子含 $ / % / market /
+    // enterprises / customers / funding 等任一关键词即算候选」，结果 19 条
+    // 被辨别条目里 18 条 kind=unclassified——7 条 Fed FOMC 公告
+    // （"Minutes of the Federal Open Market Committee"）、2 集 LWiAI 播客
+    // （"LWiAI Podcast #252 - ..."）、TechCrunch 促销页脚
+    // （"Get your pass and bring someone with you at 50% off. REGISTER NOW."，
+    // 还因 2/3 推理分被判成★决策相关）、ConnectWise 安全新闻全部混入。
+    // 它们根本不是商业主张，辨别它们产出的是噪音。
+    //
+    // 门直接用辨别器自己的 COMMERCIAL_CLAIM_PATTERNS（14 种主张形态），
+    // 不新造判据；标题也参与判定——无摘要条目的主张就在标题里
+    // （"DeepSeek Raises Nearly $16 billion in Second Funding Round"）。
+    // 代价如实记录：模式库外的真实主张句式会漏（如 "AWS Largely Sold Out
+    // Of Capacity Into 2028" 产能主张、播客里的采用数字），漏掉比把
+    // Fed 公告当商业主张诚实。
+    const isClaimForm = (t) => COMMERCIAL_CLAIM_PATTERNS
+      .some(p => { try { return p.re.test(t); } catch (_) { return false; } });
     for (const it of this.signals.items) {
       if (!PICK_BUSINESS_FIRST.includes(it.bucket)) continue;
       // 送命中句 + 后 2 句上下文（与 forecast 一致）：证据词常在后续句里
@@ -1536,10 +1555,10 @@ class ProjectionEngine {
         .replace(/[\u2018\u2019\u201A\u201B\u2032]/g, "'")
         .replace(/[\u201C\u201D\u201E\u201F\u2033]/g, '"');
       const sents = norm.split(/(?<=[.!?。！？])\s+/);
-      // 找第一句含商业主张线索的（金额/百分比/市场词/融资词）
+      // 找第一句命中商业主张形态的（句自身或条目标题命中即算）
       const idx = sents.findIndex(s => {
         if (s.length < 25 || s.length > 400) return false;
-        return /(\$\s*[\d.]+|\d+\s*%|market|enterprises?|customers?|funding|raises?|valuation|adoption|deploy|regulator|compliance|survey|competitor|rival|open[\s-]?(source|weight))/i.test(s);
+        return isClaimForm(s) || isClaimForm(it.title || '');
       });
       if (idx < 0) continue;
       byBucket[it.bucket].push({
@@ -1556,8 +1575,9 @@ class ProjectionEngine {
     if (candidates.length === 0) {
       return {
         available: false,
-        reason: `本期 ${this.signals.items.length} 条 live 信号中（商业域 business/economy）未抽到含商业主张的条目`,
-        note: '只辨别含市场陈述结构（采用/需求/替代/规模/融资/估值/竞品/合规/信任）的条目。',
+        reason: `本期 ${this.signals.items.length} 条 live 信号中（商业域 business/economy）未抽到命中商业主张形态的条目`,
+        note: '只辨别命中商业主张形态（采用/需求/替代/规模/融资/估值/竞品/合规/信任等 14 种模式）的条目；'
+          + 'v3.0.0c 起候选题句必须命中模式库，Fed 公告/播客/促销页脚等非主张文本不再进入辨别。',
       };
     }
     const results = candidates.map(c => discriminateCommercial(c));
@@ -1589,6 +1609,7 @@ class ProjectionEngine {
       results: results.slice(0, 16),
       note: '本段只辨别商业主张的表述与证据质量（可证伪性/证据等级/推理有效性/证伪条件），'
         + '不判断主张内容真假，也不生成「心虫应该怎么做」的商业建议。'
+        + 'v3.0.0c 起候选题句必须命中商业主张形态库（14 种模式），非主张文本（公告/播客/促销页脚）不进辨别。'
         + '证据等级：独立验证(4) > 第三方调查/公开财报(3) > 厂商自述/媒体报道(2) > 无出处(1)。',
     };
   }
@@ -2121,7 +2142,7 @@ function formatReport(report) {
     lines.push(`> ${(cdsc && cdsc.note) || ''}`);
   } else {
     const s = cdsc.summary;
-    lines.push(`本期从商业域（融资/竞品/宏观）抽到 ${cdsc.audited} 条含市场陈述的条目，逐条辨别：`);
+    lines.push(`本期从商业域（融资/竞品/宏观）抽到 ${cdsc.audited} 条命中商业主张形态的条目，逐条辨别：`);
     lines.push(`  决策相关 ${s.decisionRelevantCount} 条 | 有出处事实 ${s.factualCount} 条`
       + ` | 结构完整 ${s.wellFormedCount} 条 | 不可证伪 ${s.unfalsifiableCount} 条`);
     const ev = Object.entries(s.byEvidence).map(([k, v]) => `${k} ${v}`).join(' | ');

@@ -2532,3 +2532,204 @@ c217('未开 FETCH 且缓存过期：标注 degradedReason 使用过期缓存', 
     console.log('结论：GJOpen 外部预测基准已接入，解析/去重/缓存/匹配/报告五段均接通。');
   }
 })();
+
+// ════════════════════════════════════════════════════════════════
+// v3.0.0c 新增断言：商业主张辨别段端到端断链修复 + 精度门 + 句式召回。
+//
+// 背景（2026-10-24 实测）：v3.0.0（f118603）给引擎加了商业采集域与商业
+// 主张辨别器，formatReport 也渲染了「商业主张辨别」段——但 cron 注入
+// 脚本从没读过 proj.commercialDiscrimination，报告文件里躺着、agent
+// 完全看不到。这是 v2.9/v2.13/v2.17 之后第四次同型断链（接口存在 ≠
+// 端到端到达）。同时实测该段 19 条被辨别条目里 18 条 kind=unclassified：
+// 7 条 Fed FOMC 公告、2 集 LWiAI 播客、TechCrunch 促销页脚
+// （"Get your pass ... 50% off. REGISTER NOW."，还被判★决策相关）
+// 混入辨别——旧触发器「含 $/%/market 关键词即算候选」没有精度门。
+//
+// 本节断言分三组：① 注入脚本真的读了该字段（源级）；② 端到端渲染；
+// ③ 精度门与句式召回。每处修复都做过反向验证（摘除修复 → 对应断言失败）。
+// ════════════════════════════════════════════════════════════════
+const v300c = [];
+function c300c(name, ok, detail) { v300c.push({ name, ok, detail }); }
+
+const fs300c = require('fs');
+const path300c = require('path');
+const os300c = require('os');
+
+// ── 组 1：注入脚本（断链修复本体） ──
+// 1. 注入脚本读取 commercialDiscrimination，带口径限定与不可用路径。
+//    摘除注入段 → 本断言失败（v2.9/v2.13/v2.17 三次断链的复发防护）。
+c300c('cron 注入脚本读取 commercialDiscrimination 且带口径限定', (() => {
+  const p = path300c.join(os300c.homedir(), '.hermes/scripts/hf-cron-fetch.sh');
+  if (!fs300c.existsSync(p)) return false;
+  const src = fs300c.readFileSync(p, 'utf-8');
+  return /const cdsc = proj\.commercialDiscrimination/.test(src)
+    && /### 商业主张辨别/.test(src)
+    && /未包含 commercialDiscrimination 字段/.test(src)          // 旧版报告路径
+    && /不生成「心虫应该怎么做」的商业建议/.test(src)              // 口径限定：不代劳
+    && /由报告 agent 自行判断并标注归属/.test(src)
+    && /独立验证\(4\) > 第三方调查\/公开财报\(3\)/.test(src)      // 证据等级图例
+    && /不可用 —— /.test(src);                                     // 不可用路径
+})(), '注入脚本必须读 proj.commercialDiscrimination，并带口径限定/不可用路径/证据图例');
+
+// ── 组 2：端到端渲染 ──
+// 2. generate → formatReport 产物里真的出现商业段（不信接口存在）。
+c300c('端到端：报告 markdown 渲染商业主张辨别段', (() => {
+  const { ProjectionEngine, formatReport } = require('./scripts/project-future.js');
+  const items = [
+    { title: 'Minutes of the Federal Open Market Committee',
+      description: 'Participants noted that financial market conditions had eased.',
+      body: '', source: 'Federal Reserve (Monetary)', bucket: 'economy',
+      pubDate: 'Tue, 13 Oct 2026 00:44:16 GMT', domains: ['economy_labor'],
+      link: 'https://federalreserve.gov/a', origin: 'live' },
+    { title: 'DeepSeek Raises Nearly $16 billion in Second Funding Round',
+      description: '', body: '', source: 'The Information', bucket: 'business',
+      pubDate: 'Fri, 24 Oct 2026 00:44:16 GMT', domains: ['capital_flow'],
+      link: 'https://theinformation.com/e', origin: 'live' },
+  ];
+  const rep = new ProjectionEngine({
+    engineVersion: '6.8.0', modulesLoaded: 10,
+    newsData: { business: { news: items }, economy: { news: [] } },
+  }).generate();
+  const md = formatReport(rep);
+  const seg = md.split('## 商业主张辨别')[1] || '';
+  return rep.degraded === false
+    && md.includes('## 商业主张辨别（市场陈述哪些站得住脚）')
+    && md.includes('命中商业主张形态')
+    && md.includes('证据等级：独立验证(4)')
+    && seg.includes('DeepSeek Raises Nearly $16 billion')     // 主张句（claimSentence）
+    && seg.includes('证伪条件:')
+    && !seg.includes('Minutes of the Federal Open');          // Fed 公告不进商业段
+})(), '商业段必须进 markdown 产物，且 Fed 公告不得混入');
+
+// ── 组 3：精度门（候选题句必须命中商业主张形态） ──
+// 3. 纯噪音输入（Fed 公告 / 播客 / 促销页脚 / 安全新闻）不再进辨别。
+//    摘除精度门（恢复旧关键词触发器）→ 本断言失败。
+c300c('精度门：Fed 公告/播客/促销页脚不再进商业辨别', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const mk = (items) => {
+    const inst = new ProjectionEngine({});
+    inst.signals = { totalItems: items.length, domains: [], undomained: 0, dateRange: null, items };
+    return inst;
+  };
+  const noise = [
+    { title: 'Minutes of the Federal Open Market Committee',
+      description: 'Participants noted that financial market conditions had eased. The staff reviewed market developments and risks.',
+      body: '', source: 'Federal Reserve (Monetary)', bucket: 'economy',
+      pubDate: 'Tue, 13 Oct 2026 00:44:16 GMT', domains: ['economy_labor'],
+      link: 'https://federalreserve.gov/a', origin: 'live' },
+    { title: 'LWiAI Podcast #252 - GPT 5.6, Grok 4.5, Nemotron-Labs-Diffusion, AI 2040',
+      description: 'This week: $5 billion in new funding and 30% growth in enterprise adoption of agents.',
+      body: '', source: 'Last Week in AI', bucket: 'business',
+      pubDate: 'Tue, 13 Oct 2026 00:44:16 GMT', domains: ['capital_flow'],
+      link: 'https://lastweekin.ai/b', origin: 'live' },
+    { title: 'Here are the top AI agents that can live in your text messages',
+      description: 'We created a list of the most notable AI agents.',
+      body: 'Get your pass and bring someone with you at 50% off. REGISTER NOW. Close TechCrunch Desktop Logo TechCrunch has the latest news.',
+      source: 'TechCrunch AI', bucket: 'business',
+      pubDate: 'Fri, 24 Oct 2026 00:44:16 GMT', domains: ['market_claims'],
+      link: 'https://techcrunch.com/c', origin: 'live' },
+    { title: 'Chinese hackers spied on thousands of companies after breaching IT giant ConnectWise',
+      description: 'Microsoft points the blame at a China-aligned hacker, which relied on AI agents to rapidly hack into thousands of its customers.',
+      body: '', source: 'TechCrunch AI', bucket: 'business',
+      pubDate: 'Fri, 24 Oct 2026 00:44:16 GMT', domains: ['info_security'],
+      link: 'https://techcrunch.com/d', origin: 'live' },
+  ];
+  const r = mk(noise).buildCommercialDiscrimination();
+  return r.available === false && /未抽到命中商业主张形态/.test(r.reason || '');
+})(), '非主张文本必须整体挡在辨别之外，available=false 且原因写明形态门');
+
+// 4. 精度门不误杀真实主张：无摘要条目的主张就在标题里（标题参与判定）。
+//    门若只认句自身不认标题 → DeepSeek 条目掉出 → 本断言失败。
+c300c('精度门不误杀：标题即主张的条目仍被辨别', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const inst = new ProjectionEngine({});
+  inst.signals = { totalItems: 1, domains: [], undomained: 0, dateRange: null, items: [
+    { title: 'DeepSeek Raises Nearly $16 billion in Second Funding Round',
+      description: '', body: '', source: 'The Information', bucket: 'business',
+      pubDate: 'Fri, 24 Oct 2026 00:44:16 GMT', domains: ['capital_flow'],
+      link: 'https://theinformation.com/e', origin: 'live' },
+  ] };
+  const r = inst.buildCommercialDiscrimination();
+  return r.available === true && r.audited === 1
+    && r.results[0].kind === 'funding'
+    && r.results[0].claimSentence === 'DeepSeek Raises Nearly $16 billion in Second Funding Round';
+})(), '无摘要条目（主张在标题）必须仍能进辨别，且 claimSentence 是标题句');
+
+// ── 组 4：句式召回（三处模式扩展，摘除任一 → 对应断言失败） ──
+// 5. funding 容忍数量副词（raises nearly $16B）。摘除副词组 → 失败。
+c300c('融资句式容忍数量副词（raises nearly $16B）', (() => {
+  const { discriminateCommercial } = require('./human-future/scripts/commercial-discriminator.js');
+  const r = discriminateCommercial({
+    text: 'DeepSeek raises nearly $16 billion in a second funding round, according to a company announcement.',
+    source: 'test',
+  });
+  return r.kind === 'funding' && r.evidence.weight >= 3 && r.verdict === 'factual';
+})(), '「raises nearly $16 billion」应命中融资形态且按事实判别');
+
+// 6. valuation 两种语序。摘除语序扩展 → 失败。
+c300c('估值句式认「$1.25T valuation」与「value at $X」两种语序', (() => {
+  const { discriminateCommercial } = require('./human-future/scripts/commercial-discriminator.js');
+  const r1 = discriminateCommercial({
+    text: 'OpenAI working on new $30B raise at $1.25T valuation ahead of IPO. Should OpenAI command an over $1 trillion valuation with this round, it would break records.',
+    source: 'test',
+  });
+  const r2 = discriminateCommercial({
+    text: 'The round could value the company at $500 billion, according to a person familiar.',
+    source: 'test',
+  });
+  return r1.kind === 'valuation' && r2.kind === 'valuation';
+})(), '金额在词汇前与动词形态两种语序都应命中估值形态');
+
+// 7. competitive 补人类专家目标 + according to a study 归第三方调查。
+//    摘除 competitive 人类目标组 → kind 不是 competitive，失败；
+//    摘除 third-party-survey 扩展 → evidence.weight 掉到 1，失败。
+c300c('竞品句式认「beat doctors」且 Science 研究引用归第三方调查', (() => {
+  const { discriminateCommercial } = require('./human-future/scripts/commercial-discriminator.js');
+  const r = discriminateCommercial({
+    text: "Microsoft's new AI diagnostic system beat generalist doctors on hard cases, according to a study in Science. But most of the improvement seems to come from the AI models underneath, not from Microsoft's system itself.",
+    source: 'TechCrunch AI',
+  });
+  return r.kind === 'competitive'
+    && r.evidence.id === 'third-party-survey' && r.evidence.weight === 3
+    && r.decisionRelevant === true;
+})(), '「beat generalist doctors, according to a study in Science」应判竞品能力+第三方调查+决策相关');
+
+// 8. claimSentence 透传（报告层聚焦主张句而非 600 字上下文）。
+//    摘除透传 → r.claimSentence 为 undefined，失败。
+c300c('claimSentence 透传到辨别结果', (() => {
+  const { discriminateCommercial } = require('./human-future/scripts/commercial-discriminator.js');
+  const r = discriminateCommercial({
+    text: '上下文第一句。DeepSeek raises nearly $16 billion in a second round. 上下文第三句。',
+    claimSentence: 'DeepSeek raises nearly $16 billion in a second round.',
+    source: 'test',
+  });
+  return r.claimSentence === 'DeepSeek raises nearly $16 billion in a second round.';
+})(), '辨别结果必须带回 claimSentence，否则报告行首退化成整段上下文');
+
+// 9. 源级门存在性：project-future.js 的候选选择必须用 COMMERCIAL_CLAIM_PATTERNS，
+//    且旧关键词触发器不得复活（防「改回去」）。
+//    摘除门的 import/使用 → 失败；旧触发器复活 → 失败。
+c300c('引擎候选选择用主张形态门且旧触发器未复活', (() => {
+  const src = fs300c.readFileSync(path300c.join(__dirname, 'scripts/project-future.js'), 'utf-8');
+  return /const \{ discriminateCommercial, COMMERCIAL_CLAIM_PATTERNS \} = require/.test(src)
+    && /const isClaimForm = \(t\) => COMMERCIAL_CLAIM_PATTERNS/.test(src)
+    && /return isClaimForm\(s\) \|\| isClaimForm\(it\.title \|\| ''\);/.test(src)
+    && !/enterprises\?\|customers\?\|funding\|raises\?\|valuation/.test(src);  // 旧触发器串不得复活
+})(), '候选选择必须走 COMMERCIAL_CLAIM_PATTERNS 门，旧关键词触发器不得复活');
+
+(async () => {
+  const results = await Promise.all(v300c.map(c => Promise.resolve(c.ok)));
+  let f = 0;
+  v300c.forEach((c, i) => {
+    const ok = results[i];
+    if (!ok) f++;
+    console.log(`${ok ? '✓' : '✗'} ${c.name}${ok ? '' : '  —— ' + c.detail}`);
+  });
+  console.log(`\nv3.0.0c: ${v300c.length - f} 通过, ${f} 失败, 共 ${v300c.length} 个`);
+  if (f > 0) {
+    console.log('结论：商业主张辨别段端到端断链未修复，或精度门/句式召回有缺。');
+    process.exitCode = 1;
+  } else {
+    console.log('结论：商业辨别段已进 cron 注入与 markdown 产物，精度门挡除非主张文本，句式召回有回归保护。');
+  }
+})();

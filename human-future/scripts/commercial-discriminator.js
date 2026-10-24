@@ -52,14 +52,31 @@ const COMMERCIAL_CLAIM_PATTERNS = [
   { id: 'market-size-claim', re: /(market|tam|opportunity|sector)\s+(is|will be|to reach|projected|expected|estimated)\s*(at\s*)?\$?\s*[\d.]+\s*(billion|trillion|million|bn|b\b|t\b)/i,
     kind: 'market-size', label: '市场规模主张' },
   // ── 资本类 ──
-  { id: 'funding-claim', re: /(raises?|raised|secures?|secured|closes?|closed)\s+\$?[\d.]+\s*(billion|million|bn|m\b|b\b)/i,
+  // [v3.0.0c] funding 句式容忍数量副词：实测今日池子里最重要的商业事实
+  // "DeepSeek Raises Nearly $16 billion in Second Funding Round"（The Information
+  // 简报标题，无摘要）因 "Raises" 与 "$16" 之间隔着 Nearly 而整个模式失配，
+  // 被判成 unclassified/weak-evidence。nearly/about/approximately 这类数量
+  // 副词不改变句式性质，补进可选组。
+  { id: 'funding-claim', re: /(raises?|raised|secures?|secured|closes?|closed)\s+(?:nearly|almost|about|approximately|around|roughly|just|over|more\s+than|up\s+to|some\s+)?\s*\$?[\d.]+\s*(billion|million|bn|m\b|b\b)/i,
     kind: 'funding', label: '融资陈述' },
-  { id: 'valuation-claim', re: /(valuation|valued at|worth)\s*(of\s*)?\$?[\d.]+\s*(billion|trillion|million|bn|b\b|t\b)/i,
+  // [v3.0.0c] valuation 补两种真实句式：①「$1.25T valuation」「an over $1
+  // trillion valuation」——金额在词汇前（实测 OpenAI 融资报道标题
+  // "OpenAI working on new $30B raise at $1.25T valuation ahead of IPO"）；
+  // ②「value the company at $X」——动词形态（实测同条摘要
+  // "Should OpenAI command an over $1 trillion valuation with this round"）。
+  // 旧模式只认「词汇在前金额在后」一种语序，这两种全部失配。
+  { id: 'valuation-claim', re: /(?:(?:valuation|valued\s+at|values?\s+(?:the\s+company\s+|it\s+)?at|worth)\s*(?:of\s*)?\$\s*[\d.]+[\d.,]*\s*(?:billion|trillion|million|bn|b|t)?|\$\s*[\d.]+[\d.,]*\s*(?:billion|trillion|million|bn|b|t)?\s*valuation)/i,
     kind: 'valuation', label: '估值陈述' },
   { id: 'signal-from-capital', re: /(signals?|shows?|proves?|demonstrates?|indicates?|suggests?)\s+(that\s+)?(investors?|the market|capital|vc|venture)/i,
     kind: 'capital-signal', label: '资本信号解读' },
   // ── 竞品类 ──
-  { id: 'competitive-claim', re: /(beats?|outperforms?|surpasses?|exceeds?|defeats?|ahead of|leads?)\s+(openai|anthropic|google|meta|microsoft|deepseek|qwen|mistral|gpt|claude|gemini|the competition|rivals?|competitors?|sota)/i,
+  // [v3.0.0c] 目标名词库补人类专家群：实测今日池子里
+  // "Microsoft's new AI diagnostic system beat generalist doctors on hard
+  // cases, according to a study in Science"（Mustafa Suleyman 言论，
+  // TechCrunch）——旧目标库只有厂商名与 sota，"beat doctors" 完全失配，
+  // 这条带 Science 研究引用的竞品能力主张整个漏掉。generalist/human/
+  // expert/specialist 是常见前置修饰，一并进可选组。
+  { id: 'competitive-claim', re: /(beats?|outperforms?|surpasses?|exceeds?|defeats?|ahead of|leads?)\s+(?:openai|anthropic|google|meta|microsoft|deepseek|qwen|mistral|gpt|claude|gemini|the competition|rivals?|competitors?|sota|(?:generalist\s+|human\s+|expert\s+|specialist\s+)?doctors|radiologists|physicians|humans?|experts?|specialists)/i,
     kind: 'competitive', label: '竞品能力主张' },
   // ── 合规类 ──
   { id: 'compliance-demand', re: /(compliance|regulatory|regulators?|auditors?|liability)\s+(will|could|would|to|is going to)?\s*(require|demand|force|mandate|drive|create|spur|fuel)/i,
@@ -99,7 +116,13 @@ const UNFALSIFIABLE_COMMERCIAL_PATTERNS = [
   { id: 'independent-verification', label: '独立验证', weight: 4,
     test: (t) => /((?:independently|externally)\s+(?:verified|confirmed|audited|reproduced)\s+by|third[\s-]party\s+(?:audit|verification|analysis|review)\s+(?:by|of|found|showed)|peer[\s-]reviewed\s+(?:by|in)|reproduced\s+by|external\s+audit\s+(?:by|found))/i.test(t) },
   { id: 'third-party-survey', label: '第三方调查', weight: 3,
-    test: (t) => /(survey|poll|census|study by|research by|according to (?:gartner|idc|forrester|mckinsey|deloitte|analyst|report))/i.test(t) },
+      // [v3.0.0c] 补 "according to a study/survey/report"：实测今日池子里
+      // "Microsoft's new AI diagnostic system beat generalist doctors on hard
+      // cases, according to a study in Science" 因只认 "study by" 与具名
+      // 分析机构而落到「无出处(1)」——发表在 Science 的研究是标准的第三方
+      // 证据，不是厂商自述。不碰 "according to a company announcement"
+      // （那属公开财报档，在下一级）。
+    test: (t) => /(survey|poll|census|study by|research by|according to (?:gartner|idc|forrester|mckinsey|deloitte|analyst|report)|according to a (?:study|survey|poll|report|analysis|paper))/i.test(t) },
   { id: 'public-filing', label: '公开财报/公告', weight: 3,
       // [v3.0.0] 补 announcement(s)/statement(s)：实测融资句
       // "according to a company announcement" 因只认 announced 而漏配，
@@ -187,6 +210,11 @@ function discriminateCommercial(claim, opts = {}) {
 
   return {
     text,
+    // [v3.0.0c] 命中句透传。buildCommercialDiscrimination 在候选对象里带了
+    // claimSentence（供报告与注入聚焦到主张句本身），但本函数重建返回对象时
+    // 把它丢了——报告层 `(r.claimSentence || r.text)` 于是永远退到 600 字
+    // 三句上下文，报告行与注入行首显示的是一整段而不是主张句。
+    claimSentence: claim.claimSentence || '',
     kind: matchedPatterns.length ? matchedPatterns[0].kind : 'unclassified',
     kinds: matchedPatterns.map(p => p.kind),
     source: claim.source || '(未标注)',
