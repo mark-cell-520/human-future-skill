@@ -9,6 +9,10 @@
 const { collectAll } = require('./collect-news.js');
 const { analyze, formatResults } = require('./heartflow-analyze.js');
 const { ProjectionEngine, formatReport } = require('./project-future.js');
+// [v2.17] 外部预测基准采集器（Good Judgment Open）。位置纪律：必须放在
+// collectAll() 全部落地之后——v2.14 git stash 对照实验的教训，新网络负载
+// 塞进现有源的 Promise.all 会挤掉慢源（ECB/NBER 8 秒超时窗口）。
+const { collectBenchmark } = require('../human-future/scripts/prediction-benchmark-collector.js');
 const fs = require('fs');
 const path = require('path');
 
@@ -46,6 +50,25 @@ async function main() {
       }
     }
 
+    // 阶段 2c：外部预测基准采集（v2.17，Good Judgment Open）
+    // 放在所有 RSS/正文抓取与心虫分析都落地之后：不占任何现有源的
+    // 超时窗口；缓存 TTL 6h，cron 两小时一轮也多数轮次零网络。
+    console.log('\n━━━ 阶段 2c：外部预测基准采集（Good Judgment Open）━━\n');
+    let benchmark = null;
+    try {
+      benchmark = await collectBenchmark({ live: process.env.FETCH === '1' });
+      if (benchmark.available) {
+        console.log(`  [benchmark] ${benchmark.questions.length} 个未截止开放问题`
+          + `（${benchmark.queriesRun.length} 个查询，${benchmark.fromCache ? (benchmark.stale ? '过期缓存' : '缓存命中') : '本轮采集'}）`);
+      } else {
+        console.log(`  [benchmark] 不可用: ${benchmark.reason || '(未说明原因)'}`);
+      }
+    } catch (e) {
+      // 采集器本身抛错不该让整轮 pipeline 失败——基准段如实降级
+      console.log(`  [benchmark] 采集抛错，基准段降级: ${e.message}`);
+      benchmark = { available: false, reason: `采集抛错: ${e.message}` };
+    }
+
     // 阶段 3：三年推演
     console.log('\n\n━━━ 阶段 3：三年推演引擎 ━━━\n');
 
@@ -53,7 +76,7 @@ async function main() {
     // 而不是输出写死的常量。旧版只传 analysis（含心虫结果），引擎里
     // 5 个核心方法全是硬编码 2026-09 的内容，与输入无关。
     analysis.newsData = newsData;
-    const engine = new ProjectionEngine(analysis);
+    const engine = new ProjectionEngine(analysis, { benchmark });
     const projection = engine.generate();
 
     // 格式化并输出推演报告

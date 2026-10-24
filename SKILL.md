@@ -1,9 +1,30 @@
 ---
 name: human-future-v2
-title: "人类未来 · 文明推演引擎 v2.16"
-version: "2.16.0"
+title: "人类未来 · 文明推演引擎 v2.17"
+version: "2.17.0"
 description: |-
-  人类未来技能 v2.16 — 修复「基准概率」辨别维度断链：台账条目存 `domain`、
+  人类未来技能 v2.17 — 接入外部预测基准源 Good Judgment Open（gjopen.com）：
+  v2.13 起挂在「已知边界」的缺口（RSS 前瞻表述多为意图声明，缺带硬截止日的
+  可结算预测）本轮推进——2026-10-24 复测全部外部预测源，只剩 GJOpen 可达
+  （Metaculus API 403 带 UA 仍 403 / Manifold 连接超时 / Polymarket gamma-api
+  DNS 落到不可达 IP / Kalshi 超时 / PredictIt 301 / Epoch AI 只有统计数据无
+  预测类数据）。GJOpen /questions?q= 公开可抓（需浏览器 UA，裸 curl 406），
+  每问题带 ISO 截止时间。新增 prediction-benchmark-collector（9 个实测有返回的
+  查询、按问题 id 去重、6h 缓存、抓取失败不覆盖旧缓存），报告新增段
+  「外部预测基准（Good Judgment Open 开放问题）」：按主题分组 + 近截止排序 +
+  结构对照（本期 RSS 可结算率 vs 外部全部带硬截止日）+ per-claim 主题相邻
+  匹配（共享实词 ≥2 才命中，单专名不命中——实测本轮 7 条 claim 0 匹配，
+  如实展示不凑数）。边界如实声明：GJOpen 群体预测概率需登录可见，本引擎
+  不采集不估计，任何层不得对这些问题声称知道市场概率；匹配只说明「该主题
+  有硬截止日问题在跟踪」，主题相邻非同题，不构成概率参照。
+  本轮实测：9 查询 → 32 个未截止开放问题（AI 采用率 9 / 太空 7 / AI 安全 5 /
+  前沿厂商 4 / 模型基准排名 3 / 地缘与能源 2 / 气候 1 / 监管 1）；
+  cron 注入脚本已接该段（第 6 段，含「N 条能匹配」回显）。
+  测试新增 8 项断言（全套实测 155 项）；反向验证：摘除实体解码 → 1 条失败，
+  摘除去重 → 3 条失败，摘除缓存检查 → 1 条失败，minShared 降到 1 → 1 条失败
+  （单专名误命中），摘除报告渲染 → 2 条失败，摘除 available 门 → 1 条失败。
+
+  人类未来技能 v2.16（上一版记录）— 修复「基准概率」辨别维度断链：台账条目存 `domain`、
   辨别器读 `p.category`，本地台账同类历史分支自 v2.13 声明起从未激活。
   修复含三部分：① 字段映射兼容读 category||domain + record() 双写；
   ② 同义务去重（同一现实事件被多个页面重复登记只计一次——实测台账 3 条
@@ -77,31 +98,47 @@ description: |-
   - 跨域知识吸收与融合
 ---
 
-# 人类未来 · 文明推演引擎 v2.12
+# 人类未来 · 文明推演引擎 v2.17
 
-> 数据采集（RSS 真联网 + 可选正文增强）→ 心虫 stateless 检查器 → 三年推演引擎。
+> 数据采集（RSS 真联网 + 可选正文增强 + 外部预测基准 GJOpen）→ 心虫 stateless 检查器 → 三年推演引擎。
 > 当前状态与实测数字见下一节，历史版本记录见 references/upgrade-history.md。
 
 ---
 
-## 当前状态（v2.12 实测）
+## 当前状态（v2.17 实测）
 
-以下数字全部来自 2026-10-20 一次 `FETCH=1 FETCH_BODY=1 node scripts/run-pipeline.js` 实跑，
+以下数字全部来自 2026-10-24 一次 `FETCH=1 FETCH_BODY=1 node scripts/run-pipeline.js` 实跑
+（本轮 pipeline 总耗时 36.7 秒，基准采集为冷启动；缓存 TTL 6h，后续轮次零网络），
 不是宣称值。
 
 **采集层**
 - RSS 源：13 个（tech 2 + humanities 1 + frontier_models 9 + psychology/philosophy 各 0）
 - 并行抓取：`Promise.all`，实测约 4 秒（旧串行最坏 104 秒）
 - 正文增强：`FETCH_BODY=1` 时抓最新 24 条，实测 17 条成功（openai.com 403 / arstechnica 405 / interconnects 链接失效）
-- 实测产出：140 条 live，其中专项大模型域 112 条
+- 实测产出：258 条 live（2026-10-24），其中专项大模型域为主体
+
+**外部预测基准层（v2.17 新增）**
+- 来源：Good Judgment Open（gjopen.com），专业预测平台；`/questions?q=<词>` 公开可抓
+  （需浏览器 UA，裸 curl 406）
+- 查询集：9 个（artificial intelligence / large language model / AI safety / openai /
+  anthropic / spacex / nuclear / regulation / climate），均为实测有返回的查询；
+  'AI' / 'gene' 因子串误配（匹配到 Saudi / general）已剔除
+- 实测产出：32 个未截止开放问题（AI 采用率 9 / 太空 7 / AI 安全 5 / 前沿厂商 4 /
+  模型基准排名 3 / 地缘与能源 2 / 气候 1 / 监管 1），按问题 id 跨查询去重
+- 缓存：`human-future/.cache/benchmark-gjopen.json`，TTL 6h；抓取失败不覆盖旧缓存，
+  全部失败时有过期缓存就标注 degraded 使用，没有则如实报不可用
+- 位置纪律：采集在所有 RSS 抓取落地之后做（v2.14 对照实验教训：新网络负载塞进
+  现有源的 Promise.all 会挤掉慢源的 8 秒超时窗口）
 
 **推演层**（project-future.js，v3 引擎）
 - 主题域：11 个（frontier_models 排在最前，避免被 ai_capability 的同批关键词吞掉）
 - 接入组件：causal-graph-engine / cross-domain-conduction / signal-decay-resonance /
   timeline-conflict-detector / source-credibility-grader / claim-mismatch-detector /
-  cognitive-formula-bridge / low-confidence-gate / prediction-ledger
+  cognitive-formula-bridge / low-confidence-gate / prediction-ledger /
+  prediction-benchmark-collector（v2.17，仅真采到时才写进 meta.reasoningEngines）
 - 实测各模块可用性：因果链 ✅（共现兜底）/ 跨域传导 ✅ / 趋势判定 ✅（源归一化）/
-  时间轴 ✅（16 点，需正文）/ 来源分级 ✅（T1 47 / T2 45 / T3 48 / T4 0）/ 口径错位 ✅（9 条命中）
+  时间轴 ✅（16 点，需正文）/ 来源分级 ✅（T1 47 / T2 45 / T3 48 / T4 0）/ 口径错位 ✅（9 条命中）/
+  外部预测基准 ✅（32 个开放问题，per-claim 主题匹配本轮 0/7，如实展示）
 
 **心虫层**
 - 入口：`~/heartflow/src/index.js`（74 个 stateless 检查器）
@@ -140,11 +177,22 @@ description: |-
 **已知边界（如实声明）**：
 - 当前采集源（RSS + 博客正文）里的前瞻表述**多为意图声明**（"we expect to expand
   access"、"aim to simplify"），没有时间点，判为不可结算。实测 5 条全部如此。
-- 要拿到真正可结算的预测，需接 Metaculus / Epoch AI / 厂商路线图等专门预测源，
-  当前采集范围不含。这是下一步工作，不是已解决。2026-10-24 实测：Metaculus API
-  需登录 token（403）、Manifold API 本机不可达（连接超时）、PredictIt 301、
-  Epoch AI 数据页只有芯片/模型/公司等统计数据、无预测类数据——外部预测源
-  接入本轮检索无果，如实记录。
+  [v2.17] 本轮实测依旧：7 条含前瞻承诺信号中可结算 1 条（14%）。
+- 要拿到真正可结算的预测，需接 Metaculus / Epoch AI / 厂商路线图等专门预测源。
+  [v2.17] 本轮已接入其中一个——**Good Judgment Open**：9 个查询实测采到 32 个
+  带硬截止日的开放问题，报告段「外部预测基准」与 cron 注入均已接通。
+  但**其余源仍不可达**（2026-10-24 实测，如实记录）：
+  Metaculus API 403（带浏览器 UA 仍 403）、Manifold API 连接超时、
+  Polymarket gamma-api DNS 落到不可达 IP、Kalshi 选举 API 超时、PredictIt 301、
+  Epoch AI 数据页只有芯片/模型/公司等统计数据、无预测类数据。
+- [v2.17] GJOpen 边界：① 群体预测概率（crowd forecast）需登录可见，本引擎
+  不采集、不估计，任何层不得对这些问题声称知道市场概率；② 单问题详情页
+  302 跳登录，抓不到 resolution criteria 正文；③ 活跃问题池很小（几百个），
+  AI 覆盖集中在采用率/基准排名/厂商事件，九大域里量子/基因编辑/长寿/脑机接口
+  等域 GJOpen 无开放问题（AGI / quantum / fusion / crispr / longevity /
+  humanoid / brain 查询实测 0 返回）；④ per-claim 主题相邻匹配是关键词匹配
+  （共享实词 ≥2），主题相邻非同题，不构成概率参照——本轮实测 0/7 命中，
+  报告如实写 0，不用模糊匹配凑数。
 - 基准概率目前仍以通用先验为主：本地台账去重后同类样本 <3 时不作统计
   结论（实测 regulatory_action 去重后仅 1 条），但报告已如实展示本地
   已结算条数。[v2.16] 已修复此前的字段映射断链（存 `domain` 读
@@ -152,23 +200,29 @@ description: |-
   增长，不需要再改代码。
 
 **测试**
-- `npm test`：**147 项断言**（实测各 section 汇总；v2.16 之前 140 + 本轮新增 7：
-  1 项真实台账字段映射（3 条同义务条目被匹配且去重为 1）+ 1 项去重后本地
-  基准激活（5 条登记含 3 条同义务 → 3 样本 2/3 兑现）+ 1 项样本不足诚实降级
-  （仅同义务重复不得激活 100% 失真基准，note 写明本地已结算 1 条）+ 1 项
-  record() 双写 category + 1 项 scorecard 按去重样本算 Brier + 1 项端到端
-  （generate→formatReport 出现「已结算 1 条（原始登记 3 条）」且标注样本
-  不足）+ 1 项去重判据单元（同证据合并/无证据回退文本/跨类目不误合））。
-  每项修复都做过反向验证（摘除修复 → 对应断言失败）：v2.16 实测摘除字段
-  映射修复 → 4 条断言失败；摘除去重 → 4 条断言失败；摘除报告渲染 → 1 条
-  断言失败。
+- `npm test`：**155 项断言**（实测各 section 汇总；v2.16 的 147 + 本轮新增 8：
+  1 项解析器四字段（真实页面夹具）+ 1 项 HTML 实体解码与无截止时间容忍 +
+  1 项跨查询同 id 去重 + 1 项 TTL 内缓存零网络 + 1 项主题匹配精度
+  （≥2 共享实词命中 / 单专名不命中 / 无关文本不命中）+ 1 项端到端
+  （generate→formatReport 出现基准段、问题标题、per-claim 外部基准行、
+  caveat 与结构对照）+ 1 项诚实路径（RSS 全挂时段仍渲染 / 采集全失败
+  不进 reasoningEngines 且报告写明原因）+ 1 项过期缓存 degraded 标注）。
+  每项修复都做过反向验证（摘除修复 → 对应断言失败）：v2.17 实测摘除实体
+  解码 → 1 条断言失败；摘除去重 → 3 条失败；摘除缓存新鲜度检查 → 1 条失败；
+  minShared 降到 1 → 1 条失败（单专名误命中）；摘除报告段渲染 → 2 条失败；
+  摘除 reasoningEngines 的 available 门 → 1 条失败。
 
 **cron 注入脚本**（`~/.hermes/scripts/hf-cron-fetch.sh`，不在本仓、不受版本控制）
 - 跑法：`FETCH=1 FETCH_BODY=1 node scripts/run-pipeline.js` → 提取摘要 → 心虫 think()
+- 注入段（按序）：心虫 stateless 检查器 / live 条目 / 推演 summary / 推演阶段 /
+  预测辨别 / **外部预测基准（v2.17 新增，第 6 段）** / live 新闻宣称辨伪 / KB 条目数
 - 专项域分区：F 编号明细前 20 条 + 全量按来源/按周聚合概览
 - 排序必须用 `Date.parse` 比较，**不能用 `localeCompare`**：RFC 822 字符串
   （"Wed, 14 Oct 2026"）按字符串比会得到错误顺序，实测 10-19 的条目被排到第 6 位
 - 改动前先备份：`cp ~/.hermes/scripts/hf-cron-fetch.sh{,.bak-$(date +%Y%m%d)}`
+- [v2.17] 外部预测基准段注入纪律：新报告段必须同步进注入脚本，否则「引擎产出了
+  但 agent 看不到」——v2.9 / v2.13 三次踩过同一类断链。注入内容含口径限定
+  （不含群体概率、不回答、主题相邻非同题）与「N 条能匹配」回显
 
 
 ### 历史升级与修复清单（v2.5 → v2.11）

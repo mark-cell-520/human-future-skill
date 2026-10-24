@@ -2305,3 +2305,230 @@ c216('dedupeSameObligation 判据正确（不误合不同义务）', (() => {
     console.log('结论：本地台账同类历史已激活并按同义务去重，报告层可见。');
   }
 })();
+
+// ════════════════════════════════════════════════════════════════
+// v2.17 新增断言：外部预测基准源（Good Judgment Open）接入。
+//
+// 背景（SKILL.md「已知边界」自 v2.13 挂了三个版本）：RSS 与博客正文
+// 里的前瞻表述多为意图声明（"we expect to expand access"），没有
+// 时间点，判为不可结算；要拿到真正可结算的预测，需接 Metaculus /
+// Epoch AI / 厂商路线图等专门预测源。2026-10-24 复测：Metaculus API
+// 403（带 UA 仍 403）、Manifold 连接超时、Polymarket gamma-api
+// DNS 落到不可达 IP、Kalshi 超时、PredictIt 301、Epoch AI 只有统计
+// 数据无预测类数据——**唯一可达且内容对口的是 Good Judgment Open**：
+// /questions?q= 公开可抓（需浏览器 UA，裸 curl 406），每个问题带
+// ISO 截止时间。其群体预测概率需登录，本引擎不采集、不估计。
+//
+// 反向验证（摘除修复 → 断言必须失败）：
+//   摘除实体解码        → 断言 2 失败（&amp; 残留在标题里）
+//   摘除按 id 去重      → 断言 3 失败（4 条变 8 条）
+//   摘除缓存新鲜度检查  → 断言 4 失败（第二次仍发请求）
+//   minShared 降到 1    → 断言 5 失败（单专名误命中）
+//   摘除报告段渲染      → 断言 6/7 失败（markdown 里没有该段）
+//   摘除 available 门   → 断言 7 失败（全失败也宣称接入）
+// ════════════════════════════════════════════════════════════════
+const v217 = [];
+const c217 = (name, fn, detail) => v217.push({ name, fn, detail: detail || '' });
+const fs217 = require('fs');
+const os217 = require('os');
+const path217 = require('path');
+const benchLib217 = require('./human-future/scripts/prediction-benchmark-collector.js');
+const FIXTURE_217 = fs217.readFileSync(
+  path217.join(__dirname, 'human-future/data/fixtures/gjopen-questions-sample.html'), 'utf-8');
+const QUERIES_217 = [
+  { q: 'artificial intelligence', cluster: 'ai_adoption' },
+  { q: 'openai', cluster: 'frontier_vendors' },
+];
+const mockFetch217 = (html, counter) => async () => {
+  counter.n++;
+  return { ok: true, text: async () => html };
+};
+
+// 1. 解析器：id / 标题 / 截止时间 / URL 四字段齐全（真实页面夹具）
+c217('解析 gjopen 页面拿到 id/标题/截止时间/URL', () => {
+  const qs = benchLib217.parseQuestions(FIXTURE_217);
+  const q1 = qs.find(q => q.id === '5271');
+  return qs.length === 4
+    && !!q1
+    && q1.closesAt === '2027-04-01T07:01:00Z'
+    && q1.url.endsWith('-according-to-the-ramp-ai-index')
+    && q1.title.startsWith('When will the artificial intelligence (AI) model adoption rate');
+}, () => {
+  const qs = benchLib217.parseQuestions(FIXTURE_217);
+  return `实解析 ${qs.length} 条（应为 4）`;
+});
+
+// 2. HTML 实体通用解码 + 无截止时间的问题容忍（closesAt=null 不是 undefined）
+c217('解析器解码 HTML 实体，无截止时间的问题 closesAt=null', () => {
+  const qs = benchLib217.parseQuestions(FIXTURE_217);
+  const ent = qs.find(q => q.id === '9999');
+  const noTs = qs.find(q => q.id === '8888');
+  return !!ent
+    && ent.title.includes("Tom & Jerry's take")
+    && !ent.title.includes('&amp;') && !ent.title.includes('&#39;')
+    && !!noTs && noTs.closesAt === null;
+}, () => {
+  const ent = benchLib217.parseQuestions(FIXTURE_217).find(q => q.id === '9999');
+  return `9999 标题: ${ent && ent.title}`;
+});
+
+// 3. 同一问题被多个查询命中只计一次（按 id 去重），cluster 取首个查询
+c217('同一问题被多个查询命中只登记一次', async () => {
+  const counter = { n: 0 };
+  const cachePath = path217.join(os217.tmpdir(), `hf-v217-dedup-${process.pid}.json`);
+  try { fs217.unlinkSync(cachePath); } catch (_) {}
+  const bm = await benchLib217.collectBenchmark({
+    live: true, fetchImpl: mockFetch217(FIXTURE_217, counter),
+    now: Date.parse('2026-10-24T12:00:00Z'),
+    cachePath, queries: QUERIES_217,
+  });
+  return bm.available === true
+    && counter.n === 2                 // 两个查询各发一次
+    && bm.questions.length === 4       // 每查询返回同一批 4 条 → 去重后仍 4
+    && bm.questions.filter(q => q.id === '5271').length === 1
+    && bm.questions.find(q => q.id === '5271').cluster === 'ai_adoption'
+    && bm.queriesRun.length === 2;
+}, () => '同 id 问题被重复登记（去重未生效）');
+
+// 4. 缓存：TTL 内命中缓存，不再发任何网络请求
+c217('TTL 内命中缓存，零网络请求', async () => {
+  const counter = { n: 0 };
+  const cachePath = path217.join(os217.tmpdir(), `hf-v217-cache-${process.pid}.json`);
+  try { fs217.unlinkSync(cachePath); } catch (_) {}
+  const q = [{ q: 'artificial intelligence', cluster: 'ai_adoption' }];
+  await benchLib217.collectBenchmark({
+    live: true, fetchImpl: mockFetch217(FIXTURE_217, counter),
+    now: 1000000, cachePath, queries: q,
+  });
+  const n1 = counter.n;
+  const bm2 = await benchLib217.collectBenchmark({
+    live: true, fetchImpl: mockFetch217(FIXTURE_217, counter),
+    now: 1000000 + 60 * 60 * 1000, cachePath, queries: q,   // 1 小时后（TTL 6h 内）
+  });
+  return n1 === 1 && counter.n === 1 && bm2.fromCache === true && bm2.questions.length === 4;
+}, () => 'TTL 内第二次采集仍发出了网络请求（缓存未生效）');
+
+// 5. 主题相邻匹配精度：≥2 共享实词才命中；只共享一个专名不命中
+c217('主题匹配精度：≥2 共享实词命中，单专名与无关文本不命中', () => {
+  const qs = [
+    { id: '5271', title: 'When will the artificial intelligence (AI) model adoption rate for the construction sector in the US reach or exceed 50.0%?', closesAt: '2027-04-01T07:01:00Z', url: 'u1', cluster: 'ai_adoption' },
+    { id: '5469', title: "What will be OpenAI's end-of-day market capitalization on its first day of public trading?", closesAt: '2027-07-30T07:01:00Z', url: 'u2', cluster: 'frontier_vendors' },
+  ];
+  const hit = benchLib217.matchQuestions(
+    'Anthropic plans to grow the AI model adoption rate by US businesses through 2027.', qs);
+  const oneTerm = benchLib217.matchQuestions(
+    'OpenAI plans to release a new reasoning model next year.', qs);   // 与 5469 仅共享 openai
+  const none = benchLib217.matchQuestions('The bakery plans to expand its bread production line.', qs);
+  return hit.matched === 1 && hit.questions[0].id === '5271'
+    && hit.questions[0].sharedTerms.includes('model')
+    && hit.questions[0].sharedTerms.includes('adoption')
+    && oneTerm.matched === 0
+    && none.matched === 0
+    && hit.caveat.includes('主题相邻非同题');
+}, () => {
+  const qs = [
+    { id: '5271', title: 'When will the artificial intelligence (AI) model adoption rate for the construction sector in the US reach or exceed 50.0%?', closesAt: '2027-04-01T07:01:00Z', url: 'u1', cluster: 'ai_adoption' },
+    { id: '5469', title: "What will be OpenAI's end-of-day market capitalization on its first day of public trading?", closesAt: '2027-07-30T07:01:00Z', url: 'u2', cluster: 'frontier_vendors' },
+  ];
+  const hit = benchLib217.matchQuestions('Anthropic plans to grow the AI model adoption rate by US businesses through 2027.', qs);
+  const oneTerm = benchLib217.matchQuestions('OpenAI plans to release a new reasoning model next year.', qs);
+  return `hit=${hit.matched}（应 1） oneTerm=${oneTerm.matched}（应 0）`;
+});
+
+// 6. 端到端：基准段 + per-claim 外部基准行都进最终 markdown 产物
+// （「接口存在 ≠ 端到端到达」：JSON 有字段不算数，formatReport 必须印出来）
+c217('端到端：基准段与外部基准匹配行进入最终报告', async () => {
+  const cachePath = path217.join(os217.tmpdir(), `hf-v217-e2e-${process.pid}.json`);
+  try { fs217.unlinkSync(cachePath); } catch (_) {}
+  const bm = await benchLib217.collectBenchmark({
+    live: true, fetchImpl: mockFetch217(FIXTURE_217, { n: 0 }),
+    now: Date.parse('2026-10-24T12:00:00Z'),
+    cachePath, queries: QUERIES_217,
+  });
+  const { ProjectionEngine, formatReport } = require('./scripts/project-future.js');
+  const eng = new ProjectionEngine({ newsData: { frontier_models: { domain: 'frontier_models', name: '专项大模型', news: [
+    { title: 'Anthropic plans to grow the AI model adoption rate by US businesses',
+      description: '',
+      body: 'Anthropic plans to grow the AI model adoption rate by US businesses through 2027. '
+        + 'The company plans to double down on enterprise deployment because demand signals are strong.',
+      source: 'ProbeSrcBench', link: 'https://example.com/bench-a',
+      pubDate: 'Tue, 20 Oct 2026 10:00:00 +0000', origin: 'live' },
+  ] } } }, { benchmark: bm });
+  const rep = eng.generate();
+  const md = formatReport(rep);
+  const fdMatched = (rep.forecastDiscrimination.results || [])
+    .some(r => r.externalMatch && r.externalMatch.matched > 0);
+  return rep.forecastBenchmark.available === true
+    && rep.forecastBenchmark.total === 4
+    && rep.meta.reasoningEngines.includes('prediction-benchmark-collector')
+    && md.includes('## 外部预测基准（Good Judgment Open 开放问题）')
+    && md.includes('截止 2027-04-01')
+    && md.includes('全部带硬截止日')
+    && fdMatched
+    && md.includes('外部基准: Good Judgment Open 有同类开放问题')
+    && md.includes('主题相邻非同题');
+}, () => '基准段 / 匹配行 / caveat 至少有一项没进 markdown 产物');
+
+// 7. 降级与不可用两条诚实路径：RSS 全挂时段仍在；全失败时不宣称接入
+c217('诚实路径：RSS 全挂时段仍渲染；采集全失败不宣称接入', async () => {
+  const { ProjectionEngine, formatReport } = require('./scripts/project-future.js');
+  // 7a. degraded（无 live 信号）——基准段不依赖信号，仍要渲染
+  const bmOk = {
+    available: true, source: 'Good Judgment Open', sourceUrl: 'https://www.gjopen.com',
+    fetchedAt: Date.parse('2026-10-24T12:00:00Z'), queriesRun: ['artificial intelligence'],
+    questions: [{ id: '5271', title: 'When will the artificial intelligence (AI) model adoption rate for the construction sector in the US reach or exceed 50.0%?', closesAt: '2027-04-01T07:01:00Z', url: 'u1', cluster: 'ai_adoption' }],
+  };
+  const repDeg = new ProjectionEngine({ newsData: {} }, { benchmark: bmOk }).generate();
+  const mdDeg = formatReport(repDeg);
+  // 7b. 采集全部失败——available:false，不进 reasoningEngines，报告写明原因
+  const bmFail = { available: false, reason: 'GJOpen 采集全部失败: HTTP 503' };
+  const repFail = new ProjectionEngine({ newsData: {} }, { benchmark: bmFail }).generate();
+  const mdFail = formatReport(repFail);
+  return repDeg.degraded === true
+    && mdDeg.includes('## 外部预测基准（Good Judgment Open 开放问题）')
+    && mdDeg.includes('When will the artificial intelligence')
+    && mdDeg.includes('## ⚠ 推演降级')
+    && repFail.forecastBenchmark.available === false
+    && !repFail.meta.reasoningEngines.includes('prediction-benchmark-collector')
+    && mdFail.includes('（GJOpen 采集全部失败: HTTP 503）');
+}, () => 'degraded 渲染或全失败时的诚实降级有一项不成立');
+
+// 8. 过期缓存诚实降级：未开 FETCH 时用过期缓存并标注，不谎称新数据
+c217('未开 FETCH 且缓存过期：标注 degradedReason 使用过期缓存', async () => {
+  const cachePath = path217.join(os217.tmpdir(), `hf-v217-stale-${process.pid}.json`);
+  try { fs217.unlinkSync(cachePath); } catch (_) {}
+  await benchLib217.collectBenchmark({
+    live: true, fetchImpl: mockFetch217(FIXTURE_217, { n: 0 }),
+    now: 1000000, cachePath, queries: QUERIES_217,
+  });
+  const bm = await benchLib217.collectBenchmark({
+    live: false,
+    fetchImpl: async () => { throw new Error('离线路径不应发起网络请求'); },
+    now: 1000000 + 7 * 60 * 60 * 1000,   // 7 小时后，超过 6h TTL
+    cachePath, queries: QUERIES_217,
+  });
+  return bm.available === true && bm.stale === true && bm.fromCache === true
+    && /过期缓存/.test(bm.degradedReason || '')
+    && bm.questions.length === 4;
+}, () => '过期缓存路径未标注 stale/degradedReason');
+
+(async () => {
+  const results = await Promise.all(v217.map(c => Promise.resolve(c.fn())));
+  let f = 0;
+  v217.forEach((c, i) => {
+    let ok = results[i];
+    let detail = '';
+    if (!ok && typeof c.detail === 'function') {
+      try { detail = c.detail(); } catch (e) { detail = `(detail 抛错: ${e.message})`; }
+    }
+    if (!ok) f++;
+    console.log(`${ok ? '✓' : '✗'} ${c.name}${ok ? '' : '  —— ' + (detail || c.detail || '')}`);
+  });
+  console.log(`\nv2.17: ${v217.length - f} 通过, ${f} 失败, 共 ${v217.length} 个`);
+  if (f > 0) {
+    console.log('结论：外部预测基准源未接通，或主题匹配/诚实降级有断链。');
+    process.exitCode = 1;
+  } else {
+    console.log('结论：GJOpen 外部预测基准已接入，解析/去重/缓存/匹配/报告五段均接通。');
+  }
+})();

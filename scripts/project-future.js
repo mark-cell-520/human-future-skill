@@ -52,6 +52,13 @@ const { discriminateAll: discriminateForecasts } = require(path.join(HF, 'foreca
 // 前者辨别「关于市场的陈述」（要量化与证据等级）。商业推演面对的绝大多数
 // 主张是后者——"企业正在采用 AI agent"、"开源将杀死付费产品"这类。
 const { discriminateCommercial } = require(path.join(HF, 'commercial-discriminator.js'));
+// [v2.17] 外部预测基准（Good Judgment Open 开放问题）。这是 SKILL.md
+// 「已知边界」里挂了三个版本的缺口：RSS 前瞻表述多为意图声明，缺带硬
+// 截止日的规范预测。2026-10-24 复测只剩 GJOpen 可达（Metaculus 403、
+// Manifold/Polymarket/Kalshi 超时、PredictIt 301、Epoch AI 无预测数据），
+// 其 crowd forecast 概率需登录不可采，故只采「问题 + 截止时间」。
+const benchmarkLib = require(path.join(HF, 'prediction-benchmark-collector.js'));
+const { matchQuestions: matchBenchmarkQuestions, CLUSTER_CN: BENCH_CLUSTER_CN } = benchmarkLib;
 
 /** 主题域定义：关键词命中即归入该域。顺序即优先级。 */
 // [v2.7 新增] frontier_models「专项大模型」：
@@ -143,10 +150,14 @@ const HORIZONS = [
 ];
 
 class ProjectionEngine {
-  constructor(analysisResult) {
+  constructor(analysisResult, opts = {}) {
     this.analysis = analysisResult || {};
     this.timestamp = new Date().toISOString();
     this.signals = this.extractSignals();
+    // [v2.17] 外部预测基准由 run-pipeline 在所有 RSS 抓取落地后采集注入。
+    // 缺失（未传 / 采集失败）时该段如实报不可用，不用任何数据顶替。
+    this._benchmarkRaw = (opts && opts.benchmark) || null;
+    this._benchmark = this._benchmarkRaw ? this.buildPredictionBenchmark() : null;
   }
 
   // ───────────────────────────────────────────────────────────────
@@ -279,6 +290,17 @@ class ProjectionEngine {
 
   generate() {
     const degraded = this.signals.totalItems === 0;
+    const engines = [
+      'causal-graph-engine', 'cross-domain-conduction', 'signal-decay-resonance',
+      'timeline-conflict-detector', 'source-credibility-grader',
+      'claim-mismatch-detector', 'cognitive-formula-bridge', 'low-confidence-gate',
+      'prediction-ledger',
+    ];
+    // [v2.17] 外部预测基准只有真采到了才写进接入清单——这个字段的纪律是
+    // 「声明实际接入的组件」，采失败时写进去等于宣称假能力。
+    if (this._benchmark && this._benchmark.available) {
+      engines.push('prediction-benchmark-collector');
+    }
     const report = {
       meta: {
         version: '3.0.0',
@@ -288,15 +310,13 @@ class ProjectionEngine {
         signalCount: this.signals.totalItems,
         domainsMatched: this.signals.domains.length,
         // v3：声明实际接入的推演组件，避免"宣称接入了但没跑"
-        reasoningEngines: [
-          'causal-graph-engine', 'cross-domain-conduction', 'signal-decay-resonance',
-          'timeline-conflict-detector', 'source-credibility-grader',
-          'claim-mismatch-detector', 'cognitive-formula-bridge', 'low-confidence-gate',
-          'prediction-ledger',
-        ],
+        reasoningEngines: engines,
       },
       degraded,
       degradedReason: degraded ? '无 live 新闻信号，无法形成基于证据的推演' : null,
+      // [v2.17] 外部预测基准独立于新闻信号：RSS 全挂时基准段仍可用，
+      // 故放在 degraded 判断之外。
+      forecastBenchmark: this.buildPredictionBenchmark(),
       summary: this.generateSummary(),
       stages: degraded ? [] : this.generateStages(),
       turningPoints: degraded ? [] : this.identifyTurningPoints(),
@@ -1207,6 +1227,62 @@ class ProjectionEngine {
   }
 
   // ───────────────────────────────────────────────────────────────
+  // [v2.17] 外部预测基准：把 GJOpen 采集结果整理成报告可用的形态。
+  // 本方法只做整理与诚实降级，不联网、不估计任何概率。
+  // ───────────────────────────────────────────────────────────────
+  buildPredictionBenchmark() {
+    const bm = this._benchmarkRaw;
+    if (!bm || bm.available !== true || !Array.isArray(bm.questions) || bm.questions.length === 0) {
+      return {
+        available: false,
+        reason: (bm && (bm.reason || bm.degradedReason)) || '本轮未采集外部预测基准',
+        note: '外部预测基准来自 Good Judgment Open（专业预测平台，gjopen.com）。'
+          + '未采集到时本段如实报不可用；不得用模型记忆里的预测市场数据顶替——'
+          + '那正是本技能禁止的假能力形态。',
+      };
+    }
+    const now = Date.parse(this.timestamp) || Date.now();
+    const rows = [];
+    for (const q of bm.questions) {
+      const t = q.closesAt ? Date.parse(q.closesAt) : NaN;
+      const daysLeft = isNaN(t) ? null : Math.ceil((t - now) / 86400000);
+      // 已截止的不算「开放问题」——它是历史结算记录，不是待结算预测
+      if (daysLeft !== null && daysLeft < 0) continue;
+      rows.push({
+        id: q.id,
+        title: q.title,
+        url: q.url,
+        cluster: q.cluster || 'other',
+        clusterName: BENCH_CLUSTER_CN[q.cluster] || q.cluster || '其他',
+        closesAt: q.closesAt || null,
+        daysLeft,
+      });
+    }
+    // 近截止的排前面（Date.parse 比较，禁 localeCompare 的同类错误）
+    rows.sort((a, b) => (a.daysLeft === null ? 1e9 : a.daysLeft) - (b.daysLeft === null ? 1e9 : b.daysLeft));
+    const clusterMap = new Map();
+    for (const r of rows) clusterMap.set(r.clusterName, (clusterMap.get(r.clusterName) || 0) + 1);
+    return {
+      available: true,
+      source: bm.source || 'Good Judgment Open',
+      sourceUrl: bm.sourceUrl || 'https://www.gjopen.com',
+      fetchedAt: bm.fetchedAt || null,
+      fromCache: !!bm.fromCache,
+      stale: !!bm.stale,
+      degradedReason: bm.degradedReason || null,
+      errors: Array.isArray(bm.errors) ? bm.errors : [],
+      queriesRun: Array.isArray(bm.queriesRun) ? bm.queriesRun.length : 0,
+      total: rows.length,
+      clusters: [...clusterMap.entries()].map(([name, count]) => ({ name, count }))
+        .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name)),
+      questions: rows.slice(0, 40),
+      note: '本段只列带硬截止日的开放预测问题及其截止时间。GJOpen 的群体预测概率'
+        + '需登录可见，本引擎未采集，不得对这些问题声称知道市场概率；'
+        + '本段不回答这些问题，也不对新闻里的预测做真假判定。',
+    };
+  }
+
+  // ───────────────────────────────────────────────────────────────
   // [v2.13] 预测辨别：从本期信号里抽出含前瞻声明的条目，逐条辨别其
   // 可证伪性 / 基准概率 / 推理有效性 / 证伪条件。
   //
@@ -1308,6 +1384,19 @@ class ProjectionEngine {
       ledger = predictionLedger.load().predictions || [];
     } catch (_) { ledger = []; }
     const res = discriminateForecasts(claims, { ledger });
+
+    // [v2.17] 外部预测基准匹配：把每条被辨别的预测与 GJOpen 开放问题做
+    // 主题相邻匹配（共享实词 ≥2）。命中语义仅「该主题在专业预测平台有
+    // 硬截止日的问题在跟踪」——不是同题、不是概率参照，caveat 必须随
+    // 结果一起带到报告层，不许单独出现（防「接口存在 ≠ 端到端到达」）。
+    // 基准数据缺失时 matched=0 且注明原因，不得静默当成「没有同类问题」。
+    const benchQs = (this._benchmark && this._benchmark.available)
+      ? this._benchmark.questions : [];
+    for (const r of (res.results || [])) {
+      r.externalMatch = benchQs.length > 0
+        ? matchBenchmarkQuestions(r.text, benchQs)
+        : { matched: 0, questions: [], caveat: '本轮无外部预测基准数据（GJOpen 未采集到）' };
+    }
 
     // ── 把可结算预测真的登记进台账 ──────────────────────────────
     // [v2.13] 实测踩坑：v2.13 首轮 agent 在报告里写「这条应登记进台账，
@@ -1611,6 +1700,64 @@ class ProjectionEngine {
 }
 
 /**
+ * [v2.17] 渲染「外部预测基准」段。
+ *
+ * 独立成函数而不是写在 formatReport 里：这段要在 degraded 提前返回
+ * **之前**渲染（基准不依赖新闻信号），也便于测试直接调用。
+ *
+ * @param {object} fb report.forecastBenchmark
+ * @param {object} fd report.forecastDiscrimination（用于结构对照，可为空）
+ * @returns {string[]} markdown 行
+ */
+function renderBenchmarkSection(fb, fd) {
+  const lines = [];
+  lines.push('## 外部预测基准（Good Judgment Open 开放问题）');
+  lines.push('');
+  if (!fb || !fb.available) {
+    lines.push(`（${(fb && fb.reason) || '未运行'}）`);
+    lines.push('');
+    lines.push(`> ${(fb && fb.note) || ''}`);
+    lines.push('');
+    return lines;
+  }
+  lines.push(`来源: ${fb.source}（${fb.sourceUrl}）| 未截止开放问题 ${fb.total} 个（${fb.queriesRun} 个查询）`);
+  lines.push(`  数据时间: ${fb.fetchedAt ? new Date(fb.fetchedAt).toISOString() : '(未标注)'}`
+    + (fb.fromCache ? (fb.stale ? '（过期缓存，截止时间可能已变化）' : '（6 小时内缓存）') : '（本轮新采集）'));
+  if (fb.degradedReason) lines.push(`  ⚠ ${fb.degradedReason}`);
+  if (fb.errors.length) {
+    lines.push(`  部分查询失败: ${fb.errors.map(e => `${e.query}=${e.error}`).join('; ')}`);
+  }
+  lines.push('  ⚠ 口径限定：只列截止时间，不含群体预测概率（GJOpen crowd forecast');
+  lines.push('    需登录可见，本引擎未采集）；本段不回答这些问题，也不对新闻预测做真假判定。');
+  lines.push('');
+  lines.push('按主题分组: ' + (fb.clusters.map(c => `${c.name} ${c.count}`).join(' | ') || '(无)'));
+  lines.push('');
+  for (const q of fb.questions.slice(0, 25)) {
+    lines.push(`  [${q.clusterName}] 截止 ${q.closesAt ? q.closesAt.slice(0, 10) : '(无)'}`
+      + `（剩 ${q.daysLeft === null ? '未知' : q.daysLeft + ' 天'}）| ${q.title}`);
+  }
+  if (fb.questions.length > 25) {
+    lines.push(`  …另有 ${fb.questions.length - 25} 个开放问题未列出（详见报告 JSON）`);
+  }
+  lines.push('');
+  // 结构对照：RSS 前瞻表述 vs 硬截止日问题的形态差异，这是辨别力的参照系
+  if (fd && fd.available && fd.summary) {
+    const s = fd.summary;
+    const pct = Math.round((s.settleableCount / Math.max(1, fd.audited)) * 100);
+    const matchedClaims = (fd.results || [])
+      .filter(r => r.externalMatch && r.externalMatch.matched > 0).length;
+    lines.push(`结构对照: 本期 RSS 抽到 ${fd.audited} 条含前瞻承诺的信号，可结算 ${s.settleableCount} 条（${pct}%）；`);
+    lines.push(`  其中 ${matchedClaims} 条能在 GJOpen 找到同类开放问题（主题相邻非同题）；`);
+    lines.push(`  外部开放问题 ${fb.total} 个全部带硬截止日——差异不在话题而在结构：`);
+    lines.push('  意图声明没有时点，到点无法结算；硬截止日问题才有结算的可能。');
+    lines.push('');
+  }
+  lines.push(`> ${fb.note}`);
+  lines.push('');
+  return lines;
+}
+
+/**
  * 格式化报告为 Markdown
  */
 function formatReport(report) {
@@ -1624,6 +1771,12 @@ function formatReport(report) {
   lines.push(`> **推演引擎**: v${report.meta.version}`);
   lines.push(`> **信号基础**: ${report.meta.signalCount} 条 live 新闻 / ${report.meta.domainsMatched} 个主题域`);
   lines.push('');
+
+  // [v2.17] 外部预测基准段刻意放在降级判断之前：它不依赖新闻信号，
+  // RSS 全挂时（degraded）这一样是把尺子。放在这里而不是等降级通知
+  // 发完才渲染，「基准段独立于信号」才在 markdown 产物里为真，
+  // 不只是 JSON 里有（接口存在 ≠ 端到端到达）。
+  lines.push(...renderBenchmarkSection(report.forecastBenchmark, report.forecastDiscrimination));
 
   if (report.degraded) {
     lines.push('## ⚠ 推演降级');
@@ -1928,6 +2081,19 @@ function formatReport(report) {
             ? '——已作为本条基准概率'
             : '——样本 <3 不具统计性，基准概率仍取通用先验'));
       }
+      // [v2.17] 外部预测基准匹配行：命中的意义仅是「该主题在专业预测
+      // 平台有硬截止日的问题在跟踪」。caveat 必须同屏出现——单独一行
+      // 「外部基准: …」会被读成概率参照，那是口径错位。
+      if (r.externalMatch && r.externalMatch.matched > 0) {
+        for (const m of r.externalMatch.questions.slice(0, 2)) {
+          lines.push(`  外部基准: Good Judgment Open 有同类开放问题「${m.title.slice(0, 100)}」`
+            + `（截止 ${m.closesAt ? m.closesAt.slice(0, 10) : '(无)'}`
+            + `，剩 ${m.daysLeft === null || m.daysLeft === undefined ? '未知' : m.daysLeft + ' 天'}`
+            + `；共享实词: ${m.sharedTerms.join('/')}）`);
+        }
+        lines.push('    ——主题相邻非同题：仅说明该主题在专业预测平台有硬截止日的问题在跟踪，'
+          + '不构成概率参照');
+      }
       if (r.falsifiability.problems.length) {
         lines.push(`  不可证伪原因: ${r.falsifiability.problems.map(p => `${p.label}——${p.guidance}`).join('；')}`);
       }
@@ -2115,7 +2281,22 @@ async function main() {
     const analysis = JSON.parse(fs.readFileSync(analysisPath, 'utf-8'));
     console.log('📊 加载心虫分析结果\n');
 
-    const engine = new ProjectionEngine(analysis);
+    // [v2.17] 外部预测基准采集：与 run-pipeline.js 同一采集器、同一位置纪律
+    // （RSS 不在这条路径上，无竞争问题；缓存 TTL 6h）。
+    const { collectBenchmark } = require('../human-future/scripts/prediction-benchmark-collector.js');
+    let benchmark = null;
+    try {
+      benchmark = await collectBenchmark({ live: process.env.FETCH === '1' });
+      console.log(benchmark.available
+        ? `[benchmark] ${benchmark.questions.length} 个未截止开放问题`
+        + `（${benchmark.queriesRun.length} 个查询，${benchmark.fromCache ? '缓存' : '本轮采集'}）\n`
+        : `[benchmark] 不可用: ${benchmark.reason || '(未说明原因)'}\n`);
+    } catch (e) {
+      console.log(`[benchmark] 采集抛错，基准段降级: ${e.message}\n`);
+      benchmark = { available: false, reason: `采集抛错: ${e.message}` };
+    }
+
+    const engine = new ProjectionEngine(analysis, { benchmark });
     const report = engine.generate();
 
     const markdown = formatReport(report);
@@ -2146,4 +2327,4 @@ if (require.main === module) {
   main();
 }
 
-module.exports = { ProjectionEngine, formatReport, DOMAINS };
+module.exports = { ProjectionEngine, formatReport, renderBenchmarkSection, DOMAINS };
