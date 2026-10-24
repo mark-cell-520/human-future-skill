@@ -2733,3 +2733,177 @@ c300c('引擎候选选择用主张形态门且旧触发器未复活', (() => {
     console.log('结论：商业辨别段已进 cron 注入与 markdown 产物，精度门挡除非主张文本，句式召回有回归保护。');
   }
 })();
+
+// ════════════════════════════════════════════════════════════════
+// v3.1 新增断言：自我修正登记簿（self-correction-ledger）0 调用模块接入。
+//
+// 背景（2026-10-25 审计）：该模块自 v2.4 存在，data/self-corrections.json
+// 有 6 条真实修正（绕月≠登月 / v2.4 假能力三项审计 / sitemap 简介≠正文……），
+// docstring 铁律「每次修正落盘，下次推演先读簿子再说话」——但 live
+// pipeline（scripts/）从未 require 过它，只有早期死副本 human-future/
+// scripts/run-pipeline.js 调过。簿子记了、没人读。
+//
+// 本节断言分四组：① 引擎源级接线（require + 调模块 API + 字段落位）；
+// ② 引擎产出与数据文件逐条一致（不编造）；③ 端到端渲染进 markdown；
+// ④ cron 注入脚本读取该字段（断链复发防护，判据是「agent 看得到」）。
+// 每处修复都做过反向验证（摘除接线/渲染/注入段 → 对应断言失败）。
+// ════════════════════════════════════════════════════════════════
+const v31 = [];
+function c31(name, ok, detail) { v31.push({ name, ok, detail }); }
+
+const fs31 = require('fs');
+const path31 = require('path');
+
+// ── 组 1：引擎源级接线 ──
+// 1. project-future.js 必须 require self-correction-ledger 并调它的 API。
+//    摘除 require 或改自己读数 → 本断言失败。
+c31('引擎 require 并调用 self-correction-ledger 模块 API', (() => {
+  const src = fs31.readFileSync(path31.join(__dirname, 'scripts/project-future.js'), 'utf-8');
+  return /const correctionsLedger = require\(path\.join\(HF, 'self-correction-ledger\.js'\)\)/.test(src)
+    && /correctionsLedger\.load\(\)/.test(src)
+    && /correctionsLedger\.recurringPatterns\(\)/.test(src)
+    && /report\.selfCorrectionLedger = this\.buildSelfCorrectionLedger\(\)/.test(src)
+    && /'self-correction-ledger',/.test(src);   // 接入组件清单里声明
+})(), '必须走模块自身 API（load/recurringPatterns），不是在引擎里重新实现读数');
+
+// ── 组 2：引擎产出与数据文件逐条一致（防编造） ──
+// 2. generate() 产出的 total/highSeverity/bySeverity 必须与数据文件实际内容一致。
+//    引擎自己编数字 → 本断言失败。
+c31('引擎产出与 self-corrections.json 实际内容一致', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const dataPath = path31.join(__dirname, 'human-future/data/self-corrections.json');
+  const book = JSON.parse(fs31.readFileSync(dataPath, 'utf-8'));
+  const items = [
+    { title: 'DeepSeek Raises Nearly $16 billion in Second Funding Round',
+      description: '', body: '', source: 'The Information', bucket: 'business',
+      pubDate: 'Fri, 24 Oct 2026 00:44:16 GMT', domains: ['capital_flow'],
+      link: 'https://theinformation.com/e', origin: 'live' },
+  ];
+  const rep = new ProjectionEngine({
+    engineVersion: '6.8.0', modulesLoaded: 10,
+    newsData: { business: { news: items }, economy: { news: [] } },
+  }).generate();
+  const scl = rep.selfCorrectionLedger;
+  if (!scl) return false;   // 接线被摘除时断言失败而不是抛 TypeError
+  // 自己从数据文件算期望值：high 及以上（含 critical）的条数
+  const rank = { low: 1, medium: 2, high: 3, critical: 4 };
+  const expectHigh = book.corrections.filter(c => (rank[c.severity] || 0) >= rank.high).length;
+  return scl && scl.available === true
+    && scl.total === book.corrections.length
+    && scl.highSeverity === expectHigh
+    && scl.lessons.length === book.corrections.length
+    && Object.values(scl.bySeverity).reduce((a, b) => a + b, 0) === book.corrections.length;
+})(), 'total/highSeverity/bySeverity/lessons 必须与 JSON 文件逐条对得上');
+
+// 3. critical 排最前（severity 等级排序，不是文件顺序）。
+//    摘除等级排序（恢复按文件序或 high 优先）→ corr-2026-002/004 不在首位，失败。
+c31('critical 教训排在最前', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const items = [
+    { title: 'DeepSeek Raises Nearly $16 billion in Second Funding Round',
+      description: '', body: '', source: 'The Information', bucket: 'business',
+      pubDate: 'Fri, 24 Oct 2026 00:44:16 GMT', domains: ['capital_flow'],
+      link: 'https://theinformation.com/e', origin: 'live' },
+  ];
+  const rep = new ProjectionEngine({
+    engineVersion: '6.8.0', modulesLoaded: 10,
+    newsData: { business: { news: items }, economy: { news: [] } },
+  }).generate();
+  const ls = (rep.selfCorrectionLedger && rep.selfCorrectionLedger.lessons) || [];
+  if (ls.length === 0) return false;   // 接线/排序被摘除时断言失败而不是抛 TypeError
+  return ls[0].severity === 'critical' && ls[1].severity === 'critical'
+    && ls.slice(2).every(l => l.severity !== 'critical');
+})(), '数据里有 2 条 critical，必须排在 high 之前——最重的教训不能藏');
+
+// ── 组 3：端到端渲染 ──
+// 4. generate → formatReport 产物里真的出现登记簿段（不信接口存在）。
+//    摘除报告渲染 → 本断言失败。
+c31('端到端：报告 markdown 渲染自我修正登记簿段', (() => {
+  const { ProjectionEngine, formatReport } = require('./scripts/project-future.js');
+  const items = [
+    { title: 'DeepSeek Raises Nearly $16 billion in Second Funding Round',
+      description: '', body: '', source: 'The Information', bucket: 'business',
+      pubDate: 'Fri, 24 Oct 2026 00:44:16 GMT', domains: ['capital_flow'],
+      link: 'https://theinformation.com/e', origin: 'live' },
+    { title: 'Minutes of the Federal Open Market Committee',
+      description: 'Participants noted that financial market conditions had eased.',
+      body: '', source: 'Federal Reserve (Monetary)', bucket: 'economy',
+      pubDate: 'Tue, 13 Oct 2026 00:44:16 GMT', domains: ['economy_labor'],
+      link: 'https://federalreserve.gov/a', origin: 'live' },
+  ];
+  const rep = new ProjectionEngine({
+    engineVersion: '6.8.0', modulesLoaded: 10,
+    newsData: { business: { news: items }, economy: { news: items } },
+  }).generate();
+  const md = formatReport(rep);
+  const seg = md.split('## 自我修正登记簿')[1] || '';
+  return md.includes('## 自我修正登记簿（历史纠错教训，解读本期信号前必读）')
+    && seg.includes('[critical]')            // severity 分布行
+    && seg.includes('更正:')                 // wrong→right 结构
+    && seg.includes('教训:')
+    && seg.includes('绕月');                 // 真实教训内容（corr-2026-001）
+})(), '登记簿段必须进 markdown 产物，且带真实教训内容');
+
+// 5. 位置纪律：登记簿段必须在「信号热度分组」之前——先读簿子再说话。
+//    把渲染挪到信号分组之后 → 本断言失败。
+c31('登记簿段排在信号热度分组之前（先读簿子再解读信号）', (() => {
+  const { ProjectionEngine, formatReport } = require('./scripts/project-future.js');
+  const items = [
+    { title: 'DeepSeek Raises Nearly $16 billion in Second Funding Round',
+      description: '', body: '', source: 'The Information', bucket: 'business',
+      pubDate: 'Fri, 24 Oct 2026 00:44:16 GMT', domains: ['capital_flow'],
+      link: 'https://theinformation.com/e', origin: 'live' },
+  ];
+  const rep = new ProjectionEngine({
+    engineVersion: '6.8.0', modulesLoaded: 10,
+    newsData: { business: { news: items }, economy: { news: [] } },
+  }).generate();
+  const md = formatReport(rep);
+  const iLedger = md.indexOf('## 自我修正登记簿');
+  const iStages = md.indexOf('## 信号热度分组');
+  return iLedger > 0 && iStages > 0 && iLedger < iStages;
+})(), '段序即纪律：登记簿必须在信号解读之前，放到中段等于没放');
+
+// ── 组 4：cron 注入脚本（断链复发防护） ──
+// 6. 注入脚本必须读 proj.selfCorrectionLedger，带口径限定与旧版报告路径。
+//    摘除注入段 → 本断言失败（v2.9/v2.13/v2.17/v3.0.0c 四次同型断链的复发防护）。
+c31('cron 注入脚本读取 selfCorrectionLedger 且带口径限定', (() => {
+  const p = path31.join(require('os').homedir(), '.hermes/scripts/hf-cron-fetch.sh');
+  if (!fs31.existsSync(p)) return false;
+  const src = fs31.readFileSync(p, 'utf-8');
+  return /const scl = proj\.selfCorrectionLedger/.test(src)
+    && /### 自我修正登记簿/.test(src)
+    && /未包含 selfCorrectionLedger 字段/.test(src)          // 旧版报告路径
+    && /不可用 —— /.test(src)                                 // 不可用路径
+    && /不是本期新闻的事实判定/.test(src)                      // 口径限定：不当外部证据
+    && /不得引用为外部证据/.test(src);
+})(), '注入脚本必须读 proj.selfCorrectionLedger，并带口径限定/不可用路径');
+
+// 7. 模块计数口径修复：recurringPatterns 的 highSeverity 必须含 critical。
+//    恢复 severity === 'high' 严格过滤 → 期望 6 实得 4，失败。
+c31('登记簿高危计数含 critical（口径修复）', (() => {
+  const mod = require('./human-future/scripts/self-correction-ledger.js');
+  const book = JSON.parse(fs31.readFileSync(
+    path31.join(__dirname, 'human-future/data/self-corrections.json'), 'utf-8'));
+  const rank = { low: 1, medium: 2, high: 3, critical: 4 };
+  const expect = book.corrections.filter(c => (rank[c.severity] || 0) >= rank.high).length;
+  const r = mod.recurringPatterns();
+  return r.total === book.corrections.length && r.highSeverity === expect && expect >= 2;
+})(), '数据含 critical 条目，严格 == high 过滤会少报高危数');
+
+(async () => {
+  const results = await Promise.all(v31.map(c => Promise.resolve(c.ok)));
+  let f = 0;
+  v31.forEach((c, i) => {
+    const ok = results[i];
+    if (!ok) f++;
+    console.log(`${ok ? '✓' : '✗'} ${c.name}${ok ? '' : '  —— ' + c.detail}`);
+  });
+  console.log(`\nv3.1: ${v31.length - f} 通过, ${f} 失败, 共 ${v31.length} 个`);
+  if (f > 0) {
+    console.log('结论：自我修正登记簿接入不完整（接线/产出一致性/渲染/注入有缺）。');
+    process.exitCode = 1;
+  } else {
+    console.log('结论：登记簿已接入 live pipeline（引擎产出+报告渲染+cron 注入），计数口径含 critical，端到端可达。');
+  }
+})();

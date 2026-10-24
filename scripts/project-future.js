@@ -44,6 +44,18 @@ const { detectMismatch } = require(path.join(HF, 'claim-mismatch-detector.js'));
 const { runFormulaBridge } = require(path.join(HF, 'cognitive-formula-bridge.js'));
 const { gate: lowConfidenceGate } = require(path.join(HF, 'low-confidence-gate.js'));
 const predictionLedger = require(path.join(HF, 'prediction-ledger.js'));
+// [v3.1] 自我修正登记簿：0 调用模块接入。
+//
+// 为什么是「接入」而不是「新写」：这个模块自 v2.4 就在（human-future/scripts/
+// self-correction-ledger.js），data/self-corrections.json 里躺着 6 条真实修正
+// （绕月≠登月、v2.4 假能力三项审计、sitemap 页面简介≠新闻正文……），docstring
+// 的铁律写着「每次修正落盘，下次推演先读簿子再说话」——但 live pipeline
+// （scripts/）从来没有 require 过它，只有早期死副本 human-future/scripts/
+// run-pipeline.js 调过。簿子记了、没人读，就是这个模块此前的状态。
+//
+// 接上之后每轮报告先列高危历史教训（wrong→right+lesson），解读本期信号前
+// 先对一遍自己曾经错在哪。辨别力来自既有修正记录本身，本模块不新增判别规则。
+const correctionsLedger = require(path.join(HF, 'self-correction-ledger.js'));
 // [v2.13] 预测辨别器：引擎不再自己生成未来，改为辨别他人关于未来的主张。
 // 这是 v2.13 的方向转变——见 SKILL.md「v2.13 方向转变」一节。
 const { discriminateAll: discriminateForecasts } = require(path.join(HF, 'forecast-discriminator.js'));
@@ -295,6 +307,11 @@ class ProjectionEngine {
       'timeline-conflict-detector', 'source-credibility-grader',
       'claim-mismatch-detector', 'cognitive-formula-bridge', 'low-confidence-gate',
       'prediction-ledger',
+      // [v3.1] 自我修正登记簿：v2.4 起存在、6 条真实修正记录，v3.1 前 live
+      // pipeline 从未调用（0 调用模块）。接入判据是「本轮真的读了簿子」——
+      // buildSelfCorrectionLedger() 无条件执行，登记簿不可读时 available=false
+      // 且原因写明，不静默返回空（v2.4 假能力审计的教训：不许假装有）。
+      'self-correction-ledger',
     ];
     // [v2.17] 外部预测基准只有真采到了才写进接入清单——这个字段的纪律是
     // 「声明实际接入的组件」，采失败时写进去等于宣称假能力。
@@ -303,7 +320,7 @@ class ProjectionEngine {
     }
     const report = {
       meta: {
-        version: '3.0.0',
+        version: '3.1.0',
         heartflowVersion: this.analysis.engineVersion,
         timestamp: this.timestamp,
         modulesLoaded: this.analysis.modulesLoaded,
@@ -334,6 +351,9 @@ class ProjectionEngine {
       report.timelineConflicts = this.buildTimelineConflicts();
       report.sourceAdjudication = this.buildSourceAdjudication();
       report.claimMismatches = this.buildClaimMismatches();
+      // [v3.1] 自我修正登记簿：放在辨别段之前接线——顺序即纪律，先对旧账
+      // （曾经错在哪），再解读本期新信号。不依赖 live 信号，簿子恒在读。
+      report.selfCorrectionLedger = this.buildSelfCorrectionLedger();
       report.forecastDiscrimination = this.buildForecastDiscrimination();
       // [v3.0.0] 商业主张辨别：心虫商业未来推演的核心新段
       report.commercialDiscrimination = this.buildCommercialDiscrimination();
@@ -796,6 +816,57 @@ class ProjectionEngine {
       tierDistribution: tiers,
       distinctSources: [...new Set(this.signals.items.map(i => i.source))].length,
       note: '裁决需要同一事实的多个矛盾来源；同源 RSS 不构成矛盾，故本期只给分级分布',
+    };
+  }
+
+  // ───────────────────────────────────────────────────────────────
+  // v3.1：读自我修正登记簿（0 调用模块接入，见文件头 require 处注释）。
+  //
+  // 数据来自 human-future/data/self-corrections.json（v2.4 至今 6 条真实
+  // 修正），API 用模块自身的 load() / recurringPatterns()——接入的判据是
+  // 「真的调了模块」，不是在引擎里重新实现一份读数逻辑。
+  //
+  // 排序纪律：高危在前。解读本期信号时最该先自查的就是 high severity 的
+  // 教训（绕月≠登月这类任务性质误判，错了就是整段推演作废）。
+  // ───────────────────────────────────────────────────────────────
+  buildSelfCorrectionLedger() {
+    let book;
+    try {
+      book = correctionsLedger.load();
+    } catch (e) {
+      // 读失败必须显式降级：v2.4 审计的教训是「不许假装有」——簿子读不到
+      // 就说读不到，不能返回空数组让报告显示「暂无记录」。
+      return { available: false, reason: `登记簿读取失败: ${e.message}` };
+    }
+    const cs = Array.isArray(book.corrections) ? book.corrections : [];
+    const patterns = correctionsLedger.recurringPatterns();
+    // 按 severity 等级排序（critical > high > medium > low）——不是「high 在前
+    // 其余在后」：数据里真实存在 critical（v2.4 假能力审计两条），把它们排到
+    // high 后面等于把最重的教训藏起来。排序用模块导出的等级表，不自己造一份。
+    const rank = correctionsLedger.SEVERITY_RANK || { low: 1, medium: 2, high: 3, critical: 4 };
+    const bySeverity = {};
+    for (const c of cs) bySeverity[c.severity || 'medium'] = (bySeverity[c.severity || 'medium'] || 0) + 1;
+    const lessons = cs
+      .slice()
+      .sort((a, b) => (rank[b.severity] || 0) - (rank[a.severity] || 0))
+      .map((c) => ({
+        id: c.id,
+        reportVersion: c.reportVersion || null,
+        severity: c.severity || 'medium',
+        wrong: c.wrongClaim,
+        right: c.rightClaim,
+        lesson: c.lesson || '',
+        recordedAt: c.recordedAt || null,
+      }));
+    return {
+      available: true,
+      total: patterns.total,
+      highSeverity: patterns.highSeverity,
+      bySeverity,
+      lessons,
+      note: '自我修正登记簿：本引擎历史推演中记录过的错误与更正（v2.4 起）。'
+        + '解读本期信号前先对一遍——同一类错误（任务性质误判、口径错位、'
+        + '把参考文本当预测）在最坏情况下会重复出现。完整记录见报告 JSON。',
     };
   }
 
@@ -1816,6 +1887,37 @@ function formatReport(report) {
   lines.push(`- **信号时间范围**: ${report.summary.dateRange ? report.summary.dateRange.from + ' ~ ' + report.summary.dateRange.to : '(无日期)'}`);
   lines.push(`- **最活跃方向**: ${report.summary.topDomains.join('、') || '(无)'}`);
   lines.push('');
+
+  // [v3.1] 自我修正登记簿：历史纠错教训，解读本期信号前必读。
+  // 位置纪律：放在总体摘要之后、信号热度分组之前——顺序即「先读簿子
+  // 再说话」（模块 docstring 的铁律）。放在报告中段等于没放：agent
+  // 读到信号分组时已经形成先验了。v2.4 起的教训是这类错误整段作废级。
+  {
+    const sc = report.selfCorrectionLedger;
+    lines.push('## 自我修正登记簿（历史纠错教训，解读本期信号前必读）');
+    lines.push('');
+    if (!sc || !sc.available) {
+      lines.push(`（${(sc && sc.reason) || '未运行'}）`);
+    } else if (sc.total === 0) {
+      lines.push('暂无登记记录。');
+    } else {
+      const bs = sc.bySeverity || {};
+      const parts = ['critical', 'high', 'medium', 'low'].filter(k => bs[k]).map(k => `${k} ${bs[k]}`);
+      lines.push(`历史修正 ${sc.total} 条（${parts.join(' · ')}），critical/high 在前：`);
+      lines.push('');
+      for (const l of sc.lessons.slice(0, 5)) {
+        lines.push(`- [${l.severity}] ${String(l.wrong).slice(0, 110)}`);
+        lines.push(`  更正: ${String(l.right).slice(0, 200)}`);
+        if (l.lesson) lines.push(`  教训: ${String(l.lesson).slice(0, 200)}`);
+      }
+      if (sc.lessons.length > 5) {
+        lines.push(`- …另有 ${sc.lessons.length - 5} 条未列出（详见报告 JSON）`);
+      }
+      lines.push('');
+      lines.push(`> ${sc.note}`);
+    }
+    lines.push('');
+  }
 
   // [v2.13] 标题改为如实描述：这是按本期信号热度的域分组，不是推演。
   // 真正的推演能力由「预测辨别」段提供（辨别他人的预测）。

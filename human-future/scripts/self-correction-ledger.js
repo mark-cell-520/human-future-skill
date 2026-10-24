@@ -59,10 +59,18 @@ function lessons() {
   }));
 }
 
+// [v3.1 修] severity 等级表。record() 的 docstring 写的是 low|medium|high，
+// 但实际数据里出现了 'critical'（corr-2026-002 / corr-2026-004，都是
+// 「整段推演作废」级的假能力审计）。旧 recurringPatterns() 用
+// severity === 'high' 严格过滤，2 条 critical 不计入高危——接入 live
+// pipeline 后这会让报告少报高危数（说 4 条实际 6 条）。改为按等级比较，
+// critical 算高危及以上。这是计数口径修复，不改变登记簿语义。
+const SEVERITY_RANK = { low: 1, medium: 2, high: 3, critical: 4 };
+
 /** 高危错误的模式归纳 —— 这些是推演时最该先自查的 */
 function recurringPatterns() {
   const cs = load().corrections;
-  const high = cs.filter((c) => c.severity === 'high');
+  const high = cs.filter((c) => (SEVERITY_RANK[c.severity] || 0) >= SEVERITY_RANK.high);
   return {
     total: cs.length,
     highSeverity: high.length,
@@ -70,7 +78,7 @@ function recurringPatterns() {
   };
 }
 
-module.exports = { record, lessons, recurringPatterns, load, CORRECTIONS_PATH };
+module.exports = { record, lessons, recurringPatterns, load, CORRECTIONS_PATH, SEVERITY_RANK };
 
 if (require.main === module) {
   // 种子数据：v4 报告的真实错误，永久保留（幂等）

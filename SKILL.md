@@ -1,8 +1,25 @@
 ---
 name: human-future-v2
-title: "人类未来 · 文明推演引擎 v3.0.0"
-version: "3.0.0"
+title: "人类未来 · 文明推演引擎 v3.1.0"
+version: "3.1.0"
 description: |-
+  人类未来技能 v3.1.0 — 心虫商业未来推演（v3.1 接入 0 调用模块自我修正登记簿）：
+  v3.1（2026-10-25）接入 self-correction-ledger——该模块自 v2.4 存在、
+  data/self-corrections.json 有 7 条真实修正（绕月≠登月 / v2.4 假能力三项审计 /
+  sitemap 页面简介≠新闻正文……），docstring 铁律「每次修正落盘，下次推演先读簿子
+  再说话」，但 live pipeline（scripts/）从未 require 过它，只有早期死副本
+  human-future/scripts/run-pipeline.js 调过——簿子记了、没人读。本轮接进引擎
+  （report.selfCorrectionLedger）+ 报告段（「自我修正登记簿」，位置在总体摘要之后、
+  信号热度分组之前，先对旧账再解读新信号）+ cron 注入段（第 8 段，带口径限定）；
+  同时修 recurringPatterns 高危计数口径：旧代码 severity === 'high' 严格过滤，
+  漏掉数据里 2 条 critical（v2.4 假能力审计），接入后会少报高危数（说 4 实际 6），
+  改为按等级表（critical > high > medium > low）比较，critical 排最前。
+  测试 164→171 项；5 轮反向验证全部精确失败（摘除引擎接线→4 条、摘除报告渲染→2 条、
+  摘除 cron 注入段→1 条、恢复旧计数口径→2 条、摘除等级排序→1 条）。
+  维护级（不涨号的那部分）：SKILL.md 采集源计数修正——实际 23 个源
+  （tech 2 + humanities 1 + frontier_models 12 + economy 4 + business 4），
+  旧文写「17 个」，且分项加总本身也不等于 17。
+
   人类未来技能 v3.0.0 — 心虫商业未来推演（v3.0.0c 修复端到端断链）：
   v3.0.0（f118603，10-22）新增 business 采集域（TechCrunch AI / The Information /
   Last Week in AI / ProductHunt）与商业主张辨别器 commercial-discriminator——
@@ -129,17 +146,20 @@ description: |-
 
 ---
 
-## 当前状态（v2.17 实测）
+## 当前状态（v3.1 实测）
 
-以下数字全部来自 2026-10-24 一次 `FETCH=1 FETCH_BODY=1 node scripts/run-pipeline.js` 实跑
-（本轮 pipeline 总耗时 36.7 秒，基准采集为冷启动；缓存 TTL 6h，后续轮次零网络），
-不是宣称值。
+以下数字全部来自 2026-10-25 一次 `FETCH=1 FETCH_BODY=1 node scripts/run-pipeline.js` 实跑
+（258 条 live 信号；本轮 v3.1 接入自我修正登记簿后的完整轮次），不是宣称值。
+v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见 frontmatter 历史记录。
 
 **采集层**
-- RSS 源：17 个（tech 2 + humanities 1 + frontier_models 9 + economy 4 + business 4 + psychology/philosophy 各 0）
+- 源：23 个（tech 2 + humanities 1 + frontier_models 12 + economy 4 + business 4
+  + psychology/philosophy 各 0）。frontier_models 的 12 = 9 个 RSS + Anthropic sitemap
+  + EU AI Act Timeline + NIST（旧版 SKILL.md 写「17 个」且分项加总也不等于 17，
+  v3.1 按代码实际修正——这是文档维护，不是能力变化）
 - 并行抓取：`Promise.all`，实测约 4 秒（旧串行最坏 104 秒）
 - 正文增强：`FETCH_BODY=1` 时抓最新 24 条，实测 17 条成功（openai.com 403 / arstechnica 405 / interconnects 链接失效）
-- 实测产出：248 条 live（2026-10-24 v3.0.0c 轮；同日 v2.17 轮 258 条），其中专项大模型域与商业域为主体
+- 实测产出：258 条 live（2026-10-25 v3.1 轮；2026-10-24 v3.0.0c 轮 248 条、同日 v2.17 轮 258 条），其中专项大模型域与商业域为主体
 
 **商业采集层（v3.0.0 新增）**
 - business 域 4 源：TechCrunch AI / The Information / Last Week in AI / ProductHunt
@@ -164,11 +184,14 @@ description: |-
   timeline-conflict-detector / source-credibility-grader / claim-mismatch-detector /
   cognitive-formula-bridge / low-confidence-gate / prediction-ledger /
   prediction-benchmark-collector（v2.17，仅真采到时才写进 meta.reasoningEngines）/
-  commercial-discriminator（v3.0.0，商业主张辨别）
+  commercial-discriminator（v3.0.0，商业主张辨别）/
+  self-correction-ledger（v3.1，0 调用模块接入，无条件执行——簿子读不到时
+  available=false 且原因写明，不静默返回空）
 - 实测各模块可用性：因果链 ✅（共现兜底）/ 跨域传导 ✅ / 趋势判定 ✅（源归一化）/
   时间轴 ✅（16 点，需正文）/ 来源分级 ✅（T1 47 / T2 45 / T3 48 / T4 0）/ 口径错位 ✅（9 条命中）/
   外部预测基准 ✅（32 个开放问题，per-claim 主题匹配本轮 0/7，如实展示）/
-  商业主张辨别 ✅（6 条，精度门后；修复前 19 条里 18 条 kind=unclassified）
+  商业主张辨别 ✅（6 条，精度门后；修复前 19 条里 18 条 kind=unclassified）/
+  自我修正登记簿 ✅（7 条修正：critical 2 / high 4 / medium 1，critical 排最前）
 
 **商业推演层（v3.0.0 新增，v3.0.0c 修复端到端断链）**
 - 定位：v3.0.0 起引擎双轨——文明级信号（人类未来，11 域）+ 商业级辨别（心虫商业未来，5 域）。
@@ -192,6 +215,25 @@ description: |-
   本轮补上注入段（含口径限定与证据图例），测试加源级断言防复发。
 - 纪律（心虫铁律）：只辨别主张的表述与证据质量，不判断内容真假，
   不生成「心虫应该怎么做」的商业建议——那由报告 agent 判断并标注归属。
+
+**自我修正登记簿层（v3.1 接入的 0 调用模块）**
+- 定位：这是接入，不是新写。self-correction-ledger.js 自 v2.4 存在，
+  `human-future/data/self-corrections.json` 有 7 条真实修正（绕月≠登月、
+  v2.4 假能力三项审计、stateless 检查器覆盖缺口、sitemap 页面简介≠新闻正文、
+  指南页文本≠预测等），模块 docstring 的铁律写着「每次修正落盘，下次推演
+  先读簿子再说话」——但 v3.1 之前 live pipeline（scripts/）从未 require 过它，
+  只有早期死副本 human-future/scripts/run-pipeline.js 调过。簿子记了、没人读。
+- 接入路径（三段都真跑到）：引擎 `buildSelfCorrectionLedger()` 调模块自身
+  API（load() / recurringPatterns() / SEVERITY_RANK）→ `report.selfCorrectionLedger`
+  → formatReport 渲染「自我修正登记簿」段（位置：总体摘要之后、信号热度分组
+  之前——先对旧账再解读新信号，放中段等于没放）→ cron 注入脚本第 8 段读取
+  （带口径限定：是引擎自己的历史错误，不是本期新闻的事实判定，不得引用为外部证据）。
+- [v3.1 维护] 计数口径修复：recurringPatterns() 旧代码 `severity === 'high'`
+  严格过滤，漏掉数据里 2 条 critical（都是「整段推演作废」级的假能力审计），
+  接入后会少报高危数（说 4 实际 6）。改为按等级表比较（critical > high >
+  medium > low），critical 排最前。这是修 bug，不算升级——升级点是接入本身。
+- 边界（如实声明）：登记簿只有 7 条，样本随每次真实修正自然增长，引擎不
+  代笔登记；本段不生成「所以本期该怎么做」的建议，只呈现「曾经错在哪」。
 
 **心虫层**
 - 入口：`~/heartflow/src/index.js`（74 个 stateless 检查器）
@@ -266,15 +308,28 @@ description: |-
   引擎不代劳——这是心虫铁律，不是能力缺失。
 
 **测试**
-- `npm test`：**164 项断言**（实测各 section 汇总；v2.17 的 155 + v3.0.0c 新增 9：
+- `npm test`：**171 项断言**（实测各 section 汇总；v2.17 的 155 + v3.0.0c 新增 9 +
+  v3.1 新增 7：
+  1 项引擎源级接线（require self-correction-ledger + 调 load/recurringPatterns
+  + report.selfCorrectionLedger 落位 + 接入组件清单）+
+  1 项产出与数据文件逐条一致（total/highSeverity/bySeverity/lessons 对得上
+  self-corrections.json，防引擎编数字）+
+  1 项 critical 排最前（等级排序，摘除 → corr-2026-002 不在首位）+
+  1 项端到端渲染（generate→formatReport 出现登记簿段、severity 分布行、
+  更正/教训结构、真实教训内容）+
+  1 项段序纪律（登记簿段必须在信号热度分组之前）+
   1 项注入脚本源级（读 ~/.hermes/scripts/hf-cron-fetch.sh 验
-  commercialDiscrimination / 口径限定 / 不可用路径 / 证据图例）+
-  1 项端到端（generate→formatReport 出现商业段、主张句、证伪条件，
-  且 Fed 公告不混入）+ 1 项精度门（Fed 公告/播客/促销页脚/安全新闻整体挡在
-  辨别外）+ 1 项精度门不误杀（标题即主张的无摘要条目仍进辨别且 claimSentence
-  正确）+ 1 项融资句式副词容忍 + 1 项估值两种语序 + 1 项竞品人类目标与
-  according to a study 归第三方调查 + 1 项 claimSentence 透传 +
-  1 项源级门存在性与旧触发器未复活）。
+  selfCorrectionLedger / 口径限定 / 不可用路径 / 旧版报告路径）+
+  1 项模块计数口径（recurringPatterns 高危数含 critical））。
+  v3.1 五轮反向验证全部精确失败：摘除引擎接线→4 条失败；摘除报告渲染→2 条；
+  摘除 cron 注入段→1 条；恢复旧计数口径（严格 == high）→2 条；
+  摘除等级排序→1 条。
+  v3.0.0c 新增 9 项：注入脚本源级（commercialDiscrimination/口径限定/不可用
+  路径/证据图例）/ 端到端渲染（商业段+主张句+证伪条件，Fed 公告不混入）/
+  精度门（Fed 公告/播客/促销页脚/安全新闻整体挡外）/ 精度门不误杀（标题即
+  主张的无摘要条目仍进辨别）/ 融资句式副词容忍 / 估值两种语序 / 竞品人类
+  目标与 according to a study 归第三方调查 / claimSentence 透传 / 源级门
+  存在性与旧触发器未复活。
   v3.0.0c 七轮反向验证全部精确失败：摘除注入段→1 条失败；摘除精度门→3 条；
   摘除 funding 副词组→3 条；摘除 claimSentence 透传→2 条；摘除竞品目标与
   survey 扩展→1 条；摘除估值语序→1 条；摘除报告段渲染→1 条。
@@ -287,7 +342,9 @@ description: |-
 - 跑法：`FETCH=1 FETCH_BODY=1 node scripts/run-pipeline.js` → 提取摘要 → 心虫 think()
 - 注入段（按序）：心虫 stateless 检查器 / live 条目 / 推演 summary / 推演阶段 /
   预测辨别 / **商业主张辨别（v3.0.0c 补入，第 6 段）** /
-  **外部预测基准（v2.17 新增，第 7 段）** / live 新闻宣称辨伪 / KB 条目数
+  **外部预测基准（v2.17 新增，第 7 段）** /
+  **自我修正登记簿（v3.1 新增，第 8 段，含口径限定）** /
+  live 新闻宣称辨伪 / KB 条目数
 - 专项域分区：F 编号明细前 20 条 + 全量按来源/按周聚合概览
 - 排序必须用 `Date.parse` 比较，**不能用 `localeCompare`**：RFC 822 字符串
   （"Wed, 14 Oct 2026"）按字符串比会得到错误顺序，实测 10-19 的条目被排到第 6 位

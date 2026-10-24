@@ -70,6 +70,16 @@
       "recordedAt": "2026-10-08T03:10:00.000Z",
       "resolvedAt": "2026-10-08T03:10:00.000Z",
       "fix": "knowledge-base 立「口径错位高危模式库」5 条 + 补 4 条 T1 源正式条目；cron prompt 加「第四步之前必做」同内容，并在第三段加入 overclaim 注入结果的用法说明"
+    },
+    {
+      "id": "corr-2026-008",
+      "reportVersion": "v3.1",
+      "wrongClaim": "（沿用假设）self-correction-ledger 的 recurringPatterns() 数出来的高危数就是全部高危——接入 live pipeline 时直接把它显示进报告段即可",
+      "rightClaim": "实测 2026-10-25：recurringPatterns() 旧代码用 severity === 'high' 严格过滤，而 data/self-corrections.json 里 corr-2026-002 / corr-2026-004 两条 severity 是 'critical'（record() docstring 的枚举只写了 low|medium|high，数据实际出现了文档外取值）。严格过滤下高危数显示 4，实际 high 及以上是 6——接入后每轮报告都会少报 2 条最重的教训。",
+      "evidence": "human-future/data/self-corrections.json 逐条 severity：high/high/critical/high/critical/high；修复前后 recurringPatterns().highSeverity 对照 4→6；测试断言「引擎产出与 JSON 实际内容一致」与「登记簿高危计数含 critical」在恢复旧口径时精确失败",
+      "lesson": "接入既有模块前，必须实跑它的 API 核对真实输出，不能信 docstring 的字段枚举——文档外取值（critical）会让严格相等过滤静默漏计，且这种漏计不报错、只是数字变小。判别「声明 vs 实现」要对具体数据跑一遍，这正是 v2.4 假能力审计的同一条教训的第二次实证。",
+      "severity": "medium",
+      "recordedAt": "2026-10-24T17:18:26.323Z"
     }
   ]
 }
