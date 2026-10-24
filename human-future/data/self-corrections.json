@@ -2,6 +2,18 @@
   "version": "1.2.0",
   "corrections": [
     {
+      "id": "corr-2026-007",
+      "reportVersion": "v2.15",
+      "wrongClaim": "（沿用假设）辨别器把指南/参考页文本判为「不可证伪：无时间点（意图声明）」就够了——它们反正进不了台账",
+      "rightClaim": "实测 2026-10-24 full-report：EU AI Act Timeline（sitemap 源）条目=页面标题+页面简介，其中「A Practical Guide to Article 50 / What providers and deployers must do by August 2026」有义务句式还有时点，被判 settleable=true 登记进台账；同一句 boilerplate 在 the-scientific-panel / the-advisory-forum / transparency-rules 三个页面重复出现，被登记三次、全部结算为 true。参考文本没有任何主张主体，与「意图声明」是两类对象，贴「意图声明」标签是用错误的理由描述正确的判定。",
+      "evidence": "human-future/data/prediction-ledger.json 三条 fc-eu-ai-act-timeline-* 已结算条目 claim 均为页面标题+简介；修复前后 full-report 预测辨别段对照（可结算 2→1，非预测文本 0→4）",
+      "lesson": "「抽取层不挑食」的代价由「辨别层」承担：sitemap/ RSS 源的 description 是页面简介不是新闻正文，指南页天然含义务句式+法定期限。判别一条文本是不是预测，先看有没有主张主体（文本性质），再看结构（时点/机制）——顺序反了就会把参考文本当成低质量预测而不是非预测。修法：REFERENCE_TEXT_PATTERNS 只认页面框架措辞（guide / overview / this page aims to / what X must do），不碰内容词，防止误杀「aim to provide API access」这类真实承诺。",
+      "severity": "high",
+      "recordedAt": "2026-10-24T00:00:00.000Z",
+      "resolvedAt": "2026-10-24T00:00:00.000Z",
+      "fix": "forecast-discriminator.js 新增 REFERENCE_TEXT_PATTERNS + verdict 'reference-text'（优先级高于不可证伪模式，falsifiability.problems 同步抑制避免双标签），settleable=false 不进台账；project-future.js 报告层 VERDICT_CN/汇总行/文本性质行三处渲染。测试 69→76 项断言，反向验证：摘除判据→4 条断言精确失败。"
+    },
+    {
       "id": "corr-2026-001",
       "reportVersion": "v4",
       "wrongClaim": "Artemis 载人登月 2026-04 已完成",

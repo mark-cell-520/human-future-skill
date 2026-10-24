@@ -18,6 +18,10 @@
  *    - 有明确主体（谁）+ 明确事件（什么）+ 明确时点（何时）→ 可证伪
  *    - 「AI 会继续进步」「未来很美好」这类无主体无时点 → 不可证伪
  *    - 不可证伪的预测不是预测，是修辞
+ *    - [v2.15] 子判别「文本性质」：指南/参考页文本（页面标题+简介，
+ *      "A Practical Guide to…"、"This page aims to provide an overview…"）
+ *      没有任何主张主体，连「意图声明」都不是——单列 reference-text，
+ *      不可结算、不进台账。实测依据见 REFERENCE_TEXT_PATTERNS 注释。
  * 2. 基准概率（base rate）
  *    - 从历史台账里找同类预测的实际兑现率
  *    - 无同类历史时用「宣布→交付」的通用基准（见 DEFAULT_BASE_RATES）
@@ -49,6 +53,33 @@ const DEFAULT_BASE_RATES = {
   // 「能力指标将在 N 个月内提升 X%」。
   capability_milestone: { rate: 0.4, sample: 0, note: '通用先验，无本地历史' },
 };
+
+/**
+ * [v2.15] 参考/指南文本模式：百科式页面文本不是任何主体做出的预测。
+ *
+ * 实测踩坑（2026-10-24 本轮 full-report）：EU AI Act Timeline 是 sitemap 源，
+ * 条目 = 页面标题 + 页面简介。辨别段把
+ *   "The EU AI Act's Transparency Rules: A Practical Guide to Article 50
+ *    What providers and deployers must do by August 2026"
+ * 当成一条可结算预测（dueOn=2026-Q3）登记进台账；同一句 boilerplate 在
+ * the-scientific-panel / the-advisory-forum 页面重复出现，被登记三次、
+ * 全部结算为 true。这类文本没有任何主体在做出预测——页面只是在陈述
+ * 法定义务。当前标签「意图声明」是错的：意图声明至少是某个主体的前瞻
+ * 表述，参考文本连主张主体都没有。
+ *
+ * 误判后果：① 台账被非预测污染，同一义务被重复计数；②「不可证伪」桶
+ * 混入两类完全不同的对象，报告的辨别结论失真。
+ *
+ * 判据设计纪律：只认**页面框架措辞**（guide / overview / this page aims
+ * to / what X must do），不碰内容词——"aims to provide API access"
+ * 是真实承诺不是参考文本，不能误杀。
+ */
+const REFERENCE_TEXT_PATTERNS = [
+  { id: 'guide-page',
+    test: (t) => /(a practical guide|practical guide to|guide to article \d+|step-by-step guide|this page aims to|this page provides|this article (?:aims to|provides)|aims to (?:provide|give|explain|summar|outline) an? (?:overview|guide|introduction|primer|explainer)|(?:provides?|offers?) an? (?:overview|introduction|primer|explainer) (?:of|to|on)|primer on|what (?:providers|deployers|organisations|organizations|companies|developers|users) (?:must|need to|should) do)/i.test(t),
+    label: '指南/参考页文本',
+    guidance: '这是页面标题与简介组成的参考文本，没有任何主体在做出预测，不能登记结算。' },
+];
 
 /** 不可证伪的措辞模式：无主体、无时点、或纯价值判断。 */
 const UNFALSIFIABLE_PATTERNS = [
@@ -103,6 +134,16 @@ function discriminate(claim, opts = {}) {
 
   // ── 1. 可证伪性 ─────────────────────────────────────────────
   const unfalsifiable = UNFALSIFIABLE_PATTERNS
+    .filter(p => { try { return p.test(text); } catch (_) { return false; } })
+    .map(p => ({ id: p.id, label: p.label, guidance: p.guidance }));
+
+  // [v2.15] 参考/指南文本：优先级高于「不可证伪」模式。
+  //
+  // 顺序理由：指南页的标题+简介往往**没有时间点**（"This page aims to
+  // provide an overview…"），若先判 unfalsifiable，它会被贴上「意图声明」
+  // 标签——但参考文本连主张主体都没有，与意图声明是两类对象，
+  // 报告结论会失真。文本性质是先于结构的判别。
+  const referenceText = REFERENCE_TEXT_PATTERNS
     .filter(p => { try { return p.test(text); } catch (_) { return false; } })
     .map(p => ({ id: p.id, label: p.label, guidance: p.guidance }));
 
@@ -231,7 +272,12 @@ function discriminate(claim, opts = {}) {
   // ── 综合判定 ───────────────────────────────────────────────
   // 判定只描述「这条预测的结构质量」，不描述「它是否为真」。
   let verdict, verdictLabel;
-  if (unfalsifiable.length > 0) {
+  if (referenceText.length > 0) {
+    // [v2.15] 参考/指南文本优先：它不是任何主体做出的预测，
+    // 与「意图声明」是两类对象，必须分开计数、分开展示。
+    verdict = 'reference-text';
+    verdictLabel = `非预测文本（${referenceText.map(u => u.label).join('、')}）`;
+  } else if (unfalsifiable.length > 0) {
     verdict = 'not-a-forecast';
     verdictLabel = `不可证伪（${unfalsifiable.map(u => u.label).join('、')}）`;
   } else if (reasoningScore === 0) {
@@ -245,8 +291,10 @@ function discriminate(claim, opts = {}) {
     verdictLabel = '结构完整（可结算）';
   }
 
-  // 可结算性：有 dueOn 且可证伪
-  const settleable = verdict !== 'not-a-forecast' && dueOn !== null;
+  // 可结算性：有 dueOn、可证伪、且不是参考文本
+  // [v2.15] reference-text 即使解析出了时间点（指南页副标题里的
+  // "by August 2026"）也不可结算——没有任何主体对它负责。
+  const settleable = verdict !== 'not-a-forecast' && verdict !== 'reference-text' && dueOn !== null;
 
   return {
     available: true,
@@ -256,8 +304,17 @@ function discriminate(claim, opts = {}) {
     url: claim.url || '',
     category,
     falsifiability: {
-      ok: unfalsifiable.length === 0,
-      problems: unfalsifiable,
+      ok: unfalsifiable.length === 0 && referenceText.length === 0,
+      // [v2.15] reference-text 命中时不列 unfalsifiable problems：
+      // 指南页「没有时间点」的根因是文本性质，再印一条「意图声明」
+      // 等于用错误的理由描述正确的判定——两类标签不能同时贴。
+      problems: referenceText.length > 0 ? [] : unfalsifiable,
+    },
+    // [v2.15] 文本性质：这条输入是不是「某个主体做出的预测」。
+    // 指南/参考页文本（页面标题+简介）没有主张主体，与意图声明是两类对象。
+    textNature: {
+      isReferenceProse: referenceText.length > 0,
+      markers: referenceText,
     },
     dueOn,
     dueBasis,
@@ -332,6 +389,9 @@ function discriminateAll(claims, opts = {}) {
       byVerdict,
       settleableCount: settleable.length,
       notForecastCount: byVerdict['not-a-forecast'] || 0,
+      // [v2.15] 参考/指南文本单列：它不是「意图声明」，没有主张主体，
+      // 混进 not-a-forecast 会让报告的辨别结论失真。
+      referenceTextCount: byVerdict['reference-text'] || 0,
       wellFormedCount: byVerdict['well-formed'] || 0,
       calibrationWarnings: results.filter(r => r.calibrationWarning).length,
     },
@@ -348,6 +408,8 @@ if (require.main === module) {
     { text: 'AI 会继续进步，未来很美好', source: 'Probe', date: '2026-10-20' },
     { text: 'Gemini 5 将在 2027-Q2 GA，因为算力瓶颈已缓解；若 2027-Q1 未见预览版则说明延期', source: 'Probe', date: '2026-10-20' },
     { text: '我们有 95% 的信心在 2028 年实现 AGI', source: 'Probe', date: '2026-10-20' },
+    // [v2.15] 指南/参考页文本：有义务句式还有时点，但不是预测
+    { text: "The EU AI Act's Transparency Rules: A Practical Guide to Article 50  What providers and deployers must do by August 2026", source: 'EU AI Act Timeline', date: '2026-10-22' },
   ];
   for (const c of cases) {
     const r = discriminate(c);
@@ -356,5 +418,8 @@ if (require.main === module) {
     console.log(`  dueOn: ${r.dueOn} | settleable: ${r.settleable} | 推理分: ${r.reasoning.score}/3`);
     console.log(`  基准概率: ${r.baseRate.rate} (sample=${r.baseRate.sample}, ${r.baseRate.source})`);
     if (r.calibrationWarning) console.log(`  ⚠ 校准警告: ${r.calibrationWarning.message}`);
+    if (r.textNature && r.textNature.isReferenceProse) {
+      console.log(`  文本性质: ${r.textNature.markers.map(m => m.label).join('、')}（非预测文本，不进台账）`);
+    }
   }
 }

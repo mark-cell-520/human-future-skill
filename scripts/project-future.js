@@ -1406,9 +1406,10 @@ class ProjectionEngine {
           ? `已登记 ${registered.length} 条可结算预测进台账，到期结算 Brier 分数。`
           : '本期无可结算预测需要登记（或已在此前轮次登记过）。',
       },
-      note: '本段只辨别预测的表述与结构质量（可证伪性/基准概率/推理有效性/证伪条件），'
+      note: '本段只辨别预测的表述与结构质量（可证伪性含文本性质判别/基准概率/推理有效性/证伪条件），'
         + '不判断其内容真假。可结算的预测（settleable=true）已自动登记进台账，'
-        + '到期结算 Brier 分数以建立校准曲线。',
+        + '到期结算 Brier 分数以建立校准曲线。指南/参考页文本（reference-text）没有主张主体，'
+        + '不可结算、不登记——与「意图声明」是两类对象。',
     };
   }
 
@@ -1900,11 +1901,14 @@ function formatReport(report) {
     const s = fd.summary;
     lines.push(`本期抽到 ${fd.audited} 条含前瞻声明的预测，逐条辨别结果：`);
     lines.push(`  可结算 ${s.settleableCount} 条 | 结构完整 ${s.wellFormedCount} 条`
-      + ` | 不可证伪 ${s.notForecastCount} 条 | 校准警告 ${s.calibrationWarnings} 条`);
+      + ` | 不可证伪 ${s.notForecastCount} 条 | 非预测文本 ${s.referenceTextCount || 0} 条`
+      + ` | 校准警告 ${s.calibrationWarnings} 条`);
     lines.push('');
     const VERDICT_CN = {
       'not-a-forecast': '不可证伪', 'bare-assertion': '裸断言',
       'weakly-supported': '支撑不足', 'well-formed': '结构完整',
+      // [v2.15] 指南/参考页文本：没有主张主体，与「意图声明」分开展示
+      'reference-text': '非预测文本',
     };
     for (const r of fd.results.slice(0, 12)) {
       lines.push(`[${VERDICT_CN[r.verdict] || r.verdict}] ${r.text.slice(0, 110)}`);
@@ -1916,6 +1920,11 @@ function formatReport(report) {
         + `（sample=${r.baseRate.sample}${r.baseRate.source === 'default-prior' ? '，通用先验' : '，本地台账'}）`);
       if (r.falsifiability.problems.length) {
         lines.push(`  不可证伪原因: ${r.falsifiability.problems.map(p => `${p.label}——${p.guidance}`).join('；')}`);
+      }
+      // [v2.15] 文本性质单列：参考/指南页文本连「意图声明」都不是，
+      // 不能进台账（没有任何主体能对它负责）。
+      if (r.textNature && r.textNature.isReferenceProse) {
+        lines.push(`  文本性质: ${r.textNature.markers.map(m => `${m.label}——${m.guidance}`).join('；')}`);
       }
       if (r.calibrationWarning) lines.push(`  ⚠ ${r.calibrationWarning.message}`);
     }

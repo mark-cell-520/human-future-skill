@@ -1,8 +1,22 @@
 ---
 name: human-future-v2
-title: "人类未来 · 文明推演引擎 v2.14"
-version: "2.14.0"
+title: "人类未来 · 文明推演引擎 v2.15"
+version: "2.15.0"
 description: |-
+  人类未来技能 v2.15 — 预测辨别器新增「文本性质」子判别：指南/参考页文本不是预测。
+  实测依据（2026-10-24 本轮 full-report 审计）：EU AI Act Timeline 是 sitemap 源，
+  条目=页面标题+页面简介，辨别段把 "A Practical Guide to Article 50 / What providers
+  and deployers must do by August 2026" 这类页面文本判成可结算预测（dueOn=2026-Q3）
+  登记进台账，同一句 boilerplate 在三个页面重复出现、登记三次全部结算 true。
+  参考文本没有任何主张主体，与「意图声明」是两类对象，旧代码把它贴上「意图声明」
+  标签属于误判。修复：新增 REFERENCE_TEXT_PATTERNS（只认页面框架措辞 guide /
+  overview / this page aims to / what X must do，不碰内容词，不误杀真实承诺），
+  新 verdict 'reference-text' 优先级高于不可证伪模式，settleable=false 不进台账，
+  报告汇总行单列「非预测文本 N 条」。本轮真实数据实测：4 条 EU AI Act 指南页
+  从「裸断言/可结算」改判「非预测文本/不可结算」，可结算 2→1。测试新增 7 项断言
+  （全套实测 140 项，此前 SKILL.md 记的 69 是漏计笔误，已按实测改正），
+  反向验证：摘除判据→4 条断言精确失败（真实样本/优先级/汇总计数/端到端台账）。
+
   人类未来技能 v2.14 — sitemap 源修复「假发布日期」：lastmod 是页面最后修改时间不是
   发布时间，旧页被编辑会更新 lastmod。实测 anthropic.com 按 lastmod 取「最新 12 条」
   时 7 条是旧页（100k-context-windows 发布于 2023-05-11，lastmod 2026-10-15），
@@ -98,7 +112,11 @@ description: |-
 但能系统性辨别预测质量并长期跟踪结算的，没有。
 
 **辨别四维**（`human-future/scripts/forecast-discriminator.js`）：
-1. 可证伪性——有主体 + 有事件 + 有时点；「AI 会继续进步」这类是修辞不是预测
+1. 可证伪性——有主体 + 有事件 + 有时点；「AI 会继续进步」这类是修辞不是预测。
+   [v2.15] 含文本性质子判别：指南/参考页文本（页面标题+简介，"A Practical Guide
+   to…"、"This page aims to provide an overview…"）没有任何主张主体，连「意图声明」
+   都不是——单列 verdict 'reference-text'，不可结算、不进台账。实测依据：EU AI Act
+   Timeline 指南页曾被判可结算并登记三次全部结算 true（同一义务重复计数）。
 2. 基准概率——同类历史兑现率；无历史时用通用先验并标注 sample=0
 3. 推理有效性——是否给出机制 / 先行指标 / 反例条件，三要素缺一降一级
 4. 证伪条件——明确写出「观察到什么就说明这条错了」；没有则无法结算
@@ -107,14 +125,25 @@ description: |-
 - 当前采集源（RSS + 博客正文）里的前瞻表述**多为意图声明**（"we expect to expand
   access"、"aim to simplify"），没有时间点，判为不可结算。实测 5 条全部如此。
 - 要拿到真正可结算的预测，需接 Metaculus / Epoch AI / 厂商路线图等专门预测源，
-  当前采集范围不含。这是下一步工作，不是已解决。
+  当前采集范围不含。这是下一步工作，不是已解决。2026-10-24 实测：Metaculus API
+  需登录 token（403）、Manifold API 本机不可达（连接超时）、PredictIt 301、
+  Epoch AI 数据页只有芯片/模型/公司等统计数据、无预测类数据——外部预测源
+  接入本轮检索无果，如实记录。
 - 基准概率目前全部来自通用先验（sample=0），警告强度有限，已在输出中标注。
+  另发现一处断链（本轮未修，下轮候选）：台账条目存的是 `domain` 字段，而
+  辨别器读 `p.category`，本地台账基准概率分支永远不会激活；且现有 3 条已结算
+  条目是同一义务的三个页面重复登记，直接修字段映射会得到失真的 100% 基准概率，
+  必须先做同义务去重再激活。
 
 **测试**
-- `npm test`：69 项断言（59 v2.13 及以前 + 10 v2.14：4 项 extractPublishDate 单元 +
-  3 项 mock fetch 行为（旧页不挤掉新发布/真实发布时间/出处标记）+ 1 项回退打标 +
-  2 项报告层端到端）。每项修复都做过反向验证（摘除修复 → 对应断言失败；
-  v2.14 实测摘除后 3 条核心断言精确失败，其余 7 条不受影响）
+- `npm test`：**140 项断言**（实测各 section 汇总；v2.15 之前 133 + 本轮新增 7：
+  2 项参考文本判别单元（真实指南页样本/优先级高于无时间点）+ 1 项误杀防护
+  （"aim to provide API access by Q2 2027" 不得判参考文本）+ 1 项回归（Anthropic
+  条件式预测仍可结算）+ 1 项汇总计数单列 + 1 项端到端不进台账 + 1 项报告层渲染三处）。
+  注：本文件此前的「69 项断言」是旧版笔误（只加了 v2.13+v2.14 两节，漏计其余
+  section），2026-10-24 按实测汇总改正为 140。每项修复都做过反向验证
+  （摘除修复 → 对应断言失败；v2.15 实测摘除判据后 4 条断言精确失败，
+  误杀防护与回归断言不受影响）
 
 **cron 注入脚本**（`~/.hermes/scripts/hf-cron-fetch.sh`，不在本仓、不受版本控制）
 - 跑法：`FETCH=1 FETCH_BODY=1 node scripts/run-pipeline.js` → 提取摘要 → 心虫 think()

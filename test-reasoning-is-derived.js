@@ -1999,3 +1999,125 @@ global.fetch = async (url) => {
     console.log('结论：sitemap 源按页面真实发布时间排名与标注，回退路径可识别。');
   }
 })();
+
+// ════════════════════════════════════════════════════════════════
+// v2.15 新增断言：指南/参考页文本不是预测，不得进台账。
+//
+// 实测依据（2026-10-24 本轮 full-report 审计）：
+//   EU AI Act Timeline 是 sitemap 源，条目 = 页面标题 + 页面简介。
+//   辨别段把
+//     "The EU AI Act's Transparency Rules: A Practical Guide to Article 50
+//      What providers and deployers must do by August 2026"
+//   判成可结算预测（dueOn=2026-Q3）登记进台账；同一句 boilerplate 在
+//   the-scientific-panel / the-advisory-forum 页面重复出现，被登记三次、
+//   全部结算为 true。参考文本没有任何主张主体，却被贴上「意图声明」标签
+//   ——连主张主体都没有的文本，与意图声明是两类对象。
+//
+// 反向验证：把 REFERENCE_TEXT_PATTERNS 清空，
+// 下面第 1/2/4/5/6 条必败（指南页重新变成可结算预测）。
+// ════════════════════════════════════════════════════════════════
+const v215 = [];
+function c215(name, ok, detail) { v215.push({ name, ok, detail }); }
+
+const { discriminate: discriminateOne215 } = require('./human-future/scripts/forecast-discriminator.js');
+
+// 1. 真实样本：本轮报告里被误判为可结算预测的指南页
+c215('指南页标题+简介判为非预测文本（真实样本）', (() => {
+  const r = discriminateOne215({
+    text: "The EU AI Act's Transparency Rules: A Practical Guide to Article 50  What providers and deployers must do by August 2026",
+    source: 'EU AI Act Timeline', date: '2026-10-22',
+  });
+  return r.available && r.verdict === 'reference-text' && r.settleable === false
+    && r.textNature && r.textNature.isReferenceProse === true;
+})(), '有义务句式还有时点，但页面只是陈述法定义务，没有任何主体做出预测');
+
+// 2. 无时间点的 overview 页面：文本性质优先于「无时间点」
+c215('This page aims to provide an overview 判参考文本而非意图声明', (() => {
+  const r = discriminateOne215({
+    text: 'Enforcement of Chapter V under the EU AI Act  This page aims to provide an overview of the EU AI Act\'s enforcement regime and the powers of national authorities.',
+    source: 'EU AI Act Timeline', date: '2026-10-22',
+  });
+  return r.available && r.verdict === 'reference-text'
+    && !(r.falsifiability.problems || []).some(p => p.id === 'no-timeline')
+    && r.settleable === false;
+})(), '指南页常无时间点，但根因是文本性质，不是「意图声明」');
+
+// 3. 误杀防护：真实承诺不得判成参考文本
+c215('「aim to provide API access by Q2 2027」不误判为参考文本', (() => {
+  const r = discriminateOne215({
+    text: 'We aim to provide API access to all developers by Q2 2027, starting with a limited preview.',
+    source: 'Probe', date: '2026-10-20',
+  });
+  return r.available && r.verdict !== 'reference-text'
+    && r.textNature && r.textNature.isReferenceProse === false;
+})(), '判据只认页面框架措辞，不能碰内容词误杀真实承诺');
+
+// 4. 回归：真实可结算预测不受影响
+c215('真实可结算预测仍判可结算（回归）', (() => {
+  const r = discriminateOne215({
+    text: 'If small models improve at their historical rate, they\'ll match this capability level by the end of this year. The solid line is the least-squares fit with a gain of 13.7 ECI per year (R 2 of 0.95).',
+    source: 'Anthropic News (sitemap)', date: '2026-10-13',
+  });
+  return r.available && r.verdict !== 'reference-text' && r.settleable === true
+    && r.dueOn !== null;
+})(), 'Anthropic 自复制研究里的条件式预测必须仍然可结算');
+
+// 5. 汇总计数单列
+c215('discriminateAll 汇总单列 referenceTextCount', (() => {
+  const fd = require('./human-future/scripts/forecast-discriminator.js').discriminateAll([
+    { text: 'A Practical Guide to Article 50  What providers and deployers must do by August 2026', source: 'S1', date: '2026-10-22' },
+    { text: 'OpenAI plans to release GPT-6 by 2028', source: 'S2', date: '2026-10-22' },
+  ]);
+  return fd.available && fd.summary.referenceTextCount === 1
+    && fd.summary.settleableCount === 1;
+})(), '两类对象必须分开计数');
+
+// 6. 端到端：指南页信号走 buildForecastDiscrimination 不进台账
+c215('指南页信号不登记进台账（端到端）', (() => {
+  const guideCount = () => readLedger().filter(p => /Practical Guide/.test(p.claim || '')).length;
+  const before = guideCount();
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const inst = new ProjectionEngine({});
+  inst.signals = { items: [{
+    title: "The EU AI Act's Transparency Rules: A Practical Guide to Article 50",
+    body: 'What providers and deployers must do by August 2026. This page aims to provide an overview of the transparency obligations.',
+    description: '', source: 'EU AI Act Timeline', category: 'frontier_models',
+    pubDate: 'Tue, 20 Oct 2026 00:00:00 GMT',
+  }] };
+  const r = inst.buildForecastDiscrimination();
+  const after = guideCount();
+  // 注意：台账里可能已有 10-21 历史轮次登记的同题条目（那是污染史，
+  // 不是本轮新写）。断言「本轮不新增」，不是「台账从来不含」。
+  return before === after
+    && (r.results || []).length >= 1
+    && (r.results || []).every(x => x.verdict === 'reference-text' && !x.settleable)
+    && r.summary.referenceTextCount >= 1;
+})(), '指南页不得进台账；本轮不得新增 Practical Guide 条目');
+
+// 7. 报告层渲染：新类别必须出现在 formatReport 产物里
+// （「接口存在 ≠ 端到端到达」：discriminate 产出 verdict 不够，
+//   formatReport 必须真的把它印出来）
+c215('报告层渲染「非预测文本」类别', (() => {
+  const src = require('fs').readFileSync('./scripts/project-future.js', 'utf-8');
+  const hasVerdictCn = /'reference-text':\s*'非预测文本'/.test(src);
+  const hasSummary = /非预测文本 \$\{s\.referenceTextCount/.test(src);
+  const hasNatureLine = /文本性质:/.test(src);
+  return hasVerdictCn && hasSummary && hasNatureLine;
+})(), 'VERDICT_CN / 汇总行 / 文本性质行三处都必须渲染');
+
+(async () => {
+  const results = await Promise.all(v215.map(c => Promise.resolve(c.ok)));
+  let f = 0;
+  v215.forEach((c, i) => {
+    const ok = results[i];
+    if (!ok) f++;
+    console.log(`${ok ? '✓' : '✗'} ${c.name}${ok ? '' : '  —— ' + c.detail}`);
+  });
+  console.log(`\nv2.15: ${v215.length - f} 通过, ${f} 失败, 共 ${v215.length} 个`);
+  if (f > 0) {
+    console.log('结论：指南/参考页文本仍被当成预测，或新类别没到报告层。');
+    process.exitCode = 1;
+  } else {
+    console.log('结论：参考文本与意图声明已分开辨别，指南页不再进台账。');
+  }
+})();

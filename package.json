@@ -1,7 +1,7 @@
 {
   "name": "human-future",
-  "version": "2.14.0",
-  "description": "人类未来 v2.14 - sitemap 源改用页面真实发布时间（lastmod 是修改时间不是发布日，旧页修订会冒充新新闻）；v2.13 停止假推演，转为辨别他人的预测",
+  "version": "2.15.0",
+  "description": "人类未来 v2.15 - 预测辨别器新增「文本性质」子判别：指南/参考页文本（页面标题+简介）没有主张主体，单列 reference-text 不可结算不进台账；v2.14 sitemap 源改用页面真实发布时间（lastmod 是修改时间不是发布日）；v2.13 停止假推演，转为辨别他人的预测",
   "main": "modules/monitor/signal-collector.js",
   "scripts": {
     "start": "node scripts/run-pipeline.js",
