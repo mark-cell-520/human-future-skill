@@ -1,8 +1,19 @@
 ---
 name: human-future-v2
-title: "人类未来 · 文明推演引擎 v2.13"
-version: "2.13.0"
+title: "人类未来 · 文明推演引擎 v2.14"
+version: "2.14.0"
 description: |-
+  人类未来技能 v2.14 — sitemap 源修复「假发布日期」：lastmod 是页面最后修改时间不是
+  发布时间，旧页被编辑会更新 lastmod。实测 anthropic.com 按 lastmod 取「最新 12 条」
+  时 7 条是旧页（100k-context-windows 发布于 2023-05-11，lastmod 2026-10-15），
+  报告里的发布日期全是假的。修复：对 lastmod 最新的 24 个候选抓页面抽真实发布时间
+  （JSON-LD datePublished / article:published_time / <time datetime>），按真实发布
+  时间排名；抓不到页面的回退 lastmod 但打 _dateSource='sitemap-lastmod' 标记，
+  报告层 dateProvenance 统计两种出处。实测代价：fetchAll 8s→14-19s（页面解析放在
+  所有 RSS 落地之后串行做，不占现有源的 8 秒超时窗口——塞进同一次 Promise.all 会挤
+  掉 ECB/NBER，git stash 对照实验证实过）。测试 59→69 项断言，含 mock fetch 反向
+  验证（摘除修复→3 条核心断言失败）。
+
   人类未来技能 v2.13 — v2.13 方向转变：**引擎不再自己生成未来，改为辨别他人关于未来的主张**。
   - 停止假推演：阶段标签从「第一阶段（未来 0-12 个月）」改为「信号最集中方向（本期热度第 1-2 位）」；
     报告标题从「分阶段推演」改为「信号热度分组（按本期活跃度排序，非推演）」
@@ -100,8 +111,10 @@ description: |-
 - 基准概率目前全部来自通用先验（sample=0），警告强度有限，已在输出中标注。
 
 **测试**
-- `npm test`：59 项断言（12 基础 + 6 v2.8 + 6 v2.9 + 18 v2.10 + 3 v2.11 + 7 早期）
-- 每项修复都做过反向验证（摘除修复 → 对应断言失败）
+- `npm test`：69 项断言（59 v2.13 及以前 + 10 v2.14：4 项 extractPublishDate 单元 +
+  3 项 mock fetch 行为（旧页不挤掉新发布/真实发布时间/出处标记）+ 1 项回退打标 +
+  2 项报告层端到端）。每项修复都做过反向验证（摘除修复 → 对应断言失败；
+  v2.14 实测摘除后 3 条核心断言精确失败，其余 7 条不受影响）
 
 **cron 注入脚本**（`~/.hermes/scripts/hf-cron-fetch.sh`，不在本仓、不受版本控制）
 - 跑法：`FETCH=1 FETCH_BODY=1 node scripts/run-pipeline.js` → 提取摘要 → 心虫 think()

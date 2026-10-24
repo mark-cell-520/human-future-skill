@@ -169,6 +169,56 @@ const BODY_MAX_CHARS = 6000;
 const BROWSER_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 '
   + '(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
+// [v2.14] sitemap 源的「真实发布时间」解析。
+//
+// 为什么需要：sitemap 只有 <lastmod>（页面最后修改时间），它**不是**发布时间。
+// 实测证据（2026-10-24 探针 + cron 报告）：
+//   - anthropic.com/news/100k-context-windows 发布于 2023-05-11，lastmod 却是
+//     2026-10-15——一条三年前的旧闻，按 lastmod 排会被当成十天前的新闻；
+//   - cron 报告实测抽查：按 lastmod 取的「最新 12 条」里 7 条是旧页修订，
+//     真正的新发布被旧页编辑挤掉，报告日期全是假的。
+// 修法：对 lastmod 最新的 N 个候选逐个抓页面，从 HTML 抽真实发布时间
+// （JSON-LD datePublished / meta article:published_time / <time datetime>），
+// 按**真实发布时间**重排后再截断到 MAX_ITEMS_PER_SOURCE。
+// 抓不到页面的条目保留 lastmod 但打 _dateSource='sitemap-lastmod' 标记，
+// 下游可识别「这是修改时间不是发布时间」，不得当发布日引用。
+const SITEMAP_DATE_CANDIDATES = 24;   // 候选池：lastmod 最新的 N 条参与日期解析
+const SITEMAP_DATE_TIMEOUT_MS = 6000; // 单页超时：比正文抓取短，失败即回退 lastmod
+const SITEMAP_DATE_BATCH = 6;         // 有界并发：只打单一主机（如 anthropic.com），
+                                      // 6 并发对 CDN 站点无压力，且把 24 个候选的
+                                      // 串行批次数从 6 降到 4（实测每批约 2.5-3 秒）
+
+// [v2.14] 页面 HTML 进程内缓存。sitemap 日期解析与正文增强抓的是同一批页面
+// （Anthropic 页面实测 150-220KB），不缓存等于每页抓两遍。
+// 只缓存成功结果；失败的（超时/403）不缓存，让正文阶段还有一次机会。
+const pageHtmlCache = new Map();
+
+/** 抓页面原始 HTML（带进程内缓存）。content-type 非 HTML 返回空串。 */
+async function fetchPageHtml(url, timeoutMs = BODY_TIMEOUT_MS) {
+  if (!url || !/^https?:\/\//.test(url)) return '';
+  if (pageHtmlCache.has(url)) return pageHtmlCache.get(url);
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, {
+      signal: ctrl.signal,
+      headers: { 'User-Agent': BROWSER_UA, Accept: 'text/html,application/xhtml+xml' },
+      redirect: 'follow',
+    });
+    if (!res.ok) return '';
+    const ct = res.headers.get('content-type') || '';
+    // 只处理 HTML；RSS/PDF/图片一律跳过（PDF 要另走解析器，不在本步范围）
+    if (!/text\/html|application\/xhtml/i.test(ct)) return '';
+    const text = await res.text();
+    pageHtmlCache.set(url, text);
+    return text;
+  } catch (_) {
+    return '';
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /** 把 HTML 压成纯文本：去 script/style/标签、解实体、压空白。 */
 function stripHtml(html) {
   return String(html)
@@ -196,6 +246,48 @@ function stripHtml(html) {
 }
 
 /**
+ * [v2.14] 从页面原始 HTML 里抽真实发布时间。
+ *
+ * 为什么不能只信 sitemap 的 lastmod：见 SITEMAP_DATE_CANDIDATES 处的实测记录
+ * （100k-context-windows 发布于 2023-05-11，lastmod 2026-10-15）。
+ *
+ * 三种信源按可靠性排序，取第一个通过合理性校验的：
+ *   1. JSON-LD `"datePublished":"..."`（Anthropic 等 Next.js 站在
+ *      <script type="application/ld+json"> 里，探针实测存在）
+ *   2. <meta article:published_time content="...">（属性顺序不定，正则按标签整体匹配）
+ *   3. <time datetime="...">
+ *
+ * 合理性校验：未来日期（> 现在 + 1 天）一律拒绝——那可能是排期、模板占位或
+ * 解析错误，不能当发布时间。全部信源都失败返回 null，由调用方回退 lastmod。
+ *
+ * 注意：必须在**原始 HTML** 上抽，stripHtml 会把 <script>（JSON-LD 所在处）
+ * 整个删掉。
+ */
+function extractPublishDate(html) {
+  if (!html) return null;
+  const candidates = [];
+  const ld = html.match(/"datePublished"\s*:\s*"([^"]+)"/i);
+  if (ld) candidates.push(ld[1]);
+  const metaRe = /<meta\b[^>]*>/gi;
+  let m;
+  while ((m = metaRe.exec(html))) {
+    const tag = m[0];
+    if (/article:published_time|og:published_time|name=["']date["']/i.test(tag)) {
+      const c = tag.match(/content\s*=\s*"([^"]+)"/i);
+      if (c) candidates.push(c[1]);
+    }
+  }
+  const time = html.match(/<time\b[^>]*datetime\s*=\s*"([^"]+)"/i);
+  if (time) candidates.push(time[1]);
+  const now = Date.now();
+  for (const c of candidates) {
+    const t = Date.parse(c);
+    if (!isNaN(t) && t <= now + 86400000) return new Date(t).toUTCString();
+  }
+  return null;
+}
+
+/**
  * 抓单条正文。失败返回空串，不抛错。
  *
  * 为什么不能简单 slice(0, N)：v2.9 第一版实测 DeepMind 博客页前 6000 字符
@@ -203,28 +295,15 @@ function stripHtml(html) {
  * 真正的跑分数据（DeepSWE 77.9%、AutomationBench 51.3%）在 8000+ 字符处。
  * 直接截断等于把关键口径切掉，正文增强等于白做。
  * 因此这里做两步：先按正文字符密度跳过站点头部，再截断到正文主体。
+ *
+ * [v2.14] 改走 fetchPageHtml（带进程内缓存）：sitemap 日期解析阶段已经抓过
+ * 同一批页面，直接复用，不重复请求。
  */
 async function fetchBody(url) {
   if (!url || !/^https?:\/\//.test(url)) return '';
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), BODY_TIMEOUT_MS);
-  try {
-    const res = await fetch(url, {
-      signal: ctrl.signal,
-      headers: { 'User-Agent': BROWSER_UA, Accept: 'text/html,application/xhtml+xml' },
-      redirect: 'follow',
-    });
-    if (!res.ok) return '';
-    const ct = res.headers.get('content-type') || '';
-    // 只处理 HTML；RSS/PDF/图片一律跳过（PDF 要另走解析器，不在本步范围）
-    if (!/text\/html|application\/xhtml/i.test(ct)) return '';
-    const raw = stripHtml(await res.text());
-    return extractMainContent(raw);
-  } catch (_) {
-    return '';
-  } finally {
-    clearTimeout(timer);
-  }
+  const raw = await fetchPageHtml(url);
+  if (!raw) return '';
+  return extractMainContent(stripHtml(raw));
 }
 
 /**
@@ -363,26 +442,31 @@ function parseFeed(xml) {
 }
 
 /**
- * [v2.13] Sitemap 采集器。
+ * [v2.13] Sitemap 采集器（为什么需要它）。
  *
- * 为什么需要：Anthropic 官方博客没有 RSS（实测 /news/rss.xml、/rss.xml、
+ * Anthropic 官方博客没有 RSS（实测 /news/rss.xml、/rss.xml、
  * /feed.xml、/research/rss.xml 全部 404），但它是本期唯一发布带明确时间点
  * 可结算预测的厂商源（IoT 自复制研究写「今年底达到该能力水平」）。
  * 缺了它，预测辨别器只能抓到意图声明，抓不到可结算预测——
  * 实测 agent 自己发现了这个缺口并写明「采集范围决定辨别上限」。
  *
- * sitemap.xml 有 <loc> + <lastmod>，足以支撑「近期更新了什么」的采集。
- * 与 RSS 的区别：sitemap 不含标题与摘要，只有 URL 和修改日期。
- * 因此标题从 URL 末段推导（连字符转空格），摘要留空——
+ * sitemap.xml 有 <loc> + <lastmod>。与 RSS 的区别：不含标题与摘要，
+ * 标题从 URL 末段推导（连字符转空格），摘要留空——
  * 下游需要内容时会走 FETCH_BODY 抓正文。
  *
- * 诚实性约束：lastmod 是「页面最后修改时间」不是「发布时间」，
- * 两者可能不同（修订旧文也会更新 lastmod）。已在 origin 标记里区分。
+ * [v2.14] 诚实性约束已升级为真修复：lastmod 是「页面最后修改时间」不是
+ * 「发布时间」，修订旧文也会更新 lastmod。v2.13 时代只在注释里声明这个
+ * 区别，报告照用 lastmod 当发布日——实测 12 条「最新」里 7 条是旧页。
+ * v2.14 起改抓页面抽真实发布时间，见 fetchSitemapEntries /
+ * resolveSitemapDates 两个阶段的文档。
  */
-async function fetchSitemap(src) {
+/**
+ * [v2.14] sitemap 采集第一阶段：只抓 XML，按 lastmod 取候选池。
+ * 不碰页面——页面日期解析是第二阶段（resolveSitemapDates）的事。
+ * 拆开的原因：见 fetchAll 里的竞争实测记录。
+ */
+async function fetchSitemapEntries(src) {
   const ctrl = new AbortController();
-  // [v2.13] 允许按源覆盖超时：EU AI Act 的 feed 有 350KB（含全文），
-  // 8 秒传不完必然超时（实测 30 秒都没传完）。src.timeoutMs 可单独放宽。
   const timer = setTimeout(() => ctrl.abort(), src.timeoutMs || FETCH_TIMEOUT_MS);
   try {
     const res = await fetch(src.url, {
@@ -392,7 +476,7 @@ async function fetchSitemap(src) {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const xml = await res.text();
     const blocks = xml.match(/<url>[\s\S]*?<\/url>/g) || [];
-    const items = [];
+    const entries = [];
     for (const b of blocks) {
       const loc = (b.match(/<loc>([\s\S]*?)<\/loc>/) || [])[1] || '';
       const mod = (b.match(/<lastmod>([\s\S]*?)<\/lastmod>/) || [])[1] || '';
@@ -404,36 +488,107 @@ async function fetchSitemap(src) {
       const slug = loc.replace(/\/$/, '').split('/').pop() || '';
       // 末段太短或是纯索引页（如 /news 本身）则跳过
       if (!slug || slug.length < 8) continue;
-      items.push({
+      entries.push({
         // 标题从 slug 推导：连字符转空格。这是推导值不是原标题，
         // 下游引用时应注意（正文抓取后可获得真标题）。
         title: slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
         link: loc,
-        pubDate: mod ? new Date(mod).toUTCString() : '',
-        description: '',
-        source: src.name,
-        origin: 'live',
-        // 标记这是 sitemap 来源：lastmod 是修改时间不是发布时间
-        _fromSitemap: true,
+        lastMod: mod,
       });
     }
-    // 按 lastmod 倒序取最新的若干条。
-    // [v2.13] 必须用 Date.parse 比较，不能用 localeCompare——RFC 822/ISO 字符串
-    // 按字典序排会得到错误顺序（hf-cron-fetch.sh 踩过同一个坑）。
-    items.sort((a, b) => {
-      const ta = Date.parse(a.pubDate || '');
-      const tb = Date.parse(b.pubDate || '');
+    // 候选池按 lastmod 倒序取。lastmod 是「近期被动过」的筛选器，
+    // 真实发布时间决定池内排名——那是第二阶段的事。
+    const byLastModDesc = (a, b) => {
+      const ta = Date.parse(a.lastMod || '');
+      const tb = Date.parse(b.lastMod || '');
       if (isNaN(ta) && isNaN(tb)) return 0;
       if (isNaN(ta)) return 1;
       if (isNaN(tb)) return -1;
       return tb - ta;
-    });
-    return { ok: true, items: items.slice(0, MAX_ITEMS_PER_SOURCE) };
+    };
+    entries.sort(byLastModDesc);
+    return { ok: true, candidates: entries.slice(0, SITEMAP_DATE_CANDIDATES) };
   } catch (e) {
-    return { ok: false, error: e.message, items: [] };
+    return { ok: false, error: e.message, candidates: [] };
   } finally {
     clearTimeout(timer);
   }
+}
+
+/**
+ * [v2.14] sitemap 采集第二阶段：抓候选页面抽真实发布时间，按真实发布时间
+ * 排名后截断到 MAX_ITEMS_PER_SOURCE。
+ *
+ * 为什么不能只信 sitemap 的 lastmod：lastmod 是页面最后修改时间，旧页被编辑
+ * （加相关链接、修错别字）也会更新 lastmod。实测 anthropic.com 按 lastmod
+ * 取「最新 12 条」时 7 条是旧页——100k-context-windows 发布于 2023-05-11，
+ * lastmod 2026-10-15，会被当成十天前的新闻，真正的新发布反而被挤掉，
+ * 报告里的发布日期全是假的。
+ *
+ * lastmod 仍然有用：它决定哪些页面近期被动过，是候选池的筛选器。
+ * 真实发布时间决定候选之间的最终排名，两者分工不同。
+ *
+ * 抓不到页面的条目保留 lastmod 但打 _dateSource='sitemap-lastmod' 标记，
+ * 下游可识别「这是修改时间不是发布时间」，不得当发布日引用。
+ */
+async function resolveSitemapDates(src, candidates) {
+  const pool = candidates.slice(0, SITEMAP_DATE_CANDIDATES);
+  // 有界并发抓候选页面，抽真实发布时间。失败的条目保留 lastmod 并打标记。
+  let resolved = 0;
+  for (let i = 0; i < pool.length; i += SITEMAP_DATE_BATCH) {
+    const batch = pool.slice(i, i + SITEMAP_DATE_BATCH);
+    const htmls = await Promise.all(
+      batch.map(e => fetchPageHtml(e.link, SITEMAP_DATE_TIMEOUT_MS)));
+    for (const [j, e] of batch.entries()) {
+      const pub = extractPublishDate(htmls[j]);
+      if (pub) {
+        e.pubDate = pub;
+        e._dateSource = 'page-published';
+        resolved++;
+      } else {
+        e.pubDate = e.lastMod ? new Date(e.lastMod).toUTCString() : '';
+        e._dateSource = 'sitemap-lastmod';
+      }
+    }
+  }
+  // 最终排名按 pubDate（此时已是真实发布时间，回退条目才是 lastmod）。
+  // 必须用 Date.parse 比较，不能用 localeCompare——RFC 822/ISO 字符串
+  // 按字典序排会得到错误顺序（hf-cron-fetch.sh 踩过同一个坑）。
+  pool.sort((a, b) => {
+    const ta = Date.parse(a.pubDate || '');
+    const tb = Date.parse(b.pubDate || '');
+    if (isNaN(ta) && isNaN(tb)) return 0;
+    if (isNaN(ta)) return 1;
+    if (isNaN(tb)) return -1;
+    return tb - ta;
+  });
+  const fellBack = pool.length - resolved;
+  if (fellBack > 0) {
+    console.log(`  [sitemap] ${src.name}: ${resolved} 条用页面真实发布时间，`
+      + `${fellBack} 条回退 lastmod（页面抓取失败，日期是修改时间不是发布时间）`);
+  }
+  const items = pool.slice(0, MAX_ITEMS_PER_SOURCE).map(e => ({
+    title: e.title,
+    link: e.link,
+    pubDate: e.pubDate,
+    description: '',
+    source: src.name,
+    origin: 'live',
+    // 标记这是 sitemap 来源，及日期的真实出处：
+    //   page-published  = 从页面 HTML 抽到的发布时间（可信）
+    //   sitemap-lastmod = 页面没抓到，退化为 lastmod（修改时间，≠ 发布时间）
+    _fromSitemap: true,
+    _dateSource: e._dateSource,
+    _lastModified: e.lastMod ? new Date(e.lastMod).toUTCString() : '',
+  }));
+  return { ok: true, items };
+}
+
+/** sitemap 采集完整流程（两阶段合一）。测试与单独调用用这个入口。 */
+async function fetchSitemap(src) {
+  const phase1 = await fetchSitemapEntries(src);
+  if (!phase1.ok) return { ok: false, error: phase1.error, items: [] };
+  return resolveSitemapDates(src, phase1.candidates);
 }
 
 async function fetchFeed(src) {
@@ -501,8 +656,24 @@ async function fetchAll(opts = {}) {
     } catch (_) { /* 缓存损坏就重新抓 */ }
     needFetch.push(job);
   }
+  // [v2.14] 第一阶段：所有源并行——sitemap 源只抓 XML，不抓页面。
+  //
+  // 第二阶段（sitemap 页面日期解析）刻意放在所有 RSS 落地之后串行做。
+  // 实测教训（2026-10-24，git stash 对照实验）：把 24 个页面请求塞进第一阶段的
+  // Promise.all，会与慢源竞争网络——ECB/NBER 在 8 秒超时下被挤出超时预算，
+  // 经济域 live 源从 3-4 个掉到 2 个，v2.13i 测试连续两次失败
+  // （原始代码 2/2 通过，改动后 2/2 失败，竞争是真实回退不是抖动）。
+  // 两段分离后，页面解析不再占用任何现有源的超时窗口。
   const results = await Promise.all(needFetch.map(({ domain, src }) =>
-    (src.type === 'sitemap' ? fetchSitemap(src) : fetchFeed(src))));
+    (src.type === 'sitemap' ? fetchSitemapEntries(src) : fetchFeed(src))));
+  for (let i = 0; i < needFetch.length; i++) {
+    const { src } = needFetch[i];
+    if (src.type !== 'sitemap') continue;
+    const r1 = results[i];
+    if (r1 && r1.ok) {
+      results[i] = await resolveSitemapDates(src, r1.candidates);
+    }
+  }
   // 把新抓到的结果写进缓存
   // [v2.13] 注意：r 必须取自 results（抓取结果），不是 needFetch（job 对象）。
   // 实测踩坑：第一版写成 `for (const [i, r] of needFetch.entries())`，
@@ -674,5 +845,8 @@ if (require.main === module) {
 module.exports = {
   collectAll, loadFromKnowledgeBase, fetchAll, parseFeed,
   fetchBody, enrichWithBody, extractMainContent, stripHtml,
-  fetchSitemap,
+  fetchSitemap, fetchSitemapEntries, resolveSitemapDates,
+  fetchPageHtml, extractPublishDate,
+  // 测试专用：清理页面 HTML 进程内缓存（mock fetch 的用例之间需要隔离）
+  _clearPageHtmlCache: () => pageHtmlCache.clear(),
 };

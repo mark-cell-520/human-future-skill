@@ -1,7 +1,7 @@
 {
   "name": "human-future",
-  "version": "2.13.0",
-  "description": "人类未来 v2.13 - 停止假推演，转为辨别他人的预测（可证伪性/基准概率/推理有效性/证伪条件）",
+  "version": "2.14.0",
+  "description": "人类未来 v2.14 - sitemap 源改用页面真实发布时间（lastmod 是修改时间不是发布日，旧页修订会冒充新新闻）；v2.13 停止假推演，转为辨别他人的预测",
   "main": "modules/monitor/signal-collector.js",
   "scripts": {
     "start": "node scripts/run-pipeline.js",

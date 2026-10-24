@@ -175,6 +175,11 @@ class ProjectionEngine {
           // 与「这句来自正文」，两者可信度不同（摘要是源方写的导语，正文是全文）。
           body: String(n.body || ''),
           hasBody: !!(n.body && String(n.body).length > 200),
+          // [v2.14] sitemap 源日期出处透传。不传的话 buildFrontierModelSection
+          // 里数 _dateSource 恒为 0——字段在采集层打上、在报告层读取，中间
+          // 被 extractSignals 重建条目时丢掉，「端到端到达」断在这一环。
+          // 实测教训：接口存在不等于产物里有，必须端到端验证。
+          _dateSource: n._dateSource || '',
           source: n.source || '(未标注)',
           link: n.link || '',
           pubDate: n.pubDate || '',
@@ -1120,6 +1125,21 @@ class ProjectionEngine {
     const now = Date.now();
     const recent30d = parsed.filter(x => now - x.t <= 30 * 86400000).length;
 
+    // [v2.14] sitemap 源日期出处透明化。
+    // v2.14 修复的问题：sitemap 只有 lastmod（页面修改时间），旧页被编辑会更新
+    // lastmod，按它排序取「最新」会把旧闻当新闻、发布日期全是假的。
+    // 现在的条目分两种日期出处（collect-news.js 打标）：
+    //   page-published  = 从页面 HTML 抽到的真实发布时间
+    //   sitemap-lastmod = 页面抓取失败，退化为 lastmod——这是修改时间不是发布
+    //                     时间，实际发布时间可能更早，报告必须显式说明，
+    //                     否则下游会把修改时间当发布日引用。
+    const dateFallback = d.items.filter(i => i._dateSource === 'sitemap-lastmod').length;
+    const datePublished = d.items.filter(i => i._dateSource === 'page-published').length;
+    const note2 = dateFallback > 0
+      ? note + ` 注意：${dateFallback} 条 sitemap 源条目的日期是页面最后修改时间`
+        + '（页面抓取失败未能获取发布时间），实际发布时间可能更早，引用须标注。'
+      : note;
+
     const bySrc = new Map();
     for (const { it } of parsed) {
       const s = it.source || '(未标注)';
@@ -1148,15 +1168,19 @@ class ProjectionEngine {
       distinctSources: bySrc.size,
       dateRange,
       recent30d,
+      dateProvenance: { pagePublished: datePublished, sitemapLastmod: dateFallback },
       sourceBreakdown,
       latestItems: parsed.slice(0, 12).map(({ it }) => ({
         title: it.title.slice(0, 160),
         source: it.source || '(未标注)',
         date: it.pubDate ? it.pubDate.slice(0, 16) : '(未标注)',
+        // [v2.14] 日期出处随条目给出，下游引用时可判断该日期是发布时间
+        // 还是页面修改时间（sitemap-lastmod）
+        dateSource: it._dateSource || 'source-pubdate',
         link: it.link,
       })),
       series,
-      note,
+      note: note2,
     };
   }
 

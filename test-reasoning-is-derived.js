@@ -1838,3 +1838,164 @@ c213n('Brier 分数基于真实结算可算出', (() => {
     console.log('结论：结算必须带证据，Brier 基于真实结算可算。');
   }
 })();
+
+// ════════════════════════════════════════════════════════════════
+// v2.14 新增断言：sitemap 源必须用页面**真实发布时间**，不能拿 lastmod 当发布日。
+//
+// 实测依据（2026-10-24 探针 + cron 报告）：
+//   - anthropic.com/news/100k-context-windows 发布于 2023-05-11，lastmod 却是
+//     2026-10-15——三年前的旧闻按 lastmod 排会被当成十天前的新闻；
+//   - cron 报告实测：按 lastmod 取的「最新 12 条」里 7 条是旧页修订，
+//     真正的新发布被挤掉，报告里的发布日期全是假的。
+//
+// 反向验证：摘除修复（恢复 pubDate=lastmod + 按 lastmod 截断），
+// 下面「旧页修订不挤掉新发布」与「pubDate 是页面真实发布时间」两条必败
+// ——旧页会排第一且日期显示为 lastmod。这就是缺陷复发即失败的断言。
+// ════════════════════════════════════════════════════════════════
+const v214 = [];
+function c214(name, ok, detail) { v214.push({ name, ok, detail }); }
+
+const { extractPublishDate, fetchSitemap: fetchSitemap214, _clearPageHtmlCache } =
+  require('./scripts/collect-news.js');
+
+c214('extractPublishDate 抽 JSON-LD datePublished', (() => {
+  const html = '<html><head><script type="application/ld+json">'
+    + '{"@type":"NewsArticle","datePublished":"2026-02-05T00:00:00.000Z"}</script>'
+    + '</head><body>x</body></html>';
+  const d = extractPublishDate(html);
+  return d !== null && Date.parse(d) === Date.parse('2026-02-05T00:00:00.000Z');
+})(), '应返回 2026-02-05（JSON-LD 信源，Anthropic 页面实测存在）');
+
+c214('extractPublishDate 抽 meta article:published_time（content 在前也认）', (() => {
+  // 属性顺序不定：content 在 property 前面也要能抽到（按标签整体匹配）
+  const html = '<html><head>'
+    + '<meta content="2026-08-14T10:00:00Z" property="article:published_time">'
+    + '</head><body>x</body></html>';
+  const d = extractPublishDate(html);
+  return d !== null && Date.parse(d) === Date.parse('2026-08-14T10:00:00Z');
+})(), '属性顺序不定的 meta 也应抽到');
+
+c214('extractPublishDate 拒绝未来日期', (() => {
+  const future = new Date(Date.now() + 30 * 86400000).toISOString();
+  const html = `<html><head><script type="application/ld+json">{"datePublished":"${future}"}</script></head></html>`;
+  return extractPublishDate(html) === null;
+})(), '未来日期可能是排期/模板占位/解析错误，不能当发布时间');
+
+c214('extractPublishDate 无日期线索返回 null', (() => {
+  return extractPublishDate('<html><body>no date here</body></html>') === null
+    && extractPublishDate('') === null;
+})(), '抽不到就返回 null，由调用方回退 lastmod 并打标');
+
+// ── mock fetch 行为测试：复现真实缺陷形态 ──
+//   old-page：lastmod 2026-10-23（最近被编辑），实际发布 2023-05-11（三年前旧闻）
+//   new-page：lastmod 2026-10-22，实际发布 2026-10-22（真正的新发布）
+const MOCK_SITEMAP_XML = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset>
+  <url><loc>https://example.com/news/old-page-edited-recently</loc><lastmod>2026-10-23T20:00:00.000Z</lastmod></url>
+  <url><loc>https://example.com/news/new-page-published-today</loc><lastmod>2026-10-22T20:00:00.000Z</lastmod></url>
+</urlset>`;
+const MOCK_PAGES = {
+  'old-page-edited-recently': '<html><head><script type="application/ld+json">'
+    + '{"@type":"NewsArticle","datePublished":"2023-05-11T00:00:00.000Z"}</script></head>'
+    + '<body><p>Old article body text long enough to be useful.</p></body></html>',
+  'new-page-published-today': '<html><head><meta property="article:published_time" content="2026-10-22T08:00:00Z"></head>'
+    + '<body><p>New article body text long enough to be useful.</p></body></html>',
+};
+const realFetch214 = global.fetch;
+let mockPagesFail = false;
+global.fetch = async (url) => {
+  const u = String(url);
+  if (u.includes('sitemap.xml')) {
+    return {
+      ok: true, status: 200,
+      headers: { get: () => 'application/xml' },
+      text: async () => MOCK_SITEMAP_XML,
+    };
+  }
+  if (mockPagesFail) throw new Error('mock: page fetch failed');
+  for (const [k, v] of Object.entries(MOCK_PAGES)) {
+    if (u.includes(k)) {
+      return {
+        ok: true, status: 200,
+        headers: { get: () => 'text/html; charset=utf-8' },
+        text: async () => v,
+      };
+    }
+  }
+  throw new Error('mock: unexpected url ' + u);
+};
+
+(async () => {
+  try {
+    // 场景一：页面都能抓到——按真实发布时间重排，旧页修订不得挤掉新发布
+    _clearPageHtmlCache();
+    const r = await fetchSitemap214({
+      name: 'Mock (sitemap)', url: 'https://example.com/sitemap.xml',
+      pathPrefixes: ['/news/'],
+    });
+    c214('旧页修订不挤掉新发布：排名按真实发布时间', r.ok === true
+      && r.items.length === 2
+      && r.items[0].link.includes('new-page-published-today')
+      && r.items[1].link.includes('old-page-edited-recently'),
+      '修复前按 lastmod 排，old-page（lastmod 10-23）排第一——此断言即反向验证点');
+    c214('pubDate 是页面真实发布时间不是 lastmod', r.ok === true
+      && Date.parse(r.items[1].pubDate) === Date.parse('2023-05-11T00:00:00.000Z')
+      && Date.parse(r.items[0].pubDate) === Date.parse('2026-10-22T08:00:00Z'),
+      'old-page 的 pubDate 必须是 2023-05-11；修复前它显示 2026-10-23（lastmod）');
+    c214('日期出处与 lastmod 备查字段齐全', r.ok === true
+      && r.items.every(i => i._fromSitemap === true && i._dateSource === 'page-published')
+      && Date.parse(r.items[1]._lastModified) === Date.parse('2026-10-23T20:00:00.000Z'),
+      '_dateSource=page-published 且 _lastModified 保留原 lastmod 供备查');
+
+    // 场景二：页面抓取失败——允许回退 lastmod，但必须打标可识别
+    _clearPageHtmlCache();
+    mockPagesFail = true;
+    const r2 = await fetchSitemap214({
+      name: 'Mock (sitemap)', url: 'https://example.com/sitemap.xml',
+      pathPrefixes: ['/news/'],
+    });
+    mockPagesFail = false;
+    c214('页面抓失败时回退 lastmod 并打 _dateSource 标记', r2.ok === true
+      && r2.items.every(i => i._dateSource === 'sitemap-lastmod')
+      && Date.parse(r2.items[0].pubDate) === Date.parse('2026-10-23T20:00:00.000Z'),
+      '回退允许，但日期必须可识别为修改时间，不得伪装成发布时间');
+
+    // 场景三：报告层端到端——_dateSource 从采集层透传到 frontierModelSection
+    // （extractSignals 重建条目时丢字段是这个修复真实的踩坑点）
+    const { ProjectionEngine } = require('./scripts/project-future.js');
+    const eng = new ProjectionEngine({ newsData: { frontier_models: { news: [
+      { title: 'Claude model release notes', description: '',
+        source: 'Anthropic News (sitemap)', link: 'https://www.anthropic.com/news/x',
+        pubDate: 'Thu, 22 Oct 2026 08:00:00 GMT', origin: 'live', _dateSource: 'page-published' },
+      { title: 'GPT model launch details', description: '',
+        source: 'Anthropic News (sitemap)', link: 'https://www.anthropic.com/news/y',
+        pubDate: 'Fri, 23 Oct 2026 20:00:00 GMT', origin: 'live', _dateSource: 'sitemap-lastmod' },
+    ] } } });
+    const fm = eng.buildFrontierModelSection();
+    c214('报告层 dateProvenance 统计两种日期出处', fm.available === true
+      && fm.dateProvenance.pagePublished === 1
+      && fm.dateProvenance.sitemapLastmod === 1,
+      '_dateSource 必须端到端到达报告层（extractSignals 不能丢字段）');
+    c214('有回退条目时 note 显式说明日期是修改时间', /页面最后修改时间/.test(fm.note)
+      && fm.latestItems.some(i => i.dateSource === 'sitemap-lastmod'),
+      '回退条目的日期不得伪装成发布时间，报告须显式标注');
+  } finally {
+    global.fetch = realFetch214;
+    _clearPageHtmlCache();
+  }
+
+  const results = await Promise.all(v214.map(c => Promise.resolve(c.ok)));
+  let f = 0;
+  v214.forEach((c, i) => {
+    const ok = results[i];
+    if (!ok) f++;
+    console.log(`${ok ? '✓' : '✗'} ${c.name}${ok ? '' : '  —— ' + c.detail}`);
+  });
+  console.log(`\nv2.14: ${v214.length - f} 通过, ${f} 失败, 共 ${v214.length} 个`);
+  if (f > 0) {
+    console.log('结论：sitemap 源仍在用 lastmod 冒充发布时间，或端到端透传断链。');
+    process.exitCode = 1;
+  } else {
+    console.log('结论：sitemap 源按页面真实发布时间排名与标注，回退路径可识别。');
+  }
+})();
