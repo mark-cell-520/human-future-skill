@@ -1,8 +1,38 @@
 ---
 name: human-future-v2
-title: "人类未来 · 文明推演引擎 v3.1.1"
-version: "3.1.1"
+title: "人类未来 · 文明推演引擎 v3.2.0"
+version: "3.2.0"
 description: |-
+  人类未来技能 v3.2.0 — 商业主张辨别器新增「产能/供给约束主张」形态（新辨别维度）：
+  v3.2（2026-10-25）给 commercial-discriminator 的 COMMERCIAL_CLAIM_PATTERNS 增加
+  capacity-claim——SKILL.md 自 v3.0.0c 记在「已知边界」的漏检（"AWS Largely Sold
+  Out Of Capacity Into 2028" 产能主张，当时形态库实为 13 种而文档写「14 种」，
+  全部不命中、整条不进辨别），
+  本轮实跑该条就在 258 条 live 池里（The Information 简报），逐条过形态门确认
+  MISS 后扩库：新 kind 'capacity' + 专属证伪条件（第三方产能跟踪/扩容/预留量）
+  + 类目映射 market_claims + 报告与 cron 注入的中文标签。供给侧约束（需求>供给
+  → 定价权/扩产周期）是 AI 算力市场的一阶信号，漏掉它商业辨别看不见最重要的
+  市场事实之一。精度设计按 v3.0.0c 教训（漏报比误报诚实、没有实证不扩模式）：
+  必须「供给名词+耗尽谓语」相邻共现，sold out 紧邻产能名词——storage capacity /
+  capacity building / capacity to reason / 演唱会与座位 sold out / waitlist for
+  silicon 类比 / 扩产新闻全部不命中（8 条精度回归）；形态族覆盖售罄/耗尽/
+  分配殆尽/短缺/需求超供给（含 has been 与形容词间隔、过去时态）。
+  live 实测：258 条里精确命中 1 条（就是 AWS 那条），报告「商业主张辨别」段
+  辨别数 5→6，该条判 证据不足/无出处(1)/推理 0/3——标题-only 不虚抬为决策相关。
+  维护级同轮（不单独涨号）：① 公式桥 Brier 样本按同义务去重——同一份报告里
+  「认知公式评估」段样本=3 而「预测台账」段已结算=1（3 条 EU AI Act 同义务
+  条目），两个自相矛盾的样本数正是本引擎要抓的口径错位，按 v2.16 口径对齐；
+  ② 测试夹具残留自愈——npm test 进程异常死亡（SIGKILL/EPIPE）时 exit 还原不
+  执行，夹具条目残留真实台账，轻则污染 pending 计数、重则让 v2.16 record()
+  探针抛「id 已存在」整套测试崩溃（2026-10-25 实测连续两轮各留一批、第三轮
+  直接崩），加夹具签名自愈 + 探针幂等；③ 文档计数纠错——SKILL.md/代码注释自
+  v3.0.0c 写「14 种商业主张形态」而实际只有 13 种（与 v3.1 修正的「17 个源」
+  同型文档计数错误），新增后真实条数为 14，按代码实测改正。
+  测试 183→192 项；6 轮反向验证全部精确失败（摘除模式→6 条、摘除精度收紧→3 条、
+  摘除证伪条件→1 条、摘除 cron 注入标签→1 条、摘除公式桥去重→1 条、摘除报告
+  标签→1 条；其中摘除报告标签一轮第一版 0 失败——断言被段内 note 文本里的
+  「产能/供给约束」喂饱，已改为只认渲染出的「类型:」行）。
+
   人类未来技能 v3.1.1 — 口径错位检测段：精度修复 + 端到端接通：
   v3.1.1（2026-10-25）修 2026-10-25 live 轮逐条复核出来的 7 条误报——
   友谊勋章「Order of Dostyk」被 capacity 侧 /订单|order/ 当成采购订单、
@@ -220,8 +250,11 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   our researchers+safety、benchmark+促销页脚；五个模式同句判定，另三个无实证
   不改判据）/
   外部预测基准 ✅（32 个开放问题，per-claim 主题匹配本轮 0/7，如实展示）/
-  商业主张辨别 ✅（6 条，精度门后；修复前 19 条里 18 条 kind=unclassified）/
-  自我修正登记簿 ✅（8 条修正：critical 2 / high 5 / medium 1，critical 排最前；
+  商业主张辨别 ✅（6 条，精度门后；v3.2 新增产能/供给约束形态后含 AWS 售罄
+  主张一条——修复前该条 13 种形态全部不命中、整条不进辨别；判 证据不足/无出处(1)/
+  推理 0/3，标题-only 不虚抬为决策相关）/
+  自我修正登记簿 ✅（9 条修正：critical 2 / high 5 / medium 1 / 新增 v3.2 登记
+  corr-2026-010，critical 排最前；
   v3.1.1 登记 corr-2026-009：口径错位检测 7 条误报 + 第五次同型断链）
 
 **口径错位检测层（v3.1.1：精度门 + 端到端接通）**
@@ -256,10 +289,13 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   证据等级：独立验证(4) > 第三方调查/公开财报(3) > 厂商自述/媒体报道(2) > 无出处(1)；
   推理三要素：样本/对照/反例；verdict：factual / unfalsifiable / weak-evidence /
   thin-reasoning / well-formed；decisionRelevant = 证据≥3 或推理≥2 且非不可证伪。
-- [v3.0.0c] 精度门：候选题句必须命中 14 种商业主张形态（COMMERCIAL_CLAIM_PATTERNS）之一，
+- [v3.0.0c] 精度门：候选题句必须命中商业主张形态（COMMERCIAL_CLAIM_PATTERNS）之一，
   标题参与判定。实测依据：旧关键词触发器把 7 条 Fed FOMC 公告、LWiAI 播客、
   TechCrunch 促销页脚（"Get your pass ... REGISTER NOW"，★决策相关）混入，
   19 条里 18 条 kind=unclassified。修复后同轮 248 条 live → 6 条进辨别。
+  [v3.2 计数纠错] 本节与代码注释自 v3.0.0c 起写「14 种商业主张形态」，实跑
+  核对当时只有 13 种——与 v3.1 修正的「17 个源」同型文档计数错误。v3.2 新增
+  产能/供给约束后真实条数为 14（逐条列出见 commercial-discriminator.js）。
 - [v3.0.0c] 端到端断链修复：v3.0.0 起引擎产出 commercialDiscrimination、
   formatReport 渲染「商业主张辨别」段，但 cron 注入脚本从未读取该字段——
   报告文件里躺着、agent 完全看不到。这是 v2.9/v2.13/v2.17 之后第四次同型断链。
@@ -271,13 +307,40 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
 - 纪律（心虫铁律）：只辨别主张的表述与证据质量，不判断内容真假，
   不生成「心虫应该怎么做」的商业建议——那由报告 agent 判断并标注归属。
 
+**[v3.2] 产能/供给约束主张（capacity-claim，新辨别维度）**
+- 定位：v3.0.0c 起记在「已知边界」的覆盖缺口——"AWS Largely Sold Out Of
+  Capacity Into 2028"（The Information 简报标题）13 种形态全部不命中，整条
+  不进辨别。2026-10-25 实跑该条就在 258 条 live 池里，逐条过形态门确认
+  MISS 后扩库。供给侧约束（需求>供给 → 定价权/扩产周期）是 AI 算力市场的
+  一阶信号，漏掉它商业辨别看不见最重要的市场事实之一。
+- 形态族：售罄（sold out of capacity / capacity is sold out，容忍形容词）、
+  耗尽/分配殆尽（exhausted / allocated / committed，含 has been 形态）、
+  短缺（shortage of AI chips，容忍形容词间隔）、需求超供给（demand exceeds
+  supply / orders outpaced inventory，容忍间隔与过去时态）。
+- 精度设计（v3.0.0c 教训：漏报比误报诚实、没有实证不扩模式）：必须「供给
+  名词 + 耗尽谓语」相邻共现。storage capacity / capacity building / capacity
+  to reason（普通 capacity 词）、演唱会与体育场 sold out（无产能名词相邻）、
+  waitlist for silicon（MIT TR 解释性类比）、break the power bottleneck
+  （解题不是售罄）、扩产新闻全部不命中——8 句精度回归进测试。
+- 判别结果（live 实测）：该条判 证据不足 / 无出处(1) / 推理 0/3，不虚抬为
+  ★决策相关——标题-only 条目只拿到主张本身，出处与样本都要等正文或交叉
+  验证。证伪条件走 capacity 专属路径（第三方产能/利用率跟踪、后续扩容、
+  预留量口径）。类目归 market_claims。
+- 端到端：引擎候选门（isClaimForm 用同一个模式库）→ discriminateCommercial
+  → formatReport KIND_CN「产能/供给约束」→ cron 注入第 6 段同标签。
+  仍在库外的市场句式：并购/交易过程（"Instacart Is Exploring a Sale"）、
+  产品发布公告、可核验的市场价格事实（"Shares Rally 10%"）——下轮候选，
+  扩库须逐条配测试。
+
 **自我修正登记簿层（v3.1 接入的 0 调用模块）**
 - 定位：这是接入，不是新写。self-correction-ledger.js 自 v2.4 存在，
-  `human-future/data/self-corrections.json` 有 7 条真实修正（绕月≠登月、
+  `human-future/data/self-corrections.json` 有 9 条真实修正（绕月≠登月、
   v2.4 假能力三项审计、stateless 检查器覆盖缺口、sitemap 页面简介≠新闻正文、
-  指南页文本≠预测等），模块 docstring 的铁律写着「每次修正落盘，下次推演
-  先读簿子再说话」——但 v3.1 之前 live pipeline（scripts/）从未 require 过它，
-  只有早期死副本 human-future/scripts/run-pipeline.js 调过。簿子记了、没人读。
+  指南页文本≠预测、口径错位检测 7 条误报+第五次断链、v3.2 公式桥样本口径
+  不一致+文档计数错误+测试夹具残留等），模块 docstring 的铁律写着「每次修正
+  落盘，下次推演先读簿子再说话」——但 v3.1 之前 live pipeline（scripts/）
+  从未 require 过它，只有早期死副本 human-future/scripts/run-pipeline.js
+  调过。簿子记了、没人读。
 - 接入路径（三段都真跑到）：引擎 `buildSelfCorrectionLedger()` 调模块自身
   API（load() / recurringPatterns() / SEVERITY_RANK）→ `report.selfCorrectionLedger`
   → formatReport 渲染「自我修正登记簿」段（位置：总体摘要之后、信号热度分组
@@ -349,21 +412,48 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   `p.category`，分支永不激活）并加上同义务去重；样本随台账积累自然
   增长，不需要再改代码。
 
-**商业主张辨别的已知边界（v3.0.0c 如实声明）**：
-- 模式库外的真实主张句式仍会漏：实测本轮 "AWS Largely Sold Out Of Capacity
-  Into 2028"（产能主张）、"Instacart Shares Rally 10%"（市场反应）、
-  ProductHunt 产品发布均不命中 14 种形态，不进辨别。漏掉比把 Fed 公告
+**商业主张辨别的已知边界（v3.0.0c 如实声明，v3.2 更新）**：
+- 模式库外的真实主张句式仍会漏：v3.2 起 "AWS Largely Sold Out Of Capacity
+  Into 2028"（产能主张）已进模式库（capacity-claim，含售罄/耗尽/分配殆尽/
+  短缺/需求超供给形态族）；仍在库外的有 "Instacart Shares Rally 10%"（市场
+  反应——可核验的市场价格事实，非待辨别主张）、"Instacart Is Exploring a
+  Sale" 与 "Ramp Investors Went Nuclear Against Airwallex"（并购/交易过程
+  主张）、ProductHunt 产品发布（产品公告非市场主张）。漏掉比把 Fed 公告
   当商业主张诚实，但覆盖率是真实缺口——扩模式库须逐条配测试。
-- 站点导航/页脚 boilerplate 偶有漏网：本轮 6 条里有 1 条 EconBrowser
+- 站点导航/页脚 boilerplate 偶有漏网：v3.0.0c 轮 6 条里有 1 条 EconBrowser
   导航文本（"Skip to content"）因句内含 "analysis of" 命中调查研究形态。
   促销页脚（"REGISTER NOW"）已被形态门挡掉，导航文本还没有专门过滤器。
+  [v3.2 复测] 同型漏网仍在：本轮 6 条里 EconBrowser「Front Month Brent
+  Futures near 2022 Peak Level」（因句内含 "analysis of" 类调查研究措辞）
+  与 LWiAI 播客条目仍进辨别——精度门按形态判，不按站点类型判，这个缺口
+  下轮候选（boilerplate 过滤器）。
 - 无摘要条目（The Information 简报、ProductHunt）只有标题可辨，
   证据等级多为「无出处(1)」——不是主张没出处，是抽取层只拿到标题。
 - 本段不生成商业建议。「这对心虫意味着什么」由报告 agent 判断并标注归属，
   引擎不代劳——这是心虫铁律，不是能力缺失。
 
 **测试**
-- `npm test`：**183 项断言**（实测各 section 汇总；v3.1 的 171 + v3.1.1 新增 12：
+- `npm test`：**192 项断言**（实测各 section 汇总；v3.1.1 的 183 + v3.2 新增 9：
+  1 项 live 实证命中（The Information「AWS Largely Sold Out Of Capacity Into
+  2028」→ kind=capacity，标题-only 判 证据不足/无出处(1)/推理 0/3 不虚抬）+
+  1 项专属证伪条件与类目映射（第三方产能跟踪/扩容/预留量，market_claims）+
+  1 项形态族召回售罄/耗尽/分配殆尽（含 has been 形态）+
+  1 项形态族召回短缺与需求超供给（含形容词间隔与过去时态）+
+  1 项精度回归 8 句（storage capacity / capacity building / capacity to reason /
+  演唱会与座位 sold out / waitlist for silicon 类比 / 解题式 bottleneck /
+  扩产新闻全部不命中）+
+  1 项引擎端到端（候选门放行 + formatReport 渲染「类型: 产能/供给约束」行与
+  证伪条件——只认渲染出的标签行，段内 note 文本也含该字符串，泛匹配会空转）+
+  1 项精度门未破（Fed 公告/播客仍不进辨别）+
+  1 项 cron 注入 KIND_CN 含 capacity+
+  1 项维护：公式桥 Brier 样本同义务去重（3 条登记 → 2 个义务））。
+  v3.2 六轮反向验证全部精确失败：摘除 capacity-claim 模式→6 条失败；
+  摘除精度收紧（恢复 40 字宽窗正则）→3 条失败（召回 #3/#4 + 精度 #5——
+  宽窗同时丢 has-been/形容词间隔召回又误命中座位容量句）；
+  摘除证伪条件条目→1 条；摘除 cron 注入标签→1 条；摘除公式桥去重→1 条；
+  摘除报告渲染标签→1 条。第一版报告标签断言 0 失败（被段内 note 文本里的
+  「产能/供给约束」喂饱，断言空转），已改为只认「类型:」渲染行后精确失败。
+  v3.1.1 新增 12：
   6 项误报回归（勋章当订单 / democracy 含 demo / gigawatts 含 GA /
   limited to two players / available in preview 与产品名带 Preview /
   跨句共现三种形态，每条对应一个 live 实证误报，修复后必须不命中）+

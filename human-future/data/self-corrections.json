@@ -90,6 +90,18 @@
       "lesson": "两条教训。① 检测器判据的精度要和召回一起审计：一个模式「能命中」不等于「命中的是对的」——拿当期全部命中逐条看触发文本，是发现误报的唯一办法；误报比漏报更伤辨别力，因为读者会连真命中一起跳过。② 「新报告段 ≠ 交付完成」不只适用于新段：口径错位段存在了 10 个版本、渲染一直正常，注入脚本里始终没有它。每一段交付时都要问「注入脚本里有没有、agent prompt 里能不能看到」，端到端判据不是「引擎产出了没有」。",
       "severity": "high",
       "recordedAt": "2026-10-24T19:22:09.962Z"
+    },
+    {
+      "id": "corr-2026-010",
+      "reportVersion": "v3.2",
+      "wrongClaim": "（三处沿用假设）① 公式桥的 Brier/校准样本用原始已结算条目就行——v2.16 已经在 scorecard() 里做了同义务去重，别的调用点想必也没问题；② SKILL.md 与代码注释写「14 种商业主张形态」就是 14 种；③ npm test 的全局备份 + exit 还原足够保护台账，测试夹具不会残留。",
+      "rightClaim": "实测 2026-10-25 全部不成立：① buildFormulaAssessment 传的是 load().predictions.filter(outcome !== null) 原始条目，同一份报告里「认知公式评估」段 Brier 样本=3 而「预测台账」段已结算=1（3 条 EU AI Act 同义务条目）——两个自相矛盾的样本数，正是本引擎要抓的口径错位；② 逐条数 COMMERCIAL_CLAIM_PATTERNS 实际只有 13 种（v3.2 新增 capacity-claim 后才到 14），文档计数自 v3.0.0c 起就错，与 v3.1 修正的「17 个源」同型；③ npm test 进程被 SIGKILL/管道断裂异常杀死时 exit 还原不执行，测试夹具条目残留真实台账——实测连续两轮各留一批（7 条），第三轮直接崩在 v2.16 的 record() 探针（「预测 id 已存在」），整套测试跑不完，后续所有验证都被堵住。",
+      "evidence": "full-report-1792875741765.json：formulaAssessment.formulas.brier.sample=3 vs ledgerStatus.sample=1；node 逐条数 COMMERCIAL_CLAIM_PATTERNS.length=13（修复前）；SIGKILL 复现：npm test 跑到 10 秒处 kill -9，台账 5→12 条（7 条夹具），下次 npm test 抛 Error: 预测 id 已存在: v216-probe-field-dualwrite",
+      "lesson": "「在修过的地方修好」不等于「所有调用点都修好」。v2.16 在 forecast-discriminator 与 scorecard 两处做了同义务去重，唯独公式桥这个调用点漏掉——同类审计必须穷举全部调用点（grep 所有读同一数据的地方），不能只验证修过的那几处。文档计数错误同型：写下来的数字必须有一个能跑的核对命令（本次补了逐条列模式的核对）。测试基建的「退出时还原」只覆盖正常退出，异常死亡（SIGKILL/EPIPE）不触发——有副作用的测试要么幂等（先删后登），要么启动时自愈（夹具签名清洗），不能只挂一个 exit 钩子就认为安全。",
+      "severity": "high",
+      "recordedAt": "2026-10-25T00:00:00.000Z",
+      "resolvedAt": "2026-10-25T00:00:00.000Z",
+      "fix": "① buildFormulaAssessment 改用 predictionLedger.dedupeSameObligation(settledRaw).entries，note 注明「原始登记 N 条 → 去重后 M 条」；测试加断言（3 条登记=2 个义务，sample===2），摘除去重→断言失败。② SKILL.md/代码注释按代码实测改为真实条数（新增后 14），并记录计数纠错来历。③ 测试文件开头加夹具签名自愈（探针 id / -nourl- id / 夹具来源名 / example.com / 探针 claim / v2.16 测试 #6 夹具 claim 前缀，只认签名不碰真实条目）+ v2.16 record() 探针改为先删后登；SIGKILL 复现验证自愈生效（7→5）。另：本轮主升级为商业主张辨别器新增产能/供给约束形态（capacity-claim），属新辨别维度，不是本登记簿的错误修正。"
     }
   ]
 }

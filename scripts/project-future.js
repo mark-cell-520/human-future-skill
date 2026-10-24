@@ -921,6 +921,13 @@ class ProjectionEngine {
   // ───────────────────────────────────────────────────────────────
   buildFormulaAssessment() {
     const top = this.signals.domains[0];
+    // [v3.2 维护] 同义务去重后再进公式桥。scorecard() 自 v2.16 起按去重后
+    // 样本算 Brier，但这里传的是原始已结算条目——同一义务被多个页面重复
+    // 登记会被计成多个样本（实测台账 3 条 EU AI Act 同义务条目）。后果是
+    // 同一份报告里「认知公式评估」段显示 Brier 样本 3，而「预测台账」段
+    // 显示已结算 1 条——两个自相矛盾的样本数，正是本引擎要抓的口径错位。
+    const settledRaw = predictionLedger.load().predictions.filter(p => p.outcome !== null);
+    const settledDedup = predictionLedger.dedupeSameObligation(settledRaw).entries;
     const bridge = runFormulaBridge({
       milestone: top ? {
         prior: 0.5,
@@ -928,7 +935,7 @@ class ProjectionEngine {
         yearsAhead: 2,
       } : null,
       discountRate: 0.1,
-      predictionLedger: predictionLedger.load().predictions.filter(p => p.outcome !== null),
+      predictionLedger: settledDedup,
       scenarios: this.assessRisks().slice(0, 3).map(r => ({
         probability: r.likelihood,
         impact: -0.5,
@@ -938,7 +945,9 @@ class ProjectionEngine {
     return {
       available: true,
       formulas: bridge.formulas,
-      note: '贝叶斯先验固定 0.5（无外部先验），证据强度由域热度推导；这是方法演示，不是校准过的概率',
+      note: '贝叶斯先验固定 0.5（无外部先验），证据强度由域热度推导；这是方法演示，不是校准过的概率。'
+        + '[v3.2] Brier 与校准样本按同义务去重后计算（与「预测台账」段一致，原始登记 '
+        + `${settledRaw.length} 条 → 去重后 ${settledDedup.length} 条）`,
     };
   }
 
@@ -1621,12 +1630,13 @@ class ProjectionEngine {
     // 还因 2/3 推理分被判成★决策相关）、ConnectWise 安全新闻全部混入。
     // 它们根本不是商业主张，辨别它们产出的是噪音。
     //
-    // 门直接用辨别器自己的 COMMERCIAL_CLAIM_PATTERNS（14 种主张形态），
+    // 门直接用辨别器自己的 COMMERCIAL_CLAIM_PATTERNS（14 种主张形态，
+    // v3.2 起含产能/供给约束；v3.2 计数纠错：v3.0.0c-v3.1.1 文档写「14 种」
+    // 而实际只有 13 种——与 v3.1 修正的「17 个源」同型文档计数错误，按代码实测改正），
     // 不新造判据；标题也参与判定——无摘要条目的主张就在标题里
     // （"DeepSeek Raises Nearly $16 billion in Second Funding Round"）。
-    // 代价如实记录：模式库外的真实主张句式会漏（如 "AWS Largely Sold Out
-    // Of Capacity Into 2028" 产能主张、播客里的采用数字），漏掉比把
-    // Fed 公告当商业主张诚实。
+    // 代价如实记录：模式库外的真实主张句式会漏（v3.2 起 "AWS Largely Sold Out
+    // Of Capacity Into 2028" 产能主张已进模式库；市场反应/产品发布仍不在库）。
     const isClaimForm = (t) => COMMERCIAL_CLAIM_PATTERNS
       .some(p => { try { return p.re.test(t); } catch (_) { return false; } });
     for (const it of this.signals.items) {
@@ -1657,7 +1667,7 @@ class ProjectionEngine {
       return {
         available: false,
         reason: `本期 ${this.signals.items.length} 条 live 信号中（商业域 business/economy）未抽到命中商业主张形态的条目`,
-        note: '只辨别命中商业主张形态（采用/需求/替代/规模/融资/估值/竞品/合规/信任等 14 种模式）的条目；'
+        note: '只辨别命中商业主张形态（采用/需求/替代/规模/产能供给/融资/估值/竞品/合规/信任共 14 种模式）的条目；'
           + 'v3.0.0c 起候选题句必须命中模式库，Fed 公告/播客/促销页脚等非主张文本不再进入辨别。',
       };
     }
@@ -1690,7 +1700,7 @@ class ProjectionEngine {
       results: results.slice(0, 16),
       note: '本段只辨别商业主张的表述与证据质量（可证伪性/证据等级/推理有效性/证伪条件），'
         + '不判断主张内容真假，也不生成「心虫应该怎么做」的商业建议。'
-        + 'v3.0.0c 起候选题句必须命中商业主张形态库（14 种模式），非主张文本（公告/播客/促销页脚）不进辨别。'
+        + 'v3.0.0c 起候选题句必须命中商业主张形态库（14 种模式，v3.2 新增产能/供给约束），非主张文本（公告/播客/促销页脚）不进辨别。'
         + '证据等级：独立验证(4) > 第三方调查/公开财报(3) > 厂商自述/媒体报道(2) > 无出处(1)。',
     };
   }
@@ -2270,6 +2280,9 @@ function formatReport(report) {
       'market-size': '市场规模', 'funding': '融资陈述', 'valuation': '估值陈述',
       'capital-signal': '资本信号解读', 'competitive': '竞品能力', 'oss-threat': '开源威胁',
       'compliance': '合规需求', 'trust': '信任需求', 'unclassified': '未归类',
+      // [v3.2] 产能/供给约束主张（v3.0.0c 起记在已知边界的漏检，live 实证：
+      // The Information「AWS Largely Sold Out Of Capacity Into 2028」）
+      'capacity': '产能/供给约束',
     };
     for (const r of cdsc.results.slice(0, 12)) {
       const rel = r.decisionRelevant ? '★决策相关' : '  ';

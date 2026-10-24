@@ -51,6 +51,23 @@ const COMMERCIAL_CLAIM_PATTERNS = [
     kind: 'oss-threat', label: '开源威胁主张' },
   { id: 'market-size-claim', re: /(market|tam|opportunity|sector)\s+(is|will be|to reach|projected|expected|estimated)\s*(at\s*)?\$?\s*[\d.]+\s*(billion|trillion|million|bn|b\b|t\b)/i,
     kind: 'market-size', label: '市场规模主张' },
+  // ── 供给约束类 ──
+  // [v3.2] SKILL.md 自 v3.0.0c 记在「已知边界」的漏检，2026-10-25 轮仍在
+  // live 池里：The Information「AWS Largely Sold Out Of Capacity Into 2028,
+  // Jassy Says」——14 种形态全部不命中，整条不进辨别。供给侧约束是 AI
+  // 算力市场的一阶信号（需求>供给 → 定价权与扩产周期），漏掉它商业辨别
+  // 看不见最重要的市场事实之一。
+  // 精度设计（v3.0.0c 教训：漏报比误报诚实，没有实证不扩模式）：
+  //   ① 必须「供给名词 + 耗尽/受限谓语」共现且相邻——单独的 capacity
+  //     （storage capacity / capacity building / capacity to reason）不是主张；
+  //   ② sold out 必须紧邻供给名词（sold out of capacity / capacity is
+  //     sold out）——演唱会 "sold out within minutes"、体育场 "seat
+  //     capacity of 80,000 and was sold out" 都不是产能主张；
+  //   ③ 不认 waitlist/backlog 单独出现——MIT TR「a waitlist for silicon」
+  //     是解释性类比不是市场主张；要等有 live 实证再扩，不无证据全量切换。
+  { id: 'capacity-claim',
+    re: /(?:\bsold[\s-]?out\s+of\s+(?:[a-z-]+\s+){0,2}(?:capacity|compute|supply|inventory|gpus?|chips?|silicon|cloud)\b|\b(?:capacity|compute|supply|inventory|gpus?|chips?|silicon)\s+(?:is\s+|are\s+|has\s+been\s+|have\s+been\s+)?(?:largely\s+|almost\s+|nearly\s+|fully\s+|completely\s+|effectively\s+|mostly\s+)?sold[\s-]?out\b|\b(?:shortage|scarcity|deficit)\s+of\s+(?:[a-z-]+\s+){0,2}(?:capacity|compute|gpus?|chips?|silicon|supply|power|energy)|\b(?:demand|orders?|bookings?|requests?)\s+(?:[a-z-]+\s+){0,3}(?:exceeds?|exceeded|outpaces?|outpaced|outstrips?|outstripped)\s+(?:available\s+)?(?:supply|capacity|inventory)|\b(?:capacity|compute|supply)\s+(?:is\s+|are\s+|has\s+been\s+|have\s+been\s+)?(?:largely\s+|almost\s+|nearly\s+|fully\s+|completely\s+|effectively\s+)?(?:exhausted|allocated|committed))/i,
+    kind: 'capacity', label: '产能/供给约束主张' },
   // ── 资本类 ──
   // [v3.0.0c] funding 句式容忍数量副词：实测今日池子里最重要的商业事实
   // "DeepSeek Raises Nearly $16 billion in Second Funding Round"（The Information
@@ -239,6 +256,9 @@ function buildFalsification(patterns, text) {
     'demand': '观察到目标客群的询价/订单/续费率不支持该需求，或采购方明确表示无此需求',
     'replacement': '观察到被替代方的收入/份额在主张时点后未下降，反而增长',
     'market-size': '观察到独立机构的同口径测算显著低于该数字，或该数字的统计口径被公开质疑',
+    // [v3.2] 产能/供给约束主张的证伪路径：售罄口径最常见的裂缝是
+    // 「含未交付预留量」「后续扩容解除约束」「第三方跟踪显示可用容量未耗尽」。
+    'capacity': '观察到第三方产能/利用率跟踪显示可售容量未耗尽（如「售罄」口径含未交付预留量），或厂商后续扩容、新签供应协议使约束解除，或到主张时点后仍能公开下单',
     'funding': '观察到交割公告、监管文件或投资方确认与主张金额不一致',
     'valuation': '观察到后续融资、二级市场交易或财报披露的估值与该数字矛盾',
     'capital-signal': '观察到同一资本方在同类标的上减仓、或该解读被资本方本人否认',
@@ -256,6 +276,8 @@ function inferCommercialCategory(text, patterns) {
     const k = patterns[0].kind;
     const M = { adoption: 'market_claims', demand: 'market_claims',
       replacement: 'market_claims', 'market-size': 'market_claims',
+      // [v3.2] 供给约束是需求侧的另一面，归市场主张域
+      capacity: 'market_claims',
       funding: 'capital_flow', valuation: 'capital_flow', 'capital-signal': 'capital_flow',
       competitive: 'competitor_moves', 'oss-threat': 'competitor_moves',
       compliance: 'compliance_demand', trust: 'compliance_demand' };

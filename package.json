@@ -1,7 +1,7 @@
 {
   "name": "human-future",
-  "version": "3.1.1",
-  "description": "人类未来 v3.1.1 - 口径错位检测段精度修复+端到端接通：v3.1.1 修复 2026-10-25 live 轮实测的 7 条误报（友谊勋章被当成采购订单、democracy 里的 demo、gigawatts 里的 GA、limited to two players、on target+demonstrate、our researchers+safety、benchmark+促销页脚），五个模式启用同句判定（sentenceScoped）+ demo-vs-ga 词边界与完成态可用性断言 + capacity 采购语义收紧；命中带触发句可复核；cron 注入脚本补读 proj.claimMismatches（v2.9/v2.13/v2.17/v3.0.0c 之后第五次同型断链修复，14 条命中 agent 此前完全看不到）；测试 171→183 项，5 轮反向验证全部精确失败（摘除 demo 修复→5/摘除 capacity 修复→1/摘除同句判定→1/摘除注入段→1/摘除触发句→2）；live 实测 14 条命中→1 条真命中；v3.1 接入 0 调用模块 self-correction-ledger；v3.0.0c 修复商业主张辨别段端到端断链；v2.17 接入 GJOpen 外部预测基准；v2.16 修复基准概率断链；v2.15 参考文本单列；v2.14 sitemap 源改用页面真实发布时间；v2.13 停止假推演，转为辨别他人的预测",
+  "version": "3.2.0",
+  "description": "人类未来 v3.2.0 - 商业主张辨别器新增产能/供给约束主张形态（新辨别维度）：v3.2 给 COMMERCIAL_CLAIM_PATTERNS 增加 capacity-claim，补齐 v3.0.0c 起记在已知边界的漏检（The Information「AWS Largely Sold Out Of Capacity Into 2028」live 实证 MISS），新 kind capacity + 专属证伪条件（第三方产能跟踪/扩容/预留量）+ 类目 market_claims + 报告与 cron 注入标签；精度按相邻共现收紧（storage capacity/capacity building/演唱会与座位 sold out/waitlist 类比/扩产新闻 8 句回归全不命中）；形态族覆盖售罄/耗尽/分配殆尽/短缺/需求超供给；live 实测 258 条精确命中 1 条即 AWS 该条，判 证据不足/无出处(1)/推理 0/3 不虚抬。维护级同轮：公式桥 Brier 样本同义务去重（报告两段样本数 3 vs 1 自相矛盾，按 v2.16 口径对齐）；npm test 夹具残留自愈 + record 探针幂等（SIGKILL/EPIPE 异常死亡不触发 exit 还原，实测残留 7 条后第三轮测试崩在「id 已存在」）；文档计数纠错（自 v3.0.0c 写「14 种商业主张形态」实际只有 13 种）。测试 183→192 项，6 轮反向验证全部精确失败（摘除模式→6/摘除精度收紧→3/摘除证伪条件→1/摘除 cron 标签→1/摘除公式桥去重→1/摘除报告标签→1；报告标签断言第一版 0 失败已修）。v3.1.1 口径错位检测段精度修复+端到端接通（同句判定挡掉 7 条 live 实证误报，cron 注入补读 claimMismatches，第五次同型断链修复）；v3.1 接入 0 调用模块 self-correction-ledger；v3.0.0c 修复商业主张辨别段端到端断链；v2.17 接入 GJOpen 外部预测基准；v2.16 修复基准概率断链；v2.15 参考文本单列；v2.14 sitemap 源改用页面真实发布时间；v2.13 停止假推演，转为辨别他人的预测",
   "main": "modules/monitor/signal-collector.js",
   "scripts": {
     "start": "node scripts/run-pipeline.js",

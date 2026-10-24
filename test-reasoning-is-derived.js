@@ -30,6 +30,33 @@ const _LEDGER = path.join(__dirname, 'human-future/data/prediction-ledger.json')
 const _BACKUP = path.join(require('os').tmpdir(), 'hf-ledger-global-backup.json');
 const _hadLedger = _fsG.existsSync(_LEDGER);
 if (_hadLedger) _fsG.copyFileSync(_LEDGER, _BACKUP);
+// [v3.2 维护] 夹具残留自愈：上一次 npm test 进程异常死亡（管道断裂/EPIPE 等）
+// 时 exit 还原不执行，测试夹具条目会残留在真实台账里。实测 2026-10-25：
+// 连续两轮管道运行各留一批（7 条），第三轮直接崩在 v2.16 的 record()
+// 探针（「预测 id 已存在」）——整套测试跑不完，后续所有验证都被堵住。
+// 判据只认夹具签名（探针 id / 无链接 id / 夹具来源名 / example.com / 探针
+// claim），不碰真实采集条目；清洗后再备份，exit 还原回去的也是干净版。
+const _isFixtureEntry = (p) => /^(v216-probe|selftest-)/.test(p.id || '')
+  || /-nourl-/.test(p.id || '')
+  || ['ProbeSrc', 'ProbeSrcBench', 'S'].includes(p.source)
+  || /example\.com/.test(p.rationale || '')
+  || /^探针|^自测/.test(p.claim || '')
+  // v2.16 测试 #6 的夹具 claim（标题+正文逐字一致；真实 RSS 条目标题是
+  // 「Enforcement of Chapter V under the EU AI Act」，不会长这个前缀）
+  || /^EU AI Act enforcement framework EU member states/.test(p.claim || '');
+if (_hadLedger) {
+  try {
+    const _cur = JSON.parse(_fsG.readFileSync(_LEDGER, 'utf-8'));
+    const _origLen = (_cur.predictions || []).length;
+    const _cleaned = (_cur.predictions || []).filter(p => !_isFixtureEntry(p));
+    if (_cleaned.length !== _origLen) {
+      _cur.predictions = _cleaned;
+      _fsG.writeFileSync(_LEDGER, JSON.stringify(_cur, null, 2), 'utf-8');
+      _fsG.copyFileSync(_LEDGER, _BACKUP);   // 备份同步为干净版
+      console.log(`[自愈] 清除上次异常死亡残留的测试夹具条目 ${_origLen} → ${_cleaned.length}`);
+    }
+  } catch (_) { /* 清洗失败不掩盖测试结果，按原样跑 */ }
+}
 const _restoreLedger = () => {
   try {
     if (_hadLedger && _fsG.existsSync(_BACKUP)) _fsG.copyFileSync(_BACKUP, _LEDGER);
@@ -2213,7 +2240,15 @@ c216('仅同义务重复登记时诚实降级不激活失真基准', (() => {
 
 // 4. record() 双写 category：新条目两个字段都在
 // （副作用由文件最开头的全局备份 + process.on('exit') 还原兜底）
+// [v3.2 维护] 探针幂等：先删后登。上一次进程异常死亡时 exit 还原不执行，
+// 探针条目残留会让 record() 抛「id 已存在」整套测试崩溃（2026-10-25 实测）。
 c216('record() 双写 category 字段', (() => {
+  // 先清掉可能残留的同 id 探针，保证可重跑
+  const _cur = ledgerLib216.load();
+  if ((_cur.predictions || []).some(p => p.id === 'v216-probe-field-dualwrite')) {
+    _cur.predictions = _cur.predictions.filter(p => p.id !== 'v216-probe-field-dualwrite');
+    fs216.writeFileSync(ledgerLib216.LEDGER_PATH, JSON.stringify(_cur, null, 2), 'utf-8');
+  }
   const rec = ledgerLib216.record({
     id: 'v216-probe-field-dualwrite', claim: '探针：category 双写', probability: 0.4,
     dueOn: '2027-12-31', domain: 'regulatory_action',
@@ -3126,5 +3161,212 @@ c311('cron 注入脚本读取 claimMismatches 且带口径限定', (() => {
     process.exitCode = 1;
   } else {
     console.log('结论：误报回归全清、真命中保留、该段已进 cron 注入（引擎产出+报告渲染+agent 可见）。');
+  }
+})();
+
+// ════════════════════════════════════════════════════════════════
+// v3.2 新增断言：商业主张辨别器新增「产能/供给约束主张」形态（capacity-claim）。
+//
+// 背景（2026-10-25 live 实证）：SKILL.md 自 v3.0.0c 把 "AWS Largely Sold
+// Out Of Capacity Into 2028"（产能主张）记在「已知边界」——商业主张形态库
+// 全部不命中，整条不进辨别。本轮实跑该轮 258 条 live：The Information 的
+// 这条就在池子里，逐条过形态门确认 MISS；扩模式库后同句命中。供给侧约束
+// （需求>供给 → 定价权/扩产周期）是 AI 算力市场的一阶信号，漏掉它商业辨别
+// 看不见最重要的市场事实之一。这是新辨别维度（新 kind + 专属证伪路径），
+// 不是修 bug。
+//
+// 同轮审计发现两处口径问题（均如实修）：
+//   ① 文档计数错误：SKILL.md/代码注释自 v3.0.0c 写「14 种商业主张形态」，
+//      实际只有 13 种（与 v3.1 修正的「17 个源」同型文档计数错误）；新增
+//      后真实条数为 14，按代码实测改正，不按文档数字顺延。
+//   ② [维护级] 公式桥 Brier 样本未去重：同一份报告里「认知公式评估」段
+//      样本=3、「预测台账」段已结算=1（3 条 EU AI Act 同义务条目），两个
+//      自相矛盾的样本数——正是本引擎要抓的口径错位。按 v2.16 同义务去重
+//      口径对齐（维护，不单独涨号）。
+//
+// 本节断言分五组：① live 实证句式命中；② 形态族召回（售罄/耗尽/分配/
+// 短缺/需求超供给）；③ 精度回归（普通 capacity 词/演唱会与座位 sold out/
+// waitlist 类比/扩产新闻全部不命中）；④ 端到端（引擎候选门 + 报告渲染 +
+// cron 注入 + 精度门未破）；⑤ 维护级公式桥去重。每处都做反向验证。
+// ════════════════════════════════════════════════════════════════
+const v32 = [];
+function c32(name, ok, detail) { v32.push({ name, ok, detail }); }
+
+const fs32 = require('fs');
+const path32 = require('path');
+const os32 = require('os');
+
+// ── 组 1：live 实证句式命中 ──
+// 1. 2026-10-25 轮 live 池里真实存在的 The Information 简报标题（无摘要，
+//    主张就在标题里）。摘除 capacity-claim 模式 → kind 不是 capacity，失败。
+c32('live 实证：AWS 产能主张命中 capacity 形态', (() => {
+  const { discriminateCommercial } = require('./human-future/scripts/commercial-discriminator.js');
+  const r = discriminateCommercial({
+    text: 'AWS Largely Sold Out Of Capacity Into 2028, Jassy Says',
+    source: 'The Information',
+  });
+  return r.kind === 'capacity'
+    && r.kinds.length === 1 && r.kinds[0] === 'capacity'   // 只命中产能形态，不串台
+    && r.verdict === 'weak-evidence'      // 标题-only：无出处(1)、推理 0/3，不虚抬
+    && r.evidence.weight === 1
+    && r.decisionRelevant === false;
+})(), '「Sold Out Of Capacity Into 2028」必须命中产能形态并按低证据等级判别（不虚抬为决策相关）');
+
+// 2. 证伪条件与类目：新 kind 必须有专属证伪路径，不能落回「无明确证伪路径」。
+//    摘除 FALSIFICATION_BY_KIND.capacity → 失败；摘除类目映射 → 失败。
+c32('capacity 形态有专属证伪条件与类目映射', (() => {
+  const { discriminateCommercial } = require('./human-future/scripts/commercial-discriminator.js');
+  const r = discriminateCommercial({
+    text: 'AWS is largely sold out of compute capacity into 2028, according to a quarterly earnings call.',
+    source: 'The Information',
+  });
+  return r.kind === 'capacity'
+    && r.category === 'market_claims'
+    && /第三方产能|利用率|扩容|预留量/.test(r.falsification)
+    && r.falsification !== '无明确证伪路径——这本身就是问题';
+})(), '产能主张必须带「第三方产能跟踪/扩容/预留量」证伪路径，归市场主张域');
+
+// ── 组 2：形态族召回 ──
+// 3. 耗尽族（sold out / exhausted / allocated / committed，含 has been 形态）。
+c32('形态族召回：售罄/耗尽/分配殆尽四种谓语', (() => {
+  const { COMMERCIAL_CLAIM_PATTERNS } = require('./human-future/scripts/commercial-discriminator.js');
+  const p = COMMERCIAL_CLAIM_PATTERNS.find(x => x.id === 'capacity-claim');
+  if (!p) return false;
+  return [
+    'AWS is largely sold out of capacity into 2028.',
+    'Our compute capacity is nearly exhausted through next year.',
+    'GPU supply has been fully allocated to existing customers.',
+    'Cloud supply is effectively committed through 2027.',
+    'The cloud provider is sold out of GPU capacity until 2028.',
+  ].every(s => p.re.test(s));
+})(), 'sold out / exhausted / allocated / committed 四种谓语都要命中');
+
+// 4. 短缺与需求超供给族（含形容词间隔与过去时态——新闻句式的主流形态）。
+c32('形态族召回：短缺与需求超供给', (() => {
+  const { COMMERCIAL_CLAIM_PATTERNS } = require('./human-future/scripts/commercial-discriminator.js');
+  const p = COMMERCIAL_CLAIM_PATTERNS.find(x => x.id === 'capacity-claim');
+  if (!p) return false;
+  return [
+    'A severe shortage of AI chips is delaying data center builds.',
+    'Demand for accelerators far exceeds available supply this quarter.',
+    'Orders outpaced inventory across every hyperscaler region.',
+  ].every(s => p.re.test(s));
+})(), 'shortage of / demand exceeds supply / orders outpaced inventory 都要命中');
+
+// ── 组 3：精度回归（v3.0.0c 教训：漏报比误报诚实）──
+// 5. 普通 capacity 词/演唱会 sold out/座位容量/waitlist 类比/解题式 bottleneck
+//    一律不得命中。摘除相邻性收紧（恢复 40 字宽窗）→ 座位句误命中，失败。
+c32('精度回归：普通 capacity 词与 sold out 不误命中', (() => {
+  const { COMMERCIAL_CLAIM_PATTERNS } = require('./human-future/scripts/commercial-discriminator.js');
+  const p = COMMERCIAL_CLAIM_PATTERNS.find(x => x.id === 'capacity-claim');
+  if (!p) return false;
+  return [
+    'The new SSD offers 100TB of storage capacity for enterprise customers.',
+    'The NGO runs capacity building programs for local governments.',
+    'Frontier models show a growing capacity to reason about complex problems.',
+    'The concert was sold out within minutes of tickets going on sale.',
+    'The stadium has a seat capacity of 80,000 and was sold out for the final.',
+    'Executives picture racks of accelerators with gigawatts of power and a waitlist for silicon.',
+    'How Companies Are Using NVIDIA DSX to Break the Power Bottleneck',
+    'Kazakhstan Expands Compute for Its AI Future, moving from infrastructure plans to deployment.',
+  ].every(s => !p.re.test(s));
+})(), 'storage capacity / capacity building / capacity to reason / 演唱会与座位 sold out / waitlist 类比 / 扩产新闻都不得命中');
+
+// ── 组 4：端到端（引擎门 + 报告渲染 + cron 注入）──
+// 6. 引擎候选门放行 AWS 条目并辨别；formatReport 渲染产能/供给约束标签。
+//    摘除报告 KIND_CN → 失败；摘除模式 → available=false，失败。
+c32('端到端：AWS 产能主张进商业辨别段并渲染', (() => {
+  const { ProjectionEngine, formatReport } = require('./scripts/project-future.js');
+  const item = { title: 'AWS Largely Sold Out Of Capacity Into 2028, Jassy Says',
+    description: '', body: '', source: 'The Information', bucket: 'business',
+    pubDate: 'Sat, 25 Oct 2026 00:44:16 GMT', domains: ['market_claims'],
+    link: 'https://theinformation.com/aws', origin: 'live' };
+  const inst = new ProjectionEngine({});
+  inst.signals = { totalItems: 1, domains: [], undomained: 0, dateRange: null, items: [item] };
+  const cd = inst.buildCommercialDiscrimination();
+  const md = formatReport(new ProjectionEngine({ newsData: { business: { news: [item] } } }).generate());
+  const seg = md.split('## 商业主张辨别')[1] || '';
+  return cd.available === true && cd.audited === 1
+    && cd.results[0].kind === 'capacity'
+    && seg.includes('AWS Largely Sold Out Of Capacity Into 2028')
+    // 必须认「渲染出来的类型标签行」而不是段里任意出现该字符串——note 文本
+    // 里也有「产能/供给约束」，泛匹配会让断言空转（v3.2 反向验证实测：
+    // 摘除 formatReport KIND_CN 后 0 失败，就是被 note 文本喂饱的）。
+    && seg.includes('类型: 产能/供给约束 | 来源: The Information')
+    && seg.includes('证伪条件:');
+})(), 'AWS 条目必须进商业辨别段，报告渲染产能/供给约束标签与证伪条件');
+
+// 7. 精度门没被新模式打穿：Fed 公告/播客仍不进辨别（新模式写得过宽就会漏进来）。
+c32('精度门未破：非主张文本仍被挡在辨别外', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const noise = [
+    { title: 'Minutes of the Federal Open Market Committee',
+      description: 'Participants noted that financial market conditions had eased.',
+      body: '', source: 'Federal Reserve (Monetary)', bucket: 'economy',
+      pubDate: 'Tue, 13 Oct 2026 00:44:16 GMT', domains: ['economy_labor'],
+      link: 'https://federalreserve.gov/a', origin: 'live' },
+    { title: 'LWiAI Podcast #252 - GPT 5.6, Grok 4.5, Nemotron-Labs-Diffusion, AI 2040',
+      description: 'This week: $5 billion in new funding and 30% growth in enterprise adoption of agents.',
+      body: '', source: 'Last Week in AI', bucket: 'business',
+      pubDate: 'Tue, 13 Oct 2026 00:44:16 GMT', domains: ['capital_flow'],
+      link: 'https://lastweekin.ai/b', origin: 'live' },
+  ];
+  const inst = new ProjectionEngine({});
+  inst.signals = { totalItems: noise.length, domains: [], undomained: 0, dateRange: null, items: noise };
+  const r = inst.buildCommercialDiscrimination();
+  return r.available === false && /未抽到命中商业主张形态/.test(r.reason || '');
+})(), 'Fed 公告与播客不得因新模式进入辨别');
+
+// 8. cron 注入脚本 KIND_CN 认识 capacity（端到端最后一环：agent 看得见中文标签）。
+//    摘除注入脚本 KIND_CN 的 capacity 行 → 失败（第五次同型断链的复发防护）。
+c32('cron 注入脚本渲染产能/供给约束标签', (() => {
+  const p = path32.join(os32.homedir(), '.hermes/scripts/hf-cron-fetch.sh');
+  if (!fs32.existsSync(p)) return false;
+  const src = fs32.readFileSync(p, 'utf-8');
+  return /'capacity': '产能\/供给约束'/.test(src);
+})(), '注入脚本 KIND_CN 必须含 capacity，否则 agent 看到英文 kind');
+
+// ── 组 5：维护级——公式桥 Brier 样本同义务去重 ──
+// 9. buildFormulaAssessment 必须把去重后的已结算条目送进公式桥。
+//    实测依据：2026-10-25 报告「认知公式评估」段 Brier 样本=3，而同一份
+//    报告「预测台账」段显示已结算 1 条（3 条 EU AI Act 同义务条目），两个
+//    自相矛盾的样本数。摘除去重 → sample=3，失败。
+c32('公式桥 Brier 样本按同义务去重（与台账段一致）', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const LEDGER = path32.join(__dirname, 'human-future/data/prediction-ledger.json');
+  const backup = fs32.existsSync(LEDGER) ? fs32.readFileSync(LEDGER, 'utf-8') : null;
+  try {
+    const ev = { sources: ['https://a.eu/x', 'https://b.com/y'], summary: '同一义务', settledBy: 'test' };
+    fs32.writeFileSync(LEDGER, JSON.stringify({ version: '1.0.0', predictions: [
+      { id: 't-1', claim: '同一义务页面A', probability: 0.45, domain: 'regulatory_action', category: 'regulatory_action', dueOn: '2026-09-30', outcome: true, evidence: ev },
+      { id: 't-2', claim: '同一义务页面B', probability: 0.45, domain: 'regulatory_action', category: 'regulatory_action', dueOn: '2026-09-30', outcome: true, evidence: ev },
+      { id: 't-3', claim: '另一件事', probability: 0.9, domain: 'vendor_delivery', category: 'vendor_delivery', dueOn: '2027-12-31', outcome: false, evidence: { sources: ['https://c.com/z'], summary: '另一件事', settledBy: 'test' } },
+    ] }, null, 2));
+    const inst = new ProjectionEngine({});
+    inst.signals = { totalItems: 0, domains: [], undomained: 0, dateRange: null, items: [] };
+    const fa = inst.buildFormulaAssessment();
+    return fa.available === true
+      && fa.formulas.brier.sample === 2   // 3 条登记 = 2 个义务
+      && Math.abs(fa.formulas.brier.score - (Math.pow(0.45 - 1, 2) + Math.pow(0.9 - 0, 2)) / 2) < 0.001;
+  } finally {
+    if (backup === null) fs32.unlinkSync(LEDGER); else fs32.writeFileSync(LEDGER, backup);
+  }
+})(), '公式桥样本必须去重（3 条登记 → 2 个义务），否则与台账段口径互相矛盾');
+
+// ── v3.2 汇总 ──
+(async () => {
+  const results = await Promise.all(v32.map(c => Promise.resolve(c.ok)));
+  let f = 0;
+  v32.forEach((c, i) => {
+    const ok = results[i];
+    if (!ok) f++;
+    console.log(`${ok ? '✓' : '✗'} ${c.name}${ok ? '' : '  —— ' + c.detail}`);
+  });
+  console.log(`\nv3.2: ${v32.length - f} 通过, ${f} 失败, 共 ${v32.length} 个`);
+  if (f > 0) {
+    console.log('结论：产能/供给约束主张形态或端到端接通不完整（命中/召回/精度/注入/公式桥去重有缺）。');
+    process.exitCode = 1;
+  } else {
+    console.log('结论：产能/供给约束主张已进形态库与端到端产物（引擎+报告+cron 注入），精度回归全清，公式桥样本口径已对齐。');
   }
 })();
