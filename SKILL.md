@@ -1,28 +1,35 @@
 ---
 name: human-future-v2
-title: "人类未来 · 文明推演引擎 v3.2.2"
-version: "3.2.2"
+title: "人类未来 · 文明推演引擎 v3.3.0"
+version: "3.3.0"
 description: |-
-  人类未来技能 v3.2.2 — 低置信度守门段端到端接通 cron 注入（第七次同型断链修复）：
-  v3.2.2（2026-10-25）把 v3.2.1 差集审计留下的 13 段逐段结案，确认 lowConfidenceGate
-  是断链不是有意省略——applyLowConfidenceGate() 自 v3 引擎起产出整体置信度与阈值
-  0.6 的比较、每个 stage 的 allowed 与 disclosure（实测整体 0.43 < 0.6，「该输出
-  不得作为结论引用」），formatReport 渲染「低置信度守门」段，但注入脚本从未读它。
-  agent 每轮都在没有置信度门槛的情况下消费 summary 与阶段结论：低置信度推演输出
-  被当成结论写进报告，正是本引擎要抓的「无保留完成态宣称」在自家产物上的复发——
-  假能力防护链断在最后一环。修复：hf-cron-fetch.sh 补「低置信度守门」注入段
-  （第 3.5 段，推演引擎 summary 之后、推演阶段结论之前——位置纪律：限定必须先于
-  被限定者到达 agent，放后面等于没放），渲染整体置信度/阈值/通过与 disclosure 原文、
-  被拦阶段名单与用途限定，带三条口径限定（守门≠事实判定/心虫只占 25%/未通过不得
-  引用为结论）与旧版报告降级路径。纪律再升级（登记 corr-2026-012）：差集审计的产出
-  不是「修掉最严重的几段」而是「每段都有结案记录」——有意省略必须带理由，结案清单
-  进测试成为每轮自动动作（产出字段 vs 注入字段的差集必须等于清单，新字段漏注入或
-  清单腐烂都失败）。测试 195→198 项（注入源级+位置纪律/引擎产出与阈值语义一致
-  防写死/差集结案清单闭环）；6 轮反向验证全部精确失败（摘除整段→2/摘除口径限定→1/
-  移段到阶段后→1/写死 allowed→1/清单漏 risks→1/清单腐烂→1）。端到端实跑注入输出
-  含守门段（整体 0.43 未通过/被拦 2 阶段/disclosure 透传，段序 summary<守门<阶段结论）。
-  版本号理由：纯断链修复、无新辨别维度，按 v3.2.1/v3.1.1 先例（修 bug+断链=末位补丁）。
-  历史：v3.2.1 预测校准与台账状态端到端接通（第六次同型断链）；
+  人类未来技能 v3.3.0 — 商业主张辨别器新增「并购/交易过程主张」形态（新辨别维度）：
+  v3.3（2026-10-25）给 commercial-discriminator 的 COMMERCIAL_CLAIM_PATTERNS 增加
+  ma-claim——SKILL.md 自 v3.0.0c 记在「已知边界」的第二个覆盖缺口（"Instacart Is
+  Exploring a Sale" 与 "Ramp Investors Went Nuclear Against Airwallex After Doomed
+  Deal" 交易过程主张，扩容前 14 种形态全部不命中、整条不进辨别），本轮实跑该两条
+  就在 258 条 live 池里（The Information），逐条过形态门确认 MISS 后扩库：新 kind
+  'ma' + 专属证伪条件（当事方否认/谈判破裂/监管否决/条款不符）+ 类目映射
+  capital_flow + 报告与 cron 注入的中文标签「并购/交易过程」。交易过程（并购/出售/
+  谈判/破裂）是资本与商业模式域的一阶信号，漏掉它商业辨别看不见市场结构变化的主要
+  通道之一。精度设计按 v3.0.0c 教训（漏报比误报诚实、没有实证不扩模式）：只认
+  「交易是主张主体」的句式（exploring/considering/weighing/pursuing + 交易名词、
+  talks to acquire/buy/sell、doomed/collapsed/stalled deal）；不认裸 "sale talks"
+  名词短语——live 实证「Instacart Shares Rally 10% After The Information Reports
+  Sale Talks」的主张主体是股价（可核验的市场价格事实，v3.2 已决议非待辨别主张），
+  Reports Sale Talks 是媒体转述的从属成分；不认 IPO（估值形态已覆盖）、bare "in
+  talks"（无交易对象）、"exploring options"（战略措辞）、eyes+非交易名词
+  （inDrive "eyes 2027 robotaxi tests" 是测试计划）。live 实测：258 条里精确命中
+  2 条即文档记录的两个候选，报告「商业主张辨别」段辨别数 6→8，两条均判
+  不可证伪（无量化）/无出处(1)——标题-only 只拿到主张本身，不虚抬为决策相关。
+  测试 198→207 项（live 实证×2/证伪条件与类目/形态族召回四族/精度回归 8 句/
+  端到端渲染只认类型行/cron 注入标签/精度门未破/模式计数口径 15 种）；5 轮反向
+  验证全部精确失败（摘除模式→7/摘除证伪条件→1/摘除报告渲染→1/摘除 cron 标签→1/
+  摘除精度收紧加回裸 sale talks→1）。端到端实跑注入输出含两条「类型: 并购/交易过程」
+  行与专属证伪条件。版本号理由：新辨别维度（新 kind+证伪路径+端到端标签），按
+  v3.2.0 先例取 x.0。
+  历史：v3.2.2 低置信度守门段端到端接通 cron 注入（第七次同型断链修复）；
+  v3.2.1 预测校准与台账状态端到端接通（第六次同型断链）；
   v3.2 新增产能/供给约束主张形态（新辨别维度，live 实证补齐已知边界漏检）。
 
   人类未来技能 v3.2.0 — 商业主张辨别器新增「产能/供给约束主张」形态（新辨别维度）：
@@ -222,11 +229,11 @@ description: |-
 
 ---
 
-## 当前状态（v3.2.2 实测）
+## 当前状态（v3.3.0 实测）
 
 以下数字全部来自 2026-10-25 的 `FETCH=1 FETCH_BODY=1 node scripts/run-pipeline.js` 实跑
-（v3.2.2 轮 270 条 live 信号；v3.1.1 轮 270 条、v3.1 轮 258 条），不是宣称值。
-v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见 frontmatter 历史记录。
+（v3.3.0 轮 258 条 live 信号；v3.2.2 轮 270 条、v3.1.1 轮 270 条、v3.1 轮 258 条），
+不是宣称值。v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见 frontmatter 历史记录。
 
 **采集层**
 - 源：23 个（tech 2 + humanities 1 + frontier_models 12 + economy 4 + business 4
@@ -235,8 +242,8 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   v3.1 按代码实际修正——这是文档维护，不是能力变化）
 - 并行抓取：`Promise.all`，实测约 4 秒（旧串行最坏 104 秒）
 - 正文增强：`FETCH_BODY=1` 时抓最新 24 条，实测 17 条成功（openai.com 403 / arstechnica 405 / interconnects 链接失效）
-- 实测产出：270 条 live（2026-10-25 v3.1.1 轮；同日 v3.1 轮 258 条、v3.0.0c 轮 248 条），
-  其中专项大模型域与商业域为主体
+- 实测产出：258 条 live（2026-10-25 v3.3.0 轮；同日 v3.2.2 轮 270 条、v3.1.1 轮 270 条、
+  v3.1 轮 258 条、v3.0.0c 轮 248 条），其中专项大模型域与商业域为主体
 
 **商业采集层（v3.0.0 新增）**
 - business 域 4 源：TechCrunch AI / The Information / Last Week in AI / ProductHunt
@@ -273,10 +280,14 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   our researchers+safety、benchmark+促销页脚；五个模式同句判定，另三个无实证
   不改判据）/
   外部预测基准 ✅（32 个开放问题，per-claim 主题匹配本轮 0/7，如实展示）/
-  商业主张辨别 ✅（6 条，精度门后；v3.2 新增产能/供给约束形态后含 AWS 售罄
+  商业主张辨别 ✅（8 条，精度门后；v3.2 新增产能/供给约束形态后含 AWS 售罄
   主张一条——修复前该条 13 种形态全部不命中、整条不进辨别；判 证据不足/无出处(1)/
-  推理 0/3，标题-only 不虚抬为决策相关）/
-  自我修正登记簿 ✅（11 条修正：critical 2 / high 8 / medium 1；v3.2.2 登记
+  推理 0/3，标题-only 不虚抬为决策相关；v3.3 新增并购/交易过程形态后含 Instacart
+  出售探索与 Ramp/Airwallex 破裂交易两条——扩容前 14 种形态全部不命中、
+  整条不进辨别；均判 不可证伪（无量化）/无出处(1)，标题-only 不虚抬为决策相关）/
+  自我修正登记簿 ✅（12 条修正：critical 2 / high 8 / medium 2；v3.3 登记
+  corr-2026-013（计数错误同型复发：新注释写「15 种」实为扩容前 14 种，提交前
+  捕获并加模式计数断言）；v3.2.2 登记
   corr-2026-012（第七次同型断链：低置信度守门派生漏注入），critical 排最前；
   v3.2.1 登记 corr-2026-011（第六次同型断链）；v3.1.1 登记 corr-2026-009：
   口径错位检测 7 条误报 + 第五次同型断链）
@@ -326,6 +337,8 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   [v3.2 计数纠错] 本节与代码注释自 v3.0.0c 起写「14 种商业主张形态」，实跑
   核对当时只有 13 种——与 v3.1 修正的「17 个源」同型文档计数错误。v3.2 新增
   产能/供给约束后真实条数为 14（逐条列出见 commercial-discriminator.js）。
+  [v3.3 再纠错] v3.3 新增并购/交易过程（ma-claim）后真实条数为 15；ma-claim
+  注释里「扩容前 14 种全部不命中」的 14 指扩容前形态数，不是当时文档口径。
 - [v3.0.0c] 端到端断链修复：v3.0.0 起引擎产出 commercialDiscrimination、
   formatReport 渲染「商业主张辨别」段，但 cron 注入脚本从未读取该字段——
   报告文件里躺着、agent 完全看不到。这是 v2.9/v2.13/v2.17 之后第四次同型断链。
@@ -358,17 +371,47 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   预留量口径）。类目归 market_claims。
 - 端到端：引擎候选门（isClaimForm 用同一个模式库）→ discriminateCommercial
   → formatReport KIND_CN「产能/供给约束」→ cron 注入第 6 段同标签。
-  仍在库外的市场句式：并购/交易过程（"Instacart Is Exploring a Sale"）、
-  产品发布公告、可核验的市场价格事实（"Shares Rally 10%"）——下轮候选，
-  扩库须逐条配测试。
+  [v3.3 更新] 仍在库外的市场句式：产品发布公告、可核验的市场价格事实
+  （"Shares Rally 10%"）——下轮候选，扩库须逐条配测试。
+
+**[v3.3] 并购/交易过程主张（ma-claim，新辨别维度）**
+- 定位：v3.0.0c 起记在「已知边界」的第二个覆盖缺口——"Instacart Is Exploring
+  a Sale" 与 "Ramp Investors Went Nuclear Against Airwallex After Doomed Deal"
+  （均为 The Information）扩容前 14 种形态全部不命中，整条不进辨别。2026-10-25
+  实跑该两条就在 258 条 live 池里，逐条过形态门确认 MISS 后扩库。交易过程
+  （并购/出售/谈判/破裂）是资本与商业模式域的一阶信号（交易塑竞争格局、
+   Deal 破裂塑信任成本），漏掉它商业辨别看不见市场结构变化的主要通道之一。
+- 形态族：探索/权衡类（exploring / considering / weighing / pursuing + sale /
+  takeover / merger / acquisition / buyout / deal）、谈判类（in talks to
+  acquire / buy / sell / be acquired，容忍 advanced / early / exclusive 等
+  前置修饰与 enters / entered / holding / resumed 动词形态）、交易状态类
+  （doomed / collapsed / failed / faltering / stalled / dead deal，deal falls
+  through / talks collapsed 谓语形态）。
+- 精度设计（v3.0.0c 教训：漏报比误报诚实、没有实证不扩模式）：只认「交易是
+  主张主体」的句式。不认裸 "sale talks" 名词短语——live 实证「Instacart
+  Shares Rally 10% After The Information Reports Sale Talks」的主张主体是
+  股价（可核验的市场价格事实，v3.2 已决议非待辨别主张），"Reports Sale
+  Talks" 是媒体转述的从属成分；不认 IPO/ahead of IPO（估值形态已覆盖该条）、
+  bare "in talks"（无交易对象的谈判不是可证伪主张）、"exploring options"
+  （战略措辞非交易主张）、eyes+非交易名词（inDrive "eyes 2027 robotaxi
+  tests" 是测试计划不是收购）。8 句精度回归进测试。
+- 判别结果（live 实测）：两条均判 不可证伪（无量化）/ 无出处(1) / 推理 0-1/3，
+  不虚抬为 ★决策相关——标题-only 条目只拿到主张本身，交易金额、当事方确认、
+  时间表都要等正文或交叉验证。证伪条件走 ma 专属路径（当事方公开否认、
+  谈判破裂或交易被监管否决、最终交割条款/估值与主张情形不符）。类目归
+  capital_flow。
+- 端到端：引擎候选门（isClaimForm 用同一个模式库）→ discriminateCommercial
+  → formatReport KIND_CN「并购/交易过程」→ cron 注入第 6 段同标签。live
+  实测商业辨别段 6→8 条，byKind 新增 ma:2。仍在库外的交易句式：无交易对象
+  的裸谈判（"in talks"）、"eyes a stake" 类少数股权动作——等有 live 实证再扩。
 
 **自我修正登记簿层（v3.1 接入的 0 调用模块）**
 - 定位：这是接入，不是新写。self-correction-ledger.js 自 v2.4 存在，
-  `human-future/data/self-corrections.json` 有 11 条真实修正（绕月≠登月、
+  `human-future/data/self-corrections.json` 有 12 条真实修正（绕月≠登月、
   v2.4 假能力三项审计、stateless 检查器覆盖缺口、sitemap 页面简介≠新闻正文、
   指南页文本≠预测、口径错位检测 7 条误报+第五次断链、v3.2 公式桥样本口径
   不一致+文档计数错误+测试夹具残留、v3.2.1 第六次断链、v3.2.2 第七次断链
-  +差集结案纪律等），模块 docstring 的铁律写着「每次修正
+  +差集结案纪律、v3.3 计数错误同型复发+模式计数断言等），模块 docstring 的铁律写着「每次修正
   落盘，下次推演先读簿子再说话」——但 v3.1 之前 live pipeline（scripts/）
   从未 require 过它，只有早期死副本 human-future/scripts/run-pipeline.js
   调过。簿子记了、没人读。
@@ -381,7 +424,7 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   严格过滤，漏掉数据里 2 条 critical（都是「整段推演作废」级的假能力审计），
   接入后会少报高危数（说 4 实际 6）。改为按等级表比较（critical > high >
   medium > low），critical 排最前。这是修 bug，不算升级——升级点是接入本身。
-- 边界（如实声明）：登记簿 11 条（v3.2.2 轮新增 corr-2026-012 后；本轮
+- 边界（如实声明）：登记簿 12 条（v3.3 轮新增 corr-2026-013 后；v3.2.2 轮
   e2e 实跑的报告快照在登记前，显示 10 条），样本随每次真实修正自然增长，引擎不
   代笔登记；本段不生成「所以本期该怎么做」的建议，只呈现「曾经错在哪」。
 
@@ -444,14 +487,15 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   `p.category`，分支永不激活）并加上同义务去重；样本随台账积累自然
   增长，不需要再改代码。
 
-**商业主张辨别的已知边界（v3.0.0c 如实声明，v3.2 更新）**：
+**商业主张辨别的已知边界（v3.0.0c 如实声明，v3.3 更新）**：
 - 模式库外的真实主张句式仍会漏：v3.2 起 "AWS Largely Sold Out Of Capacity
   Into 2028"（产能主张）已进模式库（capacity-claim，含售罄/耗尽/分配殆尽/
-  短缺/需求超供给形态族）；仍在库外的有 "Instacart Shares Rally 10%"（市场
-  反应——可核验的市场价格事实，非待辨别主张）、"Instacart Is Exploring a
-  Sale" 与 "Ramp Investors Went Nuclear Against Airwallex"（并购/交易过程
-  主张）、ProductHunt 产品发布（产品公告非市场主张）。漏掉比把 Fed 公告
-  当商业主张诚实，但覆盖率是真实缺口——扩模式库须逐条配测试。
+  短缺/需求超供给形态族）；v3.3 起 "Instacart Is Exploring a Sale" 与
+  "Ramp Investors Went Nuclear Against Airwallex After Doomed Deal"（并购/
+  交易过程主张）已进模式库（ma-claim，含探索/权衡、谈判、交易状态三族）；
+  仍在库外的有 "Instacart Shares Rally 10%"（市场反应——可核验的市场价格
+  事实，非待辨别主张）、ProductHunt 产品发布（产品公告非市场主张）。
+  漏掉比把 Fed 公告当商业主张诚实，但覆盖率是真实缺口——扩模式库须逐条配测试。
 - 站点导航/页脚 boilerplate 偶有漏网：v3.0.0c 轮 6 条里有 1 条 EconBrowser
   导航文本（"Skip to content"）因句内含 "analysis of" 命中调查研究形态。
   促销页脚（"REGISTER NOW"）已被形态门挡掉，导航文本还没有专门过滤器。
@@ -465,7 +509,24 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   引擎不代劳——这是心虫铁律，不是能力缺失。
 
 **测试**
-- `npm test`：**198 项断言**（实测各 section 汇总；v3.2.1 的 195 + v3.2.2 新增 3：
+- `npm test`：**207 项断言**（实测各 section 汇总；v3.2.2 的 198 + v3.3 新增 9：
+  2 项 live 实证句式命中（Instacart 出售探索 / Ramp-Airwallex 破裂交易，
+  标题-only 按无量化判不可证伪、不虚抬为决策相关）+
+  1 项 ma 专属证伪条件与类目映射（当事方否认/谈判破裂/监管否决/条款不符，
+  capital_flow）+
+  1 项形态族召回（exploring/considering/weighing/pursuing + talks to
+  acquire/buy/sell + doomed/collapsed/stalled deal）+
+  1 项精度回归 8 句（股价反应/监管限制/销量/eyes 测试计划/裸 in talks/
+  exploring options/IPO/产能句全不命中）+
+  1 项端到端渲染（两条进商业辨别段，只认渲染出的「类型: 并购/交易过程」行——
+  v3.2 教训：note 文本会把泛匹配喂饱）+
+  1 项 cron 注入 KIND_CN 含 ma+
+  1 项精度门未破（Fed 公告/播客仍不进辨别）+
+  1 项维护：模式计数口径（真实条数 15 与文档一致，防 v3.2 纠过过的计数腐烂））。
+  v3.3 五轮反向验证全部精确失败：摘除 ma-claim 模式→7 条；摘除 ma 证伪条件→1 条；
+  摘除 formatReport KIND_CN→1 条；摘除 cron 注入标签→1 条；摘除精度收紧
+  （正则加回裸 sale talks 名词短语）→1 条（精度回归生效）。
+  历史新增明细——v3.2.2 新增 3（
   1 项注入脚本源级+位置纪律（读 ~/.hermes/scripts/hf-cron-fetch.sh 验
   proj.lowConfidenceGate / 旧版报告路径 / overall 未通过分支语义「不得作为结论引用」
   / 被拦阶段名单 / 两条口径限定——守门不是新闻内容真假判定、未通过不得引用为结论
@@ -556,7 +617,8 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   自 v3 引擎起产出+渲染，注入脚本从未读，第七次同型断链；段序必须在推演阶段结论
   之前：限定先于被限定者到达 agent）** /
   推演阶段 /
-  预测辨别 / **商业主张辨别（v3.0.0c 补入，第 6 段）** /
+  预测辨别 / **商业主张辨别（v3.0.0c 补入，第 6 段；KIND_CN 标签随形态库扩充：
+  v3.2 产能/供给约束、v3.3 并购/交易过程，注入与报告同标签）** /
   **口径错位检测（v3.1.1 补入，第 6.5 段，含触发句与口径限定——此前引擎产出+
   报告渲染都有，注入脚本从未读，第五次同型断链）** /
   **外部预测基准（v2.17 新增，第 7 段）** /

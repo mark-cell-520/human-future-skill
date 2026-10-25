@@ -3615,3 +3615,190 @@ c322('projection 产出字段 vs 注入脚本差集等于已结案清单', (() =
     console.log('结论：守门披露已进 cron 注入（先于阶段结论+口径限定），差集审计固化为每轮测试动作。');
   }
 })();
+
+// ════════════════════════════════════════════════════════════════
+// v3.3 新增断言：商业主张辨别器新增「并购/交易过程主张」形态（ma-claim）。
+//
+// 背景（2026-10-25 覆盖审计实测）：SKILL.md 自 v3.0.0c 记在「已知边界」的
+// 第二个覆盖缺口仍在 live 池里——The Information「Instacart Is Exploring
+// a Sale」与「Ramp Investors Went Nuclear Against Airwallex After Doomed
+// Deal」扩容前 14 种形态全部不命中，整条不进辨别（v3.3 前 246 条 live
+// 实测：商业辨别 6 条里没有这两条）。交易过程（并购/出售/谈判/破裂）是资本与商业
+// 模式域的一阶信号，漏掉它商业辨别看不见市场结构变化的主要通道之一。
+//
+// 精度设计按 v3.0.0c/v3.2 教训（漏报比误报诚实、没有实证不扩模式）：
+//   ① 只认「交易是主张主体」的句式；② 不认裸 sale talks 名词短语——
+//     「Instacart Shares Rally 10% After ... Reports Sale Talks」的主张
+//     主体是股价（可核验的市场价格事实，v3.2 已决议非待辨别主张），
+//     Reports Sale Talks 是媒体转述的从属成分；③ 不认 IPO / bare in talks /
+//     exploring options / eyes+非交易名词（inDrive robotaxi tests）。
+//
+// 本节断言分四组：① live 实证句式命中 + 证伪条件与类目；② 形态族召回；
+// ③ 精度回归；④ 端到端（引擎候选门 + 报告渲染 + cron 注入 + 精度门未破）。
+// ════════════════════════════════════════════════════════════════
+const v33 = [];
+function c33(name, ok, detail) { v33.push({ name, ok, detail }); }
+
+// ── 组 1：live 实证句式命中 ──
+c33('live 实证：Instacart 出售探索命中 ma 形态', (() => {
+  const { discriminateCommercial } = require('./human-future/scripts/commercial-discriminator.js');
+  const r = discriminateCommercial({
+    text: 'Instacart Is Exploring a Sale',
+    source: 'The Information',
+  });
+  return r.kind === 'ma'
+    && r.kinds.length === 1 && r.kinds[0] === 'ma'
+    && r.verdict === 'unfalsifiable'     // 标题-only：无量化（no-quantity），不虚抬
+    && r.falsifiability.problems.some(p => p.id === 'no-quantity')
+    && r.evidence.weight === 1
+    && r.reasoning.score === 0
+    && r.decisionRelevant === false;
+})(), '「Instacart Is Exploring a Sale」必须命中并购/交易过程形态并按无量化判不可证伪（不虚抬为决策相关）');
+
+c33('live 实证：Ramp/Airwallex 破裂交易命中 ma 形态', (() => {
+  const { discriminateCommercial } = require('./human-future/scripts/commercial-discriminator.js');
+  const r = discriminateCommercial({
+    text: 'Ramp Investors Went Nuclear Against Airwallex After Doomed Deal',
+    source: 'The Information',
+  });
+  return r.kind === 'ma'
+    && r.kinds.length === 1 && r.kinds[0] === 'ma'   // 只命中交易形态，不串台到资本信号
+    && r.verdict === 'unfalsifiable'
+    && r.evidence.weight === 1
+    && r.decisionRelevant === false;
+})(), '「After Doomed Deal」必须命中交易过程形态（此前整条不进辨别）');
+
+c33('ma 形态有专属证伪条件与类目映射', (() => {
+  const { discriminateCommercial } = require('./human-future/scripts/commercial-discriminator.js');
+  const r = discriminateCommercial({
+    text: 'The retailer is exploring a sale, according to people familiar with the matter.',
+    source: 'The Information',
+  });
+  return r.kind === 'ma'
+    && r.category === 'capital_flow'
+    && /否认|谈判破裂|监管否决|条款/.test(r.falsification)
+    && r.falsification !== '无明确证伪路径——这本身就是问题';
+})(), '交易主张必须带「当事方否认/谈判破裂/监管否决/条款不符」证伪路径，归资本与商业模式域');
+
+// ── 组 2：形态族召回 ──
+c33('形态族召回：探索/权衡/谈判/破裂四族', (() => {
+  const { COMMERCIAL_CLAIM_PATTERNS } = require('./human-future/scripts/commercial-discriminator.js');
+  const p = COMMERCIAL_CLAIM_PATTERNS.find(x => x.id === 'ma-claim');
+  if (!p) return false;
+  return [
+    'Instacart is exploring a sale, according to sources.',
+    'The chipmaker is considering a merger with its rival.',
+    'Reports say the retailer is weighing a takeover bid.',
+    'The startup is pursuing a buyout of its supplier.',
+    'Firm A is in talks to acquire Firm B for $5 billion.',
+    'The company has entered talks to be bought by a PE fund.',
+    'The deal fell through after regulatory scrutiny.',
+    'Merger talks collapsed on Monday amid the leak.',
+    'Negotiations stalled for weeks before the announcement.',
+  ].every(s => p.re.test(s));
+})(), 'exploring/considering/weighing/pursuing + talks to acquire/buy/sell + doomed/collapsed/stalled 都要命中');
+
+// ── 组 3：精度回归 ──
+c33('精度回归：市场反应/监管/测试计划/IPO 不误命中', (() => {
+  const { COMMERCIAL_CLAIM_PATTERNS } = require('./human-future/scripts/commercial-discriminator.js');
+  const p = COMMERCIAL_CLAIM_PATTERNS.find(x => x.id === 'ma-claim');
+  if (!p) return false;
+  return [
+    // 主张主体是股价（可核验价格事实，v3.2 决议非待辨别主张），Reports Sale Talks 是从属转述
+    'Instacart Shares Rally 10% After The Information Reports Sale Talks',
+    // 监管公告不是交易主张
+    'U.S. Treasury Proposes to Widen Outbound Investment Restrictions for China and Other Countries',
+    // 销量不是交易
+    'Hottest toy for Christmas? Nvidia CEO plays with adorable Microduck robots, 20,000 sell',
+    // eyes + 非交易名词是测试计划
+    'Uber rival inDrive eyes 2027 robotaxi tests in Central Asia with Pony AI and Nvidia',
+    // 无交易对象的裸谈判、战略措辞
+    'The two sides are in talks, according to people familiar',
+    'The company is exploring options for international growth',
+    // IPO 归估值形态，不双标签
+    'OpenAI working on new $30B raise at $1.25T valuation ahead of IPO',
+    // 产能形态不串台
+    'AWS Largely Sold Out Of Capacity Into 2028, Jassy Says',
+  ].every(s => !p.re.test(s));
+})(), '股价反应/监管限制/销量/eyes 测试计划/裸 in talks/exploring options/IPO/产能句都不得命中');
+
+// ── 组 4：端到端 ──
+c33('端到端：两条交易主张进商业辨别段并渲染标签', (() => {
+  const { ProjectionEngine, formatReport } = require('./scripts/project-future.js');
+  const items = [
+    { title: 'Instacart Is Exploring a Sale', description: '', body: '',
+      source: 'The Information', bucket: 'business',
+      pubDate: 'Sat, 25 Oct 2026 00:44:16 GMT', domains: ['capital_flow'],
+      link: 'https://theinformation.com/a', origin: 'live' },
+    { title: 'Ramp Investors Went Nuclear Against Airwallex After Doomed Deal', description: '', body: '',
+      source: 'The Information', bucket: 'business',
+      pubDate: 'Sat, 25 Oct 2026 00:44:16 GMT', domains: ['capital_flow'],
+      link: 'https://theinformation.com/b', origin: 'live' },
+  ];
+  const inst = new ProjectionEngine({});
+  inst.signals = { totalItems: 2, domains: [], undomained: 0, dateRange: null, items };
+  const cd = inst.buildCommercialDiscrimination();
+  const md = formatReport(new ProjectionEngine({ newsData: { business: { news: items } } }).generate());
+  const seg = md.split('## 商业主张辨别')[1] || '';
+  return cd.available === true && cd.audited === 2
+    && cd.results.every(r => r.kind === 'ma')
+    && seg.includes('Instacart Is Exploring a Sale')
+    && seg.includes('Ramp Investors Went Nuclear Against Airwallex After Doomed Deal')
+    // 只认渲染出来的类型标签行（v3.2 教训：note/图例文本会把泛匹配喂饱）
+    && seg.includes('类型: 并购/交易过程 | 来源: The Information')
+    && seg.includes('证伪条件:');
+})(), '两条交易主张必须进商业辨别段，报告渲染并购/交易过程标签与证伪条件');
+
+c33('cron 注入脚本渲染并购/交易过程标签', (() => {
+  const p = require('path').join(require('os').homedir(), '.hermes/scripts/hf-cron-fetch.sh');
+  if (!require('fs').existsSync(p)) return false;
+  const src = require('fs').readFileSync(p, 'utf-8');
+  return /'ma': '并购\/交易过程'/.test(src);
+})(), '注入脚本 KIND_CN 必须含 ma，否则 agent 看到英文 kind');
+
+c33('精度门未破：非主张文本仍被挡在辨别外', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const noise = [
+    { title: 'Minutes of the Federal Open Market Committee',
+      description: 'Participants noted that financial market conditions had eased.',
+      body: '', source: 'Federal Reserve (Monetary)', bucket: 'economy',
+      pubDate: 'Tue, 13 Oct 2026 00:44:16 GMT', domains: ['economy_labor'],
+      link: 'https://federalreserve.gov/a', origin: 'live' },
+    { title: 'LWiAI Podcast #252 - GPT 5.6, Grok 4.5, Nemotron-Labs-Diffusion, AI 2040',
+      description: 'This week: $5 billion in new funding and 30% growth in enterprise adoption of agents.',
+      body: '', source: 'Last Week in AI', bucket: 'business',
+      pubDate: 'Tue, 13 Oct 2026 00:44:16 GMT', domains: ['capital_flow'],
+      link: 'https://lastweekin.ai/b', origin: 'live' },
+  ];
+  const inst = new ProjectionEngine({});
+  inst.signals = { totalItems: noise.length, domains: [], undomained: 0, dateRange: null, items: noise };
+  const r = inst.buildCommercialDiscrimination();
+  return r.available === false && /未抽到命中商业主张形态/.test(r.reason || '');
+})(), 'Fed 公告与播客不得因 ma 新模式进入辨别');
+
+// 维护级断言：模式计数文档口径（v3.2 刚纠错过「14 种」文档计数错误）。
+c33('模式计数口径：15 种与文档一致', (() => {
+  const { COMMERCIAL_CLAIM_PATTERNS } = require('./human-future/scripts/commercial-discriminator.js');
+  const pf = require('fs').readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
+  return COMMERCIAL_CLAIM_PATTERNS.length === 15
+    && /共 15 种模式/.test(pf)
+    && COMMERCIAL_CLAIM_PATTERNS.some(p => p.id === 'ma-claim');
+})(), '模式库真实条数必须与文档写的「15 种」一致（防文档计数腐烂）');
+
+// ── v3.3 汇总 ──
+(async () => {
+  const results = await Promise.all(v33.map(c => Promise.resolve(c.ok)));
+  let f = 0;
+  v33.forEach((c, i) => {
+    const ok = results[i];
+    if (!ok) f++;
+    console.log(`${ok ? '\u2713' : '\u2717'} ${c.name}${ok ? '' : '  —— ' + c.detail}`);
+  });
+  console.log(`\nv3.3: ${v33.length - f} 通过, ${f} 失败, 共 ${v33.length} 个`);
+  if (f > 0) {
+    console.log('结论：并购/交易过程主张的接入不完整（命中/证伪/召回/精度/端到端有缺）。');
+    process.exitCode = 1;
+  } else {
+    console.log('结论：交易过程主张已进模式库（live 实证 2 条命中），报告与 cron 注入渲染中文标签，精度回归通过。');
+  }
+})();

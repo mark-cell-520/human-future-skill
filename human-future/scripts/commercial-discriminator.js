@@ -86,6 +86,28 @@ const COMMERCIAL_CLAIM_PATTERNS = [
     kind: 'valuation', label: '估值陈述' },
   { id: 'signal-from-capital', re: /(signals?|shows?|proves?|demonstrates?|indicates?|suggests?)\s+(that\s+)?(investors?|the market|capital|vc|venture)/i,
     kind: 'capital-signal', label: '资本信号解读' },
+  // ── 交易过程类 ──
+  // [v3.3] SKILL.md 自 v3.0.0c 记在「已知边界」的第二个覆盖缺口，2026-10-25
+  // 轮仍在 live 池里：The Information「Instacart Is Exploring a Sale」与
+  // 「Ramp Investors Went Nuclear Against Airwallex After Doomed Deal」——
+  // 扩容前 14 种形态全部不命中，整条不进辨别。交易过程（并购/出售/谈判/破裂）
+  // 是资本与商业模式域的一阶信号（交易塑竞争格局、 Deal 破裂塑信任成本），
+  // 漏掉它商业辨别看不见市场结构变化的主要通道之一。
+  // 精度设计（v3.0.0c/v3.2 教训：漏报比误报诚实、没有实证不扩模式）：
+  //   ① 只认「交易是主张主体」的句式——exploring/considering/weighing/
+  //     pursuing + 交易名词、talks to acquire/buy/sell 类谈判句式、
+  //     交易状态词（doomed/collapsed/stalled deal）；
+  //   ② 不认裸 "sale talks" 名词短语——live 实证「Instacart Shares Rally
+  //     10% After The Information Reports Sale Talks」的主张主体是股价
+  //     （可核验的市场价格事实，v3.2 已决议非待辨别主张），"Reports Sale
+  //     Talks" 是媒体转述的从属成分，整句不进交易主张库；
+  //   ③ 不认 IPO/ahead of IPO（估值形态已覆盖该条）、bare "in talks"
+  //     （无交易对象的谈判不是可证伪主张，等有 live 实证再扩）、
+  //     "exploring options"（战略措辞非交易主张）、"eyes + 非交易名词"
+  //     （inDrive "eyes 2027 robotaxi tests" 是测试计划不是收购）。
+  { id: 'ma-claim',
+    re: /(?:\b(?:exploring|considering|weighing|pursuing)\s+(?:a|an|the|potential|possible)?\s*(?:sale|takeover|merger|acquisition|buyout|deal)\b|\b(?:in|enters?|entered|holding|holds?|resumed?)\s+(?:advanced\s+|early\s+|preliminary\s+|serious\s+|exclusive\s+)?talks?\s+to\s+(?:acquire|buy|sell|purchase|take\s+over|be\s+(?:acquired|bought|sold))\b|\btalks?\s+to\s+(?:acquire|buy|sell|purchase|take\s+over|be\s+(?:acquired|bought|sold))\b|\b(?:doomed|collapsed|failed|faltering|stalled|dead)\s+(?:deal|talks?|merger|acquisition|takeover)\b|\b(?:deal|talks?|merger|acquisition|takeover|negotiations?)\s+(?:collapses?|collapsed|falls?\s+through|fell\s+through|falls?\s+apart|fell\s+apart|stalls?|stalled|died|dies)\b)/i,
+    kind: 'ma', label: '并购/交易过程主张' },
   // ── 竞品类 ──
   // [v3.0.0c] 目标名词库补人类专家群：实测今日池子里
   // "Microsoft's new AI diagnostic system beat generalist doctors on hard
@@ -262,6 +284,9 @@ function buildFalsification(patterns, text) {
     'funding': '观察到交割公告、监管文件或投资方确认与主张金额不一致',
     'valuation': '观察到后续融资、二级市场交易或财报披露的估值与该数字矛盾',
     'capital-signal': '观察到同一资本方在同类标的上减仓、或该解读被资本方本人否认',
+    // [v3.3] 并购/交易过程主张的证伪路径：交易类主张最常见的裂缝是
+    // 「当事方否认」「谈判破裂/交易被否决」「最终条款与主张情形不符」。
+    'ma': '观察到当事方公开否认、谈判破裂或交易被监管否决，或最终交割的条款/估值与主张情形不符',
     'competitive': '观察到第三方在相同任务、相同口径下的复现结果不支持该领先幅度',
     'oss-threat': '观察到付费产品在主张时点后的收入/份额未受侵蚀，或开源方案的实际采用数据很低',
     'compliance': '观察到监管最终文本不含该义务，或执法记录显示无相关处罚/要求',
@@ -278,6 +303,8 @@ function inferCommercialCategory(text, patterns) {
       replacement: 'market_claims', 'market-size': 'market_claims',
       // [v3.2] 供给约束是需求侧的另一面，归市场主张域
       capacity: 'market_claims',
+      // [v3.3] 交易过程是资本事件，归资本与商业模式域
+      ma: 'capital_flow',
       funding: 'capital_flow', valuation: 'capital_flow', 'capital-signal': 'capital_flow',
       competitive: 'competitor_moves', 'oss-threat': 'competitor_moves',
       compliance: 'compliance_demand', trust: 'compliance_demand' };
