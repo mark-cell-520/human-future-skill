@@ -1,26 +1,41 @@
 ---
 name: human-future-v2
-title: "人类未来 · 文明推演引擎 v3.6.0"
-version: "3.6.0"
+title: "人类未来 · 文明推演引擎 v3.7.0"
+version: "3.7.0"
 description: |-
-  人类未来技能 v3.6.0 — 商业主张辨别器新增「成本/价格信号主张」形态（新辨别维度）：
-live 实证 The Information「Data Center Late Fees Hit $5 Million or More Per Day,
-Spawning New Insurance」（2026-10-25）扩容前 15 种形态全部不命中、整条不进辨别——
-供给约束的定价维度（v3.2 capacity-claim 管「供给耗尽」，不管「耗尽的代价」）此前
-完全不可见：当算力交付延迟，市场把延迟定价出来（迟到费 $5M+/天）并金融化
-（催生新保险产品线），是 AI 基建经济学的一阶信号。新 kind cost-signal：
-必须「成本/价格名词 + 水平谓语（hit/reach/climb/rose/rise/top/exceed/average）
-+ 金额」三件套相邻共现；专属证伪路径（合同/发票/第三方价格跟踪与该值不符、
-成本项回落/被豁免/改入口径）；类目 market_claims；报告与 cron 注入标签
-「成本/价格信号」。精度按 v3.0.0c/v3.2/v3.3 纪律（漏报比误报诚实）：全池 312 条
-live 实测精确命中 1 条（即该条），21 句精度回归 0 误报（Fed 公告/EconBrowser
-宏观句/股价反应/融资估值产能交易监管句/live 池原句全部不命中）；已知边界如实
-记录：名词后接长修饰语（"Late fees for delayed GPU deliveries exceed $2M"）与
-rates/tariffs 等宏观看价名词无实证不进库。live 端到端：商业辨别段 6→7 条，
-该条判 证据不足/无出处(1)/推理 1/3 不虚抬为决策相关；hf-cron-fetch.sh 注入段
-agent 可见「类型: 成本/价格信号」。测试 250→258 项；6 轮反向验证全部精确失败
-（摘除模式→6 条/摘除证伪条件→1/摘除类目映射→1 源级/摘除报告标签→1/摘除注入
-标签→1/放宽名词-谓语间隔→1）。历史：v3.5.1 — 财报指引结算链路修复（维护级：断链修复+实际值召回补强，非新辨别维度）：
+  人类未来技能 v3.7.0 — 商业主张辨别器新增「专家/机构判断主张」形态（新辨别维度）：
+live 实证 TechCrunch AI「AI delivers 'zero financial payoff' to most companies,
+Apollo economist says」（2026-10-25）扩容前 16 种形态全部不命中、整条不进辨别——
+第三方经济/市场专家对市场现状的量化判断（Apollo 首席经济学家论 AI 企业 ROI、
+卖方 strategist 论估值修正）是商业世界最高频的主张形态之一，且与 survey-finding
+（调查研究的数据汇总）是两类证据：前者是专家对数据的解读（可证伪但依赖专家
+信誉与机构口径），后者是数据本身。库里自 v3.0.0c 起只有后者——「AI 到底有没有
+财务回报」这个当前最大市场争议的核心主张整条漏掉。新 kind expert-judgment：
+只认经济/市场分析头衔（economist/analyst/strategist/investment officer/
+portfolio manager/fund manager/head of research）+ 判断动词或 + 机构
+（at/of/for/from + 大写机构名，排除 the/a/an 小词——/i 标志下 [A-Z] 会退化成
+任意字母，"at the" 误配，v3.7 实测修）；CEO/executive 自述是 vendor-selfreport
+地盘不抢，scientists/researchers（科研判断）、Fed chair/Trump（官员言论）
+不是市场分析头衔不进库；专属证伪路径（时点后实际数据/第三方调查/机构自身后续
+修订不符、同业同口径反证）；类目 market_claims；证据等级归第三方调查(3)
+（third-party-survey 扩展 expert 形态，与 v3.0.0c「according to a study in
+Science 归第三方」同型）；报告与 cron 注入标签「专家/机构判断」。精度按
+v3.0.0c/v3.2/v3.3/v3.6 纪律（漏报比误报诚实）：全池 300 条 live 实测精确命中
+1 条（即该条），21 句精度回归 0 误报（厂商自述/科研作者/官员转述/analyst
+名词短语/The Economist 杂志名/股价反应/播客 boilerplate/调查研究发现句全部
+不命中）；已知边界如实记录：头衔+机构+动词三段式（"analysts at the Fed
+expect"）与 "economists surveyed by" 形态无 live 实证不进库。live 端到端：
+商业辨别段 7→8 条，该条判 推理单薄/第三方调查(3)/推理 0-1/3，不虚抬为决策
+相关（有描述+第三方机构判断，与 v3.2/v3.3/v3.6 的标题-only 条不同级）；
+hf-cron-fetch.sh 注入段 agent 可见「类型: 专家/机构判断」。测试 258→267 项；
+7 轮反向验证全部精确失败。同轮修一个沉睡四个补丁轮的既有缺陷（corr-2026-024）：
+third-party-survey 的 (survey|poll|census) 自 v3.0.0c 起无 \b 词边界——
+"Apollo" 公司名含 "poll" 子串，任何含 Apollo 的句子都被当成民调证据抬到
+第三方调查(3)。该缺陷从未暴露是因为含 Apollo 的条目此前整条不进辨别段、
+poll 分支没有触发机会；v3.7 放行 Apollo economist 条目后，round 6 反向验证
+报 0 失败（断言被 poll 子串喂饱）才抓到。修 \b + 防回归断言（round 7 恢复
+无边界→精确失败 1 条）。教训登记：「该分支没有触发机会」不等于「该分支是对的」。
+历史：v3.6 — 历史：v3.5.1 — 财报指引结算链路修复（维护级：断链修复+实际值召回补强，非新辨别维度）：
   v3.5 审计实测台账 47 条 earnings_guidance 的 settlement 元数据 0/47 可用——
   forecast-discriminator 辨别结果从不带 ticker/fiscalYear/quarter，登记时写的
   settlement.ticker 恒为 null，「元数据随新条目落盘」从落地起就没工作过，全部
@@ -310,12 +325,15 @@ agent 可见「类型: 成本/价格信号」。测试 250→258 项；6 轮反�
 
 ---
 
-## 当前状态（v3.6.0 实测）
+## 当前状态（v3.7.0 实测）
 
 以下数字全部来自 2026-10-25/26 的 `FETCH=1 FETCH_BODY=1 node scripts/run-pipeline.js` 实跑
-（v3.6.0 轮：pipeline exit 0、312 条 live 信号（business 48 + economy 46 +
-frontier_models 142 + sec_filings 42 + tech 22 + humanities 12）、商业辨别段 6→7 条
-含新维度成本/价格信号 1 条；v3.5.1 轮：42 条 EDGAR 备案进 live、新结算 4 条；
+（v3.7.0 轮：pipeline exit 0、312 条 live 信号（business 48 + economy 46 +
+frontier_models 142 + sec_filings 42 + tech 22 + humanities 12）、商业辨别段 7→8 条
+含新维度专家/机构判断 1 条（byKind 新增 expert-judgment:1，该条判 推理单薄/
+第三方调查(3)/推理 0-1/3，decisionRelevant，hf-cron-fetch.sh 注入段 agent 可见
+「类型: 专家/机构判断」）；v3.6.0 轮：商业辨别段 6→7 条含新维度成本/价格信号 1 条；
+v3.5.1 轮：42 条 EDGAR 备案进 live、新结算 4 条；
 v3.5 轮：28 条 EDGAR 备案、7 条结算；v3.3.1 轮 270 条 live 信号；
 v3.3.0 轮 258 条、v3.2.2 轮 270 条、v3.1.1 轮 270 条、v3.1 轮 258 条），不是宣称值。
 v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见 frontmatter 历史记录。
@@ -450,8 +468,13 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   v3.3.1 survey-finding 精度修复后 8→6 条——EconBrowser 站点导航与 LWiAI 播客
   列表两条 incidental 误报消除，Grok 真调查主张保留；
   v3.6 新增成本/价格信号形态后含数据中心迟到费一条——扩容前 15 种形态全部
-  不命中、整条不进辨别；判 证据不足/无出处(1)/推理 1/3，标题-only 不虚抬）/
-  自我修正登记簿 ✅（22 条修正：critical 4 / high 12 / medium 6；v3.3.1 登记
+  不命中、整条不进辨别；判 证据不足/无出处(1)/推理 1/3，标题-only 不虚抬；
+  v3.7 新增专家/机构判断形态后含 Apollo 经济学家「AI delivers zero financial
+  payoff to most companies」一条——扩容前 16 种形态全部不命中、整条不进辨别；
+  判 推理单薄/第三方调查(3)/推理 0-1/3，有描述不虚抬但推理要素确实缺，
+  decisionRelevant；live 文本窗口被 TechCrunch 正文促销内容占用（ Despite 句
+  未进窗口→推理 0/3），与测试夹具 1/3 的差异如实记录）/
+  自我修正登记簿 ✅（23 条修正：critical 4 / high 12 / medium 7；v3.3.1 登记
   corr-2026-014（版本号漂移：projection meta 停 3.2.2/package.json 停 3.2.1，
   四处对齐+一致性断言）与 corr-2026-015（survey-finding 误报+三处播客夹具
   空转）；v3.3 登记
@@ -459,7 +482,10 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   捕获并加模式计数断言）；v3.2.2 登记
   corr-2026-012（第七次同型断链：低置信度守门派生漏注入），critical 排最前；
   v3.2.1 登记 corr-2026-011（第六次同型断链）；v3.1.1 登记 corr-2026-009：
-  口径错位检测 7 条误报 + 第五次同型断链）
+  口径错位检测 7 条误报 + 第五次同型断链；v3.7 登记 corr-2026-024：
+  third-party-survey 的 (survey|poll|census) 无 \b 词边界——"Apollo" 含
+  "poll" 子串被当成民调证据（无边界子串同型缺陷第三次实证），沉睡四个补丁轮
+  直到新维度放行含 Apollo 条目才暴露）
   [v3.2.1] 预测校准与台账状态 ✅（ledgerStatus + formulaAssessment 进 cron 注入第
   8.5 段：Brier/兑现率/待结算/逾期 + 贝叶斯 posterior/折扣/风险，三条口径限定；
   端到端实测 Brier 0.3025/样本 1/待结算 2，公式段与台账段样本一致）
@@ -545,6 +571,10 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   [v3.6 更新] 「Data Center Late Fees Hit $5 Million or More Per Day」已进
   模式库（cost-signal，成本/价格信号）；库外剩余：名词后接长修饰语的迟到费
   句式与 rates/tariffs 宏观看价名词，等有 live 实证再扩。
+  [v3.7 更新] 「AI delivers 'zero financial payoff' to most companies, Apollo
+  economist says」已进模式库（expert-judgment，专家/机构判断）；库外剩余：
+  头衔+机构+动词三段式（"analysts at the Fed expect"）与 "economists surveyed
+  by" 形态，等有 live 实证再扩。
 
 **[v3.3] 并购/交易过程主张（ma-claim，新辨别维度）**
 - 定位：v3.0.0c 起记在「已知边界」的第二个覆盖缺口——"Instacart Is Exploring
@@ -643,6 +673,64 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
 - 版本号理由：新辨别维度（新 kind + 专属证伪路径 + 端到端标签），用户可感知
   （报告「商业主张辨别」段首次出现「类型: 成本/价格信号」行）。
 
+**[v3.7] 专家/机构判断主张（expert-judgment，新辨别维度）**
+- 定位：「第三方专家解读数据」这一最高频主张形态的缺口。v3.0.0c 起库里有
+  survey-finding（调查研究的数据汇总），但「某位具名经济/市场专家对市场现状
+  的量化判断」一直在库外——2026-10-26 轮 live 实证：TechCrunch AI「AI
+  delivers 'zero financial payoff' to most companies, Apollo economist
+  says」（2026-10-25）16 种形态全部不命中，整条不进辨别。Apollo 首席经济学家
+  论「AI 对企业零财务回报」与调查研究是两类证据：前者是专家对数据的解读
+  （可证伪但依赖专家信誉与机构口径），后者是数据本身。「AI 到底有没有财务
+  回报」是当前最大市场争议，漏掉它商业辨别对争议核心失明。
+- 形态族：① 头衔 + 判断动词（economist says / analysts expect / strategists
+  see / warns / argues / estimates / notes / predicts / cautions / told 等）；
+  ② 头衔 + 机构（economists at X / analysts of X / strategists for X，
+  机构名排除 the/a/an 小词）；③ according to a/an/the + 窄修饰 + 头衔
+  （according to a Bank of America analyst）。头衔库只认经济/市场分析头衔：
+  economist / analyst / strategist / investment officer / portfolio manager /
+  fund manager / head(director) of research。
+- 精度设计（v3.0.0c/v3.2/v3.3/v3.6 教训：漏报比误报诚实、没有实证不扩模式）：
+  ① 只认经济/市场分析头衔——CEO/executive 的自述是 vendor-selfreport 地盘
+  不抢（"OpenAI says" / "NVIDIA CEO says" 不命中）；scientists/researchers
+  （科研判断）、Fed chair/Trump（官员言论）不是市场分析头衔不进库；
+  ② 必须「头衔+动词」或「头衔+机构」——光名词（"analyst day" /
+  "market strategist" / "The Economist magazine"）不是主张；③ 头衔与机构间
+  只容忍 chief/senior/lead/market/investment/global/US 窄前缀。
+  已知边界（如实）：头衔+机构+动词三段式（"analysts at the Fed expect"）、
+  "economists surveyed by" 形态无 live 实证不进库。全池 300 条 live 实测精确
+  命中 1 条（即该条），21 句精度回归 0 误报。
+- 判别结果（live 实测）：该条判 推理单薄 / 第三方调查(3) / 推理 0-1/3，
+  decisionRelevant=true——与 v3.2/v3.3/v3.6 的标题-only 条不同：这条有
+  TechCrunch 描述、第三方机构经济学家公开发表的研究观点，证据等级够；
+  推理要素确实缺（无样本无对照，Despite 句在 live 文本窗口外，夹具复现
+  窗口内为 1/3）。不虚抬为「结构完整」。证伪条件走 expert-judgment 专属路径
+  （时点后实际数据/第三方调查/机构自身后续修订不符、同业同口径反证）。
+  类目归 market_claims。
+- 端到端：引擎候选门（isClaimForm 用同一个模式库）→ discriminateCommercial
+  → formatReport KIND_CN「专家/机构判断」→ cron 注入第 6 段同标签。live 实测
+  商业辨别段 7→8 条，byKind 新增 expert-judgment:1。证据等级同轮扩展：
+  third-party-survey 加 expert 形态（与 v3.0.0c「according to a study in
+  Science 归第三方」同型），厂商自述不被抬级（"OpenAI says" 仍 ≤2）。
+- 同轮修一个既有缺陷（corr-2026-024，维护级）：third-party-survey 的
+  (survey|poll|census) 自 v3.0.0c 起无 \b 词边界——"Apollo" 公司名含
+  "poll" 子串，任何含 Apollo 的句子都被当成民调证据。该缺陷沉睡四个补丁轮：
+  含 Apollo 的条目此前整条不进辨别段，poll 分支没有触发机会；v3.7 放行后
+  round 6 反向验证报 0 失败（断言被 poll 子串喂饱）才抓到。修 \b + 防回归
+  断言（round 7 恢复无边界→精确失败 1 条）。教训：「该分支没有触发机会」
+  不等于「该分支是对的」——每轮扩库后要顺带对被放行的新文本跑证据等级/
+  推理判据的逐支核对。
+- 测试 258→267 项（新增 9：live 实证命中 / 专属证伪条件与类目映射（源级，
+  兜底类目同 market_claims）/ 形态族召回三族七形 / 精度回归 21 句 / 证据等级
+  归第三方调查(3)且不误升厂商自述且 Apollo≠poll / 引擎端到端渲染 / cron
+  注入源级 / 精度门未破 / 版本号一致性 3.7.0）；7 轮反向验证全部精确失败：
+  摘除模式→6 条（live 实证/证伪条件/召回/精度/端到端/模式计数）；摘除证伪
+  条件→1；摘除类目映射→1（源级）；摘除报告 KIND_CN→1；摘除注入 KIND_CN→1；
+  摘除证据等级 expert 动词分支→2（第一版 round 6 报 0 失败——poll 子串把
+  断言喂饱，修 \b 后才精确失败，即 corr-2026-024 的发现过程）；恢复 poll
+  无词边界→1。
+- 版本号理由：新辨别维度（新 kind + 专属证伪路径 + 端到端标签 + 证据等级
+  扩展），用户可感知（报告「商业主张辨别」段首次出现「类型: 专家/机构判断」行）。
+
 **自我修正登记簿层（v3.1 接入的 0 调用模块）**
 - 定位：这是接入，不是新写。self-correction-ledger.js 自 v2.4 存在，
   `human-future/data/self-corrections.json` 有 14 条真实修正（绕月≠登月、
@@ -727,7 +815,7 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   `p.category`，分支永不激活）并加上同义务去重；样本随台账积累自然
   增长，不需要再改代码。
 
-**商业主张辨别的已知边界（v3.0.0c 如实声明，v3.6 更新）**：
+**商业主张辨别的已知边界（v3.0.0c 如实声明，v3.7 更新）**：
 - 模式库外的真实主张句式仍会漏：v3.2 起 "AWS Largely Sold Out Of Capacity
   Into 2028"（产能主张）已进模式库（capacity-claim，含售罄/耗尽/分配殆尽/
   短缺/需求超供给形态族）；v3.3 起 "Instacart Is Exploring a Sale" 与
@@ -736,6 +824,9 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   v3.6 起 "Data Center Late Fees Hit $5 Million or More Per Day, Spawning New
   Insurance"（成本/价格信号主张）已进模式库（cost-signal，名词+水平谓语+金额
   三件套相邻共现）；
+  v3.7 起 "AI delivers 'zero financial payoff' to most companies, Apollo
+  economist says"（专家/机构判断主张）已进模式库（expert-judgment，经济/市场
+  分析头衔+判断动词或+机构）；
   仍在库外的有 "Instacart Shares Rally 10%"（市场反应——可核验的市场价格
   事实，非待辨别主张）、ProductHunt 产品发布（产品公告非市场主张）、
   "Late fees for delayed GPU deliveries exceed $2M"（名词后接长修饰语，
@@ -757,7 +848,7 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   引擎不代劳——这是心虫铁律，不是能力缺失。
 
 **测试**
-- `npm test`：**258 项断言**（实测各 section 汇总；v3.4 的 230 + v3.5 新增 11 + v3.5.1 新增 9 + v3.6 新增 8：
+- `npm test`：**267 项断言**（实测各 section 汇总；v3.4 的 230 + v3.5 新增 11 + v3.5.1 新增 9 + v3.6 新增 8 + v3.7 新增 9：
   2 项纯结算函数（settleGuidance 单位感知容差：相对/绝对/bps/百分点/区间/无容差
   跳过，含区分相对vs绝对的边界用例 / normalizeMetric+parseMetricValue 单位解析）+
   3 项实际值抽取（extractActuals 营收+毛利率+标题期间 / GAAP/非GAAP 不同值抽出
@@ -814,6 +905,32 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   放宽名词-谓语间隔（now/has/have→0-4 词）→1 条（实测误命中 2 句：would 间隔+
   句末逗号被 [\d.,]+ 吞成金额、已知边界句）。每轮基线全绿、摘除后断言必生效、
   备份还原到位、收尾基线全绿。
+  v3.7 新增 9（1 项 live 实证命中（TechCrunch AI「AI delivers 'zero financial
+  payoff' to most companies, Apollo economist says」→ kind=expert-judgment，
+  判 推理单薄/第三方调查(3)/推理 1/3，decisionRelevant——有描述+第三方机构
+  判断，与标题-only 条不同级）+
+  1 项专属证伪条件与类目映射（时点后实际数据/第三方调查/后续修订/同业反证；
+  类目映射源级断言——兜底类目同为 market_claims，行为断言抓不到摘除）+
+  1 项形态族召回三族七形（economist says / analysts at X / chief economist
+  at X / senior market strategist sees / according to a X analyst /
+  strategists at X expect / fund managers at X see）+
+  1 项精度回归 21 句（CEO/executive 自述/scientists/researchers/官员言论/
+  analyst 名词短语/The Economist 杂志名/股价反应/播客 boilerplate/调查研究
+  发现句/已知边界三段式全部不命中）+
+  1 项证据等级（expert 形态归第三方调查(3)、according to 分支同归 3、厂商
+  自述不抬级、Apollo 公司名不得因 poll 子串命中——corr-2026-024 防回归）+
+  1 项引擎端到端（候选门放行 + formatReport 渲染「类型: 专家/机构判断」行与
+  证伪条件——只认渲染出的标签行）+
+  1 项 cron 注入源级（读 ~/.hermes/scripts/hf-cron-fetch.sh 验 expert-judgment
+  中文标签）+
+  1 项精度门未破（Fed 公告/播客仍不进辨别）+
+  1 项版本号一致性（VERSION/package.json/banner 对齐 3.7.0））。
+  模式库计数 16→17（v3.3 的计数断言同步更新，v3.2 计数纠错同型纪律）。
+  v3.7 七轮反向验证全部精确失败：摘除模式→6 条；摘除证伪条件→1；摘除类目
+  映射→1（源级）；摘除报告 KIND_CN→1；摘除注入 KIND_CN→1；摘除证据等级
+  expert 动词分支→2（第一版 round 6 报 0 失败——"Apollo" 的 poll 子串把
+  断言喂饱，修 \b 后才精确失败，即 corr-2026-024 发现过程）；恢复 poll
+  无词边界→1。每轮基线全绿、摘除后断言必生效、备份还原到位、收尾基线全绿。
   历史：v3.4 的 230 + v3.4 新增 16：
   5 项采集器抽取（NVDA/AMZN/AMD/MRVL/MU 五种 live 句式命中 / 4 类精度回归 0 误报 /
   期间就近+同比排除+Oracle 两种期间形态 / 小数不截断+句点不冲段 / 词边界）+

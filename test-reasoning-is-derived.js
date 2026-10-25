@@ -3809,14 +3809,15 @@ c33('精度门未破：非主张文本仍被挡在辨别外', (() => {
 })(), 'Fed 公告与播客不得因 ma 新模式进入辨别');
 
 // 维护级断言：模式计数文档口径（v3.2 刚纠错过「14 种」文档计数错误）。
-// [v3.6] 扩容成本/价格信号后真实条数为 16，计数跟着代码走（v3.2 同型）。
-c33('模式计数口径：16 种与文档一致', (() => {
+// [v3.6] 扩容成本/价格信号后真实条数为 16；[v3.7] 扩容专家/机构判断后
+// 真实条数为 17，计数跟着代码走（v3.2 同型纪律）。
+c33('模式计数口径：17 种与文档一致', (() => {
   const { COMMERCIAL_CLAIM_PATTERNS } = require('./human-future/scripts/commercial-discriminator.js');
   const pf = require('fs').readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return COMMERCIAL_CLAIM_PATTERNS.length === 16
-    && /共 16 种模式/.test(pf)
-    && COMMERCIAL_CLAIM_PATTERNS.some(p => p.id === 'cost-signal');
-})(), '模式库真实条数必须与文档写的「16 种」一致（防文档计数腐烂）');
+  return COMMERCIAL_CLAIM_PATTERNS.length === 17
+    && /共 17 种模式/.test(pf)
+    && COMMERCIAL_CLAIM_PATTERNS.some(p => p.id === 'expert-judgment');
+})(), '模式库真实条数必须与文档写的「17 种」一致（防文档计数腐烂）');
 
 // ── v3.3 汇总 ──
 (async () => {
@@ -4210,11 +4211,11 @@ c34('cron 注入脚本渲染财报指引（VERDICT_CN/汇总/结构行）', (() 
 
 // ── 组 4：版本号（corr-2026-014 同型：banner 腐烂四个补丁轮）─────
 // [v3.6] 版本推进到 3.6.0（新辨别维度：成本/价格信号），本断言跟着当前版本走。
-c34('版本号一致性：banner 与 VERSION 对齐（3.6.0）', (() => {
+c34('版本号一致性：banner 与 VERSION 对齐（3.7.0）', (() => {
   const fs2 = require('fs');
   const version = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return version === '3.6.0' && rp.includes('文明推演引擎 v3.6.0');
+  return version === '3.7.0' && rp.includes('文明推演引擎 v3.7.0');
 })(), 'run-pipeline banner 必须与 VERSION 一致（v3.1 修过 banner/meta 同型后又腐烂）');
 
 // ── v3.4 汇总 ──
@@ -4408,15 +4409,15 @@ c35('cron 注入脚本渲染财报指引结算段', (() => {
 
 // ── 组 6：版本号一致性（corr-2026-014 同型，四处对齐）──────────
 // [v3.6] 推进到 3.6.0（新辨别维度），断言跟当前版本走。
-c35('版本号一致性：VERSION/package.json/projection meta/banner 对齐 3.6.0', (() => {
+c35('版本号一致性：VERSION/package.json/projection meta/banner 对齐 3.7.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.6.0'
-    && /3\.6\.0/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.6.0');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.6.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.7.0'
+    && /3\.7\.0/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.7.0');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.7.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.5 汇总 ──
 (async () => {
@@ -4634,15 +4635,15 @@ c351('结算证据来源是提供实际值的备案（actualPeriod 匹配）', (
 
 // ── 组 4：版本号一致性（corr-2026-014 同型）────────────────────
 // [v3.6] 推进到 3.6.0（新辨别维度：成本/价格信号）。
-c351('版本号一致性：VERSION/package.json/banner 对齐 3.6.0', (() => {
+c351('版本号一致性：VERSION/package.json/banner 对齐 3.7.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.6.0'
-    && /3\.6\.0/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.6.0');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.6.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.7.0'
+    && /3\.7\.0/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.7.0');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.7.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.5.1 汇总 ──
 (async () => {
@@ -4837,15 +4838,15 @@ c36('精度门未破：非主张文本仍被挡在辨别外', (() => {
 })(), 'Fed 公告与播客不得因 cost-signal 新模式进入辨别');
 
 // ── 组 5：版本号一致性（corr-2026-014 同型）────────────────────
-c36('版本号一致性：VERSION/package.json/banner 对齐 3.6.0', (() => {
+c36('版本号一致性：VERSION/package.json/banner 对齐 3.7.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.6.0'
-    && /3\.6\.0/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.6.0');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.6.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.7.0'
+    && /3\.7\.0/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.7.0');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.7.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.6 汇总 ──
 (async () => {
@@ -4862,5 +4863,249 @@ c36('版本号一致性：VERSION/package.json/banner 对齐 3.6.0', (() => {
     process.exitCode = 1;
   } else {
     console.log('结论：成本/价格信号主张已进模式库（live 实证 1 条命中），报告与 cron 注入渲染中文标签，精度回归通过。');
+  }
+})();
+
+
+// ════════════════════════════════════════════════════════════════
+// v3.7 新增断言：商业主张辨别器新增「专家/机构判断主张」形态（expert-judgment）
+//
+// 背景（2026-10-26 轮 live 实证）：商业主张形态库自 v3.0.0c 起三次扩库
+// （v3.2 产能/供给约束、v3.3 并购/交易过程、v3.6 成本/价格信号）补的
+// 都是供给侧、资本过程与定价维度句式，但「第三方经济/市场专家对市场
+// 现状的量化判断」这一最高频的主张形态一直在库外——TechCrunch AI
+// 「AI delivers 'zero financial payoff' to most companies, Apollo
+// economist says」（2026-10-25）16 种形态全部不命中，整条不进辨别。
+// Apollo 首席经济学家论「AI 对企业零财务回报」与 survey-finding（调查
+// 研究的数据汇总）是两类证据：前者是专家对数据的解读（可证伪但依赖
+// 专家信誉与机构口径），后者是数据本身。库里只有后者——「AI 到底有
+// 没有财务回报」这个当前最大市场争议的核心主张整条漏掉。
+//
+// 精度设计（v3.0.0c/v3.2/v3.3/v3.6 教训：漏报比误报诚实、没有实证不扩模式）：
+//   ① 只认经济/市场分析头衔（economist/analyst/strategist/investment
+//      officer/portfolio manager/fund manager/head of research）——CEO/
+//      executive 的自述是 vendor-selfreport 地盘不抢；scientists/
+//      researchers（科研判断）、Fed chair/Trump（官员言论）不是市场
+//      分析头衔，不进库；
+//   ② 必须「头衔 + 判断动词」或「头衔 + 机构（at/of/for/from + 大写）」——
+//      光名词（"analyst day"/"market strategist"）不是主张；
+//   ③ 头衔与机构之间只容忍 chief/senior/lead/market/investment/global/
+//      US 窄前缀，不放开到任意间隔（v3.6 宽窗正则误命中 2 句的教训）。
+//   已知边界（如实）：头衔+机构+动词三段式（"analysts at the Fed
+//   expect"）、"economists surveyed by..." 形态无 live 实证不进库。
+//
+// 本节断言分五组：① live 实证句式命中 + 证伪条件与类目（源级）；② 形态族
+// 召回；③ 精度回归（live 池原句 + 非专家句式）；④ 端到端（证据等级扩展 +
+// 引擎候选门 + 报告渲染 + cron 注入 + 精度门未破）；⑤ 版本号一致性。
+// ════════════════════════════════════════════════════════════════
+const v37 = [];
+function c37(name, ok, detail) { v37.push({ name, ok, detail }); }
+
+// ── 组 1：live 实证句式命中 ──
+// 1. 2026-10-26 轮 live 池里真实存在的 TechCrunch AI 条目（标题+描述）。
+//    摘除 expert-judgment 模式 → kind 不是 expert-judgment，失败。
+c37('live 实证：Apollo 经济学家判断命中专家/机构判断形态', (() => {
+  const { discriminateCommercial } = require('./human-future/scripts/commercial-discriminator.js');
+  const r = discriminateCommercial({
+    text: 'AI delivers \u2018zero financial payoff\u2019 to most companies, Apollo economist says. '
+      + 'Despite massive investments and widespread hype around artificial intelligence, '
+      + 'the technology has delivered zero financial payoff to corporate America outside of tech.',
+    source: 'TechCrunch AI',
+  });
+  return r.kind === 'expert-judgment'
+    && r.kinds.length === 1 && r.kinds[0] === 'expert-judgment'  // 只命中专家形态，不串台
+    && r.verdict === 'thin-reasoning'     // 证据 3（第三方专家）但推理不足
+    && r.evidence.weight === 3
+    && r.reasoning.score === 1            // 描述里 "Despite massive investments" 触发
+                                           // has-counterexample（既有 REASONING_CHECKS 行为，
+                                           // 如实记录）；无数字样本无对照
+    && r.decisionRelevant === true;       // 证据≥3 → 决策相关（非虚抬：有描述+第三方机构判断）
+})(), 'Apollo economist says 必须命中专家/机构判断形态，判 推理单薄/第三方调查(3)/推理 1/3');
+
+// 2. 证伪条件与类目：新 kind 必须有专属证伪路径，不能落回「无明确证伪路径」。
+//    摘除 FALSIFICATION_BY_KIND['expert-judgment'] → 失败；摘除类目映射 →
+//    源级断言失败（行为断言抓不到——inferCommercialCategory 兜底值恰好也是
+//    market_claims，与 v3.6 cost-signal 同型，必须源级钉住）。
+c37('expert-judgment 形态有专属证伪条件与类目映射', (() => {
+  const { discriminateCommercial } = require('./human-future/scripts/commercial-discriminator.js');
+  const r = discriminateCommercial({
+    text: 'A senior market strategist at Goldman Sachs sees a 20% correction ahead as valuations stretch.',
+    source: 'TechCrunch AI',
+  });
+  const src = require('fs').readFileSync(require('path').join(__dirname,
+    'human-future/scripts/commercial-discriminator.js'), 'utf-8');
+  return r.kind === 'expert-judgment'
+    && r.category === 'market_claims'
+    && /实际数据|第三方调查|后续修订|反证/.test(r.falsification)
+    && r.falsification !== '无明确证伪路径——这本身就是问题'
+    // 源级：映射行必须显式存在（兜底值同域，行为断言无法区分「映射了」与「没映射」）
+    && /'expert-judgment': 'market_claims'/.test(src);
+})(), '专家判断主张必须带「实际数据/第三方调查/后续修订/反证」证伪路径，归市场主张域');
+
+// ── 组 2：形态族召回 ──
+// 3. 头衔+动词、头衔+机构、according to 三族 + 窄前缀形态。
+c37('形态族召回：头衔动词/头衔机构/according to 三族七形', (() => {
+  const { COMMERCIAL_CLAIM_PATTERNS } = require('./human-future/scripts/commercial-discriminator.js');
+  const p = COMMERCIAL_CLAIM_PATTERNS.find(x => x.id === 'expert-judgment');
+  if (!p) return false;
+  return [
+    'AI delivers zero financial payoff to most companies, Apollo economist says',
+    'The chief economist at Goldman Sachs warned the rally is overdone',
+    'Analysts at Morgan Stanley raised their price target to $300',
+    'A senior market strategist sees a 20% correction ahead',
+    'According to a Bank of America analyst, memory prices will keep climbing',
+    'Strategists at JPMorgan expect earnings to beat consensus',
+    'Fund managers at BlackRock see inflows continuing into next year',
+  ].every(s => p.re.test(s));
+})(), 'economist says / analysts at X / chief economist at X / according to a X analyst 都要命中');
+
+// ── 组 3：精度回归（v3.0.0c 教训：漏报比误报诚实）──
+// 4. 非市场分析头衔、光名词、厂商自述、股价反应、播客 boilerplate 一律不得命中。
+//    含 live 池原句（官员访谈/科研转述/杂志名）与已知边界句式。
+c37('精度回归：厂商自述与科研官员转述不误命中', (() => {
+  const { COMMERCIAL_CLAIM_PATTERNS } = require('./human-future/scripts/commercial-discriminator.js');
+  const p = COMMERCIAL_CLAIM_PATTERNS.find(x => x.id === 'expert-judgment');
+  if (!p) return false;
+  return [
+    // 厂商自述（vendor-selfreport 地盘，头衔库不含 CEO/executive）
+    'OpenAI says it expects revenue to double next year',
+    'our chief executive officer says we plan to ship in Q3',
+    'Sam Altman says GPT-6 will change everything',
+    'NVIDIA CEO says demand remains strong',
+    // 科研/学术判断（非市场分析头衔）
+    'Researchers at MIT say the model fails safety evals',
+    'Scientists say the results are inconclusive',
+    'A Model of U.S. Monetary Policy -- by Rohan Kekre, Moritz Lenel',
+    // 官员/政客言论（非市场分析头衔）
+    'The Fed chair said inflation remains elevated',
+    'Trump says tariffs will raise revenue',
+    'Piero Cipollone: Interview with Milano Finanza',
+    // 光名词无动词/无机构
+    'analyst day scheduled for next week',
+    'The analyst coverage of the stock has been sparse',
+    'The Economist magazine named AI person of the year',
+    'market strategist',
+    'economists',
+    // 既有决议非待辨别主张（股价反应，v3.2/v3.3）
+    'Instacart Shares Rally 10% After The Information Reports Sale Talks',
+    // boilerplate / 其它形态库句式不串台
+    'LWiAI Podcast #258 - Opus 5.5, Sol and Luna, Muse, DeepSeek-V4.1-Flash, Xi',
+    'Get your pass and bring someone with you at 50% off. REGISTER NOW.',
+    'A survey of 1,200 enterprises found 34% had deployed LLMs',
+    'according to a study in Science, the system beat generalist doctors',
+    'AWS Largely Sold Out Of Capacity Into 2028, Jassy Says',
+    'U.S. Treasury Proposes to Widen Outbound Investment Restrictions for China and Other Countries',
+    // 已知边界（如实记录为漏报，不是误报）：头衔+机构+动词三段式
+    'Analysts at the Fed expect two more cuts this year',
+  ].every(s => !p.re.test(s));
+})(), 'CEO/executive 自述、scientists/researchers、官员言论、光名词、股价反应、播客都不得命中');
+
+// ── 组 4：端到端（证据等级扩展 + 引擎门 + 报告渲染 + cron 注入）──
+// 5. 证据等级：expert 形态归第三方调查(3)（third-party-survey 扩展），与
+//    v3.0.0c「according to a study in Science 归第三方」同型；厂商自述不被
+//    升级。摘除 third-party-survey 的 expert 扩展 → 失败。
+c37('证据等级：专家判断归第三方调查(3)且不误升厂商自述', (() => {
+  const { discriminateCommercial } = require('./human-future/scripts/commercial-discriminator.js');
+  const r = discriminateCommercial({
+    text: 'AI delivers zero financial payoff to most companies, Apollo economist says.',
+  });
+  const r2 = discriminateCommercial({
+    text: 'OpenAI says it expects revenue to double next year.',
+  });
+  const r3 = discriminateCommercial({
+    text: 'According to a Bank of America analyst, memory prices will keep climbing.',
+  });
+  // [v3.7] 防回归：Apollo 公司名含 "poll" 子串，third-party-survey 的
+  // survey/poll/census 自 v3.0.0c 起无 \b 词边界（与 v3.1.1 demo/democracy
+  // 同型）。无专家头衔的 Apollo 句不得因 poll 子串被当成民调证据。
+  const r4 = discriminateCommercial({
+    text: 'Apollo hired 200 engineers for its insurance division.',
+  });
+  return r.evidence.id === 'third-party-survey' && r.evidence.weight === 3
+    && r3.evidence.weight === 3
+    && r2.evidence.weight <= 2            // 厂商自述不得被 expert 扩展抬级
+    && r4.evidence.weight <= 2;           // Apollo≠poll（词边界修复，摘除 \b → 本断言失败）
+})(), 'Apollo economist says 归第三方调查(3)，OpenAI says 仍是厂商自述档，Apollo 公司名不得因 poll 子串命中');
+
+// 6. 引擎候选门放行 Apollo 条目并辨别；formatReport 渲染专家/机构判断标签。
+//    摘除报告 KIND_CN → 失败；摘除模式 → available=false，失败。
+c37('端到端：Apollo 主张进商业辨别段并渲染', (() => {
+  const { ProjectionEngine, formatReport } = require('./scripts/project-future.js');
+  const item = { title: 'AI delivers \u2018zero financial payoff\u2019 to most companies, Apollo economist says',
+    description: 'Despite massive investments and widespread hype around artificial intelligence, '
+      + 'the technology has delivered zero financial payoff to corporate America outside of tech.',
+    body: '', source: 'TechCrunch AI', bucket: 'business',
+    pubDate: 'Sun, 25 Oct 2026 15:31:13 GMT', domains: ['market_claims'],
+    link: 'https://techcrunch.com/zero-payoff', origin: 'live' };
+  const inst = new ProjectionEngine({});
+  inst.signals = { totalItems: 1, domains: [], undomained: 0, dateRange: null, items: [item] };
+  const cd = inst.buildCommercialDiscrimination();
+  const md = formatReport(new ProjectionEngine({ newsData: { business: { news: [item] } } }).generate());
+  const seg = md.split('## 商业主张辨别')[1] || '';
+  return cd.available === true && cd.audited === 1
+    && cd.results[0].kind === 'expert-judgment'
+    && seg.includes('Apollo economist says')
+    // 必须认「渲染出来的类型标签行」而不是段里任意出现该字符串——note 文本
+    // 里也有「专家/机构判断」，泛匹配会让断言空转（v3.2 反向验证实测同型）。
+    && seg.includes('类型: 专家/机构判断 | 来源: TechCrunch AI')
+    && seg.includes('证伪条件:');
+})(), 'Apollo 条目必须进商业辨别段，报告渲染专家/机构判断标签与证伪条件');
+
+// 7. cron 注入脚本 KIND_CN 认识 expert-judgment（端到端最后一环：agent 看得见
+//    中文标签）。摘除注入脚本 KIND_CN 的 expert-judgment 行 → 失败（同型断链复发防护）。
+c37('cron 注入脚本渲染专家/机构判断标签', (() => {
+  const p = require('path').join(require('os').homedir(), '.hermes/scripts/hf-cron-fetch.sh');
+  if (!require('fs').existsSync(p)) return false;
+  const src = require('fs').readFileSync(p, 'utf-8');
+  return /'expert-judgment': '专家\/机构判断'/.test(src);
+})(), '注入脚本 KIND_CN 必须含 expert-judgment，否则 agent 看到英文 kind');
+
+// 8. 精度门没被新模式打穿：Fed 公告/播客仍不进辨别（新模式写得过宽就会漏进来）。
+c37('精度门未破：非主张文本仍被挡在辨别外', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const noise = [
+    { title: 'Minutes of the Federal Open Market Committee',
+      description: 'Participants noted that financial market conditions had eased.',
+      body: '', source: 'Federal Reserve (Monetary)', bucket: 'economy',
+      pubDate: 'Tue, 13 Oct 2026 00:44:16 GMT', domains: ['economy_labor'],
+      link: 'https://federalreserve.gov/a', origin: 'live' },
+    { title: 'LWiAI Podcast #252 - GPT 5.6, Grok 4.5, Nemotron-Labs-Diffusion, AI 2040',
+      description: "GPT-5.6 and Grok 4.5, Meta's Muse Spark 1.1, regulatory developments in AI and data centers, interpretability research from Anthropic, and the future of AI policy with AI 2040",
+      body: '', source: 'Last Week in AI', bucket: 'business',
+      pubDate: 'Tue, 13 Oct 2026 00:44:16 GMT', domains: ['capital_flow'],
+      link: 'https://lastweekin.ai/b', origin: 'live' },
+  ];
+  const inst = new ProjectionEngine({});
+  inst.signals = { totalItems: noise.length, domains: [], undomained: 0, dateRange: null, items: noise };
+  const r = inst.buildCommercialDiscrimination();
+  return r.available === false && /未抽到命中商业主张形态/.test(r.reason || '');
+})(), 'Fed 公告与播客不得因 expert-judgment 新模式进入辨别');
+
+// ── 组 5：版本号一致性（corr-2026-014 同型）────────────────────
+c37('版本号一致性：VERSION/package.json/banner 对齐 3.7.0', (() => {
+  const fs2 = require('fs');
+  const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
+  const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
+  const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
+  return VERSION === '3.7.0'
+    && /3\.7\.0/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.7.0');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.7.0，防 corr-2026-014 版本漂移复发');
+
+// ── v3.7 汇总 ──
+(async () => {
+  const results = await Promise.all(v37.map(c => Promise.resolve(c.ok)));
+  let f = 0;
+  v37.forEach((c, i) => {
+    const ok = results[i];
+    if (!ok) f++;
+    console.log(`${ok ? '\u2713' : '\u2717'} ${c.name}${ok ? '' : '  —— ' + c.detail}`);
+  });
+  console.log(`\nv3.7: ${v37.length - f} 通过, ${f} 失败, 共 ${v37.length} 个`);
+  if (f > 0) {
+    console.log('结论：专家/机构判断主张的接入不完整（命中/证伪/召回/精度/端到端/版本有缺）。');
+    process.exitCode = 1;
+  } else {
+    console.log('结论：专家/机构判断主张已进模式库（live 实证 1 条命中），报告与 cron 注入渲染中文标签，精度回归通过。');
   }
 })();

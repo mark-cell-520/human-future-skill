@@ -162,6 +162,28 @@ const COMMERCIAL_CLAIM_PATTERNS = [
   // expert/specialist 是常见前置修饰，一并进可选组。
   { id: 'competitive-claim', re: /(beats?|outperforms?|surpasses?|exceeds?|defeats?|ahead of|leads?)\s+(?:openai|anthropic|google|meta|microsoft|deepseek|qwen|mistral|gpt|claude|gemini|the competition|rivals?|competitors?|sota|(?:generalist\s+|human\s+|expert\s+|specialist\s+)?doctors|radiologists|physicians|humans?|experts?|specialists)/i,
     kind: 'competitive', label: '竞品能力主张' },
+  // ── 专家/机构判断类 ──
+  // [v3.7] 2026-10-26 轮 live 实证的新漏检：TechCrunch AI「AI delivers
+  // 'zero financial payoff' to most companies, Apollo economist says」
+  // ——扩容前 16 种形态全部不命中，整条不进辨别。第三方经济/市场专家对
+  // 市场现状的量化判断是商业世界最高频的主张形态之一（Apollo 首席经济学家
+  // 论 AI 企业 ROI、卖方 strategist 论估值修正），且与 survey-finding
+  // （调查研究的数据汇总）是两类证据：前者是专家对数据的解读（可证伪但
+  // 依赖专家信誉与机构口径），后者是数据本身。库里自 v3.0.0c 起只有后者，
+  // 「AI 到底有没有财务回报」这个当前最大市场争议的核心主张整条漏掉。
+  // 精度设计（v3.0.0c/v3.2/v3.3/v3.6 教训：漏报比误报诚实、没有实证不扩模式）：
+  //   ① 只认经济/市场分析头衔（economist/analyst/strategist/investment
+  //      officer/portfolio manager/fund manager/head of research）——
+  //      CEO/executive 的自述是 vendor-selfreport 地盘不抢；scientists/
+  //      researchers（科研判断）、Fed chair/Trump（官员言论）不是市场
+  //      分析头衔，不进库；
+  //   ② 必须「头衔 + 判断动词」或「头衔 + 机构」结构——光名词
+  //      （"analyst day"/"market strategist"）不是主张；
+  //   ③ 头衔与机构之间容忍 chief/senior/market/US 等窄前缀，
+  //      不放开到任意间隔（v3.6 宽窗正则误命中 2 句的教训）。
+  { id: 'expert-judgment',
+    re: /(?:(?:(?:chief|senior|lead|market|investment|global|us|u\.s\.)\s+)?(?:economists?|analysts?|strategists?|investment\s+officers?|portfolio\s+managers?|fund\s+managers?|heads?\s+of\s+research|directors?\s+of\s+research)\s+(?:at|of|for|from)\s+(?!(?:the|a|an|of|its|his|her|their|our|this|that|some|many|most)\b)[A-Za-z][\w&.]*|(?:economists?|analysts?|strategists?)\s+(?:says?|said|warns?|warned|argues?|argued|believes?|believed|estimates?|estimated|sees?|saw|thinks?|notes?|noted|expects?|expected|predicts?|predicted|calls?|called|cautions?|cautioned|told|points?\s+out)|according\s+to\s+(?:a|an|the)\s+(?:[\w\s&.]{0,30}?\s+)?(?:economist|analyst|strategist))/i,
+    kind: 'expert-judgment', label: '专家/机构判断主张' },
   // ── 合规类 ──
   { id: 'compliance-demand', re: /(compliance|regulatory|regulators?|auditors?|liability)\s+(will|could|would|to|is going to)?\s*(require|demand|force|mandate|drive|create|spur|fuel)/i,
     kind: 'compliance', label: '合规需求主张' },
@@ -206,7 +228,11 @@ const UNFALSIFIABLE_COMMERCIAL_PATTERNS = [
       // 分析机构而落到「无出处(1)」——发表在 Science 的研究是标准的第三方
       // 证据，不是厂商自述。不碰 "according to a company announcement"
       // （那属公开财报档，在下一级）。
-    test: (t) => /(survey|poll|census|study by|research by|according to (?:gartner|idc|forrester|mckinsey|deloitte|analyst|report)|according to a (?:study|survey|poll|report|analysis|paper))/i.test(t) },
+      // [v3.7] survey/poll/census 补 \b 词边界：live 实证抓到的既有缺陷——
+      // "Apollo" 公司名含 "poll" 子串，无边界时被当成民调证据（与 v3.1.1
+      // demo/democracy、GA/gigawatts 同型）。该缺陷自 v3.0.0c 起存在但从未
+      // 暴露：含 Apollo 的条目此前整条不进商业辨别段，poll 分支没有触发机会。
+    test: (t) => /(?:\bsurveys?|\bpolls?|\bcensus|study by|research by|according to (?:gartner|idc|forrester|mckinsey|deloitte|analyst|report)|according to a (?:study|surveys?|polls?|report|analysis|paper)|(?:(?:chief|senior|lead|market|investment|global|us|u\.s\.)\s+)?(?:economists?|analysts?|strategists?)\s+(?:at|of|for|from)\s+(?!(?:the|a|an|of|its|his|her|their|our|this|that|some|many|most)\b)[A-Za-z][\w&.]*|\b(?:economists?|analysts?|strategists?)\s+(?:says?|said|warns?|warned|argues?|argued|believes?|believed|estimates?|estimated|sees?|saw|thinks?|notes?|noted|expects?|expected|predicts?|predicted|calls?|called|cautions?|cautioned|told)\b|according\s+to\s+(?:a|an|the)\s+(?:[\w\s&.]{0,30}?\s+)?(?:economist|analyst|strategist))/i.test(t) },
   { id: 'public-filing', label: '公开财报/公告', weight: 3,
       // [v3.0.0] 补 announcement(s)/statement(s)：实测融资句
       // "according to a company announcement" 因只认 announced 而漏配，
@@ -340,6 +366,9 @@ function buildFalsification(patterns, text) {
     'oss-threat': '观察到付费产品在主张时点后的收入/份额未受侵蚀，或开源方案的实际采用数据很低',
     'compliance': '观察到监管最终文本不含该义务，或执法记录显示无相关处罚/要求',
     'trust': '观察到采购方在无验证能力的情况下仍大量采购，或验证能力未进入采购评估项',
+    // [v3.7] 专家/机构判断主张的证伪路径：判断类主张最常见的裂缝是
+    // 「时点后的实际数据不支持」「机构自身后续修订」「同业同口径反证」。
+    'expert-judgment': '观察到主张时点后的实际数据、第三方调查或该机构自身的后续修订与判断不符，或同业机构在同口径下提出反证',
     'unclassified': '无明确证伪路径——这本身就是问题',
   };
   return FALSIFICATION_BY_KIND[kind] || FALSIFICATION_BY_KIND.unclassified;
@@ -354,6 +383,8 @@ function inferCommercialCategory(text, patterns) {
       'cost-signal': 'market_claims',
       // [v3.2] 供给约束是需求侧的另一面，归市场主张域
       capacity: 'market_claims',
+      // [v3.7] 专家/机构判断是关于市场状况的主张，归市场主张域
+      'expert-judgment': 'market_claims',
       // [v3.3] 交易过程是资本事件，归资本与商业模式域
       ma: 'capital_flow',
       funding: 'capital_flow', valuation: 'capital_flow', 'capital-signal': 'capital_flow',

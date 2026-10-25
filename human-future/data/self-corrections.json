@@ -258,6 +258,15 @@
       "recordedAt": "2026-10-25T14:37:58.740Z",
       "resolvedAt": "2026-10-25T14:37:58.740Z",
       "fix": "标题通用形态按实抓原文设计（[\\s-]quarter + and full-year）；跳过理由按 id 内 accession 反查当期窗口，区分「句式漂移」与「备案滑出窗口」，窗口大小引用 MAX_8K_PER_COMPANY 常量。"
+    },
+    {
+      "id": "corr-2026-024",
+      "reportVersion": "v3.7.0",
+      "wrongClaim": "third-party-survey 证据档的 survey/poll/census 匹配不需要词边界——它们是完整单词不会误配",
+      "rightClaim": "无边界子串匹配的同型缺陷第三次实证（前两次：v3.1.1 的 demo/democracy、GA/gigawatts）：\"Apollo\" 公司名含 \"poll\" 子串，v3.0.0c 起 third-party-survey 的 (survey|poll|census) 无 \\b，任何含 Apollo 的句子都会被当成「民调证据」抬到第三方调查(3)。该缺陷自 v3.0.0c 起存在四个补丁轮从未暴露——含 Apollo 的条目此前整条不进商业辨别段（没有形态命中它），poll 分支根本没有触发机会；v3.7 新增 expert-judgment 维度把 Apollo economist 条目放行后，第一轮实测（反向验证 round 6 报 0 失败）才发现断言被 poll 子串喂饱。修法：survey/poll/census 补 \\b 词边界，并加防回归断言（无专家头衔的 Apollo 句 evidence.weight 必须 ≤2，摘除 \\b → 断言失败，round 7 实证）。",
+      "evidence": "round 6 摘除 expert 动词分支后 Apollo 句仍 third-party-survey(3)（0 失败=断言空转）；逐支测试定位 poll 子串命中；修复后摘除动词分支正确掉到 no-source(1)，round 6 精确失败 2 条；round 7 恢复无边界精确失败 1 条。npm test 267 项 0 失败。",
+      "lesson": "「该分支没有触发机会」不等于「该分支是对的」——精度缺陷可以沉睡多个版本，直到新维度把含缺陷关键词的条目放行才暴露。每一轮扩模式库后，要顺带对被放行的新文本跑一遍证据等级/推理判据的逐支核对，不能只测新模式的命中与精度。",
+      "date": "2026-10-26"
     }
   ]
 }
