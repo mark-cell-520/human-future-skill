@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "updatedAt": "2026-10-24T23:50:11.465632+08:00",
+  "updatedAt": "2026-10-25T23:50:24.591256+08:00",
   "days": {
     "2026-10-06": {
       "runs": 2,
@@ -542,6 +542,69 @@
         "full-report-1792850748374.json",
         "full-report-1792854559312.json",
         "full-report-1792855339881.json"
+      ]
+    },
+    "2026-10-25": {
+      "runs": 49,
+      "firstRun": "2026-10-24T16:11:44.207Z",
+      "lastRun": "2026-10-25T14:36:01.795Z",
+      "avgScore": 0.041,
+      "verdicts": [
+        "不可信"
+      ],
+      "heartflowVersions": [
+        "6.8.38"
+      ],
+      "sources": [
+        "full-report-1792858304207.json",
+        "full-report-1792862159323.json",
+        "full-report-1792862428987.json",
+        "full-report-1792865915033.json",
+        "full-report-1792868133308.json",
+        "full-report-1792869535566.json",
+        "full-report-1792869566393.json",
+        "full-report-1792869824783.json",
+        "full-report-1792869851985.json",
+        "full-report-1792873409447.json",
+        "full-report-1792875741765.json",
+        "full-report-1792876908342.json",
+        "full-report-1792877726625.json",
+        "full-report-1792877759763.json",
+        "full-report-1792880906474.json",
+        "full-report-1792883966453.json",
+        "full-report-1792884163343.json",
+        "full-report-1792888462919.json",
+        "full-report-1792890231289.json",
+        "full-report-1792890449536.json",
+        "full-report-1792896029585.json",
+        "full-report-1792896038610.json",
+        "full-report-1792896575066.json",
+        "full-report-1792896623344.json",
+        "full-report-1792897379344.json",
+        "full-report-1792897396524.json",
+        "full-report-1792903144168.json",
+        "full-report-1792903592854.json",
+        "full-report-1792906488123.json",
+        "full-report-1792909444253.json",
+        "full-report-1792911060988.json",
+        "full-report-1792914109028.json",
+        "full-report-1792916868090.json",
+        "full-report-1792919512330.json",
+        "full-report-1792919610846.json",
+        "full-report-1792919677430.json",
+        "full-report-1792920894194.json",
+        "full-report-1792920936044.json",
+        "full-report-1792920960622.json",
+        "full-report-1792921908285.json",
+        "full-report-1792928465751.json",
+        "full-report-1792928648299.json",
+        "full-report-1792929469201.json",
+        "full-report-1792929820112.json",
+        "full-report-1792937230208.json",
+        "full-report-1792937489348.json",
+        "full-report-1792937865433.json",
+        "full-report-1792938653979.json",
+        "full-report-1792938961795.json"
       ]
     }
   }
