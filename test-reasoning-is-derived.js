@@ -3809,13 +3809,14 @@ c33('精度门未破：非主张文本仍被挡在辨别外', (() => {
 })(), 'Fed 公告与播客不得因 ma 新模式进入辨别');
 
 // 维护级断言：模式计数文档口径（v3.2 刚纠错过「14 种」文档计数错误）。
-c33('模式计数口径：15 种与文档一致', (() => {
+// [v3.6] 扩容成本/价格信号后真实条数为 16，计数跟着代码走（v3.2 同型）。
+c33('模式计数口径：16 种与文档一致', (() => {
   const { COMMERCIAL_CLAIM_PATTERNS } = require('./human-future/scripts/commercial-discriminator.js');
   const pf = require('fs').readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return COMMERCIAL_CLAIM_PATTERNS.length === 15
-    && /共 15 种模式/.test(pf)
-    && COMMERCIAL_CLAIM_PATTERNS.some(p => p.id === 'ma-claim');
-})(), '模式库真实条数必须与文档写的「15 种」一致（防文档计数腐烂）');
+  return COMMERCIAL_CLAIM_PATTERNS.length === 16
+    && /共 16 种模式/.test(pf)
+    && COMMERCIAL_CLAIM_PATTERNS.some(p => p.id === 'cost-signal');
+})(), '模式库真实条数必须与文档写的「16 种」一致（防文档计数腐烂）');
 
 // ── v3.3 汇总 ──
 (async () => {
@@ -4208,11 +4209,12 @@ c34('cron 注入脚本渲染财报指引（VERDICT_CN/汇总/结构行）', (() 
 })(), '注入脚本必须含 earnings-guidance 标签、guidanceCount 汇总与指引结构行，否则 agent 看不到新维度');
 
 // ── 组 4：版本号（corr-2026-014 同型：banner 腐烂四个补丁轮）─────
-c34('版本号一致性：banner 与 VERSION 对齐（3.5.1）', (() => {
+// [v3.6] 版本推进到 3.6.0（新辨别维度：成本/价格信号），本断言跟着当前版本走。
+c34('版本号一致性：banner 与 VERSION 对齐（3.6.0）', (() => {
   const fs2 = require('fs');
   const version = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return version === '3.5.1' && rp.includes('文明推演引擎 v3.5.1');
+  return version === '3.6.0' && rp.includes('文明推演引擎 v3.6.0');
 })(), 'run-pipeline banner 必须与 VERSION 一致（v3.1 修过 banner/meta 同型后又腐烂）');
 
 // ── v3.4 汇总 ──
@@ -4405,15 +4407,16 @@ c35('cron 注入脚本渲染财报指引结算段', (() => {
 })(), '注入脚本必须读 proj.forecastDiscrimination.guidanceSettlement，否则 agent 看不到结算结果');
 
 // ── 组 6：版本号一致性（corr-2026-014 同型，四处对齐）──────────
-c35('版本号一致性：VERSION/package.json/projection meta/banner 对齐 3.5.1', (() => {
+// [v3.6] 推进到 3.6.0（新辨别维度），断言跟当前版本走。
+c35('版本号一致性：VERSION/package.json/projection meta/banner 对齐 3.6.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.5.1'
-    && /3\.5\.1/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.5.1');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.5.1，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.6.0'
+    && /3\.6\.0/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.6.0');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.6.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.5 汇总 ──
 (async () => {
@@ -4630,15 +4633,16 @@ c351('结算证据来源是提供实际值的备案（actualPeriod 匹配）', (
 })(), 'find(ticker) 拿到的恒为最新备案链接，跨财季结算证据全同——必须按 actualPeriod 匹配提供实际值的那份备案');
 
 // ── 组 4：版本号一致性（corr-2026-014 同型）────────────────────
-c351('版本号一致性：VERSION/package.json/banner 对齐 3.5.1', (() => {
+// [v3.6] 推进到 3.6.0（新辨别维度：成本/价格信号）。
+c351('版本号一致性：VERSION/package.json/banner 对齐 3.6.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.5.1'
-    && /3\.5\.1/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.5.1');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.5.1，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.6.0'
+    && /3\.6\.0/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.6.0');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.6.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.5.1 汇总 ──
 (async () => {
@@ -4655,5 +4659,208 @@ c351('版本号一致性：VERSION/package.json/banner 对齐 3.5.1', (() => {
     process.exitCode = 1;
   } else {
     console.log('结论：结算链路修复端到端成立——元数据三字段透传递账、MRVL/MU/AMZN 实际值可抽取、残废历史条目经句反推正确结算、跳过理由归因诚实。');
+  }
+})();
+
+// ════════════════════════════════════════════════════════════════
+// v3.6 新增断言：商业主张辨别器新增「成本/价格信号主张」形态（cost-signal）
+//
+// 背景（2026-10-26 live 实证）：商业主张形态库自 v3.0.0c 起两次扩库
+// （v3.2 产能/供给约束、v3.3 并购/交易过程）补的都是供给侧与资本过程
+// 句式，但供给约束的**定价维度**一直在库外——The Information 简报
+// 「Data Center Late Fees Hit $5 Million or More Per Day, Spawning New
+// Insurance」（2026-10-25）15 种形态全部不命中，整条不进辨别。当算力
+// 交付延迟，市场把延迟定价出来（迟到费 $5M+/天）并金融化（催生新保险
+// 产品线）——这是 AI 基建经济学的一阶信号：只辨「售罄」不辨「售罄的
+// 代价」，商业辨别对供给约束的理解只有一半。
+//
+// 精度设计（v3.0.0c/v3.2/v3.3 教训：漏报比误报诚实、没有实证不扩模式）：
+//   ① 必须「成本/价格名词 + 水平谓语 + 金额」三件套相邻共现——单独的
+//     costs/prices/fees 不是主张（"The Cost of Living and Wages"）；
+//   ② 水平谓语只认 hit/reach/climb/rose/rise/top/exceed/average 等
+//     定量动词，无金额的 "Prices Up" 与 "costs are falling" 不是可证伪主张；
+//   ③ 名词与谓语之间只容忍 now/has/have——"Late fees for delayed GPU
+//     deliveries exceed $2M"（名词后接长修饰语）暂不命中，按「漏报比
+//     误报诚实」留作已知边界（v3.2 宽窗正则的教训：放宽间隔同时丢精度）。
+//
+// 本节断言分五组：① live 实证句式命中 + 证伪条件与类目；② 形态族召回；
+// ③ 精度回归（live 池原句 + 已知边界句式）；④ 端到端（引擎候选门 +
+// 报告渲染 + cron 注入 + 精度门未破）；⑤ 版本号一致性。
+// ════════════════════════════════════════════════════════════════
+const v36 = [];
+function c36(name, ok, detail) { v36.push({ name, ok, detail }); }
+
+// ── 组 1：live 实证句式命中 ──
+// 1. 2026-10-26 轮 live 池里真实存在的 The Information 简报标题（无摘要，
+//    主张就在标题里）。摘除 cost-signal 模式 → kind 不是 cost-signal，失败。
+c36('live 实证：数据中心迟到费命中成本/价格信号形态', (() => {
+  const { discriminateCommercial } = require('./human-future/scripts/commercial-discriminator.js');
+  const r = discriminateCommercial({
+    text: 'Data Center Late Fees Hit $5 Million or More Per Day, Spawning New Insurance',
+    source: 'The Information',
+  });
+  return r.kind === 'cost-signal'
+    && r.kinds.length === 1 && r.kinds[0] === 'cost-signal'   // 只命中成本形态，不串台
+    && r.verdict === 'weak-evidence'      // 标题-only：无出处(1)，不虚抬
+    && r.evidence.weight === 1
+    && r.reasoning.score === 1            // 有金额（$5）→ has-sample 命中，无对照无反例
+    && r.decisionRelevant === false;
+})(), '「Late Fees Hit $5 Million or More Per Day」必须命中成本/价格信号形态并按低证据等级判别（不虚抬为决策相关）');
+
+// 2. 证伪条件与类目：新 kind 必须有专属证伪路径，不能落回「无明确证伪路径」。
+//    摘除 FALSIFICATION_BY_KIND['cost-signal'] → 失败；摘除类目映射 → 源级
+//    断言失败（行为断言抓不到——inferCommercialCategory 的兜底值恰好也是
+//    market_claims，与 v3.3 ma 的 capital_flow 不同，必须源级钉住）。
+c36('cost-signal 形态有专属证伪条件与类目映射', (() => {
+  const { discriminateCommercial } = require('./human-future/scripts/commercial-discriminator.js');
+  const r = discriminateCommercial({
+    text: 'Data center late fees hit $5 million or more per day, according to people familiar with the contracts.',
+    source: 'The Information',
+  });
+  const src = require('fs').readFileSync(require('path').join(__dirname,
+    'human-future/scripts/commercial-discriminator.js'), 'utf-8');
+  return r.kind === 'cost-signal'
+    && r.category === 'market_claims'
+    && /合同|发票|第三方价格跟踪|回落|豁免/.test(r.falsification)
+    && r.falsification !== '无明确证伪路径——这本身就是问题'
+    // 源级：映射行必须显式存在（兜底值同域，行为断言无法区分「映射了」与「没映射」）
+    && /'cost-signal': 'market_claims'/.test(src);
+})(), '成本/价格主张必须带「合同/发票/第三方价格跟踪/回落/豁免」证伪路径，归市场主张域');
+
+// ── 组 2：形态族召回 ──
+// 3. 水平谓语族（hit/reach/climb/average/exceed/rise）+ 单位与比较级形态。
+c36('形态族召回：水平谓语与金额单位四种形态', (() => {
+  const { COMMERCIAL_CLAIM_PATTERNS } = require('./human-future/scripts/commercial-discriminator.js');
+  const p = COMMERCIAL_CLAIM_PATTERNS.find(x => x.id === 'cost-signal');
+  if (!p) return false;
+  return [
+    'Data Center Late Fees Hit $5 Million or More Per Day, Spawning New Insurance',
+    'GPU rental costs reached $8 per hour this quarter.',
+    'Insurance premiums climbed to $2 billion as data center delays mount.',
+    'Delay penalties now average $5 million per day for late deliveries.',
+    'Chip prices have risen to record levels of $12,000 per unit.',
+    'Late fees exceed $2 million for delayed deliveries.',
+  ].every(s => p.re.test(s));
+})(), 'hit/reached/climbed to/average/risen to record levels of/exceed + per day/per hour 单位都要命中');
+
+// ── 组 3：精度回归（v3.0.0c 教训：漏报比误报诚实）──
+// 4. live 池原句与非主张句式一律不得命中。含已知边界句式（名词后接长修饰语）。
+//    摘除相邻性收紧（名词与谓语间允许 0-4 词间隔）→ 实证误命中 2 句：
+//    "The company said fees would rise, without giving figures."（would 间隔+
+//    句末逗号被 [\d.,]+ 吞成「金额」）与已知边界句 "Late fees for delayed GPU
+//    deliveries exceed $2 million per week."——本断言失败（2026-10-26 实测，
+//    不是推测）。
+c36('精度回归：成本名词单现与无金额谓语不误命中', (() => {
+  const { COMMERCIAL_CLAIM_PATTERNS } = require('./human-future/scripts/commercial-discriminator.js');
+  const p = COMMERCIAL_CLAIM_PATTERNS.find(x => x.id === 'cost-signal');
+  if (!p) return false;
+  return [
+    // 成本名词单现/名词短语，无水平谓语+金额
+    'The Cost of Living and Wages',
+    'The new SSD offers 100TB of storage capacity for enterprise customers.',
+    // 无金额的谓语
+    'Jet Fuel Prices Up',
+    'Data center costs are falling as supply catches up with demand.',
+    'GPU prices remain flat despite the shortage.',
+    'The company said fees would rise, without giving figures.',
+    // 既有形态不串台（融资/估值/产能/交易/监管）
+    'DeepSeek Raises Nearly $16 billion in Second Funding Round',
+    'OpenAI working on new $30B raise at $1.25T valuation ahead of IPO',
+    'AWS Largely Sold Out Of Capacity Into 2028, Jassy Says',
+    'Instacart Shares Rally 10% After The Information Reports Sale Talks',
+    'U.S. Treasury Proposes to Widen Outbound Investment Restrictions for China and Other Countries',
+    'VC Firms Tap LP Pools, Warehouse Loans for Speedy AI Cash',
+    "Anthropic's Margin is OpenAI's Opportunity",
+    // live 池宏观/公告原句
+    'Minutes of the Federal Open Market Committee, September 15-16, 2026',
+    "Minutes of the Board's discount rate meetings on August 17, September 9, and September 16, 2026",
+    'Real Weekly Earnings Down in Q3',
+    'Front Month Brent Futures near 2022 Peak Level',
+    'Insurance for AI Hyperscaler Debt, et al.',
+    'Hottest toy for Christmas? Nvidia CEO plays with adorable Microduck robots, 20,000 sell',
+    // 已知边界（如实记录为漏报，不是误报）：名词后接长修饰语+谓语
+    'Late fees for delayed GPU deliveries exceed $2 million per week.',
+  ].every(s => !p.re.test(s));
+})(), '成本名词单现/无金额谓语/融资估值产能交易监管句/live 池原句都不得命中');
+
+// ── 组 4：端到端（引擎门 + 报告渲染 + cron 注入）──
+// 5. 引擎候选门放行迟到费条目并辨别；formatReport 渲染成本/价格信号标签。
+//    摘除报告 KIND_CN → 失败；摘除模式 → available=false，失败。
+c36('端到端：迟到费主张进商业辨别段并渲染', (() => {
+  const { ProjectionEngine, formatReport } = require('./scripts/project-future.js');
+  const item = { title: 'Data Center Late Fees Hit $5 Million or More Per Day, Spawning New Insurance',
+    description: '', body: '', source: 'The Information', bucket: 'business',
+    pubDate: 'Sun, 25 Oct 2026 15:31:13 GMT', domains: ['market_claims'],
+    link: 'https://theinformation.com/latefees', origin: 'live' };
+  const inst = new ProjectionEngine({});
+  inst.signals = { totalItems: 1, domains: [], undomained: 0, dateRange: null, items: [item] };
+  const cd = inst.buildCommercialDiscrimination();
+  const md = formatReport(new ProjectionEngine({ newsData: { business: { news: [item] } } }).generate());
+  const seg = md.split('## 商业主张辨别')[1] || '';
+  return cd.available === true && cd.audited === 1
+    && cd.results[0].kind === 'cost-signal'
+    && seg.includes('Data Center Late Fees Hit $5 Million or More Per Day')
+    // 必须认「渲染出来的类型标签行」而不是段里任意出现该字符串——note 文本
+    // 里也有「成本/价格信号」，泛匹配会让断言空转（v3.2 反向验证实测）。
+    && seg.includes('类型: 成本/价格信号 | 来源: The Information')
+    && seg.includes('证伪条件:');
+})(), '迟到费条目必须进商业辨别段，报告渲染成本/价格信号标签与证伪条件');
+
+// 6. cron 注入脚本 KIND_CN 认识 cost-signal（端到端最后一环：agent 看得见中文标签）。
+//    摘除注入脚本 KIND_CN 的 cost-signal 行 → 失败（同型断链的复发防护）。
+c36('cron 注入脚本渲染成本/价格信号标签', (() => {
+  const p = require('path').join(require('os').homedir(), '.hermes/scripts/hf-cron-fetch.sh');
+  if (!require('fs').existsSync(p)) return false;
+  const src = require('fs').readFileSync(p, 'utf-8');
+  return /'cost-signal': '成本\/价格信号'/.test(src);
+})(), '注入脚本 KIND_CN 必须含 cost-signal，否则 agent 看到英文 kind');
+
+// 7. 精度门没被新模式打穿：Fed 公告/播客仍不进辨别（新模式写得过宽就会漏进来）。
+c36('精度门未破：非主张文本仍被挡在辨别外', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const noise = [
+    { title: 'Minutes of the Federal Open Market Committee',
+      description: 'Participants noted that financial market conditions had eased.',
+      body: '', source: 'Federal Reserve (Monetary)', bucket: 'economy',
+      pubDate: 'Tue, 13 Oct 2026 00:44:16 GMT', domains: ['economy_labor'],
+      link: 'https://federalreserve.gov/a', origin: 'live' },
+    { title: 'LWiAI Podcast #252 - GPT 5.6, Grok 4.5, Nemotron-Labs-Diffusion, AI 2040',
+      description: "GPT-5.6 and Grok 4.5, Meta's Muse Spark 1.1, regulatory developments in AI and data centers, interpretability research from Anthropic, and the future of AI policy with AI 2040",
+      body: '', source: 'Last Week in AI', bucket: 'business',
+      pubDate: 'Tue, 13 Oct 2026 00:44:16 GMT', domains: ['capital_flow'],
+      link: 'https://lastweekin.ai/b', origin: 'live' },
+  ];
+  const inst = new ProjectionEngine({});
+  inst.signals = { totalItems: noise.length, domains: [], undomained: 0, dateRange: null, items: noise };
+  const r = inst.buildCommercialDiscrimination();
+  return r.available === false && /未抽到命中商业主张形态/.test(r.reason || '');
+})(), 'Fed 公告与播客不得因 cost-signal 新模式进入辨别');
+
+// ── 组 5：版本号一致性（corr-2026-014 同型）────────────────────
+c36('版本号一致性：VERSION/package.json/banner 对齐 3.6.0', (() => {
+  const fs2 = require('fs');
+  const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
+  const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
+  const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
+  return VERSION === '3.6.0'
+    && /3\.6\.0/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.6.0');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.6.0，防 corr-2026-014 版本漂移复发');
+
+// ── v3.6 汇总 ──
+(async () => {
+  const results = await Promise.all(v36.map(c => Promise.resolve(c.ok)));
+  let f = 0;
+  v36.forEach((c, i) => {
+    const ok = results[i];
+    if (!ok) f++;
+    console.log(`${ok ? '\u2713' : '\u2717'} ${c.name}${ok ? '' : '  —— ' + c.detail}`);
+  });
+  console.log(`\nv3.6: ${v36.length - f} 通过, ${f} 失败, 共 ${v36.length} 个`);
+  if (f > 0) {
+    console.log('结论：成本/价格信号主张的接入不完整（命中/证伪/召回/精度/端到端/版本有缺）。');
+    process.exitCode = 1;
+  } else {
+    console.log('结论：成本/价格信号主张已进模式库（live 实证 1 条命中），报告与 cron 注入渲染中文标签，精度回归通过。');
   }
 })();

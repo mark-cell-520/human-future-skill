@@ -340,7 +340,7 @@ class ProjectionEngine {
     }
     const report = {
       meta: {
-        version: '3.5.1',
+        version: '3.6.0',
         heartflowVersion: this.analysis.engineVersion,
         timestamp: this.timestamp,
         modulesLoaded: this.analysis.modulesLoaded,
@@ -1852,8 +1852,9 @@ class ProjectionEngine {
     // 还因 2/3 推理分被判成★决策相关）、ConnectWise 安全新闻全部混入。
     // 它们根本不是商业主张，辨别它们产出的是噪音。
     //
-    // 门直接用辨别器自己的 COMMERCIAL_CLAIM_PATTERNS（15 种主张形态，
-    // v3.2 起含产能/供给约束；v3.3 起含并购/交易过程；v3.2 计数纠错：
+    // 门直接用辨别器自己的 COMMERCIAL_CLAIM_PATTERNS（16 种主张形态，
+    // v3.2 起含产能/供给约束；v3.3 起含并购/交易过程；v3.6 起含成本/
+    // 价格信号；v3.2 计数纠错：
     // v3.0.0c-v3.1.1 文档写「14 种」而实际只有 13 种——与 v3.1 修正的
     // 「17 个源」同型文档计数错误，按代码实测改正），
     // 不新造判据；标题也参与判定——无摘要条目的主张就在标题里
@@ -1892,7 +1893,7 @@ class ProjectionEngine {
       return {
         available: false,
         reason: `本期 ${this.signals.items.length} 条 live 信号中（商业域 business/economy）未抽到命中商业主张形态的条目`,
-        note: '只辨别命中商业主张形态（采用/需求/替代/规模/产能供给/并购交易/融资/估值/竞品/合规/信任共 15 种模式）的条目；'
+        note: '只辨别命中商业主张形态（采用/需求/替代/规模/成本价格/产能供给/并购交易/融资/估值/竞品/合规/信任共 16 种模式）的条目；'
           + 'v3.0.0c 起候选题句必须命中模式库，Fed 公告/播客/促销页脚等非主张文本不再进入辨别。',
       };
     }
@@ -1925,8 +1926,8 @@ class ProjectionEngine {
       results: results.slice(0, 16),
       note: '本段只辨别商业主张的表述与证据质量（可证伪性/证据等级/推理有效性/证伪条件），'
         + '不判断主张内容真假，也不生成「心虫应该怎么做」的商业建议。'
-        + 'v3.0.0c 起候选题句必须命中商业主张形态库（15 种模式，v3.2 新增产能/供给约束，'
-        + 'v3.3 新增并购/交易过程），非主张文本（公告/播客/促销页脚）不进辨别。'
+        + 'v3.0.0c 起候选题句必须命中商业主张形态库（16 种模式，v3.2 新增产能/供给约束，'
+        + 'v3.3 新增并购/交易过程，v3.6 新增成本/价格信号），非主张文本（公告/播客/促销页脚）不进辨别。'
         + '证据等级：独立验证(4) > 第三方调查/公开财报(3) > 厂商自述/媒体报道(2) > 无出处(1)。',
     };
   }
@@ -2565,6 +2566,9 @@ function formatReport(report) {
       // The Information「Instacart Is Exploring a Sale」与
       // 「Ramp Investors Went Nuclear Against Airwallex After Doomed Deal」）
       'ma': '并购/交易过程',
+      // [v3.6] 成本/价格信号主张（live 实证：The Information「Data Center
+      // Late Fees Hit $5 Million or More Per Day, Spawning New Insurance」）
+      'cost-signal': '成本/价格信号',
     };
     for (const r of cdsc.results.slice(0, 12)) {
       const rel = r.decisionRelevant ? '★决策相关' : '  ';

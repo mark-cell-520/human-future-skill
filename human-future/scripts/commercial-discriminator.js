@@ -73,6 +73,29 @@ const COMMERCIAL_CLAIM_PATTERNS = [
     kind: 'oss-threat', label: '开源威胁主张' },
   { id: 'market-size-claim', re: /(market|tam|opportunity|sector)\s+(is|will be|to reach|projected|expected|estimated)\s*(at\s*)?\$?\s*[\d.]+\s*(billion|trillion|million|bn|b\b|t\b)/i,
     kind: 'market-size', label: '市场规模主张' },
+  // ── 成本/价格类 ──
+  // [v3.6] 2026-10-26 轮 live 实证的新漏检：The Information 简报
+  // 「Data Center Late Fees Hit $5 Million or More Per Day, Spawning New
+  // Insurance」——扩容前 15 种形态全部不命中，整条不进辨别。供给侧约束
+  // （v3.2 的 capacity-claim 管「供给耗尽」）的**定价维度**此前完全不可见：
+  // 当算力交付延迟，市场把延迟定价出来（迟到费 $5M+/天）并金融化
+  // （催生新保险产品）——这是 AI 基建经济学的一阶信号，漏掉它商业辨别
+  // 只看得见「售罄」看不见「售罄的代价」。
+  // 精度设计（v3.0.0c/v3.2/v3.3 教训：漏报比误报诚实、没有实证不扩模式）：
+  //   ① 必须「成本/价格名词 + 水平谓语 + 金额」三件套相邻共现——单独的
+  //     costs/prices/fees 不是主张（"The Cost of Living and Wages"）；
+  //   ② 水平谓语只认 hit/reach/climb/rose/rise/top/exceed/average 等
+  //     定量动词，"Prices Up"（无金额）与 "costs are falling"（无金额）
+  //     都不是可证伪主张；
+  //   ③ 名词与谓语之间只容忍 now/has/have——"Late fees for delayed GPU
+  //     deliveries exceed $2M"（名词后接长修饰语）暂不命中，按「漏报比
+  //     误报诚实」留作已知边界，等有 live 实证再扩（v3.2 宽窗正则的教训：
+  //     放宽间隔同时丢精度）。
+  // 已知边界（如实）：rates/tariffs 等宏观看价名词无 live 实证不进库；
+  // 股价反应（"Shares Rally 10%"）按 v3.2/v3.3 决议仍是非待辨别主张。
+  { id: 'cost-signal',
+    re: /(?:late\s+fees?|delay\s+(?:fees?|costs?|penalt\w*)|fees?|costs?|premiums?|penalt(?:y|ies)|prices?)\s+(?:now\s+|has\s+|have\s+)?(?:hit|hits|reach(?:es|ed)?|climb(?:ed|s)?\s+to|rose|risen|rise|top|exceed(?:s|ed)?|average[sd]?)\s*(?:to\s+)?(?:(?:record|peak|all[-\s]?time[-\s]?high)\s+levels?\s+of\s+)?(?:an?\s+average\s+of\s+|as\s+(?:much|high)\s+as\s+)?(?:nearly|almost|about|approximately|around|roughly|over|more\s+than|up\s+to|some\s+)?\s*\$?\s*[\d.,]+\s*(?:million|billion|trillion|percent|%)?(?:\s*(?:or\s+more|or\s+higher|or\s+less|plus))?(?:\s*(?:per|a|an)\s*(?:day|hour|week|month|year|gpu|chip|unit|megawatt|mw))?/i,
+    kind: 'cost-signal', label: '成本/价格信号主张' },
   // ── 供给约束类 ──
   // [v3.2] SKILL.md 自 v3.0.0c 记在「已知边界」的漏检，2026-10-25 轮仍在
   // live 池里：The Information「AWS Largely Sold Out Of Capacity Into 2028,
@@ -300,6 +323,10 @@ function buildFalsification(patterns, text) {
     'demand': '观察到目标客群的询价/订单/续费率不支持该需求，或采购方明确表示无此需求',
     'replacement': '观察到被替代方的收入/份额在主张时点后未下降，反而增长',
     'market-size': '观察到独立机构的同口径测算显著低于该数字，或该数字的统计口径被公开质疑',
+    // [v3.6] 成本/价格信号主张的证伪路径：价格水平类主张最常见的裂缝是
+    // 「口径不可比（含不含税/含不含预留量）」「第三方价格跟踪不支持」
+    // 「该成本项后续回落或被豁免」。
+    'cost-signal': '观察到合同/发票/第三方价格跟踪数据显示该成本或价格水平与主张值不符，或主张时点后该成本项已回落/被豁免/改入口径',
     // [v3.2] 产能/供给约束主张的证伪路径：售罄口径最常见的裂缝是
     // 「含未交付预留量」「后续扩容解除约束」「第三方跟踪显示可用容量未耗尽」。
     'capacity': '观察到第三方产能/利用率跟踪显示可售容量未耗尽（如「售罄」口径含未交付预留量），或厂商后续扩容、新签供应协议使约束解除，或到主张时点后仍能公开下单',
@@ -323,6 +350,8 @@ function inferCommercialCategory(text, patterns) {
     const k = patterns[0].kind;
     const M = { adoption: 'market_claims', demand: 'market_claims',
       replacement: 'market_claims', 'market-size': 'market_claims',
+      // [v3.6] 成本/价格水平是市场事实，归市场主张域
+      'cost-signal': 'market_claims',
       // [v3.2] 供给约束是需求侧的另一面，归市场主张域
       capacity: 'market_claims',
       // [v3.3] 交易过程是资本事件，归资本与商业模式域

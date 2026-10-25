@@ -1,9 +1,26 @@
 ---
 name: human-future-v2
-title: "人类未来 · 文明推演引擎 v3.5.1"
-version: "3.5.1"
+title: "人类未来 · 文明推演引擎 v3.6.0"
+version: "3.6.0"
 description: |-
-  人类未来技能 v3.5.1 — 财报指引结算链路修复（维护级：断链修复+实际值召回补强，非新辨别维度）：
+  人类未来技能 v3.6.0 — 商业主张辨别器新增「成本/价格信号主张」形态（新辨别维度）：
+live 实证 The Information「Data Center Late Fees Hit $5 Million or More Per Day,
+Spawning New Insurance」（2026-10-25）扩容前 15 种形态全部不命中、整条不进辨别——
+供给约束的定价维度（v3.2 capacity-claim 管「供给耗尽」，不管「耗尽的代价」）此前
+完全不可见：当算力交付延迟，市场把延迟定价出来（迟到费 $5M+/天）并金融化
+（催生新保险产品线），是 AI 基建经济学的一阶信号。新 kind cost-signal：
+必须「成本/价格名词 + 水平谓语（hit/reach/climb/rose/rise/top/exceed/average）
++ 金额」三件套相邻共现；专属证伪路径（合同/发票/第三方价格跟踪与该值不符、
+成本项回落/被豁免/改入口径）；类目 market_claims；报告与 cron 注入标签
+「成本/价格信号」。精度按 v3.0.0c/v3.2/v3.3 纪律（漏报比误报诚实）：全池 312 条
+live 实测精确命中 1 条（即该条），21 句精度回归 0 误报（Fed 公告/EconBrowser
+宏观句/股价反应/融资估值产能交易监管句/live 池原句全部不命中）；已知边界如实
+记录：名词后接长修饰语（"Late fees for delayed GPU deliveries exceed $2M"）与
+rates/tariffs 等宏观看价名词无实证不进库。live 端到端：商业辨别段 6→7 条，
+该条判 证据不足/无出处(1)/推理 1/3 不虚抬为决策相关；hf-cron-fetch.sh 注入段
+agent 可见「类型: 成本/价格信号」。测试 250→258 项；6 轮反向验证全部精确失败
+（摘除模式→6 条/摘除证伪条件→1/摘除类目映射→1 源级/摘除报告标签→1/摘除注入
+标签→1/放宽名词-谓语间隔→1）。历史：v3.5.1 — 财报指引结算链路修复（维护级：断链修复+实际值召回补强，非新辨别维度）：
   v3.5 审计实测台账 47 条 earnings_guidance 的 settlement 元数据 0/47 可用——
   forecast-discriminator 辨别结果从不带 ticker/fiscalYear/quarter，登记时写的
   settlement.ticker 恒为 null，「元数据随新条目落盘」从落地起就没工作过，全部
@@ -293,10 +310,12 @@ description: |-
 
 ---
 
-## 当前状态（v3.5.1 实测）
+## 当前状态（v3.6.0 实测）
 
-以下数字全部来自 2026-10-25 的 `FETCH=1 FETCH_BODY=1 node scripts/run-pipeline.js` 实跑
-（v3.5.1 轮：pipeline exit 0、42 条 EDGAR 备案进 live、v3.5.1 轮新结算 4 条；
+以下数字全部来自 2026-10-25/26 的 `FETCH=1 FETCH_BODY=1 node scripts/run-pipeline.js` 实跑
+（v3.6.0 轮：pipeline exit 0、312 条 live 信号（business 48 + economy 46 +
+frontier_models 142 + sec_filings 42 + tech 22 + humanities 12）、商业辨别段 6→7 条
+含新维度成本/价格信号 1 条；v3.5.1 轮：42 条 EDGAR 备案进 live、新结算 4 条；
 v3.5 轮：28 条 EDGAR 备案、7 条结算；v3.3.1 轮 270 条 live 信号；
 v3.3.0 轮 258 条、v3.2.2 轮 270 条、v3.1.1 轮 270 条、v3.1 轮 258 条），不是宣称值。
 v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见 frontmatter 历史记录。
@@ -423,13 +442,15 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   财报指引自动结算 ✅（v3.5：到期 earnings_guidance 与「下一期财报实际值」
   配对落账，判据=实际值落在指引容差带内，方向 beat/below 单独记；live 实测
   7 条正确结算，MRVL GAAP/非GAAP 毛利率正确判歧义跳过；见「财报指引自动结算层」）/
-  商业主张辨别 ✅（6 条，精度门后；v3.2 新增产能/供给约束形态后含 AWS 售罄
+  商业主张辨别 ✅（7 条，精度门后；v3.2 新增产能/供给约束形态后含 AWS 售罄
   主张一条——修复前该条 13 种形态全部不命中、整条不进辨别；判 证据不足/无出处(1)/
   推理 0/3，标题-only 不虚抬为决策相关；v3.3 新增并购/交易过程形态后含 Instacart
   出售探索与 Ramp/Airwallex 破裂交易两条——扩容前 14 种形态全部不命中、
   整条不进辨别；均判 不可证伪（无量化）/无出处(1)，标题-only 不虚抬为决策相关；
   v3.3.1 survey-finding 精度修复后 8→6 条——EconBrowser 站点导航与 LWiAI 播客
-  列表两条 incidental 误报消除，Grok 真调查主张保留）/
+  列表两条 incidental 误报消除，Grok 真调查主张保留；
+  v3.6 新增成本/价格信号形态后含数据中心迟到费一条——扩容前 15 种形态全部
+  不命中、整条不进辨别；判 证据不足/无出处(1)/推理 1/3，标题-only 不虚抬）/
   自我修正登记簿 ✅（22 条修正：critical 4 / high 12 / medium 6；v3.3.1 登记
   corr-2026-014（版本号漂移：projection meta 停 3.2.2/package.json 停 3.2.1，
   四处对齐+一致性断言）与 corr-2026-015（survey-finding 误报+三处播客夹具
@@ -521,6 +542,9 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   → formatReport KIND_CN「产能/供给约束」→ cron 注入第 6 段同标签。
   [v3.3 更新] 仍在库外的市场句式：产品发布公告、可核验的市场价格事实
   （"Shares Rally 10%"）——下轮候选，扩库须逐条配测试。
+  [v3.6 更新] 「Data Center Late Fees Hit $5 Million or More Per Day」已进
+  模式库（cost-signal，成本/价格信号）；库外剩余：名词后接长修饰语的迟到费
+  句式与 rates/tariffs 宏观看价名词，等有 live 实证再扩。
 
 **[v3.3] 并购/交易过程主张（ma-claim，新辨别维度）**
 - 定位：v3.0.0c 起记在「已知边界」的第二个覆盖缺口——"Instacart Is Exploring
@@ -581,6 +605,43 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   三处旧断言各 1 失败/收紧过头摘形式 B→3 失败/版本漂移复发→恰好 1 失败）。
   登记 corr-2026-014（版本漂移）/corr-2026-015（误报+夹具空转）。
 - 版本号理由：精度修复+漂移修复=末位补丁；本轮没有新辨别维度。
+
+
+**[v3.6] 成本/价格信号主张（cost-signal，新辨别维度）**
+- 定位：供给约束的定价维度缺口。v3.2 的 capacity-claim 管「供给耗尽」
+  （"AWS Largely Sold Out Of Capacity Into 2028"），但「耗尽的代价」一直在库外——
+  2026-10-26 轮 live 实证：The Information「Data Center Late Fees Hit $5 Million
+  or More Per Day, Spawning New Insurance」15 种形态全部不命中，整条不进辨别。
+  当算力交付延迟，市场把延迟定价出来（迟到费 $5M+/天）并金融化（催生新保险
+  产品线）——这是 AI 基建经济学的一阶信号，只辨「售罄」不辨「售罄的代价」，
+  商业辨别对供给约束的理解只有一半。
+- 形态族：成本/价格名词（late fees / delay fees / delay costs / fees / costs /
+  premiums / penalties / prices）+ 水平谓语（hit / reach / climb to / rose /
+  rise / top / exceed / average，容忍 now/has/have 与 record levels of /
+  as much as 等窄填充）+ 金额（$+单位+or more+per day/hour 等期间）。
+- 精度设计（v3.0.0c/v3.2/v3.3 教训：漏报比误报诚实、没有实证不扩模式）：
+  ① 必须「名词+谓语+金额」三件套相邻共现——单独的 costs/prices/fees 不是主张
+  （"The Cost of Living and Wages"）；② 水平谓语只认定量动词，无金额的
+  "Prices Up" 与 "costs are falling" 不是可证伪主张；③ 名词与谓语之间只容忍
+  now/has/have——实测放宽到 0-4 词间隔会误命中 2 句（"The company said fees
+  would rise, without giving figures." 的 would 间隔+句末逗号被 [\d.,]+ 吞成
+  金额；已知边界句 "Late fees for delayed GPU deliveries exceed $2 million
+  per week."），按 v3.2 宽窗正则的教训保持相邻收紧。
+- 判别结果（live 实测）：该条判 证据不足 / 无出处(1) / 推理 1/3（有金额→has-sample
+  命中，无对照无反例），不虚抬为 ★决策相关——标题-only 条目只拿到主张本身。
+  证伪条件走 cost-signal 专属路径（合同/发票/第三方价格跟踪与该值不符、成本项
+  回落/被豁免/改入口径）。类目归 market_claims。
+- 端到端：引擎候选门（isClaimForm 用同一个模式库）→ discriminateCommercial
+  → formatReport KIND_CN「成本/价格信号」→ cron 注入第 6 段同标签。live 实测
+  商业辨别段 6→7 条，byKind 新增 cost-signal:1。仍在库外的看价句式：名词后接
+  长修饰语（"Late fees for delayed GPU deliveries exceed $2M"）、rates/tariffs
+  等宏观看价名词——等有 live 实证再扩。
+- 测试 250→258 项；6 轮反向验证全部精确失败（摘除模式→6 条失败含端到端/计数/
+  召回/精度/摘除证伪条件→1/摘除类目映射→1（源级，兜底类目同域行为断言抓不到）/
+  摘除报告标签→1/摘除注入标签→1/放宽名词-谓语间隔→1）。模式库计数 15→16
+  （v3.3 的计数断言同步更新，v3.2 计数纠错同型纪律）。
+- 版本号理由：新辨别维度（新 kind + 专属证伪路径 + 端到端标签），用户可感知
+  （报告「商业主张辨别」段首次出现「类型: 成本/价格信号」行）。
 
 **自我修正登记簿层（v3.1 接入的 0 调用模块）**
 - 定位：这是接入，不是新写。self-correction-ledger.js 自 v2.4 存在，
@@ -666,14 +727,20 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   `p.category`，分支永不激活）并加上同义务去重；样本随台账积累自然
   增长，不需要再改代码。
 
-**商业主张辨别的已知边界（v3.0.0c 如实声明，v3.3 更新）**：
+**商业主张辨别的已知边界（v3.0.0c 如实声明，v3.6 更新）**：
 - 模式库外的真实主张句式仍会漏：v3.2 起 "AWS Largely Sold Out Of Capacity
   Into 2028"（产能主张）已进模式库（capacity-claim，含售罄/耗尽/分配殆尽/
   短缺/需求超供给形态族）；v3.3 起 "Instacart Is Exploring a Sale" 与
   "Ramp Investors Went Nuclear Against Airwallex After Doomed Deal"（并购/
   交易过程主张）已进模式库（ma-claim，含探索/权衡、谈判、交易状态三族）；
+  v3.6 起 "Data Center Late Fees Hit $5 Million or More Per Day, Spawning New
+  Insurance"（成本/价格信号主张）已进模式库（cost-signal，名词+水平谓语+金额
+  三件套相邻共现）；
   仍在库外的有 "Instacart Shares Rally 10%"（市场反应——可核验的市场价格
-  事实，非待辨别主张）、ProductHunt 产品发布（产品公告非市场主张）。
+  事实，非待辨别主张）、ProductHunt 产品发布（产品公告非市场主张）、
+  "Late fees for delayed GPU deliveries exceed $2M"（名词后接长修饰语，
+  v3.6 实测放宽间隔会误命中 2 句，保持相邻收紧）、rates/tariffs 等宏观
+  看价名词（无 live 实证不进库）。
   漏掉比把 Fed 公告当商业主张诚实，但覆盖率是真实缺口——扩模式库须逐条配测试。
 - 站点导航/页脚 boilerplate：v3.0.0c 轮起漏网（EconBrowser 导航文本因句内含
   "analysis of" 命中调查研究形态），[v3.2 复测] 同型漏网仍在（EconBrowser 导航
@@ -690,7 +757,7 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   引擎不代劳——这是心虫铁律，不是能力缺失。
 
 **测试**
-- `npm test`：**250 项断言**（实测各 section 汇总；v3.4 的 230 + v3.5 新增 11 + v3.5.1 新增 9：
+- `npm test`：**258 项断言**（实测各 section 汇总；v3.4 的 230 + v3.5 新增 11 + v3.5.1 新增 9 + v3.6 新增 8：
   2 项纯结算函数（settleGuidance 单位感知容差：相对/绝对/bps/百分点/区间/无容差
   跳过，含区分相对vs绝对的边界用例 / normalizeMetric+parseMetricValue 单位解析）+
   3 项实际值抽取（extractActuals 营收+毛利率+标题期间 / GAAP/非GAAP 不同值抽出
@@ -726,6 +793,27 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   放宽为 `∈ [0,1]`——旧断言「全部命中」是台账只有人工 hits 时的偶然状态，v3.5
   自动结算引入真实 miss（NVDA/AMD/MU 营收 beat→带外）后 hitRate 不再恒为 1；
   放宽后意图（校准曲线基于真实结算可算，含 miss）保留。
+  v3.6 新增 8（1 项 live 实证命中（The Information「Data Center Late Fees Hit
+  $5 Million or More Per Day, Spawning New Insurance」→ kind=cost-signal，
+  标题-only 判 证据不足/无出处(1)/推理 1/3 不虚抬）+
+  1 项专属证伪条件与类目映射（合同/发票/第三方价格跟踪/回落/豁免；类目映射
+  源级断言——兜底类目同为 market_claims，行为断言抓不到摘除）+
+  1 项形态族召回（hit/reached/climbed to/average/risen to record levels of/
+  exceed + per day/per hour 单位）+
+  1 项精度回归 21 句（成本名词单现/无金额谓语/融资估值产能交易监管句/live 池
+  原句/已知边界长修饰语句全部不命中）+
+  1 项引擎端到端（候选门放行 + formatReport 渲染「类型: 成本/价格信号」行与
+  证伪条件——只认渲染出的标签行，note 文本同字符串会喂饱泛匹配）+
+  1 项 cron 注入源级（读 ~/.hermes/scripts/hf-cron-fetch.sh 验 cost-signal
+  中文标签）+
+  1 项精度门未破（Fed 公告/播客仍不进辨别）+
+  1 项版本号一致性（VERSION/package.json/banner 对齐 3.6.0））。
+  v3.6 六轮反向验证全部精确失败：摘除 cost-signal 模式→6 条失败（live 实证/
+  证伪条件/召回/精度/端到端/v3.3 计数断言）；摘除证伪条件条目→1 条；摘除类目
+  映射行→1 条（源级）；摘除报告 KIND_CN→1 条；摘除注入脚本 KIND_CN→1 条；
+  放宽名词-谓语间隔（now/has/have→0-4 词）→1 条（实测误命中 2 句：would 间隔+
+  句末逗号被 [\d.,]+ 吞成金额、已知边界句）。每轮基线全绿、摘除后断言必生效、
+  备份还原到位、收尾基线全绿。
   历史：v3.4 的 230 + v3.4 新增 16：
   5 项采集器抽取（NVDA/AMZN/AMD/MRVL/MU 五种 live 句式命中 / 4 类精度回归 0 误报 /
   期间就近+同比排除+Oracle 两种期间形态 / 小数不截断+句点不冲段 / 词边界）+
