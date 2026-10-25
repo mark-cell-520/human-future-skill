@@ -1,34 +1,34 @@
 ---
 name: human-future-v2
-title: "人类未来 · 文明推演引擎 v3.3.0"
-version: "3.3.0"
+title: "人类未来 · 文明推演引擎 v3.3.1"
+version: "3.3.1"
 description: |-
-  人类未来技能 v3.3.0 — 商业主张辨别器新增「并购/交易过程主张」形态（新辨别维度）：
-  v3.3（2026-10-25）给 commercial-discriminator 的 COMMERCIAL_CLAIM_PATTERNS 增加
-  ma-claim——SKILL.md 自 v3.0.0c 记在「已知边界」的第二个覆盖缺口（"Instacart Is
-  Exploring a Sale" 与 "Ramp Investors Went Nuclear Against Airwallex After Doomed
-  Deal" 交易过程主张，扩容前 14 种形态全部不命中、整条不进辨别），本轮实跑该两条
-  就在 258 条 live 池里（The Information），逐条过形态门确认 MISS 后扩库：新 kind
-  'ma' + 专属证伪条件（当事方否认/谈判破裂/监管否决/条款不符）+ 类目映射
-  capital_flow + 报告与 cron 注入的中文标签「并购/交易过程」。交易过程（并购/出售/
-  谈判/破裂）是资本与商业模式域的一阶信号，漏掉它商业辨别看不见市场结构变化的主要
-  通道之一。精度设计按 v3.0.0c 教训（漏报比误报诚实、没有实证不扩模式）：只认
-  「交易是主张主体」的句式（exploring/considering/weighing/pursuing + 交易名词、
-  talks to acquire/buy/sell、doomed/collapsed/stalled deal）；不认裸 "sale talks"
-  名词短语——live 实证「Instacart Shares Rally 10% After The Information Reports
-  Sale Talks」的主张主体是股价（可核验的市场价格事实，v3.2 已决议非待辨别主张），
-  Reports Sale Talks 是媒体转述的从属成分；不认 IPO（估值形态已覆盖）、bare "in
-  talks"（无交易对象）、"exploring options"（战略措辞）、eyes+非交易名词
-  （inDrive "eyes 2027 robotaxi tests" 是测试计划）。live 实测：258 条里精确命中
-  2 条即文档记录的两个候选，报告「商业主张辨别」段辨别数 6→8，两条均判
-  不可证伪（无量化）/无出处(1)——标题-only 只拿到主张本身，不虚抬为决策相关。
-  测试 198→207 项（live 实证×2/证伪条件与类目/形态族召回四族/精度回归 8 句/
-  端到端渲染只认类型行/cron 注入标签/精度门未破/模式计数口径 15 种）；5 轮反向
-  验证全部精确失败（摘除模式→7/摘除证伪条件→1/摘除报告渲染→1/摘除 cron 标签→1/
-  摘除精度收紧加回裸 sale talks→1）。端到端实跑注入输出含两条「类型: 并购/交易过程」
-  行与专属证伪条件。版本号理由：新辨别维度（新 kind+证伪路径+端到端标签），按
-  v3.2.0 先例取 x.0。
-  历史：v3.2.2 低置信度守门段端到端接通 cron 注入（第七次同型断链修复）；
+  人类未来技能 v3.3.1 — 维护级（非新辨别维度）：survey-finding 精度修复 + 版本号漂移修复：
+  v3.3.1（2026-10-25）修 v3.3.0 轮 live 实证的两条误报与一处版本漂移。① survey-finding
+  收紧——旧正则 (survey|study|…)\s+(of|by|from|…) 把「调查名词+介词」的 incidental
+  搭配当成研究发现：EconBrowser 站点导航 "Analysis of current economic conditions
+  and policy"（analysis of）与 LWiAI 播客列表 "interpretability research from
+  Anthropic"（research from）两条误报进商业辨别段。收紧为二选一：调查名词+发现
+  动词相邻（study found / research shows / analysis indicates…）或调查名词+of+量化
+  对象（survey of 1,200 / survey of almost 11,000，容忍数量副词）。live 全池实测
+  旧模式 7 条命中里 4 条真主张全保留（Survey of 2,018 / survey of almost 11,000 /
+  Study Shows / study found）、3 条 incidental 搭配精确消除（含 Fed 导航 "Payments
+  Research Reports"——连带把无 live 实证的 report 动词形态一并收紧，代价如实记录：
+  "a survey of enterprises found 34%" 无量化对象形态与 "survey reports that X"
+  不再命中，按 v3.0.0c「漏报比误报诚实」接受）。端到端实跑商业辨别段 8→6 条，
+  Grok 真调查主张保留。② 版本号漂移修复——VERSION=3.3.0 而 projection
+  meta.version 停在 3.2.2、package.json 停在 3.2.1，同一份报告两个版本号，v3.1
+  修过同型（banner/meta）但另两处腐烂了四个补丁轮；四处对齐 3.3.1 并加「版本号
+  一致性」断言（VERSION/package.json/projection meta/run-pipeline meta）。③ 三处
+  「播客不进辨别」测试夹具补强为 live 误报原句——旧夹具 description 压根不触发
+  模式门，断言恒真空转两个版本（反向验证实证：恢复旧正则后三处旧断言立刻真失败）。
+  登记 corr-2026-014（版本漂移）/corr-2026-015（误报+夹具空转）。测试 207→214 项；
+  3 轮反向验证全部精确失败（恢复旧正则→v3.3.1 4 失败+三处旧断言各 1 失败/收紧过头
+  摘形式 B→3 失败/版本漂移复发→恰好 1 失败）。版本号理由：精度修复+漂移修复=末位
+  补丁，本轮没有新辨别维度。
+  历史：v3.3.0 商业主张辨别器新增并购/交易过程主张形态（新辨别维度，live 实证
+  Instacart 出售探索与 Ramp/Airwallex 破裂交易两条 MISS 后扩库）；
+  v3.2.2 低置信度守门段端到端接通 cron 注入（第七次同型断链修复）；
   v3.2.1 预测校准与台账状态端到端接通（第六次同型断链）；
   v3.2 新增产能/供给约束主张形态（新辨别维度，live 实证补齐已知边界漏检）。
 
@@ -229,11 +229,12 @@ description: |-
 
 ---
 
-## 当前状态（v3.3.0 实测）
+## 当前状态（v3.3.1 实测）
 
 以下数字全部来自 2026-10-25 的 `FETCH=1 FETCH_BODY=1 node scripts/run-pipeline.js` 实跑
-（v3.3.0 轮 258 条 live 信号；v3.2.2 轮 270 条、v3.1.1 轮 270 条、v3.1 轮 258 条），
-不是宣称值。v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见 frontmatter 历史记录。
+（v3.3.1 轮 270 条 live 信号；v3.3.0 轮 258 条、v3.2.2 轮 270 条、v3.1.1 轮 270 条、
+v3.1 轮 258 条），不是宣称值。v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、
+基准冷启动）见 frontmatter 历史记录。
 
 **采集层**
 - 源：23 个（tech 2 + humanities 1 + frontier_models 12 + economy 4 + business 4
@@ -280,12 +281,17 @@ description: |-
   our researchers+safety、benchmark+促销页脚；五个模式同句判定，另三个无实证
   不改判据）/
   外部预测基准 ✅（32 个开放问题，per-claim 主题匹配本轮 0/7，如实展示）/
-  商业主张辨别 ✅（8 条，精度门后；v3.2 新增产能/供给约束形态后含 AWS 售罄
+  商业主张辨别 ✅（6 条，精度门后；v3.2 新增产能/供给约束形态后含 AWS 售罄
   主张一条——修复前该条 13 种形态全部不命中、整条不进辨别；判 证据不足/无出处(1)/
   推理 0/3，标题-only 不虚抬为决策相关；v3.3 新增并购/交易过程形态后含 Instacart
   出售探索与 Ramp/Airwallex 破裂交易两条——扩容前 14 种形态全部不命中、
-  整条不进辨别；均判 不可证伪（无量化）/无出处(1)，标题-only 不虚抬为决策相关）/
-  自我修正登记簿 ✅（12 条修正：critical 2 / high 8 / medium 2；v3.3 登记
+  整条不进辨别；均判 不可证伪（无量化）/无出处(1)，标题-only 不虚抬为决策相关；
+  v3.3.1 survey-finding 精度修复后 8→6 条——EconBrowser 站点导航与 LWiAI 播客
+  列表两条 incidental 误报消除，Grok 真调查主张保留）/
+  自我修正登记簿 ✅（14 条修正：critical 2 / high 9 / medium 3；v3.3.1 登记
+  corr-2026-014（版本号漂移：projection meta 停 3.2.2/package.json 停 3.2.1，
+  四处对齐+一致性断言）与 corr-2026-015（survey-finding 误报+三处播客夹具
+  空转）；v3.3 登记
   corr-2026-013（计数错误同型复发：新注释写「15 种」实为扩容前 14 种，提交前
   捕获并加模式计数断言）；v3.2.2 登记
   corr-2026-012（第七次同型断链：低置信度守门派生漏注入），critical 排最前；
@@ -405,13 +411,43 @@ description: |-
   实测商业辨别段 6→8 条，byKind 新增 ma:2。仍在库外的交易句式：无交易对象
   的裸谈判（"in talks"）、"eyes a stake" 类少数股权动作——等有 live 实证再扩。
 
+**[v3.3.1] survey-finding 精度修复（维护级，非新辨别维度）**
+- 定位：v3.3.0 轮 live 实证的两条误报——EconBrowser 站点导航 "Analysis of
+  current economic conditions and policy"（命中 "analysis of"）与 LWiAI 播客
+  列表 "interpretability research from Anthropic"（命中 "research from"）
+  进了商业辨别段。旧 survey-finding 正则 `(survey|study|…)\s+(of|by|from|…)`
+  把「调查名词+介词」的 incidental 搭配当成研究发现：两句都没有发现动词、
+  没有量化对象，是博客副标题/播客话题列举，不是主张。
+- 修法（收紧为二选一）：A. 调查名词+发现动词相邻（study found / research
+  shows / analysis indicates…）；B. 调查名词+of+量化对象（survey of 1,200 /
+  survey of almost 11,000，容忍数量副词——v3.0.0c funding 副词容忍的同型
+  教训）。连带把无 live 实证的 report 动词形态一并收紧（Fed 站点导航
+  "Payments Research Reports" 是名词标签短语，live 实证）。
+- live 全池实测：旧模式 7 条命中里 4 条真主张全保留（Survey of 2,018 /
+  survey of almost 11,000 / Study Shows / study found）、3 条 incidental
+  搭配精确消除；端到端商业辨别段 8→6 条，Grok 真调查主张保留。代价如实
+  记录：无量化对象且动词不相邻的 "a survey of enterprises found 34%" 与
+  "survey reports that X" 形态不再命中——按 v3.0.0c 纪律「漏报比误报诚实」
+  接受，等有 live 实证再议。
+- 同轮维护（不单独涨号）：① 版本号漂移修复——VERSION=3.3.0 而 projection
+  meta.version 停在 3.2.2、package.json 停在 3.2.1（v3.1 修过 banner/meta
+  同型，另两处腐烂四个补丁轮），四处对齐 3.3.1 并加一致性断言；
+  ② v3.0.0c/v3.2/v3.3 三处「播客不进辨别」测试夹具补强为 live 误报原句
+  （旧 description 压根不触发模式门、断言恒真空转两个版本——恢复旧正则后
+  三处旧断言立刻真失败，实证补强生效）。
+- 测试 207→214 项；3 轮反向验证全部精确失败（恢复旧正则→v3.3.1 4 失败+
+  三处旧断言各 1 失败/收紧过头摘形式 B→3 失败/版本漂移复发→恰好 1 失败）。
+  登记 corr-2026-014（版本漂移）/corr-2026-015（误报+夹具空转）。
+- 版本号理由：精度修复+漂移修复=末位补丁；本轮没有新辨别维度。
+
 **自我修正登记簿层（v3.1 接入的 0 调用模块）**
 - 定位：这是接入，不是新写。self-correction-ledger.js 自 v2.4 存在，
-  `human-future/data/self-corrections.json` 有 12 条真实修正（绕月≠登月、
+  `human-future/data/self-corrections.json` 有 14 条真实修正（绕月≠登月、
   v2.4 假能力三项审计、stateless 检查器覆盖缺口、sitemap 页面简介≠新闻正文、
   指南页文本≠预测、口径错位检测 7 条误报+第五次断链、v3.2 公式桥样本口径
   不一致+文档计数错误+测试夹具残留、v3.2.1 第六次断链、v3.2.2 第七次断链
-  +差集结案纪律、v3.3 计数错误同型复发+模式计数断言等），模块 docstring 的铁律写着「每次修正
+  +差集结案纪律、v3.3 计数错误同型复发+模式计数断言、v3.3.1 版本号漂移
+  +survey-finding 误报与夹具空转等），模块 docstring 的铁律写着「每次修正
   落盘，下次推演先读簿子再说话」——但 v3.1 之前 live pipeline（scripts/）
   从未 require 过它，只有早期死副本 human-future/scripts/run-pipeline.js
   调过。簿子记了、没人读。
@@ -424,9 +460,10 @@ description: |-
   严格过滤，漏掉数据里 2 条 critical（都是「整段推演作废」级的假能力审计），
   接入后会少报高危数（说 4 实际 6）。改为按等级表比较（critical > high >
   medium > low），critical 排最前。这是修 bug，不算升级——升级点是接入本身。
-- 边界（如实声明）：登记簿 12 条（v3.3 轮新增 corr-2026-013 后；v3.2.2 轮
-  e2e 实跑的报告快照在登记前，显示 10 条），样本随每次真实修正自然增长，引擎不
-  代笔登记；本段不生成「所以本期该怎么做」的建议，只呈现「曾经错在哪」。
+- 边界（如实声明）：登记簿 14 条（v3.3.1 轮新增 corr-2026-014/015 后；
+  v3.2.2 轮 e2e 实跑的报告快照在登记前，显示 10 条），样本随每次真实修正
+  自然增长，引擎不代笔登记；本段不生成「所以本期该怎么做」的建议，
+  只呈现「曾经错在哪」。
 
 **心虫层**
 - 入口：`~/heartflow/src/index.js`（74 个 stateless 检查器）
@@ -496,33 +533,39 @@ description: |-
   仍在库外的有 "Instacart Shares Rally 10%"（市场反应——可核验的市场价格
   事实，非待辨别主张）、ProductHunt 产品发布（产品公告非市场主张）。
   漏掉比把 Fed 公告当商业主张诚实，但覆盖率是真实缺口——扩模式库须逐条配测试。
-- 站点导航/页脚 boilerplate 偶有漏网：v3.0.0c 轮 6 条里有 1 条 EconBrowser
-  导航文本（"Skip to content"）因句内含 "analysis of" 命中调查研究形态。
-  促销页脚（"REGISTER NOW"）已被形态门挡掉，导航文本还没有专门过滤器。
-  [v3.2 复测] 同型漏网仍在：本轮 6 条里 EconBrowser「Front Month Brent
-  Futures near 2022 Peak Level」（因句内含 "analysis of" 类调查研究措辞）
-  与 LWiAI 播客条目仍进辨别——精度门按形态判，不按站点类型判，这个缺口
-  下轮候选（boilerplate 过滤器）。
+- 站点导航/页脚 boilerplate：v3.0.0c 轮起漏网（EconBrowser 导航文本因句内含
+  "analysis of" 命中调查研究形态），[v3.2 复测] 同型漏网仍在（EconBrowser 导航
+  与 LWiAI 播客条目进辨别）。
+  [v3.3.1 修复] 根因不在「按站点类型判」而在 survey-finding 模式本身把
+  「调查名词+介词」的 incidental 搭配当成研究发现——收紧为「调查名词+发现动词
+  相邻」或「调查名词+of+量化对象」二选一后，live 全池 4 条真主张全保留、
+  3 条 incidental 搭配（analysis of / research from / Fed 导航 Research
+  Reports）精确消除，端到端商业辨别段 8→6 条。剩余边界：boilerplate 的其它
+  形态（促销页脚已被形态门挡掉）暂无 live 实证，不无证据加过滤器。
 - 无摘要条目（The Information 简报、ProductHunt）只有标题可辨，
   证据等级多为「无出处(1)」——不是主张没出处，是抽取层只拿到标题。
 - 本段不生成商业建议。「这对心虫意味着什么」由报告 agent 判断并标注归属，
   引擎不代劳——这是心虫铁律，不是能力缺失。
 
 **测试**
-- `npm test`：**207 项断言**（实测各 section 汇总；v3.2.2 的 198 + v3.3 新增 9：
-  2 项 live 实证句式命中（Instacart 出售探索 / Ramp-Airwallex 破裂交易，
-  标题-only 按无量化判不可证伪、不虚抬为决策相关）+
-  1 项 ma 专属证伪条件与类目映射（当事方否认/谈判破裂/监管否决/条款不符，
-  capital_flow）+
-  1 项形态族召回（exploring/considering/weighing/pursuing + talks to
-  acquire/buy/sell + doomed/collapsed/stalled deal）+
-  1 项精度回归 8 句（股价反应/监管限制/销量/eyes 测试计划/裸 in talks/
-  exploring options/IPO/产能句全不命中）+
-  1 项端到端渲染（两条进商业辨别段，只认渲染出的「类型: 并购/交易过程」行——
-  v3.2 教训：note 文本会把泛匹配喂饱）+
-  1 项 cron 注入 KIND_CN 含 ma+
-  1 项精度门未破（Fed 公告/播客仍不进辨别）+
-  1 项维护：模式计数口径（真实条数 15 与文档一致，防 v3.2 纠过过的计数腐烂））。
+- `npm test`：**214 项断言**（实测各 section 汇总；v3.3 的 207 + v3.3.1 新增 7：
+  2 项模式级误报回归（EconBrowser 导航句 / LWiAI 播客列表句，live 实证原句
+  不再命中 survey-finding）+
+  1 项模式级真命中保留（live 全池 4 条真主张原句全保留 + Fed 导航 Research
+  Reports 消除）+
+  1 项判别级真命中保留（既有夹具「survey of 1,200 enterprises found 34%」
+  仍判结构完整，收紧不打穿）+
+  1 项端到端候选门（两条 live 误报原文进 signals，整条不进商业辨别段）+
+  1 项端到端不误杀（真调查主张与误报同批仍进辨别且判结构完整+决策相关）+
+  1 项版本号一致性（VERSION/package.json/projection meta/run-pipeline meta
+  四处对齐，corr-2026-014 的防腐烂断言））。
+  同轮维护：v3.0.0c/v3.2/v3.3 三处「播客不进辨别」夹具补强为 live 误报原句
+  （旧 description 不触发模式门、断言恒真空转两个版本——反向验证实证：
+  恢复旧正则后三处旧断言立刻真失败）。
+  v3.3.1 三轮反向验证全部精确失败：恢复旧 survey-finding 正则→v3.3.1 4 条
+  失败 + v3.0.0c/v3.2/v3.3 各 1 条失败（误报回归+夹具补强双生效）；
+  收紧过头摘除量化对象形式 B→3 条失败（真命中保留生效）；
+  版本号漂移复发（projection meta 改回 3.2.2）→恰好 1 条失败（仅版本一致性）。
   v3.3 五轮反向验证全部精确失败：摘除 ma-claim 模式→7 条；摘除 ma 证伪条件→1 条；
   摘除 formatReport KIND_CN→1 条；摘除 cron 注入标签→1 条；摘除精度收紧
   （正则加回裸 sale talks 名词短语）→1 条（精度回归生效）。

@@ -91,7 +91,7 @@ async function main() {
 
     const fullReport = {
       meta: {
-        version: '3.3.0',
+        version: '3.3.1',
         timestamp: new Date().toISOString(),
         heartflowVersion: analysis.engineVersion,
         modulesLoaded: analysis.modulesLoaded

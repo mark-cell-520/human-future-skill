@@ -2653,7 +2653,11 @@ c300c('精度门：Fed 公告/播客/促销页脚不再进商业辨别', (() => 
       pubDate: 'Tue, 13 Oct 2026 00:44:16 GMT', domains: ['economy_labor'],
       link: 'https://federalreserve.gov/a', origin: 'live' },
     { title: 'LWiAI Podcast #252 - GPT 5.6, Grok 4.5, Nemotron-Labs-Diffusion, AI 2040',
-      description: 'This week: $5 billion in new funding and 30% growth in enterprise adoption of agents.',
+      // [v3.3.1] 夹具补强：旧 description（"$5 billion in new funding and
+      // 30% growth in enterprise adoption"）不触发任何模式门，本断言恒真
+      // 空转（corr-2026-015）。换成 2026-10-25 live 轮真正漏进辨别的原句
+      // ——旧 survey-finding 正则下 "research from" 命中调查研究形态。
+      description: "GPT-5.6 and Grok 4.5, Meta's Muse Spark 1.1, regulatory developments in AI and data centers, interpretability research from Anthropic, and the future of AI policy with AI 2040",
       body: '', source: 'Last Week in AI', bucket: 'business',
       pubDate: 'Tue, 13 Oct 2026 00:44:16 GMT', domains: ['capital_flow'],
       link: 'https://lastweekin.ai/b', origin: 'live' },
@@ -3306,7 +3310,11 @@ c32('精度门未破：非主张文本仍被挡在辨别外', (() => {
       pubDate: 'Tue, 13 Oct 2026 00:44:16 GMT', domains: ['economy_labor'],
       link: 'https://federalreserve.gov/a', origin: 'live' },
     { title: 'LWiAI Podcast #252 - GPT 5.6, Grok 4.5, Nemotron-Labs-Diffusion, AI 2040',
-      description: 'This week: $5 billion in new funding and 30% growth in enterprise adoption of agents.',
+      // [v3.3.1] 夹具补强：旧 description（"$5 billion in new funding and
+      // 30% growth in enterprise adoption"）不触发任何模式门，本断言恒真
+      // 空转（corr-2026-015）。换成 2026-10-25 live 轮真正漏进辨别的原句
+      // ——旧 survey-finding 正则下 "research from" 命中调查研究形态。
+      description: "GPT-5.6 and Grok 4.5, Meta's Muse Spark 1.1, regulatory developments in AI and data centers, interpretability research from Anthropic, and the future of AI policy with AI 2040",
       body: '', source: 'Last Week in AI', bucket: 'business',
       pubDate: 'Tue, 13 Oct 2026 00:44:16 GMT', domains: ['capital_flow'],
       link: 'https://lastweekin.ai/b', origin: 'live' },
@@ -3765,7 +3773,11 @@ c33('精度门未破：非主张文本仍被挡在辨别外', (() => {
       pubDate: 'Tue, 13 Oct 2026 00:44:16 GMT', domains: ['economy_labor'],
       link: 'https://federalreserve.gov/a', origin: 'live' },
     { title: 'LWiAI Podcast #252 - GPT 5.6, Grok 4.5, Nemotron-Labs-Diffusion, AI 2040',
-      description: 'This week: $5 billion in new funding and 30% growth in enterprise adoption of agents.',
+      // [v3.3.1] 夹具补强：旧 description（"$5 billion in new funding and
+      // 30% growth in enterprise adoption"）不触发任何模式门，本断言恒真
+      // 空转（corr-2026-015）。换成 2026-10-25 live 轮真正漏进辨别的原句
+      // ——旧 survey-finding 正则下 "research from" 命中调查研究形态。
+      description: "GPT-5.6 and Grok 4.5, Meta's Muse Spark 1.1, regulatory developments in AI and data centers, interpretability research from Anthropic, and the future of AI policy with AI 2040",
       body: '', source: 'Last Week in AI', bucket: 'business',
       pubDate: 'Tue, 13 Oct 2026 00:44:16 GMT', domains: ['capital_flow'],
       link: 'https://lastweekin.ai/b', origin: 'live' },
@@ -3800,5 +3812,151 @@ c33('模式计数口径：15 种与文档一致', (() => {
     process.exitCode = 1;
   } else {
     console.log('结论：交易过程主张已进模式库（live 实证 2 条命中），报告与 cron 注入渲染中文标签，精度回归通过。');
+  }
+})();
+
+// ════════════════════════════════════════════════════════════════
+// v3.3.1 维护级（不是新辨别维度）：survey-finding 精度修复 + 版本号漂移修复
+//
+// 背景（2026-10-25 v3.3.0 轮 live 实测，corr-2026-015/014）：
+// ① 两条误报进商业辨别段——EconBrowser 站点导航 "Analysis of current
+//    economic conditions and policy"（命中 "analysis of"）与 LWiAI 播客
+//    列表 "interpretability research from Anthropic"（命中 "research
+//    from"）。旧 survey-finding 正则 (survey|study|…)\s+(of|by|from|…)
+//    把「调查名词+介词」的 incidental 搭配当成研究发现：两句都没有发现
+//    动词、没有量化对象，是副标题/话题列举不是主张。
+// ② v3.0.0c/v3.2/v3.3 三处「播客不进辨别」测试夹具的 description 压根
+//    不触发模式门——断言恒真空转了两个版本，误报进 live 产物没人拦
+//    （corr-2026-015 教训②：防误报的夹具必须复现 live 误报原句）。
+// ③ 版本号漂移：VERSION=3.3.0 而 projection meta.version 停在 3.2.2、
+//    package.json 停在 3.2.1，同一份报告两个版本号（corr-2026-014）。
+//
+// 修法：survey-finding 收紧为「调查名词+发现动词相邻」或「调查名词+
+// of+量化对象（容忍数量副词）」二选一；三处夹具换 live 误报原句；
+// 四处版本号对齐并加一致性断言。live 全池实测：4 条真主张全保留
+// （Survey of 2,018 / survey of almost 11,000 / Study Shows / study
+// found），3 条 incidental 搭配精确消除（含 Fed 导航 "Payments
+// Research Reports"——连带把无实证的 report 动词形态一并收紧）。
+// ════════════════════════════════════════════════════════════════
+const v331 = [];
+function c331(name, ok, detail) { v331.push({ name, ok, detail }); }
+
+// 1+2. 模式级误报回归：两条 live 误报原句不再命中 survey-finding。
+//       摘除精度修复（恢复旧正则）→ 本断言失败。
+c331('survey-finding 不再命中站点导航句（live 实证 EconBrowser）', (() => {
+  const { COMMERCIAL_CLAIM_PATTERNS } = require('./human-future/scripts/commercial-discriminator.js');
+  const sf = COMMERCIAL_CLAIM_PATTERNS.find(p => p.id === 'survey-finding');
+  const live = 'Front Month Brent Futures near 2022 Peak Level Front Month Brent Futures near 2022 Peak Level | Econbrowser Skip to content Econbrowser Analysis of current economic conditions and policy Menu Front Month Brent Futures near 2022 Peak Level 5 Replies Over $116/bbl.';
+  return !sf.re.test(live);
+})(), '「Analysis of current economic conditions」是博客副标题不是研究发现');
+
+c331('survey-finding 不再命中播客列表句（live 实证 LWiAI #252）', (() => {
+  const { COMMERCIAL_CLAIM_PATTERNS } = require('./human-future/scripts/commercial-discriminator.js');
+  const sf = COMMERCIAL_CLAIM_PATTERNS.find(p => p.id === 'survey-finding');
+  const live = "LWiAI Podcast #252 - GPT 5.6, Grok 4.5, Nemotron-Labs-Diffusion, AI 2040  GPT-5.6 and Grok 4.5, Meta's Muse Spark 1.1, regulatory developments in AI and data centers, interpretability research from Anthropic, and the future of AI policy with AI 2040";
+  return !sf.re.test(live);
+})(), '「interpretability research from Anthropic」是话题列举不是研究发现');
+
+// 3. 模式级真命中保留：live 全池 4 条真主张原句 + Fed 导航残留形态。
+//    收紧过宽（把发现动词/量化对象也收紧掉）→ 本断言失败。
+c331('survey-finding 保留全部 live 真主张形态（4 条原句 + Fed 导航消除）', (() => {
+  const { COMMERCIAL_CLAIM_PATTERNS } = require('./human-future/scripts/commercial-discriminator.js');
+  const sf = COMMERCIAL_CLAIM_PATTERNS.find(p => p.id === 'survey-finding');
+  const tp = [
+    'Enterprises keep buying software upgrades that IT thinks will make things worse  Survey of 2,018 IT heads at big firms points to a lack of leverage.',
+    'We surveyed Anthropic employees, and compared them to an August survey of almost 11,000 US adults, fielded by Morning Consult.',
+    'NIST Study Shows How the Toxic Substances Mixed Into Fentanyl Vary Across the U.S.',
+    "A new study found Grok's AI overwhelmingly recommends Republican candidates while OpenAI's GPT favors Democrats, with the two AI models disagreeing in more than 90% of nearly 500 election races.",
+  ];
+  const fedNav = 'International Standards for Financial Market Infrastructures Research, Reports, & Committees Federal Reserve Payments Study (FRPS) Payments Research Reports Payments System Policy Advisory Committee';
+  return tp.every(t => sf.re.test(t)) && !sf.re.test(fedNav);
+})(), 'Survey of 2,018 / survey of almost 11,000 / Study Shows / study found 必须保留；Fed 导航 Research Reports 必须消除');
+
+// 4. 判别级真命中保留：既有夹具句仍判结构完整（收紧不打穿 v3.0.0 断言）。
+c331('既有调查主张夹具仍判结构完整（收紧不打穿）', (() => {
+  const { discriminateCommercial } = require('./human-future/scripts/commercial-discriminator.js');
+  const r = discriminateCommercial({
+    text: 'A survey of 1,200 enterprises found 34% had deployed LLMs in production, up from 12% a year ago, although only 8% reported measurable ROI.',
+    source: 'test',
+  });
+  return r.kind === 'adoption' && r.verdict === 'well-formed' && r.reasoning.score === 3;
+})(), '「survey of 1,200 enterprises found 34%」仍须命中且判结构完整');
+
+// 5. 端到端候选门：两条 live 误报原文进 signals，整条不进商业辨别段。
+//    摘除模式收紧 → 两条误报回到辨别段 → 本断言失败。
+c331('端到端：两条 live 误报原文不进商业辨别段', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const noise = [
+    { title: 'Front Month Brent Futures near 2022 Peak Level',
+      description: 'Front Month Brent Futures near 2022 Peak Level | Econbrowser Skip to content Econbrowser Analysis of current economic conditions and policy Menu Front Month Brent Futures near 2022 Peak Level 5 Replies Over $116/bbl.',
+      body: '', source: 'EconBrowser', bucket: 'economy',
+      pubDate: 'Fri, 24 Oct 2026 00:44:16 GMT', domains: ['economy_macro'],
+      link: 'https://econbrowser.com/a', origin: 'live' },
+    { title: 'LWiAI Podcast #252 - GPT 5.6, Grok 4.5, Nemotron-Labs-Diffusion, AI 2040',
+      description: "GPT-5.6 and Grok 4.5, Meta's Muse Spark 1.1, regulatory developments in AI and data centers, interpretability research from Anthropic, and the future of AI policy with AI 2040",
+      body: '', source: 'Last Week in AI', bucket: 'business',
+      pubDate: 'Tue, 13 Oct 2026 00:44:16 GMT', domains: ['capital_flow'],
+      link: 'https://lastweekin.ai/b', origin: 'live' },
+  ];
+  const inst = new ProjectionEngine({});
+  inst.signals = { totalItems: noise.length, domains: [], undomained: 0, dateRange: null, items: noise };
+  const r = inst.buildCommercialDiscrimination();
+  return r.available === false && /未抽到命中商业主张形态/.test(r.reason || '');
+})(), '两条 live 误报原句必须整体挡在辨别之外（available=false 且原因写明形态门）');
+
+// 6. 端到端不误杀：同批 signals 里放真调查主张，仍进辨别且判结构完整
+//    （精度门收得太紧把真主张也挡了 → 本断言失败）。
+c331('端到端不误杀：真调查主张与误报同批仍进辨别', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const items = [
+    { title: 'A survey of 1,200 enterprises found 34% had deployed LLMs in production, up from 12% a year ago, although only 8% reported measurable ROI.',
+      description: '', body: '', source: 'Test Survey', bucket: 'business',
+      pubDate: 'Fri, 24 Oct 2026 00:44:16 GMT', domains: ['market_claims'],
+      link: 'https://example.com/survey', origin: 'live' },
+    { title: 'Front Month Brent Futures near 2022 Peak Level',
+      description: 'Front Month Brent Futures near 2022 Peak Level | Econbrowser Skip to content Econbrowser Analysis of current economic conditions and policy Menu Front Month Brent Futures near 2022 Peak Level 5 Replies Over $116/bbl.',
+      body: '', source: 'EconBrowser', bucket: 'economy',
+      pubDate: 'Fri, 24 Oct 2026 00:44:16 GMT', domains: ['economy_macro'],
+      link: 'https://econbrowser.com/a', origin: 'live' },
+  ];
+  const inst = new ProjectionEngine({});
+  inst.signals = { totalItems: items.length, domains: [], undomained: 0, dateRange: null, items };
+  const r = inst.buildCommercialDiscrimination();
+  return r.available === true && r.audited === 1
+    && r.results[0].kind === 'adoption' && r.results[0].verdict === 'well-formed'
+    && r.results[0].decisionRelevant === true;
+})(), '真调查主张必须仍进辨别且判结构完整+决策相关（精度修复不得误杀）');
+
+// 7. 版本号一致性（corr-2026-014）：VERSION 文件 / package.json /
+//    projection meta / run-pipeline 顶层 meta 四处对齐。任一处忘记同步
+//    （v3.1 修过 banner/meta，另两处腐烂了四个补丁轮）→ 本断言失败。
+c331('版本号一致性：VERSION/package.json/projection meta/run-pipeline meta 四处对齐', (() => {
+  const fs331 = require('fs');
+  const path331 = require('path');
+  const root = path331.join(__dirname);
+  const versionFile = fs331.readFileSync(path331.join(root, 'VERSION'), 'utf-8').trim();
+  const pkg = JSON.parse(fs331.readFileSync(path331.join(root, 'package.json'), 'utf-8')).version;
+  const pf = fs331.readFileSync(path331.join(root, 'scripts/project-future.js'), 'utf-8');
+  const rp = fs331.readFileSync(path331.join(root, 'scripts/run-pipeline.js'), 'utf-8');
+  const projMeta = pf.match(/version:\s*'([\d.]+)'/);
+  const runMeta = rp.match(/version:\s*'([\d.]+)'/);
+  return versionFile === pkg && projMeta && projMeta[1] === versionFile && runMeta && runMeta[1] === versionFile;
+})(), '四处版本号必须一致（交付物带错版本号是 corr-2026-014 记过的漂移）');
+
+// ── v3.3.1 汇总 ──
+(async () => {
+  const results = await Promise.all(v331.map(c => Promise.resolve(c.ok)));
+  let f = 0;
+  v331.forEach((c, i) => {
+    const ok = results[i];
+    if (!ok) f++;
+    console.log(`${ok ? '\u2713' : '\u2717'} ${c.name}${ok ? '' : '  —— ' + c.detail}`);
+  });
+  console.log(`\nv3.3.1: ${v331.length - f} 通过, ${f} 失败, 共 ${v331.length} 个`);
+  if (f > 0) {
+    console.log('结论：survey-finding 精度修复或版本号对齐不完整（误报回归/真命中保留/端到端/版本一致性有缺）。');
+    process.exitCode = 1;
+  } else {
+    console.log('结论：两条 live 误报已精确消除、live 真主张全保留、版本号四处对齐（维护级精度修复，非新辨别维度）。');
   }
 })();

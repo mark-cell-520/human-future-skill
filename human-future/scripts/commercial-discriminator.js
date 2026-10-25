@@ -36,7 +36,29 @@ const COMMERCIAL_CLAIM_PATTERNS = [
     kind: 'adoption', label: '采用主张' },
   // [v3.0.0] 调查/研究发现类：商业世界最高频的主张形态，第一版漏了。
   // 实测 "A survey of 1,200 enterprises found 34% had deployed LLMs" 无命中。
-  { id: 'survey-finding', re: /(survey|study|poll|report|research|analysis|census)\s+(of|by|from|found|shows?|reveals?|indicates?|suggests?)/i,
+  //
+  // [v3.3.1] 精度修复：旧模式 `(survey|study|…)\s+(of|by|from|…)` 把 incidental
+  // 介词短语当成调查研究主张。live 实证（2026-10-25 v3.3.0 轮，两条误报进辨别）：
+  //   ① EconBrowser 站点导航 "Analysis of current economic conditions and
+  //      policy"——"analysis of" 是博客副标题不是研究发现；
+  //   ② LWiAI 播客列表 "interpretability research from Anthropic"——
+  //      "research from" 是话题列举不是研究发现。
+  // 二者共同点：调查名词+介词，但没有发现动词、也没有量化对象—— incidental
+  // 搭配，不是「研究发现」结构。收紧为二选一：
+  //   A. 调查名词 + 发现动词相邻（study found / research shows / analysis
+  //      indicates…）；
+  //   B. 调查名词 + of + 量化对象（survey of 1,200 / survey of almost
+  //      11,000，容忍数量副词——v3.0.0c funding 副词容忍的同型教训）。
+  // live 全池实测：旧模式 7 条命中里 4 条真主张全保留（Survey of 2,018 /
+  // survey of almost 11,000 / Study Shows / study found），3 条 incidental
+  // 搭配精确消除（analysis of / research from / Research Reports——后者是
+  // Fed 站点导航 "Payments Research Reports"，report 作名词的标签短语）。
+  // 代价如实记录：① 无量化对象且发现动词不与名词相邻的 "a survey of
+  // enterprises found 34%" 形态不再命中；② "survey reports that X" 的
+  // report 动词形态不再命中（本轮无 live 实证，按 v3.0.0c 纪律「漏报比
+  // 误报诚实」接受，等有 live 实证再议）。
+  { id: 'survey-finding',
+    re: /(?:(?:surveys?|stud(?:y|ies)|polls?|research|analyses|analysis|census)\s+(?:found|finds|shows?|reveals?|revealing|indicates?|indicating|suggests?|suggesting|concludes?|concluding|estimates?|estimating)\b|(?:surveys?|stud(?:y|ies)|polls?|census|analyses|analysis)\s+of\s+(?:nearly|almost|about|approximately|around|roughly|over|more\s+than|some\s+)?\s*[\d,]+)/i,
     kind: 'adoption', label: '调查研究主张' },
   { id: 'finding-with-number', re: /\b\d+(?:\.\d+)?\s*%\s*(?:of\s+)?(enterprises?|companies|firms?|respondents?|users?|developers?|businesses?)/i,
     kind: 'adoption', label: '量化采用数据' },

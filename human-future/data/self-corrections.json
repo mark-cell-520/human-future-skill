@@ -138,6 +138,30 @@
       "recordedAt": "2026-10-25T20:30:00.000Z",
       "resolvedAt": "2026-10-25T20:30:00.000Z",
       "fix": "三处计数改为「扩容前 14 种」/「15 种」实测值；测试新增断言「模式计数口径：15 种与文档一致」（COMMERCIAL_CLAIM_PATTERNS.length===15 且文档含「共 15 种模式」），摘除模式或改文档计数均失败。另：本轮主升级为商业主张辨别器新增并购/交易过程形态（ma-claim），属新辨别维度，不是本登记簿的错误修正。"
+    },
+    {
+      "id": "corr-2026-014",
+      "reportVersion": "v3.3.1",
+      "wrongClaim": "（沿用假设）版本号漂移 v3.1 修过一遍（run-pipeline banner/meta 1.0.0→3.1.0），同类问题想必不会再犯——报告里的版本号以当期为准。",
+      "rightClaim": "2026-10-25 审计实测：VERSION 文件=3.3.0、顶层报告 meta（run-pipeline.js）=3.3.0，但 projection 自己的 meta.version（project-future.js:323）停在 '3.2.2'、package.json version 停在 '3.2.1'——同一份 full-report 文件里两个不同版本号，markdown 报告页眉「推演引擎: v3.2.2」也是错的。v3.2/v3.2.1/v3.2.2/v3.3 连续四轮的对外交付物都带着比实际旧两个补丁的版本号。",
+      "evidence": "cat VERSION → 3.3.0；grep version scripts/run-pipeline.js → '3.3.0'；grep version scripts/project-future.js:323 → '3.2.2'；package.json → 3.2.1；full-report-1792909444253.json 的 projection.meta.version='3.2.2' 而顶层 meta.version='3.3.0'",
+      "lesson": "版本号是「写下来的数字」，与 corr-2026-010/013 纠过的计数错误同型：硬编码的多处同一事实没有断言就会腐烂，且腐烂不报错、只是数字变旧——交付物带着错版本号跑四个补丁轮才在审计里发现。v3.1 只修了当期发现的一处（banner/meta），没有把「版本号一致性」固化为断言，于是另外两处继续腐烂。凡多处出现的同一事实（版本号/计数/口径）必须有一个能跑的核对断言，不能靠「记得同步」。",
+      "severity": "high",
+      "recordedAt": "2026-10-25T21:00:00.000Z",
+      "resolvedAt": "2026-10-25T21:00:00.000Z",
+      "fix": "四处对齐 3.3.1（VERSION/package.json/project-future.js projection meta/run-pipeline.js 顶层 meta）；测试新增「版本号一致性」断言（VERSION 文件 == package.json version == projection meta.version == run-pipeline meta version，任一处漂移即失败），把同步从人工记忆变成每轮自动动作。"
+    },
+    {
+      "id": "corr-2026-015",
+      "reportVersion": "v3.3.1",
+      "wrongClaim": "（两处沿用假设）① survey-finding 模式命中的就是调查研究主张——「调查名词+介词」就算；② v3.0.0c 立的「播客不进辨别」测试夹具能防住播客类误报。",
+      "rightClaim": "2026-10-25 live 轮（v3.3.0 代码）两条误报进商业辨别段：EconBrowser 站点导航 \"Analysis of current economic conditions and policy\"（命中片段 \"analysis of\"）与 LWiAI 播客列表 \"interpretability research from Anthropic\"（命中片段 \"research from\"）——旧正则 (survey|study|…)\\s+(of|by|from|…) 把「调查名词+介词」的 incidental 搭配当成研究发现，两句都没有发现动词也没有量化对象，是副标题/话题列举不是主张。且 v3.0.0c/v3.2/v3.3 三处「播客不进辨别」测试夹具的 description（\"$5 billion in new funding and 30% growth in enterprise adoption of agents\"）压根不触发任何模式门——夹具句进不了被测分支，三条断言全是恒真空转，误报进了 live 产物也没人拦住。",
+      "evidence": "逐条过形态门实测：两条误报触发片段 analysis of @136 / research from @184（live 原文位置）；live 全池旧模式 7 条命中里 5 条是真主张（Survey of 2,018 / survey of almost 11,000 / Study Shows / study found / Research Reports）、2 条误报；三处夹具 description 用 discriminateCommercial 跑匹配数=0（旧正则下也不命中 survey-finding 之外的形态）",
+      "lesson": "① 「名词+介词」是 incidental 搭配的最高发来源（analysis of / research from / report on）：主张形态判据要认「结构」（发现动词或量化对象）不认「词族共现」——与 v3.1.1 同句判定同族，松散共现必然漏进噪音，而误报进辨别段比漏报更伤辨别力（读者连真命中一起跳过）。② 测试夹具必须能真正触发被测分支：三处「播客不进辨别」断言连模式门都进不去，反向验证永远 0 失败——断言空转比没有断言更坏，它给人「已防护」的虚假安全感。防误报的夹具必须复现 live 误报原句，不能凭印象写一段「像噪音」的文本。",
+      "severity": "medium",
+      "recordedAt": "2026-10-25T21:00:00.000Z",
+      "resolvedAt": "2026-10-25T21:00:00.000Z",
+      "fix": "survey-finding 收紧为二选一：调查名词+发现动词相邻（study found / research shows / analysis indicates…）或调查名词+of+量化对象（survey of 1,200 / survey of almost 11,000，容忍数量副词）；live 全池实测 5 条真主张全保留、2 条误报精确消除，代价如实记录（无量化对象且动词不相邻的 \"a survey of enterprises found 34%\" 形态不再命中，按 v3.0.0c「漏报比误报诚实」接受）。三处播客夹具 description 换 live 误报原句；测试 207→214 项。本轮为维护级精度修复，不是新辨别维度。"
     }
   ]
 }
