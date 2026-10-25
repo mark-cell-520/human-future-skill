@@ -3810,14 +3810,16 @@ c33('精度门未破：非主张文本仍被挡在辨别外', (() => {
 
 // 维护级断言：模式计数文档口径（v3.2 刚纠错过「14 种」文档计数错误）。
 // [v3.6] 扩容成本/价格信号后真实条数为 16；[v3.7] 扩容专家/机构判断后
-// 真实条数为 17，计数跟着代码走（v3.2 同型纪律）。
-c33('模式计数口径：17 种与文档一致', (() => {
+// 真实条数为 17；[v3.8] 扩容监管行动后真实条数为 18，计数跟着代码走
+// （v3.2 同型纪律）。
+c33('模式计数口径：18 种与文档一致', (() => {
   const { COMMERCIAL_CLAIM_PATTERNS } = require('./human-future/scripts/commercial-discriminator.js');
   const pf = require('fs').readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return COMMERCIAL_CLAIM_PATTERNS.length === 17
-    && /共 17 种模式/.test(pf)
-    && COMMERCIAL_CLAIM_PATTERNS.some(p => p.id === 'expert-judgment');
-})(), '模式库真实条数必须与文档写的「17 种」一致（防文档计数腐烂）');
+  return COMMERCIAL_CLAIM_PATTERNS.length === 18
+    && /共 18 种模式/.test(pf)
+    && COMMERCIAL_CLAIM_PATTERNS.some(p => p.id === 'expert-judgment')
+    && COMMERCIAL_CLAIM_PATTERNS.some(p => p.id === 'regulatory-action');
+})(), '模式库真实条数必须与文档写的「18 种」一致（防文档计数腐烂）');
 
 // ── v3.3 汇总 ──
 (async () => {
@@ -4215,7 +4217,7 @@ c34('版本号一致性：banner 与 VERSION 对齐（3.7.0）', (() => {
   const fs2 = require('fs');
   const version = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return version === '3.7.0' && rp.includes('文明推演引擎 v3.7.0');
+  return version === '3.8.0' && rp.includes('文明推演引擎 v3.8.0');
 })(), 'run-pipeline banner 必须与 VERSION 一致（v3.1 修过 banner/meta 同型后又腐烂）');
 
 // ── v3.4 汇总 ──
@@ -4409,15 +4411,15 @@ c35('cron 注入脚本渲染财报指引结算段', (() => {
 
 // ── 组 6：版本号一致性（corr-2026-014 同型，四处对齐）──────────
 // [v3.6] 推进到 3.6.0（新辨别维度），断言跟当前版本走。
-c35('版本号一致性：VERSION/package.json/projection meta/banner 对齐 3.7.0', (() => {
+c35('版本号一致性：VERSION/package.json/projection meta/banner 对齐 3.8.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.7.0'
-    && /3\.7\.0/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.7.0');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.7.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.8.0'
+    && /3\.8\.0/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.8.0');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.8.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.5 汇总 ──
 (async () => {
@@ -4635,15 +4637,15 @@ c351('结算证据来源是提供实际值的备案（actualPeriod 匹配）', (
 
 // ── 组 4：版本号一致性（corr-2026-014 同型）────────────────────
 // [v3.6] 推进到 3.6.0（新辨别维度：成本/价格信号）。
-c351('版本号一致性：VERSION/package.json/banner 对齐 3.7.0', (() => {
+c351('版本号一致性：VERSION/package.json/banner 对齐 3.8.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.7.0'
-    && /3\.7\.0/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.7.0');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.7.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.8.0'
+    && /3\.8\.0/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.8.0');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.8.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.5.1 汇总 ──
 (async () => {
@@ -4838,15 +4840,15 @@ c36('精度门未破：非主张文本仍被挡在辨别外', (() => {
 })(), 'Fed 公告与播客不得因 cost-signal 新模式进入辨别');
 
 // ── 组 5：版本号一致性（corr-2026-014 同型）────────────────────
-c36('版本号一致性：VERSION/package.json/banner 对齐 3.7.0', (() => {
+c36('版本号一致性：VERSION/package.json/banner 对齐 3.8.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.7.0'
-    && /3\.7\.0/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.7.0');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.7.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.8.0'
+    && /3\.8\.0/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.8.0');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.8.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.6 汇总 ──
 (async () => {
@@ -5082,15 +5084,15 @@ c37('精度门未破：非主张文本仍被挡在辨别外', (() => {
 })(), 'Fed 公告与播客不得因 expert-judgment 新模式进入辨别');
 
 // ── 组 5：版本号一致性（corr-2026-014 同型）────────────────────
-c37('版本号一致性：VERSION/package.json/banner 对齐 3.7.0', (() => {
+c37('版本号一致性：VERSION/package.json/banner 对齐 3.8.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.7.0'
-    && /3\.7\.0/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.7.0');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.7.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.8.0'
+    && /3\.8\.0/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.8.0');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.8.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.7 汇总 ──
 (async () => {
@@ -5107,5 +5109,304 @@ c37('版本号一致性：VERSION/package.json/banner 对齐 3.7.0', (() => {
     process.exitCode = 1;
   } else {
     console.log('结论：专家/机构判断主张已进模式库（live 实证 1 条命中），报告与 cron 注入渲染中文标签，精度回归通过。');
+  }
+})();
+
+
+// ════════════════════════════════════════════════════════════════
+// v3.8 新增断言：商业主张辨别器新增「监管行动主张」形态（regulatory-action）
+//
+// 背景（2026-10-26 轮 live 实证）：商业主张形态库自 v3.0.0c 起四次扩库
+// （v3.2 产能/供给约束、v3.3 并购/交易过程、v3.6 成本/价格信号、v3.7
+// 专家/机构判断）补的都是市场信号句式，但**合规域自 v3.0.0c 起只有
+// compliance-demand（「监管需求修辞」：regulators will require…）**——
+// 真实规则事件（提案/签发/加宽/解除限制）一条都看不见。live 实证两条：
+//   ① The Information 简报「U.S. Treasury Proposes to Widen Outbound
+//      Investment Restrictions for China and Other Countries」（2026-10-23，
+//      AP/Reuters/Nikkei/The Hill 四家交叉验证：10-22 提案、评论期至
+//      12-07、覆盖 AI/超算/生物技术/高超音速）；
+//   ② LWiAI #251 简报内句「Trump lifts restrictions on Anthropic」
+//      （2026-06-30 白宫解除 Anthropic 模型出口管制的简报转述）。
+// 扩容前 17 种形态对这两句全部不命中、整条不进辨别。规则事件是合规需求域
+// 的一阶信号（跨境资本/出口管制/AI 监管全经由规则落地），且有天然结算
+// 结构：提案 → 评论期 → 最终规则。
+//
+// 精度设计（v3.0.0c/v3.2/v3.3/v3.6/v3.7 教训：漏报比误报诚实、没有实证
+// 不扩模式）：
+//   ① 必须「政府/监管主体 + 规制动词 + 规制工具名词」三段式且同句（两段
+//      间隔都不含句读号 [^.!?]）；
+//   ② 主体只认政府/监管机构与官员——厂商动作是 vendor-selfreport 地盘；
+//      Fed/ECB 的货币政策公告（FOMC statement/minutes/projections）不是
+//      规制行动，主体库不含 Fed/ECB（v3.0.0c 精度门不打穿）；
+//   ③ 规制动词只认规则生命周期动作，不含 said/says/expect——官员言论是
+//      v3.7 expert-judgment 已决议不进库的形态，不重复收编。
+// live 全池实测：312 条里精确命中 2 条（即上述两条），31 句精度回归
+// 0 误报。已知边界（如实）：执法行动（fined/sued/charged，无工具名词）
+// 与「SEC's new disclosure rules」类所有格形态无 live 实证不进库。
+//
+// 本节断言分五组：① live 实证两条款式命中 + 证伪条件与类目（源级）；
+// ② 形态族召回（主体/动词/工具三族十二形）；③ 精度回归 31 句；④ 端到端
+// （no-quantity 事件型豁免 + 证据等级机构/官员分流 + 引擎候选门 + 报告
+// 渲染 + cron 注入 + 精度门未破）；⑤ 版本号一致性。
+// ════════════════════════════════════════════════════════════════
+const v38 = [];
+function c38(name, ok, detail) { v38.push({ name, ok, detail }); }
+
+// ── 组 1：live 实证句式命中 ──
+// 1. The Information 简报标题（live 池真实条目，无摘要，主张就在标题里）。
+//    摘除 regulatory-action 模式 → kind 不是 regulatory-action，失败。
+//    判定口径：事件型主张豁免 no-quantity（证伪靠「规则是否落地」这个
+//    可观测事件，不靠量化基数——否则报告会同时打印「不可证伪」与「证伪
+//    条件」自相矛盾的两行）；证据等级归公开财报/公告(3)（机构一手文书，
+//    与 v3.0.0c「according to a company announcement 归公开财报档」同型）；
+//    推理 0/3 不虚抬成结构完整，但证据≥3 → 决策相关（一级监管信号）。
+c38('live 实证：Treasury 规则提案命中监管行动形态', (() => {
+  const { discriminateCommercial } = require('./human-future/scripts/commercial-discriminator.js');
+  const r = discriminateCommercial({
+    text: 'U.S. Treasury Proposes to Widen Outbound Investment Restrictions for China and Other Countries',
+    source: 'The Information',
+  });
+  return r.kind === 'regulatory-action'
+    && r.kinds.length === 1 && r.kinds[0] === 'regulatory-action'  // 只命中监管形态，不串台
+    && r.verdict === 'thin-reasoning'       // 证据 3、推理 0/3：不虚抬成结构完整
+    && r.evidence.id === 'public-filing' && r.evidence.weight === 3
+    && r.reasoning.score === 0
+    && r.decisionRelevant === true          // 证据≥3 → 决策相关（非虚抬：机构一手规则文书）
+    && r.falsifiability.problems.length === 0;  // no-quantity 事件型豁免生效
+})(), '「Treasury Proposes to Widen Outbound Investment Restrictions」必须命中监管行动形态并按机构一手文书证据判别');
+
+// 1b. LWiAI #251 简报内句（live 池第二条，官员个人行动经简报转述）。
+//     官员个人署名不在机构证据标记里——保守归无出处(1)，不借名字抬级。
+c38('live 实证：LWiAI 简报内监管行动句命中且不虚抬', (() => {
+  const { discriminateCommercial } = require('./human-future/scripts/commercial-discriminator.js');
+  const r = discriminateCommercial({
+    text: 'Last Week in AI #251 - Mythos Back, Sonnet 5, Etched, LongCat  '
+      + 'Trump lifts restrictions on Anthropic, Anthropic launches Claude Sonnet 5, '
+      + "Google's NotebookLM updates, chips stories from Etched and Baidu, and more!",
+    source: 'Last Week in AI',
+  });
+  return r.kind === 'regulatory-action'
+    && r.verdict === 'weak-evidence'        // 无出处(1)：官员个人行动经媒体转述，不抬级
+    && r.evidence.weight === 1
+    && r.decisionRelevant === false;
+})(), 'LWiAI 简报内「Trump lifts restrictions on Anthropic」必须命中监管行动形态但不借官员名字抬证据等级');
+
+// 2. 证伪条件与类目：新 kind 必须有专属证伪路径，不能落回「无明确证伪路径」。
+//    类目映射必须源级断言——行为断言抓不到摘除（v3.6/v3.7 同型教训：
+//    兜底类目 market_claims 同域；本轮映射到 compliance_demand 虽与兜底
+//    不同域，仍按纪律源级钉住，双保险）。
+c38('regulatory-action 形态有专属证伪条件与类目映射', (() => {
+  const { discriminateCommercial } = require('./human-future/scripts/commercial-discriminator.js');
+  const r = discriminateCommercial({
+    text: 'The SEC issued new disclosure rules for AI model vendors.',
+    source: 'The Information',
+  });
+  const src = require('fs').readFileSync(require('path').join(__dirname,
+    'human-future/scripts/commercial-discriminator.js'), 'utf-8');
+  return r.kind === 'regulatory-action'
+    && r.category === 'compliance_demand'
+    && /最终规则|rescind|struck down|推迟|收窄/.test(r.falsification)
+    && r.falsification !== '无明确证伪路径——这本身就是问题'
+    // 源级：映射行必须显式存在
+    && /'regulatory-action': 'compliance_demand'/.test(src);
+})(), '监管行动主张必须带「最终规则范围不符/rescind/struck down/推迟/收窄」证伪路径，归合规需求域');
+
+// ── 组 2：形态族召回（主体/规制动词/工具名词三族）──
+// 3. 三段式各件 + 动词族 + 工具名词族的代表性形态。
+c38('形态族召回：主体/规制动词/工具名词三族十二形', (() => {
+  const { COMMERCIAL_CLAIM_PATTERNS } = require('./human-future/scripts/commercial-discriminator.js');
+  const p = COMMERCIAL_CLAIM_PATTERNS.find(x => x.id === 'regulatory-action');
+  if (!p) return false;
+  return [
+    'U.S. Treasury Proposes to Widen Outbound Investment Restrictions for China and Other Countries',
+    'Trump lifts restrictions on Anthropic',
+    'The SEC issued new disclosure rules for AI model vendors',
+    'The European Commission approved new measures to regulate foundation models',
+    'The White House unveiled a new executive order on chip exports',
+    'Congress passed a law expanding outbound investment restrictions',
+    'The FTC finalized rules targeting deceptive AI claims',
+    'Beijing imposed new export controls on rare earth processing technology',
+    'The EU widened sanctions on Russian semiconductor imports',
+    'The Biden administration rescinded the previous AI guidance',
+    'Regulators propose new rules for AI data center disclosure',
+    'The commerce ministry lifted restrictions on foreign cloud providers',
+  ].every(s => p.re.test(s));
+})(), 'treasury/trump/SEC/EU/regulators/ministry 主体 + propose/issue/approve/pass/lift/impose/widen/rescind 动词 + rules/measures/controls/sanctions/law/guidance 工具都要命中');
+
+// ── 组 3：精度回归（v3.0.0c 教训：漏报比误报诚实）──
+// 4. Fed/ECB 货币政策公告、学术论文、宏观看价句、官员言论（v3.7 已决议
+//    不进库）、厂商自述、股价反应、其它形态库句式、boilerplate 一律不得
+//    命中。含 live 池原句与已知边界句式。
+c38('精度回归：Fed/ECB 公告与官员言论厂商自述不误命中', (() => {
+  const { COMMERCIAL_CLAIM_PATTERNS } = require('./human-future/scripts/commercial-discriminator.js');
+  const p = COMMERCIAL_CLAIM_PATTERNS.find(x => x.id === 'regulatory-action');
+  if (!p) return false;
+  return [
+    // Fed/ECB 货币政策公告（v3.0.0c 精度门：整类不进辨别；主体库不含 Fed/ECB）
+    'Federal Reserve issues FOMC statement',
+    'Minutes of the Federal Open Market Committee, September 15-16, 2026',
+    "Minutes of the Board's discount rate meetings on August 17, September 9, and September 16, 2026",
+    'Federal Reserve Board and Federal Open Market Committee release economic projections from the September 15-16 FOMC meeting',
+    'Federal Reserve announces the leadership and objectives of its task forces to advance the conduct of monetary policy',
+    'ECB Consumer Expectations Survey results – September 2026',
+    'Piero Cipollone: Interview with Milano Finanza',
+    'Christine Lagarde: IMFC Statement',
+    'Results of the September 2026 survey on credit terms and conditions in euro-denominated securities financing and OTC derivatives markets',
+    // 学术/宏观（live 池原句）
+    'Export Controls and the Economics of National Security -- by Jingting Fan, Kyle Handley, Nuno Limão',
+    'The Net Present Value of the California Billionaire Tax Act -- by Benjamin Jaros, Joshua Rauh',
+    'A Model of U.S. Monetary Policy and the Global Financial Cycle -- by Rohan Kekre, Moritz Lenel',
+    'Front Month Brent Futures near 2022 Peak Level',
+    'Jet Fuel Prices Up',
+    'The Cost of Living and Wages',
+    // 官员/专家言论（v3.7 已决议：言论不是市场分析头衔主张；said/says 不在规制动词表）
+    'Trump says tariffs will raise revenue',
+    'The Fed chair said inflation remains elevated',
+    'Analysts at the Fed expect two more cuts this year',
+    // 厂商自述（vendor-selfreport 地盘）
+    'OpenAI says it will no longer train its AI models on the live internet, citing significant risks',
+    'NVIDIA CEO says demand remains strong',
+    // 股价反应（v3.2/v3.3 已决议：可核验市场价格事实非待辨别主张）
+    'Instacart Shares Rally 10% After The Information Reports Sale Talks',
+    // 其它形态库句式不串台
+    'DeepSeek Raises Nearly $16 billion in Second Funding Round',
+    'AWS Largely Sold Out Of Capacity Into 2028, Jassy Says',
+    'VC Firms Tap LP Pools, Warehouse Loans for Speedy AI Cash',
+    'Data Center Late Fees Hit $5 Million or More Per Day, Spawning New Insurance',
+    'Instacart Is Exploring a Sale',
+    "AI delivers 'zero financial payoff' to most companies, Apollo economist says",
+    'Anthropic\u2019s Margin is OpenAI\u2019s Opportunity',
+    'A Neocloud\u2019s Gathering Storm',
+    // boilerplate
+    'LWiAI Podcast #258 - Opus 5.5, Sol and Luna, Muse, DeepSeek-V4.1-Flash, Xi',
+    'Get your pass and bring someone with you at 50% off. REGISTER NOW.',
+  ].every(s => !p.re.test(s));
+})(), 'Fed/ECB 公告、学术论文、宏观句、官员言论、厂商自述、股价反应、播客 boilerplate 都不得命中');
+
+// ── 组 4：端到端（事件型豁免 + 证据等级分流 + 引擎门 + 报告 + cron 注入）──
+// 5. no-quantity 事件型豁免：监管行动标题-only 不再判「不可证伪」，但推理
+//    三要素仍独立计分（0/3 不会因豁免抬成 well-formed）。摘除豁免 → 失败。
+c38('事件型豁免：监管行动不因无数字判不可证伪', (() => {
+  const { discriminateCommercial } = require('./human-future/scripts/commercial-discriminator.js');
+  const r = discriminateCommercial({
+    text: 'Regulators propose new rules for AI data center disclosure.',
+  });
+  return r.kind === 'regulatory-action'
+    && r.falsifiability.problems.length === 0
+    && r.verdict !== 'unfalsifiable'
+    // 豁免只摘 no-quantity，不碰推理分：0/3 仍是 thin-reasoning/weak-evidence 档
+    && r.reasoning.score <= 1;
+})(), '监管行动主张不得因「无量化」判不可证伪（证伪靠事件不靠基数），但推理分不因豁免虚抬');
+
+// 6. 证据等级分流：机构一手规则文书归公开财报/公告(3)；官员个人转述、
+//    厂商自述、Fed chair said 都不抬级（v3.0.0c 独立验证判据不回归）。
+c38('证据等级：机构规则文书归公开财报(3)且官员/厂商不抬级', (() => {
+  const { discriminateCommercial } = require('./human-future/scripts/commercial-discriminator.js');
+  const r1 = discriminateCommercial({
+    text: 'The U.S. Treasury Department proposed a rule Thursday to crack down on American '
+      + 'high-tech investments such as supercomputing and artificial intelligence in China.',
+  });
+  const r2 = discriminateCommercial({
+    text: 'Trump lifts restrictions on Anthropic, Anthropic launches Claude Sonnet 5, and more!',
+  });
+  const r3 = discriminateCommercial({ text: 'OpenAI says it expects revenue to double next year.' });
+  const r4 = discriminateCommercial({ text: 'The Fed chair said inflation remains elevated.' });
+  return r1.evidence.id === 'public-filing' && r1.evidence.weight === 3
+    && r2.evidence.weight <= 2            // 官员个人 + 简报转述：保守归媒体/无出处档
+    && r3.evidence.weight <= 2            // 厂商自述不得被机构标记抬级
+    && r4.evidence.weight <= 2;           // Fed chair said 不抬级
+})(), 'Treasury proposed a rule 归公开财报/公告(3)，Trump lifts/OpenAI says/Fed chair said 不抬级');
+
+// 7. 引擎候选门放行 Treasury 条目并辨别；formatReport 渲染监管行动标签。
+//    摘除报告 KIND_CN → 失败；摘除模式 → available=false，失败。
+c38('端到端：Treasury 主张进商业辨别段并渲染', (() => {
+  const { ProjectionEngine, formatReport } = require('./scripts/project-future.js');
+  const item = { title: 'U.S. Treasury Proposes to Widen Outbound Investment Restrictions for China and Other Countries',
+    description: '', body: '', source: 'The Information', bucket: 'business',
+    pubDate: 'Fri, 23 Oct 2026 08:29:36 GMT', domains: ['compliance_demand'],
+    link: 'https://theinformation.com/treasury-outbound', origin: 'live' };
+  const inst = new ProjectionEngine({});
+  inst.signals = { totalItems: 1, domains: [], undomained: 0, dateRange: null, items: [item] };
+  const cd = inst.buildCommercialDiscrimination();
+  const md = formatReport(new ProjectionEngine({ newsData: { business: { news: [item] } } }).generate());
+  const seg = md.split('## 商业主张辨别')[1] || '';
+  return cd.available === true && cd.audited === 1
+    && cd.results[0].kind === 'regulatory-action'
+    // 主张句从 Treasury 起（句切分在 "U.S." 句点后断开，v2.13 时期同型
+    // 行为——门仍正确定位到命中句，断言按渲染出的主张句写）
+    && seg.includes('Treasury Proposes to Widen Outbound Investment Restrictions')
+    // 必须认「渲染出来的类型标签行」而不是段里任意出现该字符串——note 文本
+    // 里也有「监管行动」，泛匹配会让断言空转（v3.2 反向验证实测）。
+    && seg.includes('类型: 监管行动 | 来源: The Information')
+    && seg.includes('证伪条件:');
+})(), 'Treasury 条目必须进商业辨别段，报告渲染监管行动标签与证伪条件');
+
+// 8. cron 注入脚本 KIND_CN 认识 regulatory-action（端到端最后一环：agent
+//    看得见中文标签）。摘除注入脚本 KIND_CN 的 regulatory-action 行 → 失败。
+c38('cron 注入脚本渲染监管行动标签', (() => {
+  const p = require('path').join(require('os').homedir(), '.hermes/scripts/hf-cron-fetch.sh');
+  if (!require('fs').existsSync(p)) return false;
+  const src = require('fs').readFileSync(p, 'utf-8');
+  return /'regulatory-action': '监管行动'/.test(src);
+})(), '注入脚本 KIND_CN 必须含 regulatory-action，否则 agent 看到英文 kind');
+
+// 9. 精度门没被新模式打穿：Fed 公告/播客仍不进辨别（新模式写得过宽就会
+//    漏进来——主体库含 president/trump/government 等宽词，重点盯这条）。
+c38('精度门未破：非主张文本仍被挡在辨别外', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const noise = [
+    { title: 'Minutes of the Federal Open Market Committee',
+      description: 'Participants noted that financial market conditions had eased.',
+      body: '', source: 'Federal Reserve (Monetary)', bucket: 'economy',
+      pubDate: 'Tue, 13 Oct 2026 00:44:16 GMT', domains: ['economy_labor'],
+      link: 'https://federalreserve.gov/a', origin: 'live' },
+    { title: 'Federal Reserve issues FOMC statement',
+      description: 'The Committee decided to maintain the target range for the federal funds rate.',
+      body: '', source: 'Federal Reserve (Monetary)', bucket: 'economy',
+      pubDate: 'Tue, 13 Oct 2026 00:44:16 GMT', domains: ['economy_labor'],
+      link: 'https://federalreserve.gov/b', origin: 'live' },
+    { title: 'LWiAI Podcast #252 - GPT 5.6, Grok 4.5, Nemotron-Labs-Diffusion, AI 2040',
+      description: "GPT-5.6 and Grok 4.5, Meta's Muse Spark 1.1, regulatory developments in AI and data centers, interpretability research from Anthropic, and the future of AI policy with AI 2040",
+      body: '', source: 'Last Week in AI', bucket: 'business',
+      pubDate: 'Tue, 13 Oct 2026 00:44:16 GMT', domains: ['capital_flow'],
+      link: 'https://lastweekin.ai/b', origin: 'live' },
+    { title: 'Trump says tariffs will raise revenue for the government',
+      description: 'The president commented on trade policy during a rally speech.',
+      body: '', source: 'TechCrunch AI', bucket: 'business',
+      pubDate: 'Tue, 13 Oct 2026 00:44:16 GMT', domains: ['market_claims'],
+      link: 'https://techcrunch.com/e', origin: 'live' },
+  ];
+  const inst = new ProjectionEngine({});
+  inst.signals = { totalItems: noise.length, domains: [], undomained: 0, dateRange: null, items: noise };
+  const r = inst.buildCommercialDiscrimination();
+  return r.available === false && /未抽到命中商业主张形态/.test(r.reason || '');
+})(), 'Fed 公告/播客/官员言论不得因 regulatory-action 新模式进入辨别');
+
+// ── 组 5：版本号一致性（corr-2026-014 同型）────────────────────
+c38('版本号一致性：VERSION/package.json/banner 对齐 3.8.0', (() => {
+  const fs2 = require('fs');
+  const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
+  const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
+  const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
+  return VERSION === '3.8.0'
+    && /3\.8\.0/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.8.0');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.8.0，防 corr-2026-014 版本漂移复发');
+
+// ── v3.8 汇总 ──
+(async () => {
+  const results = await Promise.all(v38.map(c => Promise.resolve(c.ok)));
+  let f = 0;
+  v38.forEach((c, i) => {
+    const ok = results[i];
+    if (!ok) f++;
+    console.log(`${ok ? '\u2713' : '\u2717'} ${c.name}${ok ? '' : '  —— ' + c.detail}`);
+  });
+  console.log(`\nv3.8: ${v38.length - f} 通过, ${f} 失败, 共 ${v38.length} 个`);
+  if (f > 0) {
+    console.log('结论：监管行动主张的接入不完整（命中/证伪/召回/精度/端到端/版本有缺）。');
+    process.exitCode = 1;
+  } else {
+    console.log('结论：监管行动主张已进模式库（live 实证 2 条命中），报告与 cron 注入渲染中文标签，精度回归通过。');
   }
 })();

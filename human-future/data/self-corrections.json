@@ -267,6 +267,15 @@
       "evidence": "round 6 摘除 expert 动词分支后 Apollo 句仍 third-party-survey(3)（0 失败=断言空转）；逐支测试定位 poll 子串命中；修复后摘除动词分支正确掉到 no-source(1)，round 6 精确失败 2 条；round 7 恢复无边界精确失败 1 条。npm test 267 项 0 失败。",
       "lesson": "「该分支没有触发机会」不等于「该分支是对的」——精度缺陷可以沉睡多个版本，直到新维度把含缺陷关键词的条目放行才暴露。每一轮扩模式库后，要顺带对被放行的新文本跑一遍证据等级/推理判据的逐支核对，不能只测新模式的命中与精度。",
       "date": "2026-10-26"
+    },
+    {
+      "id": "corr-2026-025",
+      "reportVersion": "v3.8.0",
+      "wrongClaim": "no-quantity 不可证伪判据对所有商业主张形态一视同仁——没有数字的主张都该判「不可证伪（无量化）」",
+      "rightClaim": "no-quantity 的判据（「很多企业在用」没有基数，任何结果都能被说成应验）只对**量化型主张**成立，对**事件型主张**是类别错位：「Treasury Proposes to Widen Outbound Investment Restrictions」要么能在 Federal Register 查到要么不能，证伪性靠可观测事件不靠基数。v3.8 给新维度 regulatory-action 加了 no-quantity 豁免（不豁免则报告对同一条主张同时打印「不可证伪: 无量化」与「证伪条件: 观察到最终规则…」两行自相矛盾的输出）。同型的 ma 事件型主张（v3.3 进库）至今仍被 no-quantity 命中判 unfalsifiable——v3.3 的 SKILL.md 还把「均判 不可证伪（无量化）」当成「不虚抬」的保守性写进文档。两类事件型表单证伪性判据不一致，是真实遗留缺陷。",
+      "evidence": "v3.8 实跑 discriminateCommercial：Treasury 标题-only 加豁免前 problems=[no-quantity]、verdict=unfalsifiable 且 decisionRelevant=false；豁免后 problems=[]、verdict=thin-reasoning（推理仍 0/3 不虚抬）、decisionRelevant=true。同期 smoke 实测「Instacart Is Exploring a Sale」仍 problems=[no-quantity]/unfalsifiable——两行自相矛盾输出在该条上复现。",
+      "lesson": "通用判据（不可证伪/推理/证据）落到新形态上时要先问「这个判据对这个形态的证伪结构成立吗」——事件型主张的证伪在事件不在数字。本轮只修新维度、登记旧维度，是因为旧维度的判定行为已文档化已测试，静默改动会改写历史记录；但不登记就是知情不报。",
+      "date": "2026-10-26"
     }
   ]
 }

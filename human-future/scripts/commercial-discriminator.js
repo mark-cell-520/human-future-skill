@@ -184,6 +184,37 @@ const COMMERCIAL_CLAIM_PATTERNS = [
   { id: 'expert-judgment',
     re: /(?:(?:(?:chief|senior|lead|market|investment|global|us|u\.s\.)\s+)?(?:economists?|analysts?|strategists?|investment\s+officers?|portfolio\s+managers?|fund\s+managers?|heads?\s+of\s+research|directors?\s+of\s+research)\s+(?:at|of|for|from)\s+(?!(?:the|a|an|of|its|his|her|their|our|this|that|some|many|most)\b)[A-Za-z][\w&.]*|(?:economists?|analysts?|strategists?)\s+(?:says?|said|warns?|warned|argues?|argued|believes?|believed|estimates?|estimated|sees?|saw|thinks?|notes?|noted|expects?|expected|predicts?|predicted|calls?|called|cautions?|cautioned|told|points?\s+out)|according\s+to\s+(?:a|an|the)\s+(?:[\w\s&.]{0,30}?\s+)?(?:economist|analyst|strategist))/i,
     kind: 'expert-judgment', label: '专家/机构判断主张' },
+  // ── 监管行动类 ──
+  // [v3.8] 2026-10-26 轮 live 实证的新漏检：The Information 简报「U.S.
+  // Treasury Proposes to Widen Outbound Investment Restrictions for China
+  // and Other Countries」（2026-10-23）与 LWiAI #251 简报内句「Trump lifts
+  // restrictions on Anthropic」——扩容前 17 种形态全部不命中，整条不进辨别。
+  // 合规域自 v3.0.0c 起只有 compliance-demand（「监管需求修辞」：regulators
+  // will require…），**真实规则事件**（提案/签发/加宽/解除限制）一条都看不
+  // 见——而规则事件才是合规需求域的一阶信号（跨境资本、出口管制、AI 监管
+  // 全部经由规则落地），且该形态有天然结算结构：提案 → 评论期 → 最终规则，
+  // 与引擎「辨别+跟踪结算」定位同构（本期 Treasury 提案评论期至 2026-12-07，
+  // AP/Reuters/Nikkei/The Hill 四家交叉验证其存在）。
+  // 精度设计（v3.0.0c/v3.2/v3.3/v3.6/v3.7 教训：漏报比误报诚实、没有实证
+  // 不扩模式）：
+  //   ① 必须「政府/监管主体 + 规制动词 + 规制工具名词」三段式且同句
+  //      （两段间隔都不含句读号 [^.!?]）——单独的 restrictions/tariffs
+  //      不是主张，主体缺位不是监管行动；
+  //   ② 主体只认政府/监管机构与官员（treasury/SEC/FTC/EU/regulators/
+  //      president…）——厂商动作（"OpenAI says…"）是 vendor-selfreport
+  //      地盘不抢；Fed/ECB 的货币政策公告（FOMC statement/minutes/
+  //      projections）不是规制行动，主体库不含 Fed/ECB（v3.0.0c 精度门）；
+  //   ③ 规制动词只认规则生命周期动作（propose/issue/sign/finalize/widen/
+  //      lift/ban…），不含 said/says/expect——官员言论是 v3.7 expert-
+  //      judgment 已决议不进库的形态，不重复收编。
+  // live 全池实测：312 条里精确命中 2 条（即上述两条），31 句精度回归
+  // 0 误报（Fed/ECB 公告/NBER 论文/宏观看价句/官员言论/厂商自述/股价
+  // 反应/播客 boilerplate/其它形态库句式全部不命中）。
+  // 已知边界（如实）：执法行动（fined/sued/charged，无工具名词）与
+  // 「SEC's new disclosure rules」类所有格形态无 live 实证不进库。
+  { id: 'regulatory-action',
+    re: /(?:\b(?:treasury|securities\s+and\s+exchange\s+commission|sec|federal\s+trade\s+commission|ftc|department\s+of\s+justice|doj|white\s+house|congress|senate|parliament|lawmakers?|legislators?|european\s+(?:commission|union|parliament)|\beu\b|brussels|regulators?|regulatory\s+(?:bodies|agencies|body|agency)|federal\s+(?:government|agency|regulators?)|state\s+(?:government|regulators?)|national\s+government|government|administration|ministry|ministers?|commerce\s+department|state\s+department|\bofac\b|\bbis\b|\bbeijing\b|president|\btrump\b|\bbiden\b|prime\s+minister|chancellor|governor|attorneys?\s+general)\b[^.!?]{0,40}?\b(?:proposes?|proposed|proposing|announces?|announced|issues?|issued|issuing|imposes?|imposed|signs?|signed|signing|enacts?|enacted|passes?|passed|finaliz\w+|finalis\w+|adopts?|adopted|approves?|approved|widen(?:s|ed)?|expand(?:s|ed)?|tighten(?:s|ed)?|loosen(?:s|ed)?|relax(?:es|ed|ing)?|eases?|eased|bans?|banned|blocked?|blocks?|struck\s+down|strikes\s+down|overturn\w+|rescind\w+|vetoes?|vetoed|delay\w+|fine[sd]?|penali[sz]\w+|sues?|sued|suing|investigat\w+|subpoena\w+|orders?|ordered|mandate[sd]?|curbs?|clamp\w*|cracks?\s+down|cracked\s+down|lifts?|lifted|unveils?|unveiled|publishes?|published|releases?|released)\b[^.!?]{0,40}?\b(?:rules?|regulations?|restrictions?|curbs?|limits?|caps?|bans?|tariffs?|sanctions?|export\s+controls?|requirements?|legislation|laws?|bills?|executive\s+orders?|frameworks?|guidance|orders?|mandates?|directives?|statutes?|acts?|measures?)\b)/i,
+    kind: 'regulatory-action', label: '监管行动主张' },
   // ── 合规类 ──
   { id: 'compliance-demand', re: /(compliance|regulatory|regulators?|auditors?|liability)\s+(will|could|would|to|is going to)?\s*(require|demand|force|mandate|drive|create|spur|fuel)/i,
     kind: 'compliance', label: '合规需求主张' },
@@ -237,7 +268,17 @@ const UNFALSIFIABLE_COMMERCIAL_PATTERNS = [
       // [v3.0.0] 补 announcement(s)/statement(s)：实测融资句
       // "according to a company announcement" 因只认 announced 而漏配，
       // 证据等级掉到「无出处(1)」，融资事实被判成 weak-evidence。
-    test: (t) => /(earnings|quarterly results|filing|10-[kq]|sec filing|annual report|press release|announced|announcement|statement|disclosed|confirmation|confirmed)/i.test(t) },
+      // [v3.8] 补政府机构一手文书标记（federal register/proposed rule/
+      // final rule + 机构名 + 发文动词）：监管行动主张的证据基础就是政府
+      // 自己的规则文书（与 v3.0.0c「according to a company announcement
+      // 归公开财报档」同型）——不扩的话每条监管行动主张都会被判「无出处(1)」，
+      // 而它的证据等级恰是该形态能拿到的最强一档。只认**机构**主体
+      // （treasury/SEC/White House/administration…），不认个人官员
+      // （Trump/Biden 个人署名的行动经媒体转述时保守归媒体档，防 newsletter
+      // roundup 借官员名字抬级）；Fed/ECB 的货币政策公告不适用（主体不含
+      // Fed/ECB，且其动词 said 不在标记动词表——"The Fed chair said" 仍是
+      // 无出处档，v3.0.0c 的独立验证判据教训不回归）。
+    test: (t) => /(earnings|quarterly results|filing|10-[kq]|sec filing|annual report|press release|announced|announcement|statement|disclosed|confirmation|confirmed|federal register|proposed rule|final rule|(?:treasury|securities and exchange commission|\bsec\b|federal trade commission|\bftc\b|department of justice|\bdoj\b|white house|european commission|\beu\b|commerce department|state department|\bofac\b|regulators?|government|administration|\bbeijing\b)\s+(?:department\s+)?(?:proposes?|proposed|proposing|announces?|announced|issues?|issued|issuing|imposes?|imposed|signs?|signed|enacts?|enacted|passes?|passed|finaliz\w+|finalis\w+|adopts?|adopted|approves?|approved|widen(?:s|ed)?|expand(?:s|ed)?|tighten(?:s|ed)?|loosen(?:s|ed)?|relax(?:es|ed|ing)?|eases?|eased|bans?|banned|blocked?|blocks?|struck\s+down|overturn\w+|rescind\w+|vetoes?|vetoed|lifts?|lifted|unveils?|unveiled|publishes?|published|releases?|released|said|says))/i.test(t) },
   { id: 'vendor-selfreport', label: '厂商自述', weight: 2,
     test: (t) => /(we|our|the company)\s+(expect|believe|estimate|project|anticipate|aim|plan|target)/i.test(t) },
   { id: 'media-report', label: '媒体报道', weight: 2,
@@ -278,6 +319,23 @@ function discriminateCommercial(claim, opts = {}) {
     try {
       if (p.test(text)) problems.push({ id: p.id, label: p.label, guidance: p.guidance });
     } catch (_) { /* 同上 */ }
+  }
+
+  // [v3.8] 事件型主张的 no-quantity 豁免：监管行动的证伪性靠「规则是否
+  // 落地/范围是否相符」这个可观测事件，不靠量化基数——no-quantity 的判据
+  // （「很多企业在用」没有基数，任何结果都能被说成应验）对事件型形态是
+  // 类别错位：`Treasury Proposes to Widen Outbound Investment Restrictions`
+  // 要么能在 Federal Register 查到要么不能，与有没有数字无关。不豁免的
+  // 后果是报告对同一条主张同时打印「不可证伪: 无量化」与「证伪条件: 观察
+  // 到最终规则…」两行自相矛盾的输出。豁免范围从严：只摘 no-quantity，
+  // 无主体/趋势修辞/无出处三类问题保留；推理三要素仍独立计分（0/3 仍判
+  // thin-reasoning，不因豁免抬成 well-formed）；ma 事件型表单证伪性判据
+  // 同型不一致（仍被 no-quantity 命中）登记 corr-2026-025，下轮统一，
+  // 本轮不改旧维度已文档化已测试的判定行为。
+  if (matchedPatterns.some(p => p.kind === 'regulatory-action')) {
+    for (let i = problems.length - 1; i >= 0; i--) {
+      if (problems[i].id === 'no-quantity') problems.splice(i, 1);
+    }
   }
 
   // 3. 证据等级
@@ -369,6 +427,11 @@ function buildFalsification(patterns, text) {
     // [v3.7] 专家/机构判断主张的证伪路径：判断类主张最常见的裂缝是
     // 「时点后的实际数据不支持」「机构自身后续修订」「同业同口径反证」。
     'expert-judgment': '观察到主张时点后的实际数据、第三方调查或该机构自身的后续修订与判断不符，或同业机构在同口径下提出反证',
+    // [v3.8] 监管行动主张的证伪路径：规则类主张最常见的裂缝是「最终文本
+    // 与提案情形不符」「规则没落地（被 rescind/struck down/无限期推迟）」
+    // 「评论期后正式文本显著收窄」。Treasury 2026-10-22 提案的评论期
+    // 2026-12-07 截止，最终规则即结算点。
+    'regulatory-action': '观察到最终规则或立法的范围与主张情形不符（未涵盖主张的部门或交易类型）、规则未生效即被 rescind/struck down/无限期推迟，或评论期后的正式文本显著收窄',
     'unclassified': '无明确证伪路径——这本身就是问题',
   };
   return FALSIFICATION_BY_KIND[kind] || FALSIFICATION_BY_KIND.unclassified;
@@ -385,6 +448,8 @@ function inferCommercialCategory(text, patterns) {
       capacity: 'market_claims',
       // [v3.7] 专家/机构判断是关于市场状况的主张，归市场主张域
       'expert-judgment': 'market_claims',
+      // [v3.8] 监管行动是合规需求域最具体的 instantiation，归合规需求域
+      'regulatory-action': 'compliance_demand',
       // [v3.3] 交易过程是资本事件，归资本与商业模式域
       ma: 'capital_flow',
       funding: 'capital_flow', valuation: 'capital_flow', 'capital-signal': 'capital_flow',

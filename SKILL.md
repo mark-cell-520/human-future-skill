@@ -1,9 +1,45 @@
 ---
 name: human-future-v2
-title: "人类未来 · 文明推演引擎 v3.7.0"
-version: "3.7.0"
+title: "人类未来 · 文明推演引擎 v3.8.0"
+version: "3.8.0"
 description: |-
-  人类未来技能 v3.7.0 — 商业主张辨别器新增「专家/机构判断主张」形态（新辨别维度）：
+  人类未来技能 v3.8.0 — 商业主张辨别器新增「监管行动主张」形态（新辨别维度）：
+  live 实证 The Information「U.S. Treasury Proposes to Widen Outbound Investment
+  Restrictions for China and Other Countries」（2026-10-23，AP/Reuters/Nikkei/
+  The Hill 四家交叉验证：10-22 提案、评论期至 12-07、覆盖 AI/超算/生物技术/
+  高超音速）与 LWiAI #251 简报内句「Trump lifts restrictions on Anthropic」
+  （2026-06-30 白宫解除 Anthropic 模型出口管制的简报转述）——扩容前 17 种形态
+  全部不命中、整条不进辨别。合规域自 v3.0.0c 起只有 compliance-demand（「监管
+  需求修辞」：regulators will require…），真实规则事件（提案/签发/加宽/解除
+  限制）一条都看不见——而规则事件才是合规需求域的一阶信号（跨境资本/出口管制/
+  AI 监管全经由规则落地），且有天然结算结构：提案 → 评论期 → 最终规则。新 kind
+  regulatory-action：必须「政府/监管主体 + 规制动词 + 规制工具名词」三段式同句
+  共现（两段间隔都不含句读号）；主体只认政府/监管机构与官员（Fed/ECB 的货币
+  政策公告主体库不含——v3.0.0c 精度门不打穿）；规制动词只认规则生命周期动作
+  （propose/issue/sign/finalize/widen/lift/ban…），不含 said/says/expect——
+  官员言论是 v3.7 expert-judgment 已决议不进库的形态，不重复收编。专属证伪路径
+  （最终规则范围不符/被 rescind/struck down/无限期推迟/评论期后正式文本收窄）；
+  类目 compliance_demand（fallback；live 条目 category 取信号域，与 v3.3/v3.6/
+  v3.7 同型）；报告与 cron 注入标签「监管行动」。证据等级同轮扩展：public-filing
+  增加政府机构一手文书标记（federal register/proposed rule/final rule + 机构名 +
+  发文动词）——机构规则文书是该形态能拿到的最强证据档（与 v3.0.0c「according
+  to a company announcement 归公开财报档」同型）；官员个人转述、厂商自述、
+  Fed chair said 都不抬级。事件型 no-quantity 豁免：监管行动的证伪靠「规则
+  是否落地」的可观测事件不靠量化基数（否则报告对同一条主张同时打印「不可证伪」
+  与「证伪条件」两行自相矛盾的输出）；只摘 no-quantity，推理三要素仍独立计分
+  （0/3 不虚抬成 well-formed）。精度按 v3.0.0c/v3.2/v3.3/v3.6/v3.7 纪律（漏报
+  比误报诚实）：全池 312 条 live 实测精确命中 2 条（即该两条），31 句精度回归
+  0 误报（Fed/ECB 公告/NBER 论文/宏观看价句/官员言论/厂商自述/股价反应/播客
+  boilerplate/其它形态库句式全部不命中）；已知边界如实记录：执法行动
+  （fined/sued/charged，无工具名词）与「SEC's new disclosure rules」类所有格
+  形态无 live 实证不进库。live 端到端：商业辨别段 8→10 条，byKind 新增
+  regulatory-action:2——Treasury 条判 推理单薄/公开财报/公告(3)/推理 0/3、
+  decisionRelevant（机构一手规则文书，一级监管信号）；LWiAI 条判 证据不足/
+  无出处(1)/推理 0/3、不虚抬（官员个人行动经简报转述，不借名字抬级）。
+  hf-cron-fetch.sh 注入段 agent 可见「类型: 监管行动」。测试 267→278 项；
+  同轮登记 corr-2026-025（ma 事件型主张仍被 no-quantity 误判 unfalsifiable，
+  与 v3.8 豁免不一致——旧维度行为已文档化已测试，本轮不改只登记，下轮统一）。
+  7 轮反向验证全部精确失败。历史：v3.7 — 商业主张辨别器新增「专家/机构判断主张」形态（新辨别维度）：
 live 实证 TechCrunch AI「AI delivers 'zero financial payoff' to most companies,
 Apollo economist says」（2026-10-25）扩容前 16 种形态全部不命中、整条不进辨别——
 第三方经济/市场专家对市场现状的量化判断（Apollo 首席经济学家论 AI 企业 ROI、
@@ -325,11 +361,17 @@ poll 分支没有触发机会；v3.7 放行 Apollo economist 条目后，round 6
 
 ---
 
-## 当前状态（v3.7.0 实测）
+## 当前状态（v3.8.0 实测）
 
 以下数字全部来自 2026-10-25/26 的 `FETCH=1 FETCH_BODY=1 node scripts/run-pipeline.js` 实跑
-（v3.7.0 轮：pipeline exit 0、312 条 live 信号（business 48 + economy 46 +
-frontier_models 142 + sec_filings 42 + tech 22 + humanities 12）、商业辨别段 7→8 条
+（v3.8.0 轮：pipeline exit 0、312 条 live 信号（business 48 + economy 46 +
+frontier_models 142 + sec_filings 42 + tech 22 + humanities 12）、商业辨别段 8→10 条
+含新维度监管行动 2 条（byKind 新增 regulatory-action:2——Treasury 提案条判
+推理单薄/公开财报/公告(3)/推理 0/3、decisionRelevant；LWiAI 简报内句判
+证据不足/无出处(1)/推理 0/3、不虚抬，hf-cron-fetch.sh 注入段 agent 可见
+「类型: 监管行动」；该轮 byKind 全量 expert-judgment:1 / regulatory-action:2 /
+ma:2 / adoption:1 / valuation:1 / cost-signal:1 / capacity:1 / funding:1）；
+v3.7.0 轮：商业辨别段 7→8 条
 含新维度专家/机构判断 1 条（byKind 新增 expert-judgment:1，该条判 推理单薄/
 第三方调查(3)/推理 0-1/3，decisionRelevant，hf-cron-fetch.sh 注入段 agent 可见
 「类型: 专家/机构判断」）；v3.6.0 轮：商业辨别段 6→7 条含新维度成本/价格信号 1 条；
@@ -474,7 +516,11 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   判 推理单薄/第三方调查(3)/推理 0-1/3，有描述不虚抬但推理要素确实缺，
   decisionRelevant；live 文本窗口被 TechCrunch 正文促销内容占用（ Despite 句
   未进窗口→推理 0/3），与测试夹具 1/3 的差异如实记录）/
-  自我修正登记簿 ✅（23 条修正：critical 4 / high 12 / medium 7；v3.3.1 登记
+  v3.8 新增监管行动形态后含 Treasury 规则提案与 LWiAI 简报内句两条——扩容前
+  17 种形态全部不命中、整条不进辨别；Treasury 条判 推理单薄/公开财报/公告(3)/
+  推理 0/3、decisionRelevant（机构一手规则文书），LWiAI 条判 证据不足/无出处(1)/
+  推理 0/3、不虚抬（官员个人行动经简报转述不借名字抬级））/
+  自我修正登记簿 ✅（24 条修正：critical 4 / high 12 / medium 8；v3.3.1 登记
   corr-2026-014（版本号漂移：projection meta 停 3.2.2/package.json 停 3.2.1，
   四处对齐+一致性断言）与 corr-2026-015（survey-finding 误报+三处播客夹具
   空转）；v3.3 登记
@@ -485,7 +531,11 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   口径错位检测 7 条误报 + 第五次同型断链；v3.7 登记 corr-2026-024：
   third-party-survey 的 (survey|poll|census) 无 \b 词边界——"Apollo" 含
   "poll" 子串被当成民调证据（无边界子串同型缺陷第三次实证），沉睡四个补丁轮
-  直到新维度放行含 Apollo 条目才暴露）
+  直到新维度放行含 Apollo 条目才暴露）；v3.8 登记 corr-2026-025：
+  no-quantity 不可证伪判据对事件型主张是类别错位（"Treasury Proposes to
+  Widen Outbound Investment Restrictions" 的证伪靠规则是否落地不靠基数），
+  v3.8 给 regulatory-action 加豁免、ma 同型不一致留待下轮统一（旧维度行为
+  已文档化已测试，本轮不改只登记）
   [v3.2.1] 预测校准与台账状态 ✅（ledgerStatus + formulaAssessment 进 cron 注入第
   8.5 段：Brier/兑现率/待结算/逾期 + 贝叶斯 posterior/折扣/风险，三条口径限定；
   端到端实测 Brier 0.3025/样本 1/待结算 2，公式段与台账段样本一致）
@@ -731,6 +781,58 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
 - 版本号理由：新辨别维度（新 kind + 专属证伪路径 + 端到端标签 + 证据等级
   扩展），用户可感知（报告「商业主张辨别」段首次出现「类型: 专家/机构判断」行）。
 
+**[v3.8] 监管行动主张（regulatory-action，新辨别维度）**
+- 定位：合规域自 v3.0.0c 起只有 compliance-demand（「监管需求修辞」：
+  regulators will require…），**真实规则事件**（提案/签发/加宽/解除限制）
+  一条都看不见——而规则事件才是合规需求域的一阶信号（跨境资本、出口管制、
+  AI 监管全部经由规则落地）。2026-10-26 轮 live 实证两条：The Information
+  简报「U.S. Treasury Proposes to Widen Outbound Investment Restrictions for
+  China and Other Countries」（2026-10-23；AP/Reuters/Nikkei/The Hill 四家
+  交叉验证：10-22 提案、评论期至 12-07、落实 2025-12 立法、覆盖 AI/超算/
+  生物技术/高超音速、$50,000 以上投资口径）与 LWiAI #251 简报内句「Trump
+  lifts restrictions on Anthropic」（2026-06-30 白宫解除 Anthropic 模型
+  出口管制的简报转述）——扩容前 17 种形态全部不命中，整条不进辨别。且该
+  形态有天然结算结构：提案 → 评论期 → 最终规则，与引擎「辨别+跟踪结算」
+  定位同构。
+- 形态族：① 政府/监管主体（treasury/SEC/FTC/DOJ/White House/Congress/EU/
+  regulators/ministry/beijing/president/trump/…，**Fed/ECB 不含**——货币
+  政策公告不是规制行动，v3.0.0c 精度门不打穿）；② 规制动词（propose/
+  announce/issue/impose/sign/enact/pass/finalize/adopt/approve/widen/
+  expand/tighten/loosen/relax/ease/ban/block/strike down/overturn/rescind/
+  veto/delay/fine/penalize/sue/investigate/subpoena/order/mandate/curb/
+  clamp/crack down/lift/unveil/publish/release）；③ 规制工具名词（rules/
+  regulations/restrictions/curbs/limits/caps/bans/tariffs/sanctions/export
+  controls/requirements/legislation/laws/bills/executive orders/frameworks/
+  guidance/orders/mandates/directives/statutes/acts/measures）。三段式同句
+  共现，两段间隔都不含句读号（[^.!?]{0,40}）。
+- 精度设计（v3.0.0c/v3.2/v3.3/v3.6/v3.7 教训：漏报比误报诚实、没有实证不扩
+  模式）：① 主体缺位不是监管行动（"OpenAI says…" 是 vendor-selfreport
+  地盘）；② 规制动词不含 said/says/expect——官员言论是 v3.7 expert-
+  judgment 已决议不进库的形态，不重复收编（"Trump says tariffs will raise
+  revenue" 不命中）；③ Fed/ECB 公告（FOMC statement/minutes/projections）
+  主体库不含。全池 312 条 live 实测精确命中 2 条（即上述两条），31 句精度
+  回归 0 误报（Fed/ECB 公告/NBER 论文/宏观看价句/官员言论/厂商自述/股价
+  反应/播客 boilerplate/其它形态库句式全部不命中）。
+- 判别结果（live 实测）：Treasury 条判 推理单薄 / 公开财报/公告(3) / 推理
+  0/3、decisionRelevant——证据档同轮扩展（public-filing 增加政府机构一手
+  文书标记：federal register/proposed rule/final rule + 机构名 + 发文动词，
+  与 v3.0.0c「according to a company announcement 归公开财报档」同型；
+  官员个人转述/厂商自述/Fed chair said 都不抬级）；LWiAI 条判 证据不足 /
+  无出处(1) / 推理 0/3、不虚抬。
+- 同轮维护（不单独涨号）：事件型 no-quantity 豁免——监管行动的证伪靠
+  「规则是否落地/范围是否相符」的可观测事件，不靠量化基数；不豁免则报告
+  对同一条主张同时打印「不可证伪: 无量化」与「证伪条件: 观察到最终规则…」
+  两行自相矛盾的输出。豁免只摘 no-quantity（无主体/趋势修辞/无出处保留），
+  推理三要素仍独立计分（0/3 不虚抬成 well-formed）。ma 事件型主张同型不
+  一致登记 corr-2026-025 下轮统一。
+- 端到端：引擎候选门（isClaimForm 用同一个模式库）→ discriminateCommercial
+  → formatReport KIND_CN「监管行动」→ cron 注入第 6 段同标签。live 实测
+  商业辨别段 8→10 条，byKind 新增 regulatory-action:2。
+- 仍在库外的监管句式：执法行动（fined/sued/charged，无工具名词——AP 原文
+  "Treasury issued a $200,000 fine against a U.S.-based company" 因无工具
+  名词不命中，如实记录为漏报）、「SEC's new disclosure rules」类所有格形态、
+  州层立法主体（california 等）——等有 live 实证再扩。
+
 **自我修正登记簿层（v3.1 接入的 0 调用模块）**
 - 定位：这是接入，不是新写。self-correction-ledger.js 自 v2.4 存在，
   `human-future/data/self-corrections.json` 有 14 条真实修正（绕月≠登月、
@@ -815,7 +917,7 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   `p.category`，分支永不激活）并加上同义务去重；样本随台账积累自然
   增长，不需要再改代码。
 
-**商业主张辨别的已知边界（v3.0.0c 如实声明，v3.7 更新）**：
+**商业主张辨别的已知边界（v3.0.0c 如实声明，v3.8 更新）**：
 - 模式库外的真实主张句式仍会漏：v3.2 起 "AWS Largely Sold Out Of Capacity
   Into 2028"（产能主张）已进模式库（capacity-claim，含售罄/耗尽/分配殆尽/
   短缺/需求超供给形态族）；v3.3 起 "Instacart Is Exploring a Sale" 与
@@ -827,11 +929,18 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   v3.7 起 "AI delivers 'zero financial payoff' to most companies, Apollo
   economist says"（专家/机构判断主张）已进模式库（expert-judgment，经济/市场
   分析头衔+判断动词或+机构）；
+  v3.8 起 "U.S. Treasury Proposes to Widen Outbound Investment Restrictions
+  for China and Other Countries"（监管行动主张）已进模式库（regulatory-
+  action，政府/监管主体+规制动词+规制工具名词三段式同句共现；Fed/ECB 主体
+  库不含）；
   仍在库外的有 "Instacart Shares Rally 10%"（市场反应——可核验的市场价格
   事实，非待辨别主张）、ProductHunt 产品发布（产品公告非市场主张）、
   "Late fees for delayed GPU deliveries exceed $2M"（名词后接长修饰语，
   v3.6 实测放宽间隔会误命中 2 句，保持相邻收紧）、rates/tariffs 等宏观
-  看价名词（无 live 实证不进库）。
+  看价名词（无 live 实证不进库）、监管执法行动（"Treasury issued a
+  $200,000 fine against a U.S.-based company"——无工具名词，v3.8 实测
+  漏报如实记录）、「SEC's new disclosure rules」类所有格形态、州层立法
+  主体（california 等）（均无 live 实证不进库）。
   漏掉比把 Fed 公告当商业主张诚实，但覆盖率是真实缺口——扩模式库须逐条配测试。
 - 站点导航/页脚 boilerplate：v3.0.0c 轮起漏网（EconBrowser 导航文本因句内含
   "analysis of" 命中调查研究形态），[v3.2 复测] 同型漏网仍在（EconBrowser 导航
@@ -848,7 +957,7 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   引擎不代劳——这是心虫铁律，不是能力缺失。
 
 **测试**
-- `npm test`：**267 项断言**（实测各 section 汇总；v3.4 的 230 + v3.5 新增 11 + v3.5.1 新增 9 + v3.6 新增 8 + v3.7 新增 9：
+- `npm test`：**278 项断言**（实测各 section 汇总；v3.4 的 230 + v3.5 新增 11 + v3.5.1 新增 9 + v3.6 新增 8 + v3.7 新增 9 + v3.8 新增 11：
   2 项纯结算函数（settleGuidance 单位感知容差：相对/绝对/bps/百分点/区间/无容差
   跳过，含区分相对vs绝对的边界用例 / normalizeMetric+parseMetricValue 单位解析）+
   3 项实际值抽取（extractActuals 营收+毛利率+标题期间 / GAAP/非GAAP 不同值抽出
@@ -931,6 +1040,38 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   expert 动词分支→2（第一版 round 6 报 0 失败——"Apollo" 的 poll 子串把
   断言喂饱，修 \b 后才精确失败，即 corr-2026-024 发现过程）；恢复 poll
   无词边界→1。每轮基线全绿、摘除后断言必生效、备份还原到位、收尾基线全绿。
+  v3.8 新增 11（2 项 live 实证命中（The Information Treasury 提案标题-only
+  → kind=regulatory-action，判 推理单薄/公开财报/公告(3)/推理 0/3、
+  decisionRelevant——事件型 no-quantity 豁免生效+机构一手文书证据档；
+  LWiAI #251 简报内句「Trump lifts restrictions on Anthropic」→ 同 kind，
+  判 证据不足/无出处(1)/推理 0/3 不虚抬——官员个人转述不借名字抬级）+
+  1 项专属证伪条件与类目映射（最终规则范围不符/rescind/struck down/推迟/
+  收窄；类目映射源级断言）+
+  1 项形态族召回（主体/规制动词/工具名词三族十二形：treasury/trump/SEC/
+  EU/regulators/ministry + propose/issue/approve/pass/lift/impose/widen/
+  rescind + rules/measures/controls/sanctions/law/guidance）+
+  1 项精度回归 31 句（Fed/ECB 货币政策公告/NBER 论文/宏观看价句/官员言论/
+  厂商自述/股价反应/其它形态库句式/播客 boilerplate 全部不命中）+
+  1 项事件型 no-quantity 豁免（监管行动不因无数字判不可证伪，且豁免不碰
+  推理分）+
+  1 项证据等级分流（Treasury proposed a rule 归公开财报(3)；Trump lifts/
+  OpenAI says/Fed chair said 不抬级）+
+  1 项引擎端到端（候选门放行 + formatReport 渲染「类型: 监管行动」行与
+  证伪条件——只认渲染出的标签行；注意句切分在 "U.S." 句点后断开，主张句
+  从 Treasury 起，断言按渲染文本写）+
+  1 项 cron 注入源级（读 ~/.hermes/scripts/hf-cron-fetch.sh 验
+  regulatory-action 中文标签）+
+  1 项精度门未破（Fed 公告/播客/官员言论仍不进辨别——新模式主体库含
+  president/trump/government 宽词，重点盯守）+
+  1 项版本号一致性（VERSION/package.json/projection meta/run-pipeline meta
+  五处对齐 3.8.0））。
+  模式库计数 17→18（v3.3 的计数断言同步更新，v3.2 计数纠错同型纪律）。
+  v3.8 七轮反向验证全部精确失败：摘除模式（含注释）→8 条（含计数断言与
+  精度回归的空模式防护）；摘除证伪条件→1；摘除类目映射→1（源级）；摘除
+  报告 KIND_CN→1；摘除注入 KIND_CN→1；摘除 no-quantity 事件型豁免→2
+  （live 实证判定变回 unfalsifiable + 豁免断言）；摘除证据等级机构标记
+  （恢复原 public-filing 档）→2。每轮基线全绿、摘除后断言必生效、备份
+  还原到位（filecmp 校验）、收尾基线全绿。
   历史：v3.4 的 230 + v3.4 新增 16：
   5 项采集器抽取（NVDA/AMZN/AMD/MRVL/MU 五种 live 句式命中 / 4 类精度回归 0 误报 /
   期间就近+同比排除+Oracle 两种期间形态 / 小数不截断+句点不冲段 / 词边界）+
