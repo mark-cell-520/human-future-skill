@@ -1846,8 +1846,14 @@ c213n('带证据的结算写入 evidence 字段', (() => {
 
 c213n('Brier 分数基于真实结算可算出', (() => {
   const sc = ledgerN.scorecard();
-  return typeof sc.brier === 'number' && sc.sample > 0 && sc.hitRate === 1;
-})(), 'sample>0 且 brier 是数字（校准曲线真的能算）');
+  // [v3.5] hitRate 从 `=== 1` 放宽为 `∈ [0,1]`：旧断言「全部命中」是台账
+  // 只有人工 hits 时的偶然状态；v3.5 财报指引自动结算引入了真实的 miss
+  // （NVDA/AMD/MU 营收指引被 actual 超出带上沿→带外），hitRate 不再恒为 1。
+  // 本断言的意图是「校准曲线基于真实结算可算」——brier 是数字、样本 >0、
+  // hitRate 是合法概率，与命中/未中的具体配比无关。
+  return typeof sc.brier === 'number' && sc.sample > 0
+    && typeof sc.hitRate === 'number' && sc.hitRate >= 0 && sc.hitRate <= 1;
+})(), 'sample>0 且 brier 是数字、hitRate 是合法概率（校准曲线真的能算，含 miss）');
 
 (async () => {
   const results = await Promise.all(v213n.map(c => Promise.resolve(c.ok)));
@@ -2835,7 +2841,11 @@ c31('引擎产出与 self-corrections.json 实际内容一致', (() => {
 })(), 'total/highSeverity/bySeverity/lessons 必须与 JSON 文件逐条对得上');
 
 // 3. critical 排最前（severity 等级排序，不是文件顺序）。
-//    摘除等级排序（恢复按文件序或 high 优先）→ corr-2026-002/004 不在首位，失败。
+//    摘除等级排序（恢复按文件序或 high 优先）→ critical 不再 contiguous 在段首，失败。
+//    [v3.5] 断言从「恰好 2 条 critical」改为「全部 critical 连续排在段首、数量不限」：
+//    v3.5 登记 corr-2026-019（v3.4「到期结算」是空头承诺，critical 级）后 critical
+//    变为 3 条，旧断言 ls.slice(2).every(!critical) 会腐烂。意图是「最重的教训
+//    不能藏、必须在段首」，与具体条数无关。
 c31('critical 教训排在最前', (() => {
   const { ProjectionEngine } = require('./scripts/project-future.js');
   const items = [
@@ -2850,9 +2860,11 @@ c31('critical 教训排在最前', (() => {
   }).generate();
   const ls = (rep.selfCorrectionLedger && rep.selfCorrectionLedger.lessons) || [];
   if (ls.length === 0) return false;   // 接线/排序被摘除时断言失败而不是抛 TypeError
-  return ls[0].severity === 'critical' && ls[1].severity === 'critical'
-    && ls.slice(2).every(l => l.severity !== 'critical');
-})(), '数据里有 2 条 critical，必须排在 high 之前——最重的教训不能藏');
+  const firstNonCrit = ls.findIndex(l => l.severity !== 'critical');
+  return ls.some(l => l.severity === 'critical')                          // 至少 1 条 critical
+    && ls.slice(0, firstNonCrit).every(l => l.severity === 'critical')    // 段首全 critical
+    && (firstNonCrit === -1 || ls.slice(firstNonCrit).every(l => l.severity !== 'critical')); // 之后无 critical
+})(), '全部 critical 必须连续排在段首（severity 等级排序），最重的教训不能藏');
 
 // ── 组 3：端到端渲染 ──
 // 4. generate → formatReport 产物里真的出现登记簿段（不信接口存在）。
@@ -4188,11 +4200,11 @@ c34('cron 注入脚本渲染财报指引（VERDICT_CN/汇总/结构行）', (() 
 })(), '注入脚本必须含 earnings-guidance 标签、guidanceCount 汇总与指引结构行，否则 agent 看不到新维度');
 
 // ── 组 4：版本号（corr-2026-014 同型：banner 腐烂四个补丁轮）─────
-c34('版本号一致性：banner 与 VERSION 对齐（3.4.0）', (() => {
+c34('版本号一致性：banner 与 VERSION 对齐（3.5.0）', (() => {
   const fs2 = require('fs');
   const version = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return version === '3.4.0' && rp.includes('文明推演引擎 v3.4.0');
+  return version === '3.5.0' && rp.includes('文明推演引擎 v3.5.0');
 })(), 'run-pipeline banner 必须与 VERSION 一致（v3.1 修过 banner/meta 同型后又腐烂）');
 
 // ── v3.4 汇总 ──
@@ -4210,5 +4222,205 @@ c34('版本号一致性：banner 与 VERSION 对齐（3.4.0）', (() => {
     process.exitCode = 1;
   } else {
     console.log('结论：SEC EDGAR 财报指引端到端成立——一手备案进采集、新 verdict 进辨别、估计结算点进台账、注入可见。');
+  }
+})();
+
+// ════════════════════════════════════════════════════════════════
+// v3.5 新能力：财报指引自动结算（earnings-settlement）
+// v3.4 登记了 33 条财报指引进台账、审计时 15 条到期 0 条结算——v2.13 核心
+// 承诺「到期结算 Brier」对最硬的一类预测从未兑现（结算逻辑整个缺失）。v3.5
+// 把台账里到期的 earnings_guidance 与「下一期财报实际值」配对，按容差/区间
+// 判命中并落账。保守性全部有测试钉住：只结有容差/区间的、唯一实际值才结
+// （GAAP/非 GAAP 多值判歧义跳过）、到期才结、只碰未结算条目。
+// ════════════════════════════════════════════════════════════════
+const v35 = [];
+function c35(name, ok, detail) { v35.push({ name, ok, detail }); }
+
+// ── 组 1：纯结算函数（earnings-settlement.js，无副作用）──────────
+// 1. 单位感知容差：$/%/bps/区间 五种组合 + 无容差跳过
+c35('settleGuidance 单位感知容差（相对/绝对/百分点/区间/无容差跳过）', (() => {
+  const { settleGuidance } = require('./human-future/scripts/earnings-settlement.js');
+  const s = (gv, tol, isRange, av) => settleGuidance({ value: gv, tolerance: tol, isRange }, av);
+  // $ + % = 相对；$ + $ = 绝对；% + bps = 百分点；% + % = 百分点；区间
+  return s('$91.0 billion', '2%', false, '$96.2 billion').hit === false       // beat（相对带外）
+    && /beat/.test(s('$91.0 billion', '2%', false, '$96.2 billion').direction)
+    && s('$100 billion', '2%', false, '$101 billion').hit === true            // 相对容差：101∈[98,102] 带内（绝对解释会误判带外）
+    && s('74.9%', '50 basis points', false, '75.0%').hit === true              // bps→百分点，带内
+    && s('74.9%', '50 basis points', false, '76.0%').hit === false             // bps=0.5pp：76∈[74.4,75.4] 带外（bps 当 % 会误判带内）
+    && s('$11.2 billion', '$300 million', false, '$11.5 billion').hit === true // 绝对容差，带内
+    && s('$3.150 billion', '5%', false, '$2.9 billion').hit === false          // 相对，低于带下沿
+    && /below/.test(s('$3.150 billion', '5%', false, '$2.9 billion').direction)
+    && s('between $197.0 billion and $202.0 billion', null, true, '$200.0 billion').hit === true // 区间
+    && s('52.1%', null, false, '52.1%').settleable === false;                  // 无容差 → 不自动结算
+})(), '容差解释必须按单位走：解释错一个符号整条结算就是假的');
+
+// 2. 指标名归一 + 数值单位解析
+c35('normalizeMetric 归一 + parseMetricValue 单位解析', (() => {
+  const { normalizeMetric, parseMetricValue } = require('./human-future/scripts/earnings-settlement.js');
+  return normalizeMetric('gross margins') === 'gross margin'
+    && normalizeMetric('Net revenue') === 'revenue'
+    && normalizeMetric('net sales') === 'revenue'
+    && parseMetricValue('$96.2 billion').n === 96.2e9 && parseMetricValue('$96.2 billion').unit === 'usd'
+    && parseMetricValue('75.0%').unit === 'pct' && parseMetricValue('75.0%').n === 75
+    && parseMetricValue('50 basis points').unit === 'bps'
+    && parseMetricValue('$1.5 billion').n === 1.5e9;
+})(), '指引侧与实际值侧指标写法必须归一到同一key，否则同指标配不上');
+
+// ── 组 2：采集器实际值抽取（edgar-collector.extractActuals）──────
+// 3. 营收 + 毛利率实际值 + 标题期间（NVDA live 原文）
+c35('extractActuals 抽营收+毛利率，期间取自标题句', (() => {
+  const { extractActuals } = require('./human-future/scripts/edgar-collector.js');
+  const NVDA = 'EX-99.1 NVIDIA Announces Financial Results for Second Quarter Fiscal 2027 • Revenue of $96.2 billion, up 106% from a year ago SANTA CLARA—Aug. 26, 2026—NVIDIA today reported revenue for the second quarter ended July 26, 2026, of $96.2 billion, up 18% from the previous quarter. For the quarter, GAAP and non-GAAP gross margins were both 75.0%. GAAP and non-GAAP earnings per diluted share were $2.46 and $2.22, respectively. Q2 Fiscal 2027 Summary GAAP Revenue $96,221 $81,615 $46,743 18 % 106 %';
+  const ex = extractActuals(NVDA);
+  const rev = ex.actuals.find(a => a.metric === 'revenue');
+  const mgn = ex.actuals.find(a => a.metric === 'gross margin');
+  return ex.quarter === 2 && ex.fiscalYear === 2027
+    && rev && rev.value === '$96.2 billion'
+    && mgn && mgn.value === '75.0%'
+    && ex.actuals.length === 2;   // 营收+毛利率；EPS 不抽（GAAP/非GAAP歧义），汇总表不误命中
+})(), '实际值必须带标题财季；营收/毛利率各一条；汇总表多列数字不误命中');
+
+// 4. GAAP/非 GAAP 毛利率不同值 → 抽出两条（驱动结算层歧义跳过）
+c35('extractActuals GAAP/非GAAP 毛利率不同值抽出两条', (() => {
+  const { extractActuals } = require('./human-future/scripts/edgar-collector.js');
+  const MRVL = 'Marvell Announces Financial Results for Second Quarter Fiscal 2027. GAAP gross margin was 52.9%. Non-GAAP gross margin was 57.5% for the quarter.';
+  const ex = extractActuals(MRVL);
+  const mgns = ex.actuals.filter(a => a.metric === 'gross margin');
+  return ex.quarter === 2 && ex.fiscalYear === 2027 && mgns.length === 2
+    && mgns.map(m => m.value).join('|').includes('52.9%')
+    && mgns.map(m => m.value).join('|').includes('57.5%');
+})(), 'GAAP/非GAAP毛利率不同值必须抽出两条——结算层据此判歧义跳过，不设法规避');
+
+// 5. 无标题期间 → 返回空（漏报比误报诚实）
+c35('extractActuals 抽不到标题期间返回空', (() => {
+  const { extractActuals } = require('./human-future/scripts/edgar-collector.js');
+  const ex = extractActuals('EX-99.1 FOR IMMEDIATE RELEASE Contacts: Investor Relations. The company reported revenue of $50.0 billion this period.');
+  return ex.quarter === null && ex.fiscalYear === null && ex.actuals.length === 0;
+})(), '没有标题财季锚就不抽实际值——没有期间的数值无法与指引配对');
+
+// ── 组 3：结算编排（settleEarningsGuidance，受控台账）────────────
+// 6. 命中/未中/歧义跳过/到期门/证据落账/不重复结算
+c35('settleEarningsGuidance 编排：hit/miss/歧义跳过/到期门/证据/幂等', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const fs = require('fs');
+  const LEDGER = path.join(__dirname, 'human-future/data/prediction-ledger.json');
+  const saved = fs.existsSync(LEDGER) ? fs.readFileSync(LEDGER, 'utf-8') : null;
+  try {
+    const mock = { version: '1.0.0', predictions: [
+      { id: 't-nv-rev', claim: 'Revenue is expected to be $91.0 billion, plus or minus 2%', probability: 0.5, domain: 'earnings_guidance', category: 'earnings_guidance', dueOn: '2026-09-14', outcome: null, settlement: { ticker: 'NVDA', fiscalYear: 2027, quarter: 2, metric: 'revenue', value: '$91.0 billion', tolerance: '2%', isRange: false } },
+      { id: 't-nv-mgn', claim: 'Gross margins are expected to be 74.9%, plus or minus 50 basis points', probability: 0.5, domain: 'earnings_guidance', category: 'earnings_guidance', dueOn: '2026-09-14', outcome: null, settlement: { ticker: 'NVDA', fiscalYear: 2027, quarter: 2, metric: 'gross margin', value: '74.9%', tolerance: '50 basis points', isRange: false } },
+      { id: 't-mrvl-amb', claim: 'GAAP gross margin is expected to be 52.1% to 53.1%', probability: 0.5, domain: 'earnings_guidance', category: 'earnings_guidance', dueOn: '2026-09-01', outcome: null, settlement: { ticker: 'MRVL', fiscalYear: 2027, quarter: 2, metric: 'gross margin', value: '52.1% to 53.1%', tolerance: null, isRange: true } },
+      { id: 't-nv-fut', claim: 'Revenue is expected to be $108.0 billion, plus or minus 2%', probability: 0.5, domain: 'earnings_guidance', category: 'earnings_guidance', dueOn: '2026-12-30', outcome: null, settlement: { ticker: 'NVDA', fiscalYear: 2027, quarter: 3, metric: 'revenue', value: '$108.0 billion', tolerance: '2%', isRange: false } },
+      { id: 't-nv-rev2', claim: 'Revenue is expected to be $78.0 billion, plus or minus 2%', probability: 0.5, domain: 'earnings_guidance', category: 'earnings_guidance', dueOn: '2026-06-14', outcome: false, settlement: { ticker: 'NVDA', fiscalYear: 2027, quarter: 1, metric: 'revenue', value: '$78.0 billion', tolerance: '2%', isRange: false } },
+    ]};
+    fs.writeFileSync(LEDGER, JSON.stringify(mock, null, 2));
+    const eng = new ProjectionEngine({});
+    eng.signals = { totalItems: 2, domains: [], items: [
+      { source: 'SEC EDGAR', ticker: 'NVDA', link: 'https://sec.gov/nvda', actualPeriod: { quarter: 2, fiscalYear: 2027 }, actuals: [{ metric: 'revenue', value: '$96.2 billion' }, { metric: 'gross margin', value: '75.0%' }], guidance: [] },
+      { source: 'SEC EDGAR', ticker: 'MRVL', link: 'https://sec.gov/mrvl', actualPeriod: { quarter: 2, fiscalYear: 2027 }, actuals: [{ metric: 'gross margin', value: '52.9%' }, { metric: 'gross margin', value: '57.5%' }], guidance: [] },
+    ]};
+    const res = eng.settleEarningsGuidance();
+    const byId = Object.fromEntries(res.settled.map(s => [s.id, s]));
+    const after = JSON.parse(fs.readFileSync(LEDGER, 'utf-8'));
+    const revEntry = after.predictions.find(p => p.id === 't-nv-rev');
+    return byId['t-nv-rev'] && byId['t-nv-rev'].hit === false && /beat/.test(byId['t-nv-rev'].direction)
+      && byId['t-nv-mgn'] && byId['t-nv-mgn'].hit === true
+      && res.skipped.some(s => s.id === 't-mrvl-amb' && /歧义/.test(s.reason))
+      && revEntry.outcome === false && revEntry.evidence && revEntry.evidence.settledBy === 'edgar-auto-settlement'
+      && after.predictions.find(p => p.id === 't-nv-mgn').outcome === true
+      && after.predictions.find(p => p.id === 't-nv-fut').outcome === null    // 到期门：dueOn 未到不结
+      && after.predictions.find(p => p.id === 't-mrvl-amb').outcome === null // 歧义跳过不落账
+      && after.predictions.find(p => p.id === 't-nv-rev2').outcome === false // 已结算条目不重结
+      && res.hits === 1 && res.misses === 1;
+  } finally {
+    if (saved === null) { try { fs.unlinkSync(LEDGER); } catch (_) {} } else fs.writeFileSync(LEDGER, saved);
+  }
+})(), '只结有容差/区间、唯一实际值、已到期、未结算的指引；GAAP/非GAAP多值判歧义跳过，不设法规避');
+
+// ── 组 4：端到端（extractSignals 透传 / formatReport 渲染 / record 持久化）──
+// 7. extractSignals 透传 actuals/ticker（v2.14/v3.4 同型断链防护）
+c35('extractSignals 透传 actuals/actualPeriod/ticker', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const items = [{
+    title: 'NVDA 8-K', description: '', body: 'revenue of $96.2 billion', source: 'SEC EDGAR',
+    bucket: 'sec_filings', origin: 'live', pubDate: '2026-08-26', link: 'https://x/nvda',
+    fiscalYearEnd: '0131', ticker: 'NVDA', company: 'NVIDIA CORP', accession: '0001-26-1',
+    actualPeriod: { quarter: 2, fiscalYear: 2027 }, actuals: [{ metric: 'revenue', value: '$96.2 billion' }],
+    guidance: [],
+  }];
+  const sig = new ProjectionEngine({ newsData: { sec_filings: { domain: 'sec_filings', news: items } } }).extractSignals();
+  const it = sig.items[0];
+  return it.ticker === 'NVDA' && Array.isArray(it.actuals) && it.actuals.length === 1
+    && it.actualPeriod && it.actualPeriod.quarter === 2 && it.actualPeriod.fiscalYear === 2027;
+})(), 'actuals/ticker 不在 extractSignals 重建时带上，结算路径整段走不到（v2.14 同型）');
+
+// 8. record() 持久化 settlement 元数据
+c35('record() 持久化 settlement 元数据', (() => {
+  const fs = require('fs');
+  const LEDGER = path.join(__dirname, 'human-future/data/prediction-ledger.json');
+  const saved = fs.existsSync(LEDGER) ? fs.readFileSync(LEDGER, 'utf-8') : null;
+  try {
+    const ledger = require('./human-future/scripts/prediction-ledger.js');
+    if (saved === null) fs.writeFileSync(LEDGER, JSON.stringify({ version: '1.0.0', predictions: [] }));
+    ledger.record({ id: 't35-settle-meta', claim: 'Revenue is expected to be $5 billion, plus or minus 2%', probability: 0.5, domain: 'earnings_guidance', dueOn: '2027-01-01', settlement: { ticker: 'TEST', fiscalYear: 2027, quarter: 1, metric: 'revenue', value: '$5 billion', tolerance: '2%', isRange: false } });
+    const p = ledger.load().predictions.find(x => x.id === 't35-settle-meta');
+    return p && p.settlement && p.settlement.ticker === 'TEST' && p.settlement.metric === 'revenue' && p.settlement.value === '$5 billion';
+  } finally {
+    if (saved === null) { try { fs.unlinkSync(LEDGER); } catch (_) {} } else fs.writeFileSync(LEDGER, saved);
+  }
+})(), '新登记指引必须带结构化结算元数据，否则到期无法与实际值配对');
+
+// 9. formatReport 渲染结算段（只认渲染出的行，v3.2 教训）
+c35('formatReport 渲染财报指引结算段', (() => {
+  const { ProjectionEngine, formatReport } = require('./scripts/project-future.js');
+  const items = [{
+    title: 'NVDA 8-K 业绩发布 · 2026-08-26', description: '财报指引（FY2027 Q3）：Revenue is expected to be $108.0 billion, plus or minus 2%',
+    body: 'Revenue is expected to be $108.0 billion, plus or minus 2%.', source: 'SEC EDGAR', bucket: 'sec_filings', origin: 'live',
+    pubDate: '2026-08-26', link: 'https://example.com/edgar-settle-render', fiscalYearEnd: '0131', ticker: 'NVDA',
+    guidance: [{ sentence: 'Revenue is expected to be $108.0 billion, plus or minus 2%', metric: 'revenue', value: '$108.0 billion', tolerance: '2%', quarter: 3, fiscalYear: 2027, periodLabel: 'FY2027 Q3', caveats: [] }],
+  }];
+  const md = formatReport(new ProjectionEngine({ newsData: { sec_filings: { domain: 'sec_filings', news: items } } }).generate());
+  return md.includes('## 财报指引结算')
+    && /结算判据＝实际值是否落在指引容差带内/.test(md)
+    && /不得把 beat 读成/.test(md);
+})(), '结算段必须渲染，且结算语义（带内判据/beat方向）段内写明——限定先于被限定者');
+
+// ── 组 5：cron 注入源级（同型断链纪律）────────────────────────
+c35('cron 注入脚本渲染财报指引结算段', (() => {
+  const p = require('path').join(require('os').homedir(), '.hermes/scripts/hf-cron-fetch.sh');
+  if (!require('fs').existsSync(p)) return false;
+  const src = require('fs').readFileSync(p, 'utf-8');
+  return /guidanceSettlement/.test(src)
+    && /财报指引结算（v3\.5/.test(src)
+    && /命中\(带内\) \$\{gs\.hits\}/.test(src)
+    && /不得把 beat 读成/.test(src);
+})(), '注入脚本必须读 proj.forecastDiscrimination.guidanceSettlement，否则 agent 看不到结算结果');
+
+// ── 组 6：版本号一致性（corr-2026-014 同型，四处对齐）──────────
+c35('版本号一致性：VERSION/package.json/projection meta/banner 对齐 3.5.0', (() => {
+  const fs2 = require('fs');
+  const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
+  const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
+  const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
+  return VERSION === '3.5.0'
+    && /3\.5\.0/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.5.0');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.5.0，防 corr-2026-014 版本漂移复发');
+
+// ── v3.5 汇总 ──
+(async () => {
+  const results = await Promise.all(v35.map(c => Promise.resolve(c.ok)));
+  let f = 0;
+  v35.forEach((c, i) => {
+    const ok = results[i];
+    if (!ok) f++;
+    console.log(`${ok ? '\u2713' : '\u2717'} ${c.name}${ok ? '' : '  —— ' + c.detail}`);
+  });
+  console.log(`\nv3.5: ${v35.length - f} 通过, ${f} 失败, 共 ${v35.length} 个`);
+  if (f > 0) {
+    console.log('结论：财报指引自动结算不完整（纯函数/抽取/编排/端到端/注入/版本有缺）。');
+    process.exitCode = 1;
+  } else {
+    console.log('结论：财报指引自动结算端到端成立——实际值抽取、单位感知容差、唯一值+到期门+歧义跳过的保守结算、证据落账、报告与注入可见。');
   }
 })();

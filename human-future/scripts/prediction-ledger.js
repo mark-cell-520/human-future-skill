@@ -93,6 +93,10 @@ function record(p) {
     rationale: p.rationale || '',
     createdAt: new Date().toISOString(),
     dueOn: p.dueOn || null,
+    // [v3.5] 财报指引结构化结算元数据：到期时据此与「下一期财报实际值」
+    // 配对结算（见 earnings-settlement.js）。没有它的历史 earnings_guidance
+    // 条目由结算层用当期 EDGAR 指引句反推（句匹配），本条只服务新登记。
+    settlement: p.settlement || null,
     outcome: null,       // null=未到期, true=发生, false=未发生
     settledAt: null
   });

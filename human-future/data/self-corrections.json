@@ -198,6 +198,30 @@
       "recordedAt": "2026-10-25T00:00:00.000Z",
       "resolvedAt": "2026-10-25T00:00:00.000Z",
       "fix": "自测补 evidence；NUM_OR_TERM 改双向断言；INDEX/DOC_URL 用 Number(cik)。测试新增句点处理断言（恢复旧字符类→2 条失败）。"
+    },
+    {
+      "id": "corr-2026-019",
+      "reportVersion": "v3.5",
+      "wrongClaim": "v3.4 说财报指引「自动登记进台账到期结算 Brier」——仿佛结算会自动发生",
+      "rightClaim": "登记了 ≠ 结算了。v3.4 只写了「登记」，结算逻辑整个缺失：审计实测台账 33 条 earnings_guidance、15 条已到期（dueOn<=now）、0 条结算。「到期结算 Brier」在 v3.4 是空头承诺，台账是指引的坟墓不是校准曲线的数据源。根因同 v3.0.0c/v3.2.1/v3.2.2 的「接口存在 ≠ 端到端到达」，但更深一层：连「结算」这个动作的代码都没有，只有一句 note 祈使。",
+      "evidence": "node 审计脚本：台账 33 条 earnings_guidance，settled=0，overdue=15；grep settle() 在 live pipeline 无调用点（除模块自测）。",
+      "lesson": "宣称「自动 X」必须能指出 X 的代码路径与端到端产物。新能力交付判据是「对账真的发生了几笔」，不是「字段/接口/note 在不在」。登记类能力要同时问：谁来做对面的那一半（结算方）？",
+      "severity": "critical",
+      "recordedAt": "2026-10-25T12:06:39.234Z",
+      "resolvedAt": "2026-10-25T12:06:39.234Z",
+      "fix": "v3.5 新增 earnings-settlement（extractActuals 抽实际值 + 单位感知容差带 + settleEarningsGuidance 编排落账），live 实测 7 条正确结算。"
+    },
+    {
+      "id": "corr-2026-020",
+      "reportVersion": "v3.5",
+      "wrongClaim": "结算层「(ticker,财季,指标) 唯一实际值才结算」这条防线足以挡住 GAAP/非GAAP 口径错位",
+      "rightClaim": "防线依赖抽取层真的把多个值抽出来。extractActuals 首版用单 match 抽毛利率，GAAP 与非 GAAP 不同值（MRVL 实测 52.9% / 57.5%）只抽到第一条——「唯一值」前提恒真，非GAAP 指引会被错配到 GAAP actual 造成假结算。「有防线」≠「防线能被触发」，防线的每个前提都要有用例证明能被满足。",
+      "evidence": "测试「extractActuals GAAP/非GAAP 毛利率不同值抽出两条」在单 match 版失败（只得 1 条）；改 matchAll 后得 2 条，结算层正确判歧义跳过（live 实测「跳过: 歧义 1」）。",
+      "lesson": "写「多值→跳过」这类保守判据时，必须同时保证上游抽取层在多值场景下真的产出多个值，否则判据永真、防线空转。用「不同值必须抽出 N 条」的断言钉住抽取层。",
+      "severity": "high",
+      "recordedAt": "2026-10-25T12:06:39.234Z",
+      "resolvedAt": "2026-10-25T12:06:39.234Z",
+      "fix": "extractActuals 毛利率改 matchAll（global）；营收保持单 match（总收入在前、无 GAAP 分歧，分部营收不取）。"
     }
   ]
 }

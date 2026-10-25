@@ -64,6 +64,11 @@ const { discriminateAll: discriminateForecasts } = require(path.join(HF, 'foreca
 // 前者辨别「关于市场的陈述」（要量化与证据等级）。商业推演面对的绝大多数
 // 主张是后者——"企业正在采用 AI agent"、"开源将杀死付费产品"这类。
 const { discriminateCommercial, COMMERCIAL_CLAIM_PATTERNS } = require(path.join(HF, 'commercial-discriminator.js'));
+// [v3.5] 财报指引自动结算：把台账里到期的 earnings_guidance 与「下一期财报
+// 实际值」配对，按容差/区间算命中并落账——兑现 v2.13「到期结算 Brier」对
+// 最硬预测类的承诺（v3.4 登记了 33 条、15 条到期、0 条结算）。纯函数在
+// earnings-settlement.js，本文件只做编排。
+const { settleGuidance, normalizeMetric } = require(path.join(HF, 'earnings-settlement.js'));
 // [v2.17] 外部预测基准（Good Judgment Open 开放问题）。这是 SKILL.md
 // 「已知边界」里挂了三个版本的缺口：RSS 前瞻表述多为意图声明，缺带硬
 // 截止日的规范预测。2026-10-24 复测只剩 GJOpen 可达（Metaculus 403、
@@ -208,6 +213,13 @@ class ProjectionEngine {
           // （v2.14 同型：字段在采集层打上、读取层有，中间重建时丢）。
           guidance: Array.isArray(n.guidance) ? n.guidance : null,
           fiscalYearEnd: n.fiscalYearEnd || null,
+          // [v3.5] 已报告财季实际值 + 公司标识透传。不带上，earnings-settlement
+          // 拿不到对账依据与 ticker，结算路径整段走不到（v2.14/v3.4 同型断链）。
+          actuals: Array.isArray(n.actuals) ? n.actuals : null,
+          actualPeriod: n.actualPeriod || null,
+          ticker: n.ticker || null,
+          company: n.company || null,
+          accession: n.accession || null,
           source: n.source || '(未标注)',
           link: n.link || '',
           pubDate: n.pubDate || '',
@@ -325,7 +337,7 @@ class ProjectionEngine {
     }
     const report = {
       meta: {
-        version: '3.4.0',
+        version: '3.5.0',
         heartflowVersion: this.analysis.engineVersion,
         timestamp: this.timestamp,
         modulesLoaded: this.analysis.modulesLoaded,
@@ -1441,6 +1453,8 @@ class ProjectionEngine {
           category: 'earnings_guidance',
           guidance: g,
           fiscalYearEnd: it.fiscalYearEnd,
+          // [v3.5] ticker 透传：结算元数据要用它把指引对到具体公司的财报实际值
+          ticker: it.ticker || null,
         });
         if (claims.length >= 40) break;
       }
@@ -1608,6 +1622,20 @@ class ProjectionEngine {
             + `${r.baseRate && r.baseRate.source === 'default-prior' ? '（通用先验，非统计结论）' : ''}；`
             + `来源 ${r.source}；原文 ${r.url || '(无链接)'}`,
           dueOn: dueDate,
+          // [v3.5] 财报指引结构化结算元数据：到期时 earnings-settlement 据此与
+          // 下一期财报实际值配对。指标名归一（gross margins→gross margin）与
+          // actuals 侧对齐；无 tolerance 且非 range 的指引结算层会判「不可自动
+          // 结算」，元数据照存（供人工或后续轮次用）。
+          settlement: r.guidance ? {
+            ticker: r.ticker || null,
+            fiscalYear: r.guidance.fiscalYear,
+            quarter: r.guidance.quarter,
+            annual: !!r.guidance.annual,
+            metric: normalizeMetric(r.guidance.metric),
+            value: r.guidance.value,
+            tolerance: r.guidance.tolerance,
+            isRange: !!r.guidance.isRange,
+          } : null,
         });
         registered.push({ id: rec.id, dueOn: dueDate, probability: rec.probability });
       } catch (e) {
@@ -1615,6 +1643,10 @@ class ProjectionEngine {
         skipped.push({ id, reason: e.message });
       }
     }
+
+    // [v3.5] 到期财报指引自动结算：登记之后立刻跑，把已到期的 earnings_guidance
+    // 与「下一期财报实际值」配对落账。见 settleEarningsGuidance()。
+    const guidanceSettlement = this.settleEarningsGuidance();
 
     return {
       ...res,
@@ -1626,10 +1658,133 @@ class ProjectionEngine {
           ? `已登记 ${registered.length} 条可结算预测进台账，到期结算 Brier 分数。`
           : '本期无可结算预测需要登记（或已在此前轮次登记过）。',
       },
+      // [v3.5] 财报指引结算结果：兑现 v2.13「到期结算」承诺的实证
+      guidanceSettlement,
       note: '本段只辨别预测的表述与结构质量（可证伪性含文本性质判别/基准概率/推理有效性/证伪条件），'
         + '不判断其内容真假。可结算的预测（settleable=true）已自动登记进台账，'
         + '到期结算 Brier 分数以建立校准曲线。指南/参考页文本（reference-text）没有主张主体，'
         + '不可结算、不登记——与「意图声明」是两类对象。',
+    };
+  }
+
+  // ───────────────────────────────────────────────────────────────
+  // [v3.5] 财报指引自动结算：v2.13 核心承诺「到期结算 Brier」对最硬预测类
+  // （earnings_guidance）的兑现。v3.4 登记了 33 条、审计时 15 条到期 0 条
+  // 结算——结算逻辑整个缺失。本方法把台账里未结算的 earnings_guidance 与
+  // 当期 EDGAR 采集到的「已报告财季实际值」配对，按容差/区间判命中并落账。
+  //
+  // 数据来源：this.signals.items 里 source==='SEC EDGAR' 的条目，每条带
+  // guidance[]（下一财季指引）+ actuals[]（本财季实际值）+ ticker。结算在
+  // buildForecastDiscrimination 登记之后跑，保证新登记条目当轮就能被结算。
+  //
+  // 保守性（防假结算，全部有测试钉住）：
+  //   ① 只结算有 tolerance 或 isRange 的指引（点值指引无命中带，跳过）；
+  //   ② (ticker, 财年, 财季, 指标) 有**唯一**实际值才结算——多个（典型
+  //      GAAP/非 GAAP 毛利率不同值）判歧义跳过，不设法规避；
+  //   ③ 单位不兼容跳过；④ 只碰 outcome===null 的条目（不重复结算）。
+  // 历史条目（无 settlement 元数据，v3.5 前登记）用当期 EDGAR 指引句反推
+  // 元数据（claim 句匹配）——只在指引仍在「最近两份备案」窗口内时能反推，
+  // 更早的诚实留待后续轮次，不硬结。
+  // ───────────────────────────────────────────────────────────────
+  settleEarningsGuidance() {
+    const edgarItems = this.signals.items.filter(it => it.source === 'SEC EDGAR');
+    if (edgarItems.length === 0) {
+      return { available: false, reason: '本期无 SEC EDGAR 采集数据，无法结算财报指引', settled: [], skipped: [], pending: 0 };
+    }
+    // 实际值查找表：(ticker|fy|q|metric) → [value,...]
+    const actualIndex = new Map();
+    // 指引句索引：归一句 → 结构化元数据（供无 settlement 的历史条目反推）
+    const guidanceBySentence = new Map();
+    const normSentence = (s) => String(s || '').toLowerCase().replace(/\s+/g, ' ').trim();
+    for (const it of edgarItems) {
+      const tk = it.ticker;
+      const ap = it.actualPeriod;
+      if (tk && ap && ap.fiscalYear && Array.isArray(it.actuals)) {
+        for (const a of it.actuals) {
+          const key = `${tk}|${ap.fiscalYear}|${ap.quarter}|${normalizeMetric(a.metric)}`;
+          if (!actualIndex.has(key)) actualIndex.set(key, []);
+          actualIndex.get(key).push(a.value);
+        }
+      }
+      if (tk && Array.isArray(it.guidance)) {
+        for (const g of it.guidance) {
+          if (!g.fiscalYear) continue;
+          const meta = {
+            ticker: tk, fiscalYear: g.fiscalYear, quarter: g.quarter, annual: !!g.annual,
+            metric: normalizeMetric(g.metric), value: g.value, tolerance: g.tolerance, isRange: !!g.isRange,
+          };
+          const ns = normSentence(g.sentence);
+          if (ns && !guidanceBySentence.has(ns)) guidanceBySentence.set(ns, meta);
+          // 同时按前 60 字符建索引，容忍 claim 截断/细微差异
+          const pre = ns.slice(0, 60);
+          if (pre && !guidanceBySentence.has('pre:' + pre)) guidanceBySentence.set('pre:' + pre, meta);
+        }
+      }
+    }
+
+    let ledger;
+    try { ledger = predictionLedger.load(); } catch (e) {
+      return { available: false, reason: `台账读取失败: ${e.message}`, settled: [], skipped: [], pending: 0 };
+    }
+    const settled = [];
+    const skipped = [];
+    let pending = 0;
+    const now = new Date();
+    for (const p of (ledger.predictions || [])) {
+      if ((p.category || p.domain) !== 'earnings_guidance') continue;
+      if (p.outcome !== null && p.outcome !== undefined) continue;   // 已结算，不重复
+      // 取结算元数据：新条目用持久化的 settlement；历史条目用当期指引句反推
+      let meta = p.settlement && p.settlement.ticker ? p.settlement : null;
+      if (!meta) {
+        const nc = normSentence(p.claim);
+        meta = guidanceBySentence.get(nc) || guidanceBySentence.get('pre:' + nc.slice(0, 60)) || null;
+      }
+      if (!meta || !meta.ticker || !meta.fiscalYear) {
+        skipped.push({ id: p.id, reason: '无结算元数据且当期 EDGAR 无匹配指引句（指引已滑出最近两份备案窗口）' });
+        continue;
+      }
+      const key = `${meta.ticker}|${meta.fiscalYear}|${meta.quarter}|${meta.metric}`;
+      const actuals = actualIndex.get(key) || [];
+      if (actuals.length === 0) { pending++; continue; }             // 财季未报告/未抽到
+      if (actuals.length > 1) {
+        skipped.push({ id: p.id, reason: `${key} 有 ${actuals.length} 条实际值（GAAP/非 GAAP 分歧），判歧义不自动结算` });
+        continue;
+      }
+      const verdict = settleGuidance({ value: meta.value, tolerance: meta.tolerance, isRange: meta.isRange }, actuals[0]);
+      if (!verdict.settleable) {
+        skipped.push({ id: p.id, reason: verdict.reason });
+        continue;
+      }
+      // 到期才结算：dueOn 未到的不提前结（估计结算点可能偏早，保守）
+      if (p.dueOn && new Date(p.dueOn) > now) { pending++; continue; }
+      try {
+        predictionLedger.settle(p.id, verdict.hit, {
+          sources: [edgarItems.find(it => it.ticker === meta.ticker)?.link || 'https://www.sec.gov/'],
+          summary: `SEC EDGAR 自动结算：${meta.ticker} FY${meta.fiscalYear} Q${meta.quarter || '(全年)'} ${meta.metric} `
+            + `指引 ${meta.value}${meta.tolerance ? ' ±' + meta.tolerance : (meta.isRange ? '（区间）' : '')}，`
+            + `实际 ${actuals[0]} → ${verdict.direction}，判定 ${verdict.hit ? '命中(带内)' : '未中(带外)'}。`,
+          settledBy: 'edgar-auto-settlement',
+        });
+        settled.push({
+          id: p.id, ticker: meta.ticker, period: `FY${meta.fiscalYear} Q${meta.quarter || '全年'}`,
+          metric: meta.metric, guided: meta.value, actual: actuals[0],
+          hit: verdict.hit, direction: verdict.direction,
+        });
+      } catch (e) {
+        skipped.push({ id: p.id, reason: `结算落账失败: ${e.message}` });
+      }
+    }
+    return {
+      available: true,
+      settled,
+      skipped,
+      pending,
+      hits: settled.filter(s => s.hit).length,
+      misses: settled.filter(s => !s.hit).length,
+      note: settled.length > 0
+        ? `本轮自动结算 ${settled.length} 条到期财报指引（命中 ${settled.filter(s => s.hit).length} / 未中 ${settled.filter(s => !s.hit).length}），`
+          + '判据＝实际值是否落在指引容差带内；方向（beat/below）见逐条 summary。'
+        : '本轮无到期且可配对的财报指引需要结算。',
     };
   }
 
@@ -2313,6 +2468,39 @@ function formatReport(report) {
     }
     lines.push('');
     lines.push(`> ${fd.note}`);
+  }
+  lines.push('');
+
+  // [v3.5] 财报指引结算段：v2.13 核心承诺「到期结算 Brier」的兑现实证。
+  // 位置紧挨「预测辨别」——被结算的对象就是那段登记的财报指引，限定先于
+  // 被限定者。结算语义必须在段内写明：outcome=实际值是否落在指引容差带内，
+  // 方向（beat/below）单独陈述，不许把「超出带上沿」读成「公司没做到」。
+  const gs = fd && fd.guidanceSettlement;
+  lines.push('## 财报指引结算（到期指引导账对账，v2.13「到期结算」承诺兑现）');
+  lines.push('');
+  if (!gs || !gs.available) {
+    lines.push(`（${(gs && gs.reason) || '未运行'}）`);
+  } else {
+    lines.push(`本轮自动结算 ${gs.settled.length} 条到期财报指引：命中（带内）${gs.hits} / 未中（带外）${gs.misses}；`
+      + `待结算（财季未报告或未到结算点）${gs.pending} 条；跳过 ${gs.skipped.length} 条。`);
+    lines.push('');
+    for (const s of gs.settled.slice(0, 12)) {
+      lines.push(`[${s.hit ? '命中(带内)' : '未中(带外)'}] ${s.ticker} ${s.period} ${s.metric}：`
+        + `指引 ${s.guided} vs 实际 ${s.actual}（${s.direction}）`);
+    }
+    if (gs.skipped.length) {
+      const amb = gs.skipped.filter(s => /歧义/.test(s.reason)).length;
+      const noMeta = gs.skipped.filter(s => /滑出|无结算元数据/.test(s.reason)).length;
+      const other = gs.skipped.length - amb - noMeta;
+      lines.push('');
+      lines.push(`跳过 ${gs.skipped.length} 条：歧义(GAAP/非GAAP多值) ${amb} | 无元数据且指引滑出采集窗口 ${noMeta}`
+        + ` | 其它(无容差/单位不兼容) ${other}`);
+    }
+    lines.push('');
+    lines.push('> 结算判据＝实际值是否落在指引容差带内 [guided ± tolerance]（区间指引落在区间内）。'
+      + '「未中(带外)」含两种方向：beat（实际超带上沿，常见于保守指引）与 below（低于带下沿）——'
+      + '逐条 summary 已记方向，不得把 beat 读成「公司没做到」。只结算有容差/区间且实际值唯一的指引；'
+      + 'GAAP/非 GAAP 分歧（多值）判歧义跳过，不设法规避。');
   }
   lines.push('');
 

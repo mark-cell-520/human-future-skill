@@ -1,9 +1,29 @@
 ---
 name: human-future-v2
-title: "人类未来 · 文明推演引擎 v3.4.0"
-version: "3.4.0"
+title: "人类未来 · 文明推演引擎 v3.5.0"
+version: "3.5.0"
 description: |-
-  人类未来技能 v3.4.0 — 新辨别维度「财报指引」+ 新数据源 SEC EDGAR：
+  人类未来技能 v3.5.0 — 财报指引自动结算（earnings-settlement，新能力）：
+  v3.5（2026-10-25）兑现 v2.13 核心承诺「到期结算 Brier」对最硬预测类的第一次
+  落地。v3.4 把 33 条 SEC EDGAR 财报指引进了台账，但审计实测 15 条到期、0 条
+  结算——结算逻辑整个缺失（「登记了但没人对账」）。v3.5 新增 edgar-collector
+  .extractActuals（从同一份 EX-99 抽「上一财季实际值」，过去时，与指引的期望
+  时态对立；期间取自标题句）+ earnings-settlement.js（单位感知容差带：$+%=
+  相对、$+$=绝对、%+bps=百分点、%+%=百分点、区间；结算判据＝实际值是否落在
+  指引容差带内，方向 beat/below 单独陈述）+ settleEarningsGuidance 编排
+  （台账到期指引与实际值配对落账）。保守性全部有测试钉住：只结有容差/区间的、
+  (ticker,财季,指标) 唯一实际值才结（GAAP/非GAAP 多值判歧义跳过，不设法规避）、
+  到期才结、只碰未结算条目。live 实测 7 条正确结算（NVDA/AMD/MU 营收被 actual
+  超出带上沿→beat/带外，毛利率命中→带内；Micron Q3 $33.5B±$750M vs $41.46B 是
+  HBM 超级周期的真实 21% beat，季度配对经复核正确）；MRVL GAAP/非GAAP 毛利率
+  经 matchAll 修正后正确判歧义跳过（首版单 match 会把非GAAP 指引错配到 GAAP
+  actual，测试抓出）。同轮维护（不涨号）：MAX_8K_PER_COMPANY 2→3（结算需
+  「指引备案+下一期实际值备案」这对连续备案同在窗口内，2 份每轮只清 3 条积压）。
+  测试 230→241 项；5 轮反向验证全部精确失败（摘除 matchAll→GAAP/非GAAP 断言/
+  摘除结算调用→formatReport/摘除单位感知→容差断言/摘除 actuals 透传→透传断言/
+  摘除 record settlement→持久化断言）。v3.5 版本号理由：新能力（结算），用户
+  可感知（报告「财报指引结算」段首次出现带证据的到期对账）。
+  历史：v3.4.0 — 新辨别维度「财报指引」+ 新数据源 SEC EDGAR：
   v3.4（2026-10-25）接上市公司一手备案：8-K（Item 2.02 业绩发布）的 EX-99
   附件里有厂商自报的下一期数值指引——"Revenue is expected to be $108.0
   billion, plus or minus 2%"（NVIDIA FY2027 Q3，2026-08-26 备案）。有主体
@@ -255,12 +275,35 @@ description: |-
 
 ---
 
-## 当前状态（v3.4.0 实测）
+## 当前状态（v3.5.0 实测）
 
 以下数字全部来自 2026-10-25 的 `FETCH=1 FETCH_BODY=1 node scripts/run-pipeline.js` 实跑
-（v3.3.1 轮 270 条 live 信号；v3.3.0 轮 258 条、v3.2.2 轮 270 条、v3.1.1 轮 270 条、
-v3.1 轮 258 条），不是宣称值。v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、
-基准冷启动）见 frontmatter 历史记录。
+（v3.5 轮：pipeline exit 0、28 条 EDGAR 备案进 live；v3.3.1 轮 270 条 live 信号；
+v3.3.0 轮 258 条、v3.2.2 轮 270 条、v3.1.1 轮 270 条、v3.1 轮 258 条），不是宣称值。
+v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见 frontmatter 历史记录。
+
+**财报指引自动结算层（v3.5 新能力）**
+- 定位：兑现 v2.13 核心承诺「到期结算 Brier」对最硬预测类（earnings_guidance）的
+  第一次落地。v3.4 登记 33 条、审计实测 15 条到期 0 条结算（结算逻辑整个缺失）。
+- 实际值抽取：`edgar-collector.extractActuals` 从同一份 EX-99 抽「上一财季实际值」
+  （过去时 was/were/of，与指引的期望时态对立）；期间取自标题句
+  （"Financial Results for Second Quarter Fiscal 2027"）；只抽营收+毛利率两个头条
+  指标（营收无 GAAP 分歧；毛利率 GAAP≠非GAAP 时抽出两条→结算层判歧义跳过）。
+- 结算判据（earnings-settlement.js）：outcome=实际值是否落在指引容差带内
+  [guided ± tolerance]（区间指引落区间内）。单位感知：$+%=相对、$+$=绝对、
+  %+bps=百分点、%+%=百分点。方向（beat 超带上沿 / below 低于带下沿 / in-band）
+  单独记进 evidence，不混入布尔——不得把 beat 读成「公司没做到」。
+- 保守性（全有测试）：只结有容差/区间的；(ticker,财季,指标) 唯一实际值才结
+  （GAAP/非GAAP 多值判歧义跳过，不设法规避）；到期才结（dueOn 未到不提前结）；
+  只碰 outcome===null 的条目（幂等，不重复结算）。
+- live 实测：7 条正确结算（NVDA/AMD/MU 营收被 actual 超出带上沿→beat/带外，
+  毛利率命中→带内；MU Q3 $33.5B±$750M vs $41.46B 经复核是 HBM 超级周期真实
+  21% beat，营收轨迹 $13.6B→$23.9B→$41.5B→$50B guided 内部一致）。MRVL
+  GAAP/非GAAP 毛利率经 matchAll 修正后正确判歧义跳过（首版单 match 会把非GAAP
+  指引错配到 GAAP actual，测试抓出并修复）。
+- 端到端：引擎 settleEarningsGuidance → report.guidanceSettlement → formatReport
+  「财报指引结算」段 → cron 注入第 6.5 段。登记元数据（settlement）随新条目落盘，
+  历史条目用当期 EDGAR 指引句反推（句匹配），更早的诚实留待后续轮次。
 
 **采集层**
 - 源：23 个（tech 2 + humanities 1 + frontier_models 12 + economy 4 + business 4
@@ -273,11 +316,15 @@ v3.1 轮 258 条），不是宣称值。v2.17/v3.0.0c 轮次数字（248-258 条
   实测可达（2026-10-25：200/2.6s）；UA 声明身份 + 120ms 请求间隔（fair access）
 - 公司名单：14 家境内备案人（NVDA/AMD/AVGO/MRVL/MU/MSFT/GOOGL/AMZN/META/
   ORCL/CRWV/IBM/DELL/PLTR），ticker→CIK 走 company_tickers.json 权威映射
-- 采集对象：8-K Item 2.02（业绩发布）最近 2 次/公司 + EX-99 附件正文；
-  指引句 = 指标名词 + is/are expected to be + 数值（五家公司五种句式实证），
-  附财季期间（就近匹配，同比引用排除）、容差、前提削减
+- 采集对象：8-K Item 2.02（业绩发布）最近 3 次/公司（v3.5 从 2→3，见下）+ EX-99
+  附件正文；指引句 = 指标名词 + is/are expected to be + 数值（五家公司五种句式实证），
+  附财季期间（就近匹配，同比引用排除）、容差、前提削减；实际值句 = 指标 + 过去时
+  （was/were/of）+ 数值，期间取自标题句（v3.5 extractActuals）
 - 实测产出：28 条业绩备案 / 32 条数值指引（11 家有数值）；MSFT/GOOGL/AVGO/
   CRWV/IBM/DELL/PLTR 只在电话会口头给指引或无数值——如实报「无数值指引」
+- [v3.5] MAX_8K_PER_COMPANY 2→3：自动结算需要「指引备案 + 下一期实际值备案」
+  这对连续备案同在采集窗口内。2 份每轮只能结最近一季（清 3 条积压），3 份能
+  同时结最近两季。成本约 14 个额外请求（120ms 间隔下可忽略）。
 - 缓存：.cache/edgar-filings.json TTL 6h；位置在所有 RSS 落地之后（v2.14 纪律）
 - 已知边界：外国私人发行人（TSM/ARM/NBIS）交 6-K 不交 8-K，不在名单内；
   结算点是估计值（财季/财年结束+45 天），不是精确日期
@@ -310,6 +357,8 @@ v3.1 轮 258 条），不是宣称值。v2.17/v3.0.0c 轮次数字（248-258 条
   cognitive-formula-bridge / low-confidence-gate / prediction-ledger /
   prediction-benchmark-collector（v2.17，仅真采到时才写进 meta.reasoningEngines）/
   edgar-collector（v3.4，SEC 一手财报备案，见采集层）/
+  earnings-settlement（v3.5，财报指引自动结算：extractActuals 抽实际值 +
+  单位感知容差带 + 到期指引导账对账，见「财报指引自动结算层」）/
   commercial-discriminator（v3.0.0，商业主张辨别）/
   self-correction-ledger（v3.1，0 调用模块接入，无条件执行——簿子读不到时
   available=false 且原因写明，不静默返回空）
@@ -328,6 +377,9 @@ v3.1 轮 258 条），不是宣称值。v2.17/v3.0.0c 轮次数字（248-258 条
   「指标+数值+结算期」最硬的可结算形态，但推理三要素通常不出现，用
   reasoningScore 判会掉进「裸断言」误标；先验中性 0.5，口径注明
   FactSet 超预期率不可挪用）/
+  财报指引自动结算 ✅（v3.5：到期 earnings_guidance 与「下一期财报实际值」
+  配对落账，判据=实际值落在指引容差带内，方向 beat/below 单独记；live 实测
+  7 条正确结算，MRVL GAAP/非GAAP 毛利率正确判歧义跳过；见「财报指引自动结算层」）/
   商业主张辨别 ✅（6 条，精度门后；v3.2 新增产能/供给约束形态后含 AWS 售罄
   主张一条——修复前该条 13 种形态全部不命中、整条不进辨别；判 证据不足/无出处(1)/
   推理 0/3，标题-only 不虚抬为决策相关；v3.3 新增并购/交易过程形态后含 Instacart
@@ -595,7 +647,30 @@ v3.1 轮 258 条），不是宣称值。v2.17/v3.0.0c 轮次数字（248-258 条
   引擎不代劳——这是心虫铁律，不是能力缺失。
 
 **测试**
-- `npm test`：**230 项断言**（实测各 section 汇总；v3.3.1 的 214 + v3.4 新增 16：
+- `npm test`：**241 项断言**（实测各 section 汇总；v3.4 的 230 + v3.5 新增 11：
+  2 项纯结算函数（settleGuidance 单位感知容差：相对/绝对/bps/百分点/区间/无容差
+  跳过，含区分相对vs绝对的边界用例 / normalizeMetric+parseMetricValue 单位解析）+
+  3 项实际值抽取（extractActuals 营收+毛利率+标题期间 / GAAP/非GAAP 不同值抽出
+  两条 / 无标题期间返回空）+
+  1 项结算编排（settleEarningsGuidance：hit/miss/歧义跳过/到期门/证据落账/幂等，
+  受控台账备份还原）+
+  1 项 extractSignals 透传 actuals/ticker+
+  1 项 record() 持久化 settlement 元数据+
+  1 项 formatReport 渲染结算段（带内判据+beat方向口径限定）+
+  1 项 cron 注入源级（guidanceSettlement+汇总+口径限定）+
+  1 项版本号一致性（VERSION/package.json/banner 对齐 3.5.0）。
+  v3.5 五轮反向验证全部精确失败：摘除 extractActuals matchAll（恢复单 match，
+  吞掉 GAAP/非GAAP 歧义）→GAAP/非GAAP 抽出两条断言失败；摘除 settleEarningsGuidance
+  调用→formatReport 结算段断言失败；摘除单位感知容差（$+% 误当绝对）→容差断言
+  失败（首版用例全判 miss 区分不出相对/绝对，补 $100B±2% vs $101B 边界用例后
+  精确失败）；摘除 extractSignals actuals 透传→透传断言失败；摘除 record()
+  settlement→持久化断言失败。每轮基线全绿、摘除后断言必生效、diff 校验还原到位、
+  收尾基线全绿。
+  同轮测试维护：v2.13n「Brier 分数基于真实结算可算出」的 hitRate 断言从 `=== 1`
+  放宽为 `∈ [0,1]`——旧断言「全部命中」是台账只有人工 hits 时的偶然状态，v3.5
+  自动结算引入真实 miss（NVDA/AMD/MU 营收 beat→带外）后 hitRate 不再恒为 1；
+  放宽后意图（校准曲线基于真实结算可算，含 miss）保留。
+  历史：v3.4 的 230 + v3.4 新增 16：
   5 项采集器抽取（NVDA/AMZN/AMD/MRVL/MU 五种 live 句式命中 / 4 类精度回归 0 误报 /
   期间就近+同比排除+Oracle 两种期间形态 / 小数不截断+句点不冲段 / 词边界）+
   5 项辨别器（带元数据判 earnings-guidance+估计结算点 / 无 FYE 不猜结算点 /
@@ -718,7 +793,11 @@ v3.1 轮 258 条），不是宣称值。v2.17/v3.0.0c 轮次数字（248-258 条
   自 v3 引擎起产出+渲染，注入脚本从未读，第七次同型断链；段序必须在推演阶段结论
   之前：限定先于被限定者到达 agent）** /
   推演阶段 /
-  预测辨别 / **商业主张辨别（v3.0.0c 补入，第 6 段；KIND_CN 标签随形态库扩充：
+  预测辨别 / **财报指引结算（v3.5 补入，预测辨别之后——被结算的对象就是那段
+  登记的财报指引，限定先于被限定者；读 proj.forecastDiscrimination.guidanceSettlement，
+  含口径限定：outcome=实际值落在指引容差带内，beat/below 方向单独陈述，beat 不得
+  读成「公司没做到」；只结有容差/区间且实际值唯一的指引）** /
+  **商业主张辨别（v3.0.0c 补入，第 6 段；KIND_CN 标签随形态库扩充：
   v3.2 产能/供给约束、v3.3 并购/交易过程，注入与报告同标签）** /
   **口径错位检测（v3.1.1 补入，第 6.5 段，含触发句与口径限定——此前引擎产出+
   报告渲染都有，注入脚本从未读，第五次同型断链）** /

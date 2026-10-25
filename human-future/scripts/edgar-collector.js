@@ -51,7 +51,11 @@ const INDEX_URL = (cik, acc) => `https://www.sec.gov/Archives/edgar/data/${Numbe
 const DOC_URL = (cik, acc, name) => `https://www.sec.gov/Archives/edgar/data/${Number(cik)}/${acc}/${name}`;
 
 const REQUEST_GAP_MS = 120;          // SEC fair access 限速
-const MAX_8K_PER_COMPANY = 2;        // 每公司最多看最近 N 个业绩 8-K
+// [v3.5] 2 → 3：自动结算需要「指引备案 + 下一期实际值备案」这对连续备案都在
+// 采集窗口内。2 份只能结最近一季的指引（第 2 新备案的指引 ↔ 最新备案的实际
+// 值），3 份能同时结最近两季——v3.5 审计时台账积压 15 条到期指引，2 份窗口
+// 每轮只能清 3 条，3 份窗口清更多。成本约 14 个额外请求（120ms 间隔下可忽略）。
+const MAX_8K_PER_COMPANY = 3;        // 每公司最多看最近 N 个业绩 8-K
 const DOC_MAX_CHARS = 120000;        // 单附件抓取上限（防异常大文件）
 const BODY_WINDOW_CHARS = 4000;      // 挂到条目 body 上的 outlook 窗口
 
@@ -125,6 +129,35 @@ const QWORD = { first: 1, second: 2, third: 3, fourth: 4, '1st': 1, '2nd': 2, '3
 
 // 指引附带的前提削减（口径限定）：同节里「不假设/不含/排除」类句子
 const CAVEAT_RE = /(not assuming|does not include|excluding|excluding any|barring|absent|does not assume|not include)/i;
+
+// ── [v3.5] 实际值句式（过去时，与指引的 "is expected to be" 对立）────────
+// 定位：v3.4 登记了 33 条财报指引、15 条到期未结算——v2.13 核心承诺「到期
+// 结算 Brier」对最硬的预测类从未兑现（结算逻辑整个缺失）。业绩发布 EX-99
+// 同时含「上一财季实际值」（过去时）与「下一财季指引」（期望时态）；实际值
+// 段落是结算指引的唯一对账来源。本组正则只抽**区间/容差可判定**的两个头条
+// 指标（revenue / gross margin）——营收无 GAAP/非 GAAP 口径分歧，毛利率在
+// GAAP=非 GAAP 时只有一条实际值（NVDA 实测），不同值时自然抽出两条、被
+// 结算层「唯一实际值才结算」规则挡掉。EPS/opex 等不抽（GAAP/非 GAAP 歧义
+// 或亮点段不 reliably 陈述），留给后续轮次，不硬凑。
+// 期间锚：标题句 "Financial Results for Second Quarter Fiscal 2027" 陈述的是
+// **已报告财季**，是全文件最权威的期间来源；抽不到标题期间的备案不抽实际值
+// （漏报比误报诚实）。三种标题语序都认（for/announces/reports + 前缀/后缀）。
+const RESULTS_HEADLINE_RES = [
+  /(?:results?|earnings)\s+(?:for|of)\s+(?:the\s+)?(first|second|third|fourth|1st|2nd|3rd|4th)\s+quarter\s+(?:of\s+)?(?:fiscal\s+)?(20\d{2})/i,
+  /(?:announces?|reports?|posts?)\s+(?:the\s+)?(first|second|third|fourth|1st|2nd|3rd|4th)\s+quarter\s+(?:of\s+)?(?:fiscal\s+)?(20\d{2})/i,
+  /(first|second|third|fourth|1st|2nd|3rd|4th)\s+quarter\s+(?:of\s+)?(?:fiscal\s+)?(20\d{2})\s+(?:results?|earnings)/i,
+];
+// 营收实际值："reported revenue for the second quarter ended July 26, 2026,
+// of $96.2 billion" / 亮点行 "Revenue of $96.2 billion" / "revenue was $X"。
+// 指标与数值间的 [^.;]{0,90} 吃掉 "for the ... ended <date>, " 这类插入语；
+// 汇总表行 "Revenue $96,221 $81,615" 无 of/was/were 连接，天然不命中。
+const ACTUAL_REVENUE_RE = new RegExp(
+  `\\b(?:record\\s+|total\\s+|net\\s+)?revenue\\b[^.;]{0,90}?\\b(?:of|was|were)\\s+(?:approximately\\s+)?(\\$\\s?[\\d.,]+\\s*(?:billion|million|bn|m))\\b`, 'i');
+// 毛利率实际值："GAAP and non-GAAP gross margins were both 75.0%" /
+// "GAAP gross margin was 52.1%"。取第一个（若 GAAP 与非 GAAP 不同值会抽出
+// 两条，由结算层唯一性规则挡掉）。
+const ACTUAL_MARGIN_RE = new RegExp(
+  `\\bgross\\s+margins?\\b[^.;]{0,50}?\\b(?:was|were)\\s+(?:both\\s+|approximately\\s+)?([\\d.]+\\s*%)`, 'i');
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
@@ -350,6 +383,52 @@ function extractGuidance(text) {
 }
 
 /**
+ * [v3.5] 从业绩发布正文抽「已报告财季」的实际值（营收 / 毛利率，过去时）。
+ *
+ * 与 extractGuidance 的分工：后者抽「下一财季指引」（is expected to be，
+ * 未来时），本函数抽「本财季实际值」（was/were/of，过去时）——同一份 EX-99
+ * 里两者并存，实际值是指引到期时的对账依据。
+ *
+ * 期间取自标题句（RESULTS_HEADLINE_RES）："Financial Results for Second
+ * Quarter Fiscal 2027" 陈述的是已报告财季，是全文件最权威的期间锚；抽不到
+ * 标题期间就返回空 actuals——没有期间的数值无法与指引配对，漏报比误报诚实。
+ *
+ * 只抽营收与毛利率两个头条指标（理由见 ACTUAL_REVENUE_RE 注释）：营收无
+ * GAAP/非 GAAP 分歧；毛利率 GAAP=非 GAAP 时只余一条，不同值时抽出两条、
+ * 由结算层「唯一实际值才结算」挡掉。metric 用规范名（revenue / gross
+ * margin），与指引侧 normalizeMetric 对齐。
+ *
+ * @returns {{quarter: number|null, fiscalYear: number|null, actuals: Array<{metric:string, value:string}>}}
+ */
+function extractActuals(text) {
+  const t = String(text || '');
+  const head = t.slice(0, 400);
+  let quarter = null;
+  let fiscalYear = null;
+  for (const re of RESULTS_HEADLINE_RES) {
+    const m = head.match(re);
+    if (m) { quarter = QWORD[String(m[1]).toLowerCase()] ?? Number(m[1]); fiscalYear = Number(m[2]); break; }
+  }
+  if (!fiscalYear || !quarter) return { quarter: null, fiscalYear: null, actuals: [] };
+  const lead = t.slice(0, 1600);   // 亮点段：实际值在开头陈述，避开汇总表多列数字
+  const actuals = [];
+  // 营收取**第一个**匹配：总收入惯例上在亮点段最前（"Revenue of $96.2B"），
+  // 且营收无 GAAP/非 GAAP 分歧——取第一个即总收入，后面的分部营收
+  // （"Data Center revenue of $89.0B"）不取，避免把分部当总量。
+  const rv = lead.match(ACTUAL_REVENUE_RE);
+  if (rv) actuals.push({ metric: 'revenue', value: rv[1].replace(/\s+/g, ' ') });
+  // 毛利率取**全部**匹配：GAAP 与非 GAAP 不同值时抽出两条（MRVL 实测
+  // "GAAP gross margin was 52.9% / Non-GAAP ... 57.5%"），驱动结算层
+  // 「唯一实际值才结算」判歧义跳过；同值时（NVDA "both 75.0%"）只余一条，
+  // 照常结算。用 matchAll（global）——单 match 只取第一个会把歧义吞掉。
+  const mgnRe = new RegExp(ACTUAL_MARGIN_RE.source, 'gi');
+  for (const m of lead.matchAll(mgnRe)) {
+    actuals.push({ metric: 'gross margin', value: m[1].replace(/\s+/g, ' ') });
+  }
+  return { quarter, fiscalYear, actuals };
+}
+
+/**
  * 主入口：采集 SEC EDGAR 业绩备案与指引。
  * @param {object} opts { tickers?, live?, cacheTtlMs? }
  */
@@ -387,6 +466,8 @@ async function collectEdgarFilings(opts = {}) {
           let rel = { text: '', docName: '' };
           try { rel = await fetchEarningsRelease(rec.cik, f, f.primaryDocument); } catch (e) { errors.push(`${tk} ${f.filingDate}: 附件抓取失败 ${e.message}`); }
           const { guidance, outlookText } = rel.text ? extractGuidance(rel.text) : { guidance: [], outlookText: '' };
+          // [v3.5] 同文抽实际值（过去时）：结算上一财季指引的对账依据
+          const actualEx = rel.text ? extractActuals(rel.text) : { quarter: null, fiscalYear: null, actuals: [] };
           const indexUrl = `https://www.sec.gov/Archives/edgar/data/${Number(rec.cik)}/${f.accessionNoDash}/${f.accession}-index.htm`;
           items.push({
             title: `${rec.title} (${tk}) 8-K 业绩发布 · ${f.filingDate}`,
@@ -406,6 +487,9 @@ async function collectEdgarFilings(opts = {}) {
             fiscalYearEnd,
             docName: rel.docName,
             guidance,
+            // [v3.5] 已报告财季的实际值（营收/毛利率）+ 期间，供 earnings-settlement 结算
+            actuals: actualEx.actuals,
+            actualPeriod: actualEx.fiscalYear ? { quarter: actualEx.quarter, fiscalYear: actualEx.fiscalYear } : null,
           });
         }
       } catch (e) {
@@ -433,8 +517,9 @@ async function collectEdgarFilings(opts = {}) {
 }
 
 module.exports = {
-  collectEdgarFilings, extractGuidance, stripHtml,
+  collectEdgarFilings, extractGuidance, extractActuals, stripHtml,
   DEFAULT_TICKERS, GUIDANCE_SENTENCE_RE, PERIOD_PATTERNS,
+  ACTUAL_REVENUE_RE, ACTUAL_MARGIN_RE, RESULTS_HEADLINE_RES,
 };
 
 if (require.main === module) {
