@@ -21,6 +21,10 @@
 
 const fs = require('fs');
 const path = require('path');
+// [v3.4] SEC EDGAR 业绩备案采集器（新数据源）。它自带缓存与限速，
+// 由 collectAll 在所有 RSS 落地之后调用——位置纪律同 v2.14 的 sitemap
+// 日期解析：新网络负载不塞进现有源的 Promise.all。
+const { collectEdgarFilings } = require('../human-future/scripts/edgar-collector.js');
 
 // 九大域的 RSS 源。用户关心的推演域：AI 智能体安全与监管 / 诺贝尔奖 / 脑机接口 /
 // 基因编辑 / 长寿衰老逆转 / 量子计算 / 人形机器人 / AI 能源与电网 / 太空探索
@@ -142,6 +146,8 @@ const DOMAIN_NAMES = {
   psychology: '心理',
   philosophy: '哲学',
   economy: '宏观经济',
+  // [v3.4] SEC EDGAR 一手财报备案（8-K Item 2.02 业绩发布 + EX-99 附件）
+  sec_filings: 'SEC 财报备案',
   business: '商业动态',
 };
 
@@ -366,7 +372,10 @@ function extractMainContent(text) {
 async function enrichWithBody(items, opts = {}) {
   const want = opts.want ?? process.env.FETCH_BODY === '1';
   if (!want) return { attempted: 0, succeeded: 0 };
-  const targets = items.slice(0, MAX_BODY_ITEMS);
+  // [v3.4] EDGAR 条目不走正文增强：它们的 link 是备案索引页
+  // （不是发布正文），抓回来会覆盖采集器挂好的 outlook 文本；且其
+  // 正文在采集时已经从 EX-99 附件拿到，没有二次抓取的需要。
+  const targets = items.filter(it => it.source !== 'SEC EDGAR').slice(0, MAX_BODY_ITEMS);
   let succeeded = 0;
   // 有界并发：4 条一批。实测 24 条分 6 批约 15-25 秒完成。
   const BATCH = 4;
@@ -802,6 +811,26 @@ async function collectAll(opts = {}) {
   if (wantLive) {
     console.log('🌐 真实联网采集（FETCH=1）...\n');
     const live = await fetchAll();
+    // [v3.4] SEC EDGAR 采集：所有 RSS 落地之后做（v2.14 位置纪律）。
+    // 自带 6h 缓存，cron 两小时一轮也多数轮次零网络；单公司失败只丢
+    // 该家，采集器整体抛错时该域如实缺席，不用任何数据顶替。
+    try {
+      const edgar = await collectEdgarFilings({ live: true });
+      if (edgar.available && edgar.items.length) {
+        live.sec_filings = {
+          domain: 'sec_filings',
+          name: DOMAIN_NAMES.sec_filings,
+          news: edgar.items,
+        };
+        const withGuide = edgar.items.filter(it => it.guidance && it.guidance.length).length;
+        console.log(`  [live] sec_filings/SEC EDGAR: ${edgar.items.length} 条`
+          + `（${withGuide} 家含数值指引${edgar.fromCache ? '，缓存命中' : ''}）`);
+      } else {
+        console.log(`  [WARN] sec_filings/SEC EDGAR 不可用: ${edgar.reason || '(未说明原因)'}`);
+      }
+    } catch (e) {
+      console.log(`  [WARN] sec_filings/SEC EDGAR 采集抛错，该域缺席: ${e.message}`);
+    }
     const total = Object.values(live).reduce((n, d) => n + d.news.length, 0);
     if (total > 0) {
       console.log(`✅ 联网采集完成，共 ${total} 条\n`);

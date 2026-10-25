@@ -203,6 +203,11 @@ class ProjectionEngine {
           // 被 extractSignals 重建条目时丢掉，「端到端到达」断在这一环。
           // 实测教训：接口存在不等于产物里有，必须端到端验证。
           _dateSource: n._dateSource || '',
+          // [v3.4] SEC EDGAR 结构化指引与财年日历透传。不在重建条目时
+          // 带上，buildForecastDiscrimination 的指引元数据路径永远走不到
+          // （v2.14 同型：字段在采集层打上、读取层有，中间重建时丢）。
+          guidance: Array.isArray(n.guidance) ? n.guidance : null,
+          fiscalYearEnd: n.fiscalYearEnd || null,
           source: n.source || '(未标注)',
           link: n.link || '',
           pubDate: n.pubDate || '',
@@ -320,7 +325,7 @@ class ProjectionEngine {
     }
     const report = {
       meta: {
-        version: '3.3.1',
+        version: '3.4.0',
         heartflowVersion: this.analysis.engineVersion,
         timestamp: this.timestamp,
         modulesLoaded: this.analysis.modulesLoaded,
@@ -1419,6 +1424,28 @@ class ProjectionEngine {
     const COMMITMENT = /(plans?\s+to|aims?\s+to|intends?\s+to|expects?\s+to|targets?\s|goal\s+is|on\s+the\s+roadmap|roadmap| slated|poised|set\s+to|计划|预计|拟于|定于|有望|目标|路线图|将要|将会|will\s+(?:match|reach|hit|achieve|arrive|be\s+at)|they'?ll\s+(?:match|reach|hit|be)|would\s+(?:match|reach|hit|be)|must\s+(?:do|comply|implement|ensure|provide|register|report|obtain|conduct)|shall\s+(?:do|comply|implement|ensure|provide|be)|(?:is|are|be)\s+required\s+to|required\s+to\s+(?:comply|implement|ensure|provide|register)|obligation\s+to|义务|必须|须于|应于|应当)/i;
     const NOT_A_PREDICTION = /(at\s+(?:an?\s+)?(?:introductory\s+)?price|priced\s+at|is\s+confined\s+to|will\s+be\s+able\s+to|is\s+designed\s+to|this\s+ensures|with\s+this\s+new|定价|价格为|售价|must\s+register\s+by|registration\s+(?:deadline|closes|due)|register\s+by\s+\d|wishing\s+to\s+attend|virtual\s+meeting|webinar|会议注册|报名截止| wishing to attend)/i;
     const claims = [];
+    // [v3.4] SEC EDGAR 结构化指引**优先**进入辨别：它们是本期质量最高
+    // 的可结算主张（一手备案、指标+数值+结算期），先占 claims 额度，
+    // 避免被 RSS 意图声明挤掉（额度 20，见下方 break）。
+    // 无期间的指引条目跳过——没有结算点的数值期望不可结算。
+    for (const it of this.signals.items) {
+      if (!Array.isArray(it.guidance)) continue;
+      for (const g of it.guidance) {
+        if (!g.quarter && !g.annual) continue;
+        claims.push({
+          text: g.sentence,
+          claimSentence: g.sentence,
+          source: it.source,
+          date: it.pubDate,
+          url: it.link,
+          category: 'earnings_guidance',
+          guidance: g,
+          fiscalYearEnd: it.fiscalYearEnd,
+        });
+        if (claims.length >= 40) break;
+      }
+      if (claims.length >= 40) break;
+    }
     for (const it of this.signals.items) {
       const text = `${it.title || ''} ${it.body || ''} ${it.description || ''}`;
       // [v2.13] 归一化弯引号/弯撇号。
@@ -1433,9 +1460,14 @@ class ProjectionEngine {
         .replace(/[\u201C\u201D\u201E\u201F\u2033]/g, '"');
       const sents = norm.split(/(?<=[.!?。！？])\s+/);
       // 找第一个同时满足「有前瞻结构」且「不是定价/设计说明」的句子
+      // [v3.4] 结构化指引已收录的句子不再重复进（同一句两条 claim
+      // 会在台账里同源同时点撞 id，被误判「已登记」而互相挤出）
+      const guided = (Array.isArray(it.guidance) ? it.guidance : [])
+        .map(g => String(g.sentence || '').slice(0, 40).toLowerCase()).filter(Boolean);
       const hitIdx = sents.findIndex(s => {
         if (s.length < 20 || s.length > 400) return false;
         if (NOT_A_PREDICTION.test(s)) return false;
+        if (guided.some(g => s.toLowerCase().startsWith(g))) return false;
         return (COMMITMENT.test(s) && TIME_POINT.test(s))   // A: 承诺+时间
           || (COMMITMENT.test(s) && /(将|计划|预计|有望|目标|plans?|aims?|expects?|targets?|roadmap)/i.test(s)); // B: 明确承诺
       });
@@ -1535,7 +1567,16 @@ class ProjectionEngine {
         .split('/').pop() || '';
       const id = `fc-${(r.source || 'unknown').replace(/[^a-z0-9]+/gi, '-').toLowerCase()}`
         + `-${urlTail.replace(/[^a-z0-9]+/gi, '-').toLowerCase().slice(0, 40) || 'nourl'}`
-        + `-${(r.dueOn || 'nodue').replace(/[^a-z0-9]+/gi, '-').toLowerCase()}`;
+        + `-${(r.dueOn || 'nodue').replace(/[^a-z0-9]+/gi, '-').toLowerCase()}`
+        // [v3.4] 财报指引加 metric+value 维度：同一 8-K 备案的多条指引
+        // （revenue / gross margins / operating expenses）结算点相同，不加
+        // 维度则第 2 条起被「id 已存在」误跳过；只加 metric 还不够——MRVL
+        // 实测 GAAP gross margin 52.9% 与非 GAAP 57.5% 同名同时点，仍互撞
+        // （非 GAAP 那条被静默丢弃）。value 对同一 accession 是确定性的。
+        + (r.guidance && r.guidance.metric
+          ? `-${String(r.guidance.metric).replace(/[^a-z0-9]+/gi, '-').toLowerCase()}`
+            + `-${String(r.guidance.value || 'novalue').replace(/[^a-z0-9]+/gi, '-').toLowerCase().slice(0, 24)}`
+          : '');
       const dueDate = r.dueOn && /^\d{4}-Q([1-4])$/.test(r.dueOn)
         ? `${r.dueOn.slice(0, 4)}-${['03-31', '06-30', '09-30', '12-31'][Number(r.dueOn.slice(-1)) - 1]}`
         : (r.dueOn || null);
@@ -2202,6 +2243,7 @@ function formatReport(report) {
     lines.push(`本期抽到 ${fd.audited} 条含前瞻声明的预测，逐条辨别结果：`);
     lines.push(`  可结算 ${s.settleableCount} 条 | 结构完整 ${s.wellFormedCount} 条`
       + ` | 不可证伪 ${s.notForecastCount} 条 | 非预测文本 ${s.referenceTextCount || 0} 条`
+      + ` | 财报指引 ${s.guidanceCount || 0} 条`
       + ` | 校准警告 ${s.calibrationWarnings} 条`);
     lines.push('');
     const VERDICT_CN = {
@@ -2209,11 +2251,29 @@ function formatReport(report) {
       'weakly-supported': '支撑不足', 'well-formed': '结构完整',
       // [v2.15] 指南/参考页文本：没有主张主体，与「意图声明」分开展示
       'reference-text': '非预测文本',
+      // [v3.4] 财报指引：厂商一手备案里的自报预测（SEC EDGAR）
+      'earnings-guidance': '财报指引',
     };
     for (const r of fd.results.slice(0, 12)) {
       lines.push(`[${VERDICT_CN[r.verdict] || r.verdict}] ${r.text.slice(0, 110)}`);
       lines.push(`  来源: ${r.source} | 类别: ${r.category} | 结算点: ${r.dueOn || '(无)'}`
         + ` | 可结算: ${r.settleable ? '是' : '否'}`);
+      // [v3.4] 财报指引明细：结算期、容差、前提削减与估计依据必须
+      // 同屏出现——「$108.0B」不带 ±2% 与中国区假设就是选择性呈现，
+      // 正是本引擎要抓的口径错位。
+      if (r.guidance) {
+        const parts = [];
+        if (r.guidance.periodLabel) parts.push(`结算期: ${r.guidance.periodLabel}`);
+        if (r.guidance.value) parts.push(`数值: ${r.guidance.value}`);
+        if (r.guidance.tolerance) parts.push(`容差: ±${r.guidance.tolerance}`);
+        if (parts.length) lines.push(`  指引结构: ${parts.join(' | ')}`);
+        if (r.guidance.caveats && r.guidance.caveats.length) {
+          lines.push(`  前提削减: ${r.guidance.caveats.slice(0, 2).join('；').slice(0, 200)}`);
+        }
+        if (r.dueBasis === 'estimated-fiscal' && r.dueNote) {
+          lines.push(`  结算点依据: ${r.dueNote}`);
+        }
+      }
       lines.push(`  推理完整性: ${r.reasoning.score}/3`
         + `（${r.reasoning.checks.filter(c => c.present).map(c => c.label.split('（')[0]).join('、') || '无'}）`);
       lines.push(`  基准概率: ${Math.round(r.baseRate.rate * 100)}%`

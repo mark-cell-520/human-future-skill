@@ -3960,3 +3960,255 @@ c331('版本号一致性：VERSION/package.json/projection meta/run-pipeline met
     console.log('结论：两条 live 误报已精确消除、live 真主张全保留、版本号四处对齐（维护级精度修复，非新辨别维度）。');
   }
 })();
+
+// ════════════════════════════════════════════════════════════════
+// v3.4 新辨别维度：财报指引（SEC EDGAR 新数据源 + forecast-discriminator
+// 新 verdict）。这是 v2.13 起记录六轮的边界缺口（RSS 前瞻表述多为意图
+// 声明、不可结算）的第一次实质推进——带硬结算日的预测从上市公司一手
+// 备案（8-K Item 2.02 的 EX-99 业绩发布）来。
+// ════════════════════════════════════════════════════════════════
+const v34 = [];
+function c34(name, ok, detail) { v34.push({ name, ok, detail }); }
+
+// ── 组 1：采集器抽取（edgar-collector.extractGuidance）────────────
+// 1. live 实证句式命中：五家公司五种句式（全部 2026-10-25 从 SEC 实抓）
+c34('live 句式命中：NVDA/AMZN/AMD/MRVL/MU 五种指引句式', (() => {
+  const { extractGuidance } = require('./human-future/scripts/edgar-collector.js');
+  const NVDA = "Outlook NVIDIA's outlook for the third quarter of fiscal 2027 is as follows: • Revenue is expected to be $108.0 billion, plus or minus 2%. NVIDIA is not assuming any Data Center compute revenue from China in its outlook.";
+  const AMZN = 'Financial Guidance The following forward-looking statements reflect expectations. Third Quarter 2026 Guidance • Net sales are expected to be between $197.0 billion and $202.0 billion, or to grow between 9% and 12% compared with third quarter 2025.';
+  const AMD = "AMD's outlook statements are based on current expectations. For the third quarter of 2026, AMD expects revenue to be approximately $13 billion, plus or minus $300 million.";
+  const MRVL = 'Third Quarter of Fiscal 2027 Financial Outlook • Net revenue is expected to be $3.150 billion +/- 5%.';
+  const MU = "Business Outlook The following table presents Micron's guidance for the first quarter of 2027: Revenue $61.5 billion ± $1.5 billion";
+  const g = (t) => extractGuidance(t).guidance;
+  const a = g(NVDA), b = g(AMZN), c = g(AMD), d = g(MRVL), e = g(MU);
+  return a.length === 1 && a[0].metric === 'revenue' && a[0].value === '$108.0 billion'
+    && a[0].tolerance === '2%' && a[0].periodLabel === 'FY2027 Q3'
+    && a[0].caveats.some(x => /not assuming/i.test(x))
+    && b.length === 1 && b[0].value.includes('197.0') && b[0].periodLabel === 'FY2026 Q3'
+    && c.length === 1 && c[0].metric === 'revenue' && c[0].value === '$13 billion'
+    && c[0].tolerance === '$300 million' && c[0].periodLabel === 'FY2026 Q3'
+    && d.length === 1 && d[0].value === '$3.150 billion' && d[0].tolerance === '5%' && d[0].periodLabel === 'FY2027 Q3'
+    && e.length === 1 && e[0].value === '$61.5 billion' && e[0].tolerance === '$1.5 billion' && e[0].periodLabel === 'FY2027 Q1';
+})(), '五种 live 指引句式必须抽出指标/数值/容差/结算期，NVDA 的前提削减必须带上');
+
+// 2. 精度回归：四类非指引文本 0 条（摘除任何精度设计 → 对应误报出现）
+c34('精度回归：actuals 表格/意图声明/电话会口头指引/全年实际值不命中', (() => {
+  const { extractGuidance } = require('./human-future/scripts/edgar-collector.js');
+  const noise = [
+    'GAAP gross profit $ 6,203 $ 5,416 $ 3,059 GAAP gross margin 54 % 53 % 40 % Revenue $ 6,824 $ 4,634 $ 1,434',
+    'We expect to expand access to our models next quarter. The company aims to simplify pricing for enterprise customers.',
+    'Business Outlook Microsoft will provide forward-looking guidance in connection with this quarterly earnings announcement on its earnings conference call and webcast.',
+    'For fiscal year 2026, revenue was $50 billion and operating income was $12 billion. The Company achieved record results.',
+  ];
+  return noise.every(t => extractGuidance(t).guidance.length === 0);
+})(), '财报 actuals 表格、意图声明、电话会口头指引（MSFT 实测）、全年实际值都不得判成指引');
+
+// 3. 期间就近 + 对比排除 + Oracle 两种期间形态
+c34('期间解析：就近取胜、同比引用排除、Q# FY#### 与全年形态', (() => {
+  const { extractGuidance } = require('./human-future/scripts/edgar-collector.js');
+  // Amazon：句内 "compared with third quarter 2025"（同比）必须不赢段头
+  const amzn = extractGuidance('Third Quarter 2026 Guidance • Net sales are expected to be between $197.0 billion and $202.0 billion, or to grow between 9% and 12% compared with third quarter 2025.').guidance[0];
+  // Oracle：Q2 FY 2027 缩写形态 + Full FY 2027 全年形态
+  const orcl = extractGuidance('Guidance for Q2 FY 2027 Oracle is providing the following forward-looking guidance for Q2 FY 2027: • Non-GAAP earnings per share is expected to be between $1.83 and $1.91. Guidance for Full FY 2027 For fiscal year 2027, we now expect total revenue to be at least $90 billion.').guidance;
+  return amzn.periodLabel === 'FY2026 Q3'
+    && orcl.length === 2
+    && orcl[0].periodLabel === 'FY2027 Q2' && orcl[0].annual === false
+    && orcl[1].periodLabel === 'FY2027 全年' && orcl[1].annual === true;
+})(), '同比引用（third quarter 2025）不得赢段头；Oracle 的 Q2 FY 2027 与 Full FY 2027 必须正确解析');
+
+// 4. 小数不截断 + 句点不冲段（\d\. 会把句点吞掉的坑）
+c34('句点处理：小数位保留、句末点不冲进下一节', (() => {
+  const { extractGuidance } = require('./human-future/scripts/edgar-collector.js');
+  const dec = extractGuidance('Outlook for the third quarter of fiscal 2027 is as follows: • Revenue is expected to be $108.0 billion, plus or minus 2%.').guidance[0];
+  const oracle = extractGuidance('For fiscal year 2027, we now expect total revenue to be at least $90 billion, and non-GAAP EPS to be at $8.10. New Oracle AI Data Platform Automatically Generates Enterprise Ontology').guidance[0];
+  return dec.value === '$108.0 billion' && dec.tolerance === '2%'
+    && oracle.sentence.endsWith('$8.10') && !/New Oracle/.test(oracle.sentence);
+})(), '"$108.0 billion" 不得截成 "$108"；"at $8.10. New Oracle" 的句点必须断句');
+
+// 5. 词边界：向前扩展不切半截词
+c34('词边界：extendBack 不产生半截词', (() => {
+  const { extractGuidance } = require('./human-future/scripts/edgar-collector.js');
+  const g = extractGuidance('Third Quarter of Fiscal 2027 Financial Outlook • GAAP diluted net income per share is expected to be $0.53 +/- $0.05 per share.').guidance[0];
+  return g.sentence.startsWith('diluted net income per share') && !/^\S?\s/.test(g.sentence.slice(0, 3));
+})(), 'MRVL 实测 "GAAP diluted..." 不得被切成 "P diluted..."');
+
+// ── 组 2：辨别器（forecast-discriminator）────────────────────────
+// 6. 带元数据的指引：新 verdict + 估计结算点
+c34('带 EDGAR 元数据的指引判 earnings-guidance 且可结算', (() => {
+  const { discriminate } = require('./human-future/scripts/forecast-discriminator.js');
+  const r = discriminate({
+    text: 'Revenue is expected to be $108.0 billion, plus or minus 2%',
+    source: 'SEC EDGAR', date: '2026-08-26', category: 'earnings_guidance', fiscalYearEnd: '0131',
+    guidance: { quarter: 3, fiscalYear: 2027, metric: 'revenue', value: '$108.0 billion', tolerance: '2%', periodLabel: 'FY2027 Q3', caveats: ['NVIDIA is not assuming any Data Center compute revenue from China in its outlook.'] },
+  });
+  return r.verdict === 'earnings-guidance' && r.settleable === true
+    && r.dueOn === '2026-12-15' && r.dueBasis === 'estimated-fiscal'
+    && r.baseRate.rate === 0.5 && r.guidance && r.guidance.fromMetadata === true
+    && r.guidance.caveats.length === 1;
+})(), 'NVIDIA FY27 Q3 指引必须判财报指引、dueOn=2026-12-15（财季结束+45 天估计）、先验 0.5');
+
+// 7. 无元数据的句内财季期间：不猜结算点（漏报比误报诚实）
+c34('无 fiscalYearEnd 的句内财季指引不猜结算点', (() => {
+  const { discriminate } = require('./human-future/scripts/forecast-discriminator.js');
+  const r = discriminate({
+    text: 'Revenue is expected to be $108.0 billion for the third quarter of fiscal 2027',
+    source: 'TechCrunch AI', date: '2026-10-25',
+  });
+  return r.verdict === 'earnings-guidance' && r.settleable === false
+    && r.dueOn === null && /fiscalYearEnd/.test(r.dueNote || '');
+})(), 'RSS 引用的财季指引缺财年日历，必须 dueOn=null 并说明原因，不许按裸年份猜 Q4');
+
+// 8. no-timeline 不误杀：指引时点在元数据里不在句子里
+c34('no-timeline 不过滤误杀带元数据的指引', (() => {
+  const { discriminate } = require('./human-future/scripts/forecast-discriminator.js');
+  const r = discriminate({
+    text: 'Revenue is expected to be $108.0 billion',   // 句内没有任何年份
+    source: 'SEC EDGAR', date: '2026-08-26', category: 'earnings_guidance', fiscalYearEnd: '0131',
+    guidance: { quarter: 3, fiscalYear: 2027, metric: 'revenue', value: '$108.0 billion', periodLabel: 'FY2027 Q3', caveats: [] },
+  });
+  return r.verdict === 'earnings-guidance'
+    && !(r.falsifiability.problems || []).some(p => p.id === 'no-timeline');
+})(), '句内无年份但元数据带结算期的指引不得被判「无时间点的意图声明」');
+
+// 9. 全年指引：财年结束 + 45 天
+c34('全年指引结算点 = 财年结束 + 45 天（Oracle FYE 0531）', (() => {
+  const { discriminate } = require('./human-future/scripts/forecast-discriminator.js');
+  const r = discriminate({
+    text: 'For fiscal year 2027, we now expect total revenue to be at least $90 billion',
+    source: 'SEC EDGAR', date: '2026-09-10', category: 'earnings_guidance', fiscalYearEnd: '0531',
+    guidance: { quarter: null, fiscalYear: 2027, annual: true, metric: 'total revenue', value: '$90 billion', periodLabel: 'FY2027 全年', caveats: [] },
+  });
+  return r.verdict === 'earnings-guidance' && r.settleable === true
+    && r.dueOn === '2027-07-15' && /财年结束/.test(r.dueNote || '');
+})(), 'Oracle Full FY2027 指引的估计结算点必须是 2027-07-15（FYE 5-31 + 45 天）');
+
+// 10. 先验路由：earnings_guidance 类目存在且口径写明
+c34('先验路由：earnings_guidance 中性先验 + 口径说明', (() => {
+  const { DEFAULT_BASE_RATES } = require('./human-future/scripts/forecast-discriminator.js');
+  const g = DEFAULT_BASE_RATES.earnings_guidance;
+  return !!g && g.rate === 0.5 && /分析师预期/.test(g.note || '');
+})(), 'earnings_guidance 必须取中性先验 0.5 且 note 写明「FactSet 超预期率不可挪用」（防口径错位）');
+
+// ── 组 3：引擎端到端 ─────────────────────────────────────────────
+// 11. extractSignals 透传 + 结构化指引优先收录 + 通用扫描不重复收录
+c34('端到端：EDGAR 指引进辨别且不与通用扫描重复', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const items = [{
+    title: 'NVIDIA CORP (NVDA) 8-K 业绩发布 · 2026-08-26',
+    description: '财报指引（FY2027 Q3）：Revenue is expected to be $108.0 billion, plus or minus 2%',
+    body: "Outlook NVIDIA's outlook for the third quarter of fiscal 2027 is as follows: • Revenue is expected to be $108.0 billion, plus or minus 2%. NVIDIA is not assuming any Data Center compute revenue from China in its outlook.",
+    source: 'SEC EDGAR', bucket: 'sec_filings', origin: 'live',
+    pubDate: '2026-08-26', link: 'https://example.com/edgar-nvda-q2fy27',
+    fiscalYearEnd: '0131',
+    guidance: [{ sentence: 'Revenue is expected to be $108.0 billion, plus or minus 2%', metric: 'revenue', value: '$108.0 billion', tolerance: '2%', quarter: 3, fiscalYear: 2027, periodLabel: 'FY2027 Q3', caveats: ['NVIDIA is not assuming any Data Center compute revenue from China in its outlook.'] }],
+  }];
+  const inst = new ProjectionEngine({});
+  inst.signals = { totalItems: 1, domains: [], undomained: 0, dateRange: null, items };
+  // extractSignals 透传验证
+  const eng2 = new ProjectionEngine({ newsData: { sec_filings: { domain: 'sec_filings', news: items } } });
+  const sig = eng2.extractSignals();
+  const fd = inst.buildForecastDiscrimination();
+  const gClaims = (fd.results || []).filter(r => r.category === 'earnings_guidance');
+  return sig.items[0].guidance && sig.items[0].guidance.length === 1
+    && sig.items[0].fiscalYearEnd === '0131'
+    && fd.audited === 1 && gClaims.length === 1
+    && gClaims[0].text.includes('$108.0 billion')
+    && gClaims[0].dueOn === '2026-12-15';
+})(), 'extractSignals 必须透传 guidance/fiscalYearEnd；同一句只收录一次（结构化优先，通用扫描跳过）');
+
+// 12. 幂等 id：同备案多条指引 id 互异 + 二跑不重复登记
+c34('幂等 id：同一备案多条指引 metric+value 维度互异', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const mk = (metric, value, sentence) => ({
+    title: 'MRVL 8-K', description: '', body: sentence,
+    source: 'SEC EDGAR', bucket: 'sec_filings', origin: 'live',
+    pubDate: '2026-08-27', link: 'https://example.com/edgar-mrvl-q2fy27',
+    fiscalYearEnd: '0130',
+    guidance: [{ sentence, metric, value, tolerance: null, quarter: 3, fiscalYear: 2027, periodLabel: 'FY2027 Q3', caveats: [] }],
+  });
+  const items = [
+    mk('gross margin', '52.9% to 53.9%', 'GAAP gross margin is expected to be 52.9% to 53.9%'),
+    mk('gross margin', '57.5% to 58.5%', 'Non-GAAP gross margin is expected to be 57.5% to 58.5%'),
+  ];
+  const inst = new ProjectionEngine({});
+  inst.signals = { totalItems: items.length, domains: [], undomained: 0, dateRange: null, items };
+  const fd = inst.buildForecastDiscrimination();
+  const lr = fd.ledgerRegistration || {};
+  const ids = (lr.registered || []).map(x => x.id);
+  // 二跑：全部应为「已存在」跳过，0 新登记
+  const fd2 = inst.buildForecastDiscrimination();
+  const lr2 = fd2.ledgerRegistration || {};
+  return ids.length === 2 && new Set(ids).size === 2
+    && ids.every(id => /gross-margin-5[27]/.test(id))
+    && (lr2.registered || []).length === 0
+    && (lr2.skipped || []).length === 2;
+})(), 'MRVL 的 GAAP 与非 GAAP 同名同时点指引必须生成不同 id；二跑幂等 0 新登记');
+
+// 13. formatReport 渲染（只认渲染行，v3.2 教训）
+c34('formatReport 渲染财报指引段（指标/容差/前提削减/估计依据）', (() => {
+  const { ProjectionEngine, formatReport } = require('./scripts/project-future.js');
+  const items = [{
+    title: 'NVIDIA CORP (NVDA) 8-K 业绩发布 · 2026-08-26',
+    description: '财报指引（FY2027 Q3）：Revenue is expected to be $108.0 billion, plus or minus 2%',
+    body: 'Revenue is expected to be $108.0 billion, plus or minus 2%. NVIDIA is not assuming any Data Center compute revenue from China in its outlook.',
+    source: 'SEC EDGAR', bucket: 'sec_filings', origin: 'live',
+    pubDate: '2026-08-26', link: 'https://example.com/edgar-nvda-render',
+    fiscalYearEnd: '0131',
+    guidance: [{ sentence: 'Revenue is expected to be $108.0 billion, plus or minus 2%', metric: 'revenue', value: '$108.0 billion', tolerance: '2%', quarter: 3, fiscalYear: 2027, periodLabel: 'FY2027 Q3', caveats: ['NVIDIA is not assuming any Data Center compute revenue from China in its outlook.'] }],
+  }];
+  const md = formatReport(new ProjectionEngine({ newsData: { sec_filings: { domain: 'sec_filings', news: items } } }).generate());
+  const seg = md.split('## 预测辨别')[1] || '';
+  return seg.includes('财报指引 1 条')
+    && seg.includes('[财报指引] Revenue is expected to be $108.0 billion')
+    && seg.includes('指引结构: 结算期: FY2027 Q3 | 数值: $108.0 billion | 容差: ±2%')
+    && seg.includes('前提削减: NVIDIA is not assuming')
+    && seg.includes('结算点依据: 估计值：财季结束 2026-10-31');
+})(), '报告必须渲染财报指引汇总行、结构行、前提削减与估计依据（只认渲染出的行）');
+
+// 13b. 采集层接线源级（R1 反向验证对应断言：摘除 collectAll 的 EDGAR
+//      接线时本断言失败。端到端夹具不过 collectAll，源级是既定 Pattern——
+//      同注入脚本检查）。
+c34('collect-news.js 接入 EDGAR 采集器（sec_filings 域）', (() => {
+  const src = require('fs').readFileSync(require('path').join(__dirname, 'scripts/collect-news.js'), 'utf-8');
+  return src.includes("require('../human-future/scripts/edgar-collector.js')")
+    && src.includes('collectEdgarFilings({ live: true })')
+    && src.includes('live.sec_filings = {')
+    && src.includes("sec_filings: 'SEC 财报备案'");
+})(), 'collectAll 必须接 EDGAR 采集器并挂 sec_filings 域，否则新数据源到不了 pipeline');
+
+// 14. 注入脚本源级（第七次同型断链纪律：新段必须进注入）
+c34('cron 注入脚本渲染财报指引（VERDICT_CN/汇总/结构行）', (() => {
+  const p = require('path').join(require('os').homedir(), '.hermes/scripts/hf-cron-fetch.sh');
+  if (!require('fs').existsSync(p)) return false;
+  const src = require('fs').readFileSync(p, 'utf-8');
+  return /'earnings-guidance': '财报指引'/.test(src)
+    && /财报指引 \$\{s\.guidanceCount \|\| 0\}/.test(src)
+    && /指引结构: \$\{gp\.join\(' \| '\)\}/.test(src)
+    && /结算点为估计值（财季结束\+45天）/.test(src);
+})(), '注入脚本必须含 earnings-guidance 标签、guidanceCount 汇总与指引结构行，否则 agent 看不到新维度');
+
+// ── 组 4：版本号（corr-2026-014 同型：banner 腐烂四个补丁轮）─────
+c34('版本号一致性：banner 与 VERSION 对齐（3.4.0）', (() => {
+  const fs2 = require('fs');
+  const version = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
+  const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
+  return version === '3.4.0' && rp.includes('文明推演引擎 v3.4.0');
+})(), 'run-pipeline banner 必须与 VERSION 一致（v3.1 修过 banner/meta 同型后又腐烂）');
+
+// ── v3.4 汇总 ──
+(async () => {
+  const results = await Promise.all(v34.map(c => Promise.resolve(c.ok)));
+  let f = 0;
+  v34.forEach((c, i) => {
+    const ok = results[i];
+    if (!ok) f++;
+    console.log(`${ok ? '\u2713' : '\u2717'} ${c.name}${ok ? '' : '  —— ' + c.detail}`);
+  });
+  console.log(`\nv3.4: ${v34.length - f} 通过, ${f} 失败, 共 ${v34.length} 个`);
+  if (f > 0) {
+    console.log('结论：财报指引新辨别维度不完整（抽取/精度/判别/端到端/注入/版本有缺）。');
+    process.exitCode = 1;
+  } else {
+    console.log('结论：SEC EDGAR 财报指引端到端成立——一手备案进采集、新 verdict 进辨别、估计结算点进台账、注入可见。');
+  }
+})();

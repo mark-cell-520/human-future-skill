@@ -47,7 +47,14 @@
 const { dedupeSameObligation } = require('./prediction-ledger.js');
 
 /** 通用基准概率：无同类历史时的默认锚。每个值都注明来源与口径。 */
+// [v3.4] 财报指引（earnings guidance）先验。口径说明（重要）：
+// FactSet Earnings Insight 的「77% 公司收入超预期」是**实际值 vs 分析师
+// 一致预期**，不是「实际值 vs 公司自身指引」——两个口径差一个「指引
+// 通常打得保守」的系统性偏差，直接挪用就是本引擎自己要抓的口径错位。
+// 检索无果（2026-10-25 两组检索未找到可引用的「指引兑现率」公开统计），
+// 故取中性 0.5，待本地台账积累后替换。
 const DEFAULT_BASE_RATES = {
+  earnings_guidance: { rate: 0.5, sample: 0, note: '通用先验（中性），无本地历史；FactSet 的「超预期率」是 vs 分析师预期的口径，不可挪用为「兑现自身指引」' },
   // 「厂商宣布 X 月内交付」的历史兑现率。口径：从宣布日到期交付日，
   // 以厂商官方 GA 公告为准，不含延期后交付。
   vendor_delivery: { rate: 0.35, sample: 0, note: '通用先验，无本地历史；需台账积累后替换' },
@@ -85,6 +92,59 @@ const REFERENCE_TEXT_PATTERNS = [
     label: '指南/参考页文本',
     guidance: '这是页面标题与简介组成的参考文本，没有任何主体在做出预测，不能登记结算。' },
 ];
+
+// ── [v3.4] 财报指引（新辨别维度）────────────────────────────────
+// 定位：v2.13 起记录的边界「RSS 前瞻表述多为意图声明、不可结算」的推进——
+// 带硬结算日的预测不只在预测平台，也在上市公司 8-K（Item 2.02）的
+// EX-99 业绩发布里："Revenue is expected to be $108.0 billion, plus or
+// minus 2%"（NVIDIA FY2027 Q3 指引）。有主体（公司）、有事件（下一财季
+// 实际值）、有结算机制（下一期财报公布）。判据与 edgar-collector 的
+// 抽取模式同源（三条 live 实证句式：指标+is/are expected to be+数值）。
+// 与「意图声明」的分界：意图声明没有指标名词与数值的相邻共现。
+const GUIDANCE_METRIC = '(?:net revenues?|revenues?|net sales|total revenue|income|earnings|eps|diluted earnings per share|gross margins?|operating expenses|operating income|tax rates?|free cash flow|capital expenditures?|capex)';
+const GUIDANCE_TEXT_RE = new RegExp(
+  `(?:${GUIDANCE_METRIC})\\b[^.;•]{0,140}?\\b(?:is|are)\\s+(?:expected|projected|anticipated|forecast|guided)\\s+to\\s+be\\b[^.;•]{0,80}?[\\d$%]`,
+  'i');
+// 句内财季期间："third quarter of fiscal 2027" / "Q3 FY2027" / "Q3 2027"
+const FISCAL_PERIOD_RE = /(?:(?:for\s+the\s+)?(first|second|third|fourth|1st|2nd|3rd|4th)\s+quarter\s+(?:of\s+)?(?:fiscal\s+)?(20\d{2})\b|Q([1-4])\s*(?:FY\s*)?(20\d{2}))/i;
+const QWORD_NUM = { first: 1, second: 2, third: 3, fourth: 4, '1st': 1, '2nd': 2, '3rd': 3, '4th': 4 };
+
+/**
+ * 财季期间 → 日历结算点（估计值）。
+ *
+ * fiscalYearEnd 形如 '0131'（NVDA）/ '0630'（MSFT）/ '1226'（AMD）/
+ * '0902'（MU）——EDGAR submissions JSON 的权威字段。财季结束月 =
+ * FYE 月 - 3×(4-季度)，跨年回绕；结束日取 FYE 日（月内同日近似）。
+ * 结算点 = 财季结束 + REPORT_LAG_DAYS 天——财报公布滞后的保守中位
+ * （实测 NVDA 约 3.5 周、MSFT 约 4 周、MU 约 1 周、慢的可达 6 周以上；
+ *  取 45 天保证「到期未结算」只在实际值已公开之后出现，方向保守）。
+ *
+ * 诚实性：返回 dueBasis='estimated-fiscal'，任何层不得把这个日期
+ * 当作精确结算日引用；实际结算以下一期财报公布值为准。
+ */
+const REPORT_LAG_DAYS = 45;
+function fiscalPeriodToDueOn(quarter, fiscalYear, fiscalYearEnd, annual) {
+  if (!fiscalYear || !fiscalYearEnd) return null;
+  if (!annual && !quarter) return null;
+  const fyeMonth = Number(String(fiscalYearEnd).slice(0, 2));
+  const fyeDay = Number(String(fiscalYearEnd).slice(2, 4)) || 28;
+  if (!(fyeMonth >= 1 && fyeMonth <= 12)) return null;
+  // 全年指引：结算点 = 该财年的 FYE 日 + 滞后；季度指引：财季结束月 =
+  // FYE 月 - 3×(4-季度)，跨年回绕（0 基计算）。
+  const endMonth0 = annual ? fyeMonth : fyeMonth - 3 * (4 - quarter);
+  const endMonth = ((endMonth0 - 1 + 12) % 12) + 1;
+  const endYear = annual ? fiscalYear : fiscalYear + Math.floor((endMonth0 - 1) / 12);
+  const day = Math.min(fyeDay, new Date(Date.UTC(endYear, endMonth, 0)).getUTCDate());
+  const quarterEnd = new Date(Date.UTC(endYear, endMonth - 1, day));
+  const settle = new Date(quarterEnd);
+  settle.setUTCDate(settle.getUTCDate() + REPORT_LAG_DAYS);
+  return {
+    dueOn: settle.toISOString().slice(0, 10),
+    dueBasis: 'estimated-fiscal',
+    quarterEnd: quarterEnd.toISOString().slice(0, 10),
+    note: `估计值：${annual ? '财年' : '财季'}结束 ${quarterEnd.toISOString().slice(0, 10)}（按 FYE ${fiscalYearEnd} 推算）+${REPORT_LAG_DAYS} 天公布滞后；实际以下期财报为准`,
+  };
+}
 
 /** 不可证伪的措辞模式：无主体、无时点、或纯价值判断。 */
 const UNFALSIFIABLE_PATTERNS = [
@@ -137,10 +197,28 @@ function discriminate(claim, opts = {}) {
   const text = String(claim.text || '').trim();
   if (!text) return { available: false, reason: '空输入' };
 
+  // ── [v3.4] 财报指引识别 ─────────────────────────────────────
+  // 两条来路：① claim.guidance 元数据（SEC EDGAR 采集器解析的结构化
+  // 指引，带 quarter/fiscalYear/metric/value/tolerance/caveats）；
+  // ② 句式为指引形态（RSS 引用的厂商指引，无元数据）。
+  const guidanceMeta = (claim.guidance && (claim.guidance.quarter || claim.guidance.annual)
+    && claim.guidance.fiscalYear)
+    ? claim.guidance : null;
+  const isGuidanceText = GUIDANCE_TEXT_RE.test(text);
+  const isGuidance = !!guidanceMeta || isGuidanceText;
+  // 指引的时点可能在元数据里（句子里没有年份）——no-timeline 判据必须认它
+  const guidanceHasTimeline = !!guidanceMeta
+    || FISCAL_PERIOD_RE.test(text)
+    || /(20\d{2}|Q[1-4]\s*20\d{2})/i.test(text);
+
   // ── 1. 可证伪性 ─────────────────────────────────────────────
   const unfalsifiable = UNFALSIFIABLE_PATTERNS
     .filter(p => { try { return p.test(text); } catch (_) { return false; } })
-    .map(p => ({ id: p.id, label: p.label, guidance: p.guidance }));
+    .map(p => ({ id: p.id, label: p.label, guidance: p.guidance }))
+    // [v3.4] 指引的时点在元数据里不在句子里：不过滤的话「Revenue is
+    // expected to be $108.0 billion」会被 no-timeline 判成「无时间点的
+    // 意图声明」——而它带着全引擎最硬的结算点（下一期财报）。
+    .filter(u => !(u.id === 'no-timeline' && guidanceHasTimeline));
 
   // [v2.15] 参考/指南文本：优先级高于「不可证伪」模式。
   //
@@ -244,6 +322,19 @@ function discriminate(claim, opts = {}) {
     }
   }
 
+  // [v3.4] 指引结算点覆盖：通用解析（裸年份→Q4）对财季期间是错的
+  // （"third quarter of fiscal 2027" 不是 2027-Q4），元数据算完直接
+  // 覆盖；没有 fiscalYearEnd 日历的句内财季期间显式置空——不猜。
+  let guidanceDueNote = null;
+  if (guidanceMeta) {
+    const est = fiscalPeriodToDueOn(guidanceMeta.quarter, guidanceMeta.fiscalYear, claim.fiscalYearEnd, !!guidanceMeta.annual);
+    if (est) { dueOn = est.dueOn; dueBasis = est.dueBasis; guidanceDueNote = est.note; }
+    else { dueOn = null; dueBasis = null; guidanceDueNote = '财季期间解析失败（fiscalYearEnd 缺失或异常），不猜结算点'; }
+  } else if (isGuidanceText && FISCAL_PERIOD_RE.test(text) && !claim.fiscalYearEnd) {
+    dueOn = null; dueBasis = null;
+    guidanceDueNote = '句内财季期间缺 fiscalYearEnd 元数据，无法换算日历结算点（漏报比误报诚实）';
+  }
+
   // ── 2. 基准概率 ─────────────────────────────────────────────
   const category = claim.category || inferCategory(text);
   const ledger = Array.isArray(opts.ledger) ? opts.ledger : [];
@@ -310,6 +401,13 @@ function discriminate(claim, opts = {}) {
   } else if (unfalsifiable.length > 0) {
     verdict = 'not-a-forecast';
     verdictLabel = `不可证伪（${unfalsifiable.map(u => u.label).join('、')}）`;
+  } else if (isGuidance) {
+    // [v3.4] 财报指引单列：结构上是「指标+数值+结算期」的可结算形态，
+    // 但推理三要素（机制/先行指标/反例）在指引句里通常不出现——用
+    // reasoningScore 判它会掉进「裸断言」，而指引与「AI 会继续进步」
+    // 不是一类对象。指引的质量维度是结算硬度/容差/前提削减，不是推理。
+    verdict = 'earnings-guidance';
+    verdictLabel = '财报指引（厂商自报预测，带结算期）';
   } else if (reasoningScore === 0) {
     verdict = 'bare-assertion';
     verdictLabel = '裸断言（无机制、无指标、无反例）';
@@ -326,6 +424,17 @@ function discriminate(claim, opts = {}) {
   // "by August 2026"）也不可结算——没有任何主体对它负责。
   const settleable = verdict !== 'not-a-forecast' && verdict !== 'reference-text' && dueOn !== null;
 
+  // [v3.4] 指引结构透传（元数据优先，句内解析兜底）
+  const guidanceStruct = isGuidance ? {
+    metric: guidanceMeta ? guidanceMeta.metric : (text.match(new RegExp(GUIDANCE_METRIC, 'i')) || [null])[0],
+    value: guidanceMeta ? guidanceMeta.value : (text.match(/\$\s?[\d.,]+\s*(?:billion|million)?|[\d.]+\s*%/) || [null])[0],
+    tolerance: guidanceMeta ? guidanceMeta.tolerance : (text.match(/(?:\+\/-|±|plus or minus)\s*(\$?\s?[\d.,]+\s*(?:%|billion|million|basis points)?)/i) || [null, null])[1],
+    periodLabel: guidanceMeta ? guidanceMeta.periodLabel : null,
+    annual: guidanceMeta ? !!guidanceMeta.annual : false,
+    caveats: guidanceMeta ? (guidanceMeta.caveats || []) : [],
+    fromMetadata: !!guidanceMeta,
+  } : null;
+
   return {
     available: true,
     text: text.slice(0, 300),
@@ -333,6 +442,9 @@ function discriminate(claim, opts = {}) {
     date: claim.date || null,
     url: claim.url || '',
     category,
+    dueBasis: dueBasis || null,
+    dueNote: guidanceDueNote || null,
+    guidance: guidanceStruct,
     falsifiability: {
       ok: unfalsifiable.length === 0 && referenceText.length === 0,
       // [v2.15] reference-text 命中时不列 unfalsifiable problems：
@@ -425,6 +537,8 @@ function discriminateAll(claims, opts = {}) {
       // [v2.15] 参考/指南文本单列：它不是「意图声明」，没有主张主体，
       // 混进 not-a-forecast 会让报告的辨别结论失真。
       referenceTextCount: byVerdict['reference-text'] || 0,
+      // [v3.4] 财报指引条数（SEC EDGAR 一手备案的厂商自报预测）
+      guidanceCount: byVerdict['earnings-guidance'] || 0,
       wellFormedCount: byVerdict['well-formed'] || 0,
       calibrationWarnings: results.filter(r => r.calibrationWarning).length,
     },
@@ -437,6 +551,13 @@ module.exports = { discriminate, discriminateAll, inferCategory, DEFAULT_BASE_RA
 if (require.main === module) {
   // 自测：四种典型形态
   const cases = [
+    // [v3.4] 财报指引（带 EDGAR 元数据）：应判 earnings-guidance + settleable
+    {
+      text: 'Revenue is expected to be $108.0 billion, plus or minus 2%',
+      source: 'SEC EDGAR', date: '2026-08-26', category: 'earnings_guidance',
+      fiscalYearEnd: '0131',
+      guidance: { quarter: 3, fiscalYear: 2027, metric: 'revenue', value: '$108.0 billion', tolerance: '2%', periodLabel: 'FY2027 Q3', caveats: ['NVIDIA is not assuming any Data Center compute revenue from China in its outlook.'] },
+    },
     { text: 'OpenAI 将在 2027 年发布 GPT-7', source: 'Probe', date: '2026-10-20' },
     { text: 'AI 会继续进步，未来很美好', source: 'Probe', date: '2026-10-20' },
     { text: 'Gemini 5 将在 2027-Q2 GA，因为算力瓶颈已缓解；若 2027-Q1 未见预览版则说明延期', source: 'Probe', date: '2026-10-20' },

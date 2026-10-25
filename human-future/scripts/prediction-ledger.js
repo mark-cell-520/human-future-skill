@@ -58,7 +58,12 @@ function dedupeSameObligation(predictions) {
     const srcs = p.evidence && Array.isArray(p.evidence.sources) ? p.evidence.sources : [];
     const key = srcs.length > 0
       ? `ev|${cat}|${srcs.map(s => String(s)).sort().join('|')}`
-      : `cl|${cat}|${String(p.claim || '').toLowerCase().replace(/[^a-z0-9\u4e00-\u9fff]+/g, ' ').trim()}`;
+    // [v3.4] 文本 key 带 dueOn：同一指标的指引跨财季会同文（实测 AMD
+    // Q2/Q3 2026 两句都是 "gross margin ... approximately 56%"），它们是两次
+    // 不同的承诺，结算时合并会把两次兑现计成一次——与 v2.16 要修的「同义务
+    // 重复计数」正好相反。带 dueOn 后同义务（同时点同文）仍合并，跨期同文
+    // 保持独立。
+      : `cl|${cat}|${p.dueOn || ''}|${String(p.claim || '').toLowerCase().replace(/[^a-z0-9\u4e00-\u9fff]+/g, ' ').trim()}`;
     if (seen.has(key)) { dedupedCount++; continue; }
     seen.add(key);
     entries.push(p);
@@ -172,8 +177,11 @@ if (require.main === module) {
   try {
     lib.record({ id: 'selftest-1', claim: '自测：深部脑区光遗传学 2027 前有人体登记', probability: 0.72, dueOn: '2027-12-31', domain: 'neuro' });
     lib.record({ id: 'selftest-2', claim: '自测：量子定义战争 2027 前有立场论文', probability: 0.78, dueOn: '2027-12-31', domain: 'quantum' });
-    lib.settle('selftest-1', false);
-    lib.settle('selftest-2', true);
+    // [v3.4 维护] v2.13 给 settle() 加了 evidence 必填，但模块自测没跟着改——
+    // 自测从 v2.13 起一直在抛错（stash 对照实证：原代码同样失败），
+    // 「自测完成」的假象来自 finally 还原。补上 evidence。
+    lib.settle('selftest-1', false, { summary: '自测：未发生', sources: ['https://example.com/selftest'] });
+    lib.settle('selftest-2', true, { summary: '自测：已发生', sources: ['https://example.com/selftest'] });
     console.log('台账评分:', JSON.stringify(lib.scorecard(), null, 1));
     console.log('到期未结算:', JSON.stringify(lib.overdue(new Date('2028-01-01'))));
   } finally {

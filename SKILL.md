@@ -1,9 +1,35 @@
 ---
 name: human-future-v2
-title: "人类未来 · 文明推演引擎 v3.3.1"
-version: "3.3.1"
+title: "人类未来 · 文明推演引擎 v3.4.0"
+version: "3.4.0"
 description: |-
-  人类未来技能 v3.3.1 — 维护级（非新辨别维度）：survey-finding 精度修复 + 版本号漂移修复：
+  人类未来技能 v3.4.0 — 新辨别维度「财报指引」+ 新数据源 SEC EDGAR：
+  v3.4（2026-10-25）接上市公司一手备案：8-K（Item 2.02 业绩发布）的 EX-99
+  附件里有厂商自报的下一期数值指引——"Revenue is expected to be $108.0
+  billion, plus or minus 2%"（NVIDIA FY2027 Q3，2026-08-26 备案）。有主体
+  （公司）、有事件（下一财季实际值）、有结算机制（下一期财报公布），是
+  v2.13 起记录六轮的边界缺口「RSS 前瞻表述多为意图声明、不可结算」的
+  第一次实质推进（Metaculus/Epoch AI 类预测源全部不可达后的换路）。
+  采集器 edgar-collector：company_tickers.json 解析 14 家境内备案人
+  （NVDA/AMD/AVGO/MRVL/MU/MSFT/GOOGL/AMZN/META/ORCL/CRWV/IBM/DELL/PLTR）
+  → submissions JSON（FYE+近期 8-K）→ index.json 挑 EX-99 → 指引句抽取
+  （指标+is/are expected to be+数值，五家公司五种句式实证；财季期间就近
+  匹配+同比引用排除）。live 实测 28 条业绩备案、32 条数值指引；MSFT/GOOGL
+  只在电话会口头给指引，如实报「无数值指引」不编造。forecast-discriminator
+  新增 verdict earnings-guidance：结算点按财季期间+fiscalYearEnd 推算为
+  估计值（财季/财年结束+45 天公布滞后，dueBasis=estimated-fiscal，产品
+  各处不得当精确日引用）；指引自动登记 prediction-ledger 到期结算 Brier，
+  先验取中性 0.5（FactSet「77% 超预期」是 vs 分析师预期的口径，挪用即
+  本引擎要抓的口径错位，note 写明）。同轮维护（不单独涨号）：run-pipeline
+  banner 版本漂移（3.1.1→3.4.0，corr-2026-014 同型）；prediction-ledger
+  自测补 evidence（v2.13 起坏掉的既有 bug，stash 对照实证）；台账幂等 id
+  加 metric+value 维度（MRVL GAAP/非 GAAP 同同时点互撞、非 GAAP 被静默
+  丢弃）；同义务去重 key 加 dueOn（跨财季同文指引是不同事件）。测试
+  214→230 项；6 轮反向验证全部精确失败（摘除接入→源级断言/摘除 verdict→
+  5 条/摘除 dueOn 推算→5 条/摘除 id value 维度→幂等断言/摘除期间对比
+  排除→期间断言/摘除句点处理→2 条）。版本号理由：新数据源+新辨别维度，
+  用户可感知（报告「预测辨别」段首次出现带结算期的可结算主张）。
+  历史：v3.3.1 — 维护级（非新辨别维度）：survey-finding 精度修复 + 版本号漂移修复：
   v3.3.1（2026-10-25）修 v3.3.0 轮 live 实证的两条误报与一处版本漂移。① survey-finding
   收紧——旧正则 (survey|study|…)\s+(of|by|from|…) 把「调查名词+介词」的 incidental
   搭配当成研究发现：EconBrowser 站点导航 "Analysis of current economic conditions
@@ -229,7 +255,7 @@ description: |-
 
 ---
 
-## 当前状态（v3.3.1 实测）
+## 当前状态（v3.4.0 实测）
 
 以下数字全部来自 2026-10-25 的 `FETCH=1 FETCH_BODY=1 node scripts/run-pipeline.js` 实跑
 （v3.3.1 轮 270 条 live 信号；v3.3.0 轮 258 条、v3.2.2 轮 270 条、v3.1.1 轮 270 条、
@@ -241,6 +267,20 @@ v3.1 轮 258 条），不是宣称值。v2.17/v3.0.0c 轮次数字（248-258 条
   + psychology/philosophy 各 0）。frontier_models 的 12 = 9 个 RSS + Anthropic sitemap
   + EU AI Act Timeline + NIST（旧版 SKILL.md 写「17 个」且分项加总也不等于 17，
   v3.1 按代码实际修正——这是文档维护，不是能力变化）
+
+**SEC EDGAR 采集层（v3.4 新增）**
+- 来源：SEC EDGAR 公开 API（data.sec.gov submissions + Archives index.json），
+  实测可达（2026-10-25：200/2.6s）；UA 声明身份 + 120ms 请求间隔（fair access）
+- 公司名单：14 家境内备案人（NVDA/AMD/AVGO/MRVL/MU/MSFT/GOOGL/AMZN/META/
+  ORCL/CRWV/IBM/DELL/PLTR），ticker→CIK 走 company_tickers.json 权威映射
+- 采集对象：8-K Item 2.02（业绩发布）最近 2 次/公司 + EX-99 附件正文；
+  指引句 = 指标名词 + is/are expected to be + 数值（五家公司五种句式实证），
+  附财季期间（就近匹配，同比引用排除）、容差、前提削减
+- 实测产出：28 条业绩备案 / 32 条数值指引（11 家有数值）；MSFT/GOOGL/AVGO/
+  CRWV/IBM/DELL/PLTR 只在电话会口头给指引或无数值——如实报「无数值指引」
+- 缓存：.cache/edgar-filings.json TTL 6h；位置在所有 RSS 落地之后（v2.14 纪律）
+- 已知边界：外国私人发行人（TSM/ARM/NBIS）交 6-K 不交 8-K，不在名单内；
+  结算点是估计值（财季/财年结束+45 天），不是精确日期
 - 并行抓取：`Promise.all`，实测约 4 秒（旧串行最坏 104 秒）
 - 正文增强：`FETCH_BODY=1` 时抓最新 24 条，实测 17 条成功（openai.com 403 / arstechnica 405 / interconnects 链接失效）
 - 实测产出：258 条 live（2026-10-25 v3.3.0 轮；同日 v3.2.2 轮 270 条、v3.1.1 轮 270 条、
@@ -269,6 +309,7 @@ v3.1 轮 258 条），不是宣称值。v2.17/v3.0.0c 轮次数字（248-258 条
   timeline-conflict-detector / source-credibility-grader / claim-mismatch-detector /
   cognitive-formula-bridge / low-confidence-gate / prediction-ledger /
   prediction-benchmark-collector（v2.17，仅真采到时才写进 meta.reasoningEngines）/
+  edgar-collector（v3.4，SEC 一手财报备案，见采集层）/
   commercial-discriminator（v3.0.0，商业主张辨别）/
   self-correction-ledger（v3.1，0 调用模块接入，无条件执行——簿子读不到时
   available=false 且原因写明，不静默返回空）
@@ -281,6 +322,12 @@ v3.1 轮 258 条），不是宣称值。v2.17/v3.0.0c 轮次数字（248-258 条
   our researchers+safety、benchmark+促销页脚；五个模式同句判定，另三个无实证
   不改判据）/
   外部预测基准 ✅（32 个开放问题，per-claim 主题匹配本轮 0/7，如实展示）/
+  SEC 财报指引 ✅（v3.4：28 条业绩备案进 live、32 条数值指引进「预测辨别」段，
+  verdict=earnings-guidance 可结算、dueOn 为财季估计值，自动进台账）/
+  预测辨别器新 verdict ✅（earnings-guidance：财报指引单列——结构上是
+  「指标+数值+结算期」最硬的可结算形态，但推理三要素通常不出现，用
+  reasoningScore 判会掉进「裸断言」误标；先验中性 0.5，口径注明
+  FactSet 超预期率不可挪用）/
   商业主张辨别 ✅（6 条，精度门后；v3.2 新增产能/供给约束形态后含 AWS 售罄
   主张一条——修复前该条 13 种形态全部不命中、整条不进辨别；判 证据不足/无出处(1)/
   推理 0/3，标题-only 不虚抬为决策相关；v3.3 新增并购/交易过程形态后含 Instacart
@@ -548,7 +595,18 @@ v3.1 轮 258 条），不是宣称值。v2.17/v3.0.0c 轮次数字（248-258 条
   引擎不代劳——这是心虫铁律，不是能力缺失。
 
 **测试**
-- `npm test`：**214 项断言**（实测各 section 汇总；v3.3 的 207 + v3.3.1 新增 7：
+- `npm test`：**230 项断言**（实测各 section 汇总；v3.3.1 的 214 + v3.4 新增 16：
+  5 项采集器抽取（NVDA/AMZN/AMD/MRVL/MU 五种 live 句式命中 / 4 类精度回归 0 误报 /
+  期间就近+同比排除+Oracle 两种期间形态 / 小数不截断+句点不冲段 / 词边界）+
+  5 项辨别器（带元数据判 earnings-guidance+估计结算点 / 无 FYE 不猜结算点 /
+  no-timeline 不误杀 / 全年指引财年结算点 / 中性先验口径注明）+
+  5 项端到端（extractSignals 透传+不重复收录 / 幂等 id metric+value 维度 /
+  formatReport 渲染四行 / collect-news 源级接线 / 注入脚本 VERDICT_CN+汇总+结构行）+
+  1 项版本号（banner 与 VERSION 对齐，corr-2026-014 同型）。
+  6 轮反向验证全部精确失败：摘除 EDGAR 接入→源级断言失败；摘除 verdict 分支→5 条；
+  摘除财季 dueOn 推算→5 条；摘除 id value 维度→幂等断言失败；摘除期间对比排除→
+  期间断言失败；摘除句点处理（恢复裸 [^.;•]）→2 条。
+  历史：v3.3 的 207 + v3.3.1 新增 7：
   2 项模式级误报回归（EconBrowser 导航句 / LWiAI 播客列表句，live 实证原句
   不再命中 survey-finding）+
   1 项模式级真命中保留（live 全池 4 条真主张原句全保留 + Fed 导航 Research

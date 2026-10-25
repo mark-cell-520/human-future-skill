@@ -162,6 +162,42 @@
       "recordedAt": "2026-10-25T21:00:00.000Z",
       "resolvedAt": "2026-10-25T21:00:00.000Z",
       "fix": "survey-finding 收紧为二选一：调查名词+发现动词相邻（study found / research shows / analysis indicates…）或调查名词+of+量化对象（survey of 1,200 / survey of almost 11,000，容忍数量副词）；live 全池实测 5 条真主张全保留、2 条误报精确消除，代价如实记录（无量化对象且动词不相邻的 \"a survey of enterprises found 34%\" 形态不再命中，按 v3.0.0c「漏报比误报诚实」接受）。三处播客夹具 description 换 live 误报原句；测试 207→214 项。本轮为维护级精度修复，不是新辨别维度。"
+    },
+    {
+      "id": "corr-2026-016",
+      "reportVersion": "v3.4",
+      "wrongClaim": "run-pipeline.js 的 banner 写「文明推演引擎 v3.1.1」而 VERSION/package.json/projection meta/run-pipeline meta 已是 3.3.1/3.4.0——同一份报告又是两个版本号",
+      "rightClaim": "v3.1 修过 banner/meta 同型、v3.3.1 修过 projection meta/package.json 同型（登记过 corr-2026-014），但「banner 这一处」没人再管，腐烂了四个补丁轮。版本号一致性的断言枚举了 VERSION/package.json/projection meta/run-pipeline meta 四处，唯独漏了 banner 字符串。",
+      "evidence": "git show v3.4 开发轮 scripts/run-pipeline.js:24 实测；npm test 的 v3.3.1 版本一致性断言只查 meta 不查 banner，故四个版本全绿放行",
+      "lesson": "「版本号一致性的处」永远数不全——每轮新增一个带版本号的位置（banner/meta/package/VERSION），就要问「断言枚举里有没有它」。防腐烂断言必须覆盖全部硬编码版本号的位置，包括人类可读的 banner 字符串，不能只查结构化字段。",
+      "severity": "medium",
+      "recordedAt": "2026-10-25T00:00:00.000Z",
+      "resolvedAt": "2026-10-25T00:00:00.000Z",
+      "fix": "banner 对齐 3.4.0，测试新增「banner 与 VERSION 一致」断言（v3.4 组 4），摘除对齐→断言失败。"
+    },
+    {
+      "id": "corr-2026-017",
+      "reportVersion": "v3.4",
+      "wrongClaim": "台账幂等 id 用「来源+URL+结算点」三个维度就够；同义务去重键用「类别+claim 文本」就够",
+      "rightClaim": "两个判据都错，且错的方向相反：① SEC EDGAR 一个 8-K 备案出 6 条指引（revenue/GAAP 与非 GAAP gross margin/opex/EPS），旧 id 三维度下第 2 条起被「id 已存在」静默丢弃（实测 MRVL 非 GAAP 两条整轮消失）；只加 metric 还不够——GAAP 与非 GAAP 同名同时点仍互撞，必须 metric+value。② 去重键缺 dueOn：AMD Q2/Q3 两句同为 \"gross margin approximately 56%\"，结算时会合并成一次兑现——与 v2.16 修的「同义务重复计数」正好相反。",
+      "evidence": "prediction-ledger.json 实跑：旧 id 格式 28 条 vs 新格式 32 条；MRVL 非 GAAP gross margin/opex 四条在旧格式下 ledgerRegistration.skipped 里显示「id 已存在」",
+      "lesson": "幂等 id 的维度数要按「同一来源同时点最多几条主张」定，不是按「一条预测」定；去重键的设计是双头的——既要防同事件多源重复计数（v2.16），也要防同文不同事件合并计数，键里必须带事件身份（dueOn/accession）。",
+      "severity": "high",
+      "recordedAt": "2026-10-25T00:00:00.000Z",
+      "resolvedAt": "2026-10-25T00:00:00.000Z",
+      "fix": "id 加 metric+value 维度；dedupeSameObligation 文本 key 加 dueOn；测试新增幂等断言（摘除 value 维度→断言失败）。"
+    },
+    {
+      "id": "corr-2026-018",
+      "reportVersion": "v3.4",
+      "wrongClaim": "prediction-ledger.js 的模块自测「跑完自动清理」是好的；edgar-collector 的句子正则用 [^.;•] 排除句读就够",
+      "rightClaim": "① 自测从 v2.13 起每跑必抛错——settle() 加了 evidence 必填，自测没传；「自测完成，台账已还原」的假象来自 finally 块，npm test 不跑模块自测所以坏了八个版本没人发现（stash 对照实证原代码同样失败）。② [^.;•] 把小数位点当句读：\"$108.0 billion\" 截成 \"$108\"、容差整段丢失；改成 \\d\\. 又吞真句点：\"at $8.10. New Oracle\" 冲进下一节标题——必须前后双向断言（仅数字间的 . 才吞）。③ EDGAR Archives 的 data/ 路径带前导零 CIK 会 301，https.get 不跟随重定向，28 个附件全部抓空。",
+      "evidence": "node human-future/scripts/prediction-ledger.js 抛「结算必须带 evidence」；edgar-collector 实跑 guidance value=\"$108\"；curl Archives 带零 CIK 301",
+      "lesson": "① 模块自测的退出码必须进测试套件或 CI，只打印「完成」不检查 exit code 的自测等于没有；finally 里的还原消息不能出现在失败路径。② 网页文本的句点判据要区分小数位与句读——双向断言（(?<=\\d)\\.(?=\\d)）是唯一同时不漏小数不冲段的形式。③ SEC Archives 路径 CIK 不带前导零，写 URL 构造时就要查真实形态，别等 301。",
+      "severity": "medium",
+      "recordedAt": "2026-10-25T00:00:00.000Z",
+      "resolvedAt": "2026-10-25T00:00:00.000Z",
+      "fix": "自测补 evidence；NUM_OR_TERM 改双向断言；INDEX/DOC_URL 用 Number(cik)。测试新增句点处理断言（恢复旧字符类→2 条失败）。"
     }
   ]
 }
