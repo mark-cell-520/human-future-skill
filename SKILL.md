@@ -1,9 +1,40 @@
 ---
 name: human-future-v2
-title: "人类未来 · 文明推演引擎 v3.8.0"
-version: "3.8.0"
+title: "人类未来 · 文明推演引擎 v3.9.0"
+version: "3.9.0"
 description: |-
-  人类未来技能 v3.8.0 — 商业主张辨别器新增「监管行动主张」形态（新辨别维度）：
+  人类未来技能 v3.9.0 — 商业主张辨别器新增「价格下调主张」形态（新辨别维度）：
+  live 实证 LWiAI #343 简报内句「Anthropic launches Claude Fable 5.1 and
+  says it's up to 45 percent cheaper for agentic work」（2026-09-07，
+  business 桶）——扩容前 18 种形态全部不命中、整条不进辨别。v3.6 的
+  cost-signal 管「价格/成本打到某水平」（迟到费 $5M/天），但**价格下调**
+  （模型 API 降价、智能单价通缩）一直在库外——而智能价格通缩是 AI 市场
+  需求侧的一阶信号（降价驱动采用、重塑毛利结构、压缩竞争对手定价空间），
+  只辨「价格打到某水平」不辨「价格下调」，商业辨别对价格维度的理解只有
+  一半。新 kind price-cut：三形态族——名词+下调谓语+幅度（prices fell
+  20% / pricing has dropped 40% / prices plunged 60%）、下调动词+名词+
+  by/to+幅度（cut prices by 30% / lowered its API prices to $0.50）、
+  幅度+比较级（45 percent cheaper / 3x cheaper than，比较级后只认
+  for/than/句读）。精度设计（v3.0.0c/v3.2/v3.3/v3.6/v3.7 纪律：漏报比
+  误报诚实、没有实证不扩模式）：① 必须有幅度——无金额的价格变动句
+  （"with lower prices"/"costs are falling"/"API prices are falling"）按
+  v3.6 同型纪律（无金额的 "Prices Up" 不是可证伪主张）不进库，live 实证
+  LWiAI #258「Opus 5.5 with lower prices」如实记录为已知边界漏报；② 名词族
+  只认 prices/pricing 不认 costs——TCO 效率句（NVDA「35x lower cost for
+  agentic AI」/ ORCL「at a lower cost」/ "Operating costs fell 40%"）是
+  能力/成本效率主张不是市场定价主张；③ 比较级后只认 for/than/句读——
+  "cheaper to manufacture" 是制造成本效率不是定价。全池实测（300 条覆盖
+  审计轮 + 321 条端到端轮）精确命中 1 条（即该条），18 句精度回归 0 误报。
+  专属证伪路径（价目表/第三方 API 价格跟踪与主张值不符、降价实为功能/
+  用量配额削减的口径变化、价格回升）；类目 market_claims；报告与 cron
+  注入标签「价格下调主张」。live 端到端：商业辨别段 9→10 条，byKind 新增
+  price-cut:1——该条判 证据不足/无出处(1)/推理 1/3、不虚抬（简报转述的
+  厂商自述降价，等价目表或第三方价格跟踪交叉验证）；hf-cron-fetch.sh
+  注入段 agent 可见「类型: 价格下调主张」。测试 278→286 项；同轮维护
+  （不涨号）：6 处历史版本断言硬编码当前版本号随涨号同步（v3.4 段断言
+  名称留在「（3.7.0）」的腐烂一并改正）、package.json description 把
+  v3.8 测试数误写 276（实为 278）按实测改正。8 轮反向验证全部精确失败。
+  历史：v3.8 — 商业主张辨别器新增「监管行动主张」形态（新辨别维度）：
   live 实证 The Information「U.S. Treasury Proposes to Widen Outbound Investment
   Restrictions for China and Other Countries」（2026-10-23，AP/Reuters/Nikkei/
   The Hill 四家交叉验证：10-22 提案、评论期至 12-07、覆盖 AI/超算/生物技术/
@@ -361,10 +392,17 @@ poll 分支没有触发机会；v3.7 放行 Apollo economist 条目后，round 6
 
 ---
 
-## 当前状态（v3.8.0 实测）
+## 当前状态（v3.9.0 实测）
 
-以下数字全部来自 2026-10-25/26 的 `FETCH=1 FETCH_BODY=1 node scripts/run-pipeline.js` 实跑
-（v3.8.0 轮：pipeline exit 0、312 条 live 信号（business 48 + economy 46 +
+以下数字全部来自 2026-10-26 的 `FETCH=1 FETCH_BODY=1 node scripts/run-pipeline.js` 实跑
+（v3.9.0 轮：pipeline exit 0、321 条 live 信号、商业辨别段 9→10 条
+含新维度价格下调 1 条（byKind 新增 price-cut:1——LWiAI #343 简报内句
+「Anthropic launches Claude Fable 5.1 and says it's up to 45 percent cheaper
+for agentic work」判 证据不足/无出处(1)/推理 1/3、不虚抬——简报转述的厂商
+自述降价，等价目表或第三方价格跟踪交叉验证；hf-cron-fetch.sh 注入段 agent
+可见「类型: 价格下调主张」；300 条覆盖审计轮与 321 条端到端轮实测均只命中
+该 1 条）；
+v3.8.0 轮：pipeline exit 0、312 条 live 信号（business 48 + economy 46 +
 frontier_models 142 + sec_filings 42 + tech 22 + humanities 12）、商业辨别段 8→10 条
 含新维度监管行动 2 条（byKind 新增 regulatory-action:2——Treasury 提案条判
 推理单薄/公开财报/公告(3)/推理 0/3、decisionRelevant；LWiAI 简报内句判
@@ -502,7 +540,7 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   财报指引自动结算 ✅（v3.5：到期 earnings_guidance 与「下一期财报实际值」
   配对落账，判据=实际值落在指引容差带内，方向 beat/below 单独记；live 实测
   7 条正确结算，MRVL GAAP/非GAAP 毛利率正确判歧义跳过；见「财报指引自动结算层」）/
-  商业主张辨别 ✅（7 条，精度门后；v3.2 新增产能/供给约束形态后含 AWS 售罄
+  商业主张辨别 ✅（10 条，精度门后；v3.2 新增产能/供给约束形态后含 AWS 售罄
   主张一条——修复前该条 13 种形态全部不命中、整条不进辨别；判 证据不足/无出处(1)/
   推理 0/3，标题-only 不虚抬为决策相关；v3.3 新增并购/交易过程形态后含 Instacart
   出售探索与 Ramp/Airwallex 破裂交易两条——扩容前 14 种形态全部不命中、
@@ -520,7 +558,10 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   17 种形态全部不命中、整条不进辨别；Treasury 条判 推理单薄/公开财报/公告(3)/
   推理 0/3、decisionRelevant（机构一手规则文书），LWiAI 条判 证据不足/无出处(1)/
   推理 0/3、不虚抬（官员个人行动经简报转述不借名字抬级））/
-  自我修正登记簿 ✅（24 条修正：critical 4 / high 12 / medium 8；v3.3.1 登记
+  v3.9 新增价格下调形态后含 LWiAI #343 简报内句一条——扩容前 18 种形态全部
+  不命中、整条不进辨别；判 证据不足/无出处(1)/推理 1/3、不虚抬（简报转述的
+  厂商自述降价，等价目表或第三方价格跟踪交叉验证））/
+  自我修正登记簿 ✅（25 条修正：critical 4 / high 12 / medium 9（含 corr-2026-024/025 两条前轮手写条目未设 severity、按 medium 计；v3.9 起走模块 record() 默认 medium）；v3.3.1 登记
   corr-2026-014（版本号漂移：projection meta 停 3.2.2/package.json 停 3.2.1，
   四处对齐+一致性断言）与 corr-2026-015（survey-finding 误报+三处播客夹具
   空转）；v3.3 登记
@@ -535,7 +576,10 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   no-quantity 不可证伪判据对事件型主张是类别错位（"Treasury Proposes to
   Widen Outbound Investment Restrictions" 的证伪靠规则是否落地不靠基数），
   v3.8 给 regulatory-action 加豁免、ma 同型不一致留待下轮统一（旧维度行为
-  已文档化已测试，本轮不改只登记）
+  已文档化已测试，本轮不改只登记）；v3.9 登记 corr-2026-026：
+  文档计数与历史断言名称腐烂（package.json description 把 v3.8 测试数写成
+  276 实为 278；v3.4 段断言名称停在「（3.7.0）」而代码已改 3.8.0）——
+  corr-2026-013/014 同型，涨号轮收尾必须全量 grep 旧版本号与旧计数
   [v3.2.1] 预测校准与台账状态 ✅（ledgerStatus + formulaAssessment 进 cron 注入第
   8.5 段：Brier/兑现率/待结算/逾期 + 贝叶斯 posterior/折扣/风险，三条口径限定；
   端到端实测 Brier 0.3025/样本 1/待结算 2，公式段与台账段样本一致）
@@ -833,9 +877,45 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   名词不命中，如实记录为漏报）、「SEC's new disclosure rules」类所有格形态、
   州层立法主体（california 等）——等有 live 实证再扩。
 
+**[v3.9] 价格下调主张（price-cut，新辨别维度）**
+- 定位：价格维度的下半边缺口。v3.6 的 cost-signal 管「价格/成本打到某
+  水平」（"Data Center Late Fees Hit $5 Million or More Per Day"），但
+  **价格下调**（模型 API 降价、智能单价通缩）一直在库外——2026-10-26 轮
+  live 实证：LWiAI #343 简报内句「Anthropic launches Claude Fable 5.1 and
+  says it's up to 45 percent cheaper for agentic work」（2026-09-07，
+  business 桶）扩容前 18 种形态全部不命中、整条不进辨别。智能价格通缩是
+  AI 市场需求侧的一阶信号（降价驱动采用、重塑毛利结构、压缩竞争对手定价
+  空间），只辨「价格打到某水平」不辨「价格下调」，商业辨别对价格维度的
+  理解只有一半。
+- 形态族：① 名词+下调谓语+幅度（prices fell 20% / inference pricing has
+  dropped 40% / subscription prices plunged 60%）；② 下调动词+名词+by/to+
+  幅度（cut prices by 30% / lowered its API prices to $0.50）；③ 幅度+
+  比较级（45 percent cheaper / 3x cheaper than，比较级后只认 for/than/句读）。
+- 精度设计（v3.0.0c/v3.2/v3.3/v3.6/v3.7 教训：漏报比误报诚实、没有实证
+  不扩模式）：① 必须有幅度——无金额的价格变动句（"with lower prices"/
+  "costs are falling"/"API prices are falling"）按 v3.6 同型纪律（无金额的
+  "Prices Up" 不是可证伪主张）不进库，live 实证 LWiAI #258「Opus 5.5 with
+  lower prices」如实记录为已知边界漏报；② 名词族只认 prices/pricing，
+  不认 costs——TCO 效率句（NVDA「35x lower cost for agentic AI」/ ORCL
+  「at a lower cost」/ "Operating costs fell 40%"）是能力/成本效率主张不是
+  市场定价主张；③ 比较级后只认 for/than/句读——"cheaper to manufacture"
+  是制造成本效率不是定价主张。全池实测（300 条覆盖审计轮 + 321 条端到端轮）
+  精确命中 1 条（即该条），精度回归 0 误报。
+- 判别结果（live 实测）：该条判 证据不足 / 无出处(1) / 推理 1/3（有幅度
+  数字→has-sample，无对照无反例）、不虚抬为 ★决策相关——简报转述的厂商
+  自述降价，等价目表或第三方 API 价格跟踪交叉验证。证伪条件走 price-cut
+  专属路径（价目表/第三方价格跟踪与主张值不符、降价实为功能/用量配额削减
+  的口径变化、价格回升）。类目归 market_claims。
+- 端到端：引擎候选门（isClaimForm 用同一个模式库）→ discriminateCommercial
+  → formatReport KIND_CN「价格下调主张」→ cron 注入第 6 段同标签。live 实测
+  商业辨别段 9→10 条，byKind 新增 price-cut:1。
+- 仍在库外的价格句式：无幅度降价谈论（"with lower prices"，已知边界漏报，
+  等有 live 实证再议）、costs 名词族（TCO/运营成本，有意排除）、
+  "price war" 类竞争定价形态——等有 live 实证再扩。
+
 **自我修正登记簿层（v3.1 接入的 0 调用模块）**
 - 定位：这是接入，不是新写。self-correction-ledger.js 自 v2.4 存在，
-  `human-future/data/self-corrections.json` 有 14 条真实修正（绕月≠登月、
+  `human-future/data/self-corrections.json` 有 25 条真实修正（绕月≠登月、
   v2.4 假能力三项审计、stateless 检查器覆盖缺口、sitemap 页面简介≠新闻正文、
   指南页文本≠预测、口径错位检测 7 条误报+第五次断链、v3.2 公式桥样本口径
   不一致+文档计数错误+测试夹具残留、v3.2.1 第六次断链、v3.2.2 第七次断链
@@ -853,7 +933,9 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   严格过滤，漏掉数据里 2 条 critical（都是「整段推演作废」级的假能力审计），
   接入后会少报高危数（说 4 实际 6）。改为按等级表比较（critical > high >
   medium > low），critical 排最前。这是修 bug，不算升级——升级点是接入本身。
-- 边界（如实声明）：登记簿 14 条（v3.3.1 轮新增 corr-2026-014/015 后；
+- 边界（如实声明）：登记簿 25 条（v3.9 轮新增 corr-2026-026 后：critical 4 /
+  high 12 / medium 9——含 corr-2026-024/025 两条前轮手写条目未设 severity、
+  按 medium 计；
   v3.2.2 轮 e2e 实跑的报告快照在登记前，显示 10 条），样本随每次真实修正
   自然增长，引擎不代笔登记；本段不生成「所以本期该怎么做」的建议，
   只呈现「曾经错在哪」。
@@ -933,6 +1015,10 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   for China and Other Countries"（监管行动主张）已进模式库（regulatory-
   action，政府/监管主体+规制动词+规制工具名词三段式同句共现；Fed/ECB 主体
   库不含）；
+  v3.9 起 "Anthropic launches Claude Fable 5.1 and says it's up to 45 percent
+  cheaper for agentic work"（价格下调主张）已进模式库（price-cut，价格
+  名词+下调谓语+幅度/下调动词+价格名词+by-to+幅度/幅度+比较级三族；名词族
+  只认 prices/pricing 不认 costs，必须有幅度）；
   仍在库外的有 "Instacart Shares Rally 10%"（市场反应——可核验的市场价格
   事实，非待辨别主张）、ProductHunt 产品发布（产品公告非市场主张）、
   "Late fees for delayed GPU deliveries exceed $2M"（名词后接长修饰语，
@@ -940,7 +1026,9 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   看价名词（无 live 实证不进库）、监管执法行动（"Treasury issued a
   $200,000 fine against a U.S.-based company"——无工具名词，v3.8 实测
   漏报如实记录）、「SEC's new disclosure rules」类所有格形态、州层立法
-  主体（california 等）（均无 live 实证不进库）。
+  主体（california 等）（均无 live 实证不进库）、无幅度降价谈论
+  （"Opus 5.5 with lower prices"——v3.9 按 v3.6 同型纪律留作已知边界
+  漏报，等有 live 实证再议）。
   漏掉比把 Fed 公告当商业主张诚实，但覆盖率是真实缺口——扩模式库须逐条配测试。
 - 站点导航/页脚 boilerplate：v3.0.0c 轮起漏网（EconBrowser 导航文本因句内含
   "analysis of" 命中调查研究形态），[v3.2 复测] 同型漏网仍在（EconBrowser 导航
@@ -957,7 +1045,7 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   引擎不代劳——这是心虫铁律，不是能力缺失。
 
 **测试**
-- `npm test`：**278 项断言**（实测各 section 汇总；v3.4 的 230 + v3.5 新增 11 + v3.5.1 新增 9 + v3.6 新增 8 + v3.7 新增 9 + v3.8 新增 11：
+- `npm test`：**286 项断言**（实测各 section 汇总；v3.4 的 230 + v3.5 新增 11 + v3.5.1 新增 9 + v3.6 新增 8 + v3.7 新增 9 + v3.8 新增 11 + v3.9 新增 8：
   2 项纯结算函数（settleGuidance 单位感知容差：相对/绝对/bps/百分点/区间/无容差
   跳过，含区分相对vs绝对的边界用例 / normalizeMetric+parseMetricValue 单位解析）+
   3 项实际值抽取（extractActuals 营收+毛利率+标题期间 / GAAP/非GAAP 不同值抽出
@@ -1072,6 +1160,41 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   （live 实证判定变回 unfalsifiable + 豁免断言）；摘除证据等级机构标记
   （恢复原 public-filing 档）→2。每轮基线全绿、摘除后断言必生效、备份
   还原到位（filecmp 校验）、收尾基线全绿。
+  v3.9 新增 8（1 项 live 实证命中（LWiAI #343 简报内句「Anthropic launches
+  Claude Fable 5.1 and says it's up to 45 percent cheaper for agentic work」
+  → kind=price-cut，判 证据不足/无出处(1)/推理 1/3、不虚抬——简报转述的
+  厂商自述降价，等价目表/第三方价格跟踪交叉验证）+
+  1 项专属证伪条件与类目映射（价目表/第三方 API 价格跟踪与主张值不符/
+  口径变化/价格回升；类目映射源级断言——兜底类目同为 market_claims，
+  行为断言抓不到摘除）+
+  1 项形态族召回三族七形（prices fell 20% / pricing has dropped 40% /
+  plunged 60% / cut prices by 30% / lowered its API prices to $0.50 /
+  45 percent cheaper / 3x cheaper than）+
+  1 项精度回归 18 句（TCO 效率句 NVDA「35x lower cost」/ ORCL「at a lower
+  cost」/「Operating costs fell 40%」/ cheaper to manufacture / 无幅度降价句
+  「with lower prices」「costs are falling」「API prices are falling」/宏观
+  看价句/其它形态库句式/boilerplate 全部不命中）+
+  1 项引擎端到端（候选门放行 + formatReport 渲染「类型: 价格下调主张」行与
+  证伪条件——只认渲染出的标签行）+
+  1 项 cron 注入源级（读 ~/.hermes/scripts/hf-cron-fetch.sh 验 price-cut
+  中文标签）+
+  1 项精度门未破（Fed 公告/播客/无幅度降价谈论/TCO 效率句/官员言论仍不进
+  辨别）+
+  1 项版本号一致性（VERSION/package.json/banner/projection meta/run-pipeline
+  meta 五处对齐 3.9.0））。
+  模式库计数 18→19（v3.3 的计数断言同步更新，v3.2 计数纠错同型纪律）。
+  v3.9 八轮反向验证全部精确失败：摘除模式（含注释）→6 条（live 实证/
+  证伪条件/召回/精度/端到端 + v3.3 计数断言）；摘除证伪条件→1；摘除类目
+  映射→1（源级）；摘除报告 KIND_CN→1；摘除注入 KIND_CN→1；放宽精度①
+  （Form A 去幅度要求）→1（「API prices are falling」误命中）；放宽精度②
+  （名词族加 costs）→1（「Operating costs fell 40%」误命中）；放宽精度③
+  （Form C 去比较级后置约束）→1（「cheaper to manufacture」误命中）。每轮
+  基线全绿、摘除后断言必生效、备份还原到位（filecmp 校验）、收尾基线全绿。
+  同轮维护（不单独涨号）：6 处历史版本断言硬编码当前版本号（v3.4/v3.5/
+  v3.5.1/v3.6/v3.7/v3.8 各段），涨号时同步更新——上轮把 v3.4 段断言名称
+  留在「（3.7.0）」而代码已改 3.8.0，名称腐烂两个版本，本轮连名称一起
+  改正；package.json description 把 v3.8 测试数写成 276（实为 267+11=278，
+  SKILL.md frontmatter 一直是 278），本轮按实测改正。
   历史：v3.4 的 230 + v3.4 新增 16：
   5 项采集器抽取（NVDA/AMZN/AMD/MRVL/MU 五种 live 句式命中 / 4 类精度回归 0 误报 /
   期间就近+同比排除+Oracle 两种期间形态 / 小数不截断+句点不冲段 / 词边界）+
@@ -1200,7 +1323,8 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   含口径限定：outcome=实际值落在指引容差带内，beat/below 方向单独陈述，beat 不得
   读成「公司没做到」；只结有容差/区间且实际值唯一的指引）** /
   **商业主张辨别（v3.0.0c 补入，第 6 段；KIND_CN 标签随形态库扩充：
-  v3.2 产能/供给约束、v3.3 并购/交易过程，注入与报告同标签）** /
+  v3.2 产能/供给约束、v3.3 并购/交易过程、v3.6 成本/价格信号、v3.7 专家/机构
+  判断、v3.8 监管行动、v3.9 价格下调，注入与报告同标签）** /
   **口径错位检测（v3.1.1 补入，第 6.5 段，含触发句与口径限定——此前引擎产出+
   报告渲染都有，注入脚本从未读，第五次同型断链）** /
   **外部预测基准（v2.17 新增，第 7 段）** /

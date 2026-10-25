@@ -96,6 +96,34 @@ const COMMERCIAL_CLAIM_PATTERNS = [
   { id: 'cost-signal',
     re: /(?:late\s+fees?|delay\s+(?:fees?|costs?|penalt\w*)|fees?|costs?|premiums?|penalt(?:y|ies)|prices?)\s+(?:now\s+|has\s+|have\s+)?(?:hit|hits|reach(?:es|ed)?|climb(?:ed|s)?\s+to|rose|risen|rise|top|exceed(?:s|ed)?|average[sd]?)\s*(?:to\s+)?(?:(?:record|peak|all[-\s]?time[-\s]?high)\s+levels?\s+of\s+)?(?:an?\s+average\s+of\s+|as\s+(?:much|high)\s+as\s+)?(?:nearly|almost|about|approximately|around|roughly|over|more\s+than|up\s+to|some\s+)?\s*\$?\s*[\d.,]+\s*(?:million|billion|trillion|percent|%)?(?:\s*(?:or\s+more|or\s+higher|or\s+less|plus))?(?:\s*(?:per|a|an)\s*(?:day|hour|week|month|year|gpu|chip|unit|megawatt|mw))?/i,
     kind: 'cost-signal', label: '成本/价格信号主张' },
+  // ── 价格下调类 ──
+  // [v3.9] 2026-10-26 轮 live 实证的新漏检：LWiAI #343 简报内句「Anthropic
+  // launches Claude Fable 5.1 and says it's up to 45 percent cheaper for
+  // agentic work」——扩容前 18 种形态全部不命中，整条不进辨别。v3.6 的
+  // cost-signal 管「价格/成本打到某水平」（迟到费 $5M/天），但**价格下调**
+  // （模型 API 降价、智能单价通缩）一直在库外——而智能价格通缩是 AI 市场
+  // 需求侧的一阶信号（降价驱动采用、重塑毛利结构、压缩竞争对手定价空间），
+  // 只辨「价格打到某水平」不辨「价格下调」，商业辨别对价格维度的理解只有
+  // 一半。
+  // 精度设计（v3.0.0c/v3.2/v3.3/v3.6/v3.7 教训：漏报比误报诚实、没有实证
+  // 不扩模式）：
+  //   ① 必须有幅度——无金额的价格变动句（"with lower prices"/"costs are
+  //     falling"）按 v3.6 同型纪律（无金额的 "Prices Up" 不是可证伪主张）
+  //     不进库；live 实证 LWiAI #258「Opus 5.5 with lower prices」如实记录
+  //     为已知边界漏报；
+  //   ② 名词族只认 prices/pricing，不认 costs——TCO 效率句（NVDA「35x
+  //     lower cost for agentic AI」/ ORCL「at a lower cost」）是能力/成本
+  //     效率主张不是市场定价主张，放进库会把性能评测当价格信号；
+  //   ③ 比较级后只认 for/than/句读——"cheaper to manufacture"（制造成本
+  //     效率）不是定价主张；
+  //   ④ 三形态族：名词+下调谓语+幅度（prices fell 20%）、下调动词+名词+
+  //     by/to+幅度（cuts prices by 30%）、幅度+比较级（45 percent cheaper）。
+  // live 全池实测：300 条里精确命中 1 条（即 LWiAI #343 条），精度回归
+  // 0 误报（TCO 效率句/无幅度降价句/成本名词单现/宏观看价句/其它形态库
+  // 句式/boilerplate 全部不命中）。
+  { id: 'price-cut',
+    re: /(?:\b(?:prices?|pricing)\s+(?:now\s+|has\s+|have\s+|is\s+|are\s+)?(?:cut|cuts|cutting|lower(?:s|ed|ing)?|drop(?:s|ped|ping)?|fall(?:s|ing)?|fell|declin\w+|decreas\w+|slash(?:es|ed)?|reduc\w+|tumbl\w+|plung\w+|sink(?:s|ing)?|sank|sunk)\b[^.!?]{0,25}?\d|\b(?:cut|cuts|lower(?:s|ed)?|drop(?:s|ped)?|slash(?:es|ed)?|reduc(?:es|ed))\s+(?:its\s+|their\s+)?(?:api\s+|inference\s+|model\s+|token\s+|subscription\s+)?(?:prices?|pricing)\s+(?:by|to)\s+(?:nearly|almost|about|approximately|around|roughly|over|more\s+than|up\s+to|some\s+)?\$?[\d.,]+|\b\d+(?:\.\d+)?\s*(?:%|percent|x|×)\s+(?:cheaper|less\s+expensive)\b(?:\s+(?:for|than)\b|[,.;!?]|$))/i,
+    kind: 'price-cut', label: '价格下调主张' },
   // ── 供给约束类 ──
   // [v3.2] SKILL.md 自 v3.0.0c 记在「已知边界」的漏检，2026-10-25 轮仍在
   // live 池里：The Information「AWS Largely Sold Out Of Capacity Into 2028,
@@ -411,6 +439,11 @@ function buildFalsification(patterns, text) {
     // 「口径不可比（含不含税/含不含预留量）」「第三方价格跟踪不支持」
     // 「该成本项后续回落或被豁免」。
     'cost-signal': '观察到合同/发票/第三方价格跟踪数据显示该成本或价格水平与主张值不符，或主张时点后该成本项已回落/被豁免/改入口径',
+    // [v3.9] 价格下调主张的证伪路径：降价类主张最常见的裂缝是「第三方
+    // 价格跟踪不支持该降幅」「降价实为功能/用量配额削减的口径变化」
+    // （表面单价降、实际获得价值升）「后续又涨回」。价目表与第三方
+    // API 价格跟踪是可观测的，不需要等财报。
+    'price-cut': '观察到厂商公开价目表或第三方 API 价格跟踪显示主张时点后价格未下降、降幅显著小于主张值，或「降价」实为功能/用量配额削减的口径变化（表面单价下降而实际获得价值上升），或主张时点后价格回升',
     // [v3.2] 产能/供给约束主张的证伪路径：售罄口径最常见的裂缝是
     // 「含未交付预留量」「后续扩容解除约束」「第三方跟踪显示可用容量未耗尽」。
     'capacity': '观察到第三方产能/利用率跟踪显示可售容量未耗尽（如「售罄」口径含未交付预留量），或厂商后续扩容、新签供应协议使约束解除，或到主张时点后仍能公开下单',
@@ -444,6 +477,8 @@ function inferCommercialCategory(text, patterns) {
       replacement: 'market_claims', 'market-size': 'market_claims',
       // [v3.6] 成本/价格水平是市场事实，归市场主张域
       'cost-signal': 'market_claims',
+      // [v3.9] 价格下调（智能单价通缩）是市场价格事实，归市场主张域
+      'price-cut': 'market_claims',
       // [v3.2] 供给约束是需求侧的另一面，归市场主张域
       capacity: 'market_claims',
       // [v3.7] 专家/机构判断是关于市场状况的主张，归市场主张域

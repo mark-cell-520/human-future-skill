@@ -3810,16 +3810,17 @@ c33('精度门未破：非主张文本仍被挡在辨别外', (() => {
 
 // 维护级断言：模式计数文档口径（v3.2 刚纠错过「14 种」文档计数错误）。
 // [v3.6] 扩容成本/价格信号后真实条数为 16；[v3.7] 扩容专家/机构判断后
-// 真实条数为 17；[v3.8] 扩容监管行动后真实条数为 18，计数跟着代码走
-// （v3.2 同型纪律）。
-c33('模式计数口径：18 种与文档一致', (() => {
+// 真实条数为 17；[v3.8] 扩容监管行动后真实条数为 18；[v3.9] 扩容价格
+// 下调后真实条数为 19，计数跟着代码走（v3.2 同型纪律）。
+c33('模式计数口径：19 种与文档一致', (() => {
   const { COMMERCIAL_CLAIM_PATTERNS } = require('./human-future/scripts/commercial-discriminator.js');
   const pf = require('fs').readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return COMMERCIAL_CLAIM_PATTERNS.length === 18
-    && /共 18 种模式/.test(pf)
+  return COMMERCIAL_CLAIM_PATTERNS.length === 19
+    && /共 19 种模式/.test(pf)
     && COMMERCIAL_CLAIM_PATTERNS.some(p => p.id === 'expert-judgment')
-    && COMMERCIAL_CLAIM_PATTERNS.some(p => p.id === 'regulatory-action');
-})(), '模式库真实条数必须与文档写的「18 种」一致（防文档计数腐烂）');
+    && COMMERCIAL_CLAIM_PATTERNS.some(p => p.id === 'regulatory-action')
+    && COMMERCIAL_CLAIM_PATTERNS.some(p => p.id === 'price-cut');
+})(), '模式库真实条数必须与文档写的「19 种」一致（防文档计数腐烂）');
 
 // ── v3.3 汇总 ──
 (async () => {
@@ -4213,11 +4214,11 @@ c34('cron 注入脚本渲染财报指引（VERDICT_CN/汇总/结构行）', (() 
 
 // ── 组 4：版本号（corr-2026-014 同型：banner 腐烂四个补丁轮）─────
 // [v3.6] 版本推进到 3.6.0（新辨别维度：成本/价格信号），本断言跟着当前版本走。
-c34('版本号一致性：banner 与 VERSION 对齐（3.7.0）', (() => {
+c34('版本号一致性：banner 与 VERSION 对齐（3.9.0）', (() => {
   const fs2 = require('fs');
   const version = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return version === '3.8.0' && rp.includes('文明推演引擎 v3.8.0');
+  return version === '3.9.0' && rp.includes('文明推演引擎 v3.9.0');
 })(), 'run-pipeline banner 必须与 VERSION 一致（v3.1 修过 banner/meta 同型后又腐烂）');
 
 // ── v3.4 汇总 ──
@@ -4411,15 +4412,15 @@ c35('cron 注入脚本渲染财报指引结算段', (() => {
 
 // ── 组 6：版本号一致性（corr-2026-014 同型，四处对齐）──────────
 // [v3.6] 推进到 3.6.0（新辨别维度），断言跟当前版本走。
-c35('版本号一致性：VERSION/package.json/projection meta/banner 对齐 3.8.0', (() => {
+c35('版本号一致性：VERSION/package.json/projection meta/banner 对齐 3.9.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.8.0'
-    && /3\.8\.0/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.8.0');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.8.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.9.0'
+    && /3\.9\.0/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.9.0');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.9.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.5 汇总 ──
 (async () => {
@@ -4637,15 +4638,15 @@ c351('结算证据来源是提供实际值的备案（actualPeriod 匹配）', (
 
 // ── 组 4：版本号一致性（corr-2026-014 同型）────────────────────
 // [v3.6] 推进到 3.6.0（新辨别维度：成本/价格信号）。
-c351('版本号一致性：VERSION/package.json/banner 对齐 3.8.0', (() => {
+c351('版本号一致性：VERSION/package.json/banner 对齐 3.9.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.8.0'
-    && /3\.8\.0/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.8.0');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.8.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.9.0'
+    && /3\.9\.0/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.9.0');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.9.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.5.1 汇总 ──
 (async () => {
@@ -4840,15 +4841,15 @@ c36('精度门未破：非主张文本仍被挡在辨别外', (() => {
 })(), 'Fed 公告与播客不得因 cost-signal 新模式进入辨别');
 
 // ── 组 5：版本号一致性（corr-2026-014 同型）────────────────────
-c36('版本号一致性：VERSION/package.json/banner 对齐 3.8.0', (() => {
+c36('版本号一致性：VERSION/package.json/banner 对齐 3.9.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.8.0'
-    && /3\.8\.0/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.8.0');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.8.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.9.0'
+    && /3\.9\.0/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.9.0');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.9.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.6 汇总 ──
 (async () => {
@@ -5084,15 +5085,15 @@ c37('精度门未破：非主张文本仍被挡在辨别外', (() => {
 })(), 'Fed 公告与播客不得因 expert-judgment 新模式进入辨别');
 
 // ── 组 5：版本号一致性（corr-2026-014 同型）────────────────────
-c37('版本号一致性：VERSION/package.json/banner 对齐 3.8.0', (() => {
+c37('版本号一致性：VERSION/package.json/banner 对齐 3.9.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.8.0'
-    && /3\.8\.0/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.8.0');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.8.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.9.0'
+    && /3\.9\.0/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.9.0');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.9.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.7 汇总 ──
 (async () => {
@@ -5383,15 +5384,15 @@ c38('精度门未破：非主张文本仍被挡在辨别外', (() => {
 })(), 'Fed 公告/播客/官员言论不得因 regulatory-action 新模式进入辨别');
 
 // ── 组 5：版本号一致性（corr-2026-014 同型）────────────────────
-c38('版本号一致性：VERSION/package.json/banner 对齐 3.8.0', (() => {
+c38('版本号一致性：VERSION/package.json/banner 对齐 3.9.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.8.0'
-    && /3\.8\.0/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.8.0');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.8.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.9.0'
+    && /3\.9\.0/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.9.0');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.9.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.8 汇总 ──
 (async () => {
@@ -5408,5 +5409,237 @@ c38('版本号一致性：VERSION/package.json/banner 对齐 3.8.0', (() => {
     process.exitCode = 1;
   } else {
     console.log('结论：监管行动主张已进模式库（live 实证 2 条命中），报告与 cron 注入渲染中文标签，精度回归通过。');
+  }
+})();
+
+// ════════════════════════════════════════════════════════════════
+// v3.9 新增断言：商业主张辨别器新增「价格下调主张」形态（price-cut）
+//
+// 背景（2026-10-26 轮 live 实证）：v3.6 的 cost-signal 管「价格/成本打到
+// 某水平」（迟到费 $5M/天），但**价格下调**（模型 API 降价、智能单价
+// 通缩）一直在库外。live 实证：LWiAI #343 简报内句「Anthropic launches
+// Claude Fable 5.1 and says it's up to 45 percent cheaper for agentic
+// work」（2026-09-07，business 桶，RSS 窗口内条目）——扩容前 18 种形态
+// 全部不命中、整条不进辨别。智能价格通缩是 AI 市场需求侧的一阶信号
+// （降价驱动采用、重塑毛利结构、压缩竞争对手定价空间），只辨「价格
+// 打到某水平」不辨「价格下调」，商业辨别对价格维度的理解只有一半。
+//
+// 精度设计（v3.0.0c/v3.2/v3.3/v3.6/v3.7 教训：漏报比误报诚实、没有实证
+// 不扩模式）：
+//   ① 必须有幅度——无金额的价格变动句按 v3.6 同型纪律（无金额的
+//     "Prices Up" 不是可证伪主张）不进库；live 实证 LWiAI #258
+//     「Opus 5.5 with lower prices」如实记录为已知边界漏报；
+//   ② 名词族只认 prices/pricing，不认 costs——TCO 效率句（NVDA
+//     「35x lower cost for agentic AI」/ ORCL「at a lower cost」）是
+//     能力/成本效率主张不是市场定价主张；
+//   ③ 比较级后只认 for/than/句读——"cheaper to manufacture"（制造
+//     成本效率）不是定价主张。
+// live 全池实测：300 条里精确命中 1 条（即该条），精度回归 0 误报。
+//
+// 本节断言分六组：① live 实证句式命中 + 证伪条件与类目（源级）；
+// ② 形态族召回三族；③ 精度回归；④ 端到端（引擎候选门 + 报告渲染 +
+// cron 注入 + 精度门未破）；⑤ 版本号一致性。
+// ════════════════════════════════════════════════════════════════
+const v39 = [];
+function c39(name, ok, detail) { v39.push({ name, ok, detail }); }
+
+// ── 组 1：live 实证句式命中 ──
+// 1. LWiAI #343 简报内句（live 池真实条目；原文 it's 为弯引号 U+2019，
+//    候选门抽取时统一归一化为直引号，夹具按归一化后文本写）。
+//    判定口径：厂商自述降价经简报转述 → 无出处(1)/weak-evidence，不虚抬；
+//    推理 1/3（有幅度数字→has-sample，无对照无反例）；不决策相关。
+c39('live 实证：LWiAI 简报内降价句命中价格下调形态', (() => {
+  const { discriminateCommercial } = require('./human-future/scripts/commercial-discriminator.js');
+  const r = discriminateCommercial({
+    text: "Anthropic launches Claude Fable 5.1 and says it's up to 45 percent cheaper for agentic work, and more!",
+    source: 'Last Week in AI',
+  });
+  return r.kind === 'price-cut'
+    && r.kinds.length === 1 && r.kinds[0] === 'price-cut'  // 只命中价格下调形态，不串台
+    && r.verdict === 'weak-evidence'       // 无出处(1)：简报转述的厂商自述降价
+    && r.evidence.weight === 1
+    && r.reasoning.score === 1             // has-sample（45 percent），无对照无反例
+    && r.decisionRelevant === false        // 不虚抬：等价目表/第三方价格跟踪交叉验证
+    && r.falsifiability.problems.length === 0;  // 有数字，no-quantity 不触发
+})(), '「says it\'s up to 45 percent cheaper for agentic work」必须命中价格下调形态并按简报转述证据判别');
+
+// 2. 证伪条件与类目：新 kind 必须有专属证伪路径，不能落回「无明确证伪路径」。
+//    类目映射必须源级断言——行为断言抓不到摘除（v3.6/v3.7/v3.8 同型教训：
+//    兜底类目 market_claims 同域）。
+c39('price-cut 形态有专属证伪条件与类目映射', (() => {
+  const { discriminateCommercial } = require('./human-future/scripts/commercial-discriminator.js');
+  const r = discriminateCommercial({
+    text: 'The company cut prices by 30% for enterprise customers.',
+    source: 'The Information',
+  });
+  const src = require('fs').readFileSync(require('path').join(__dirname,
+    'human-future/scripts/commercial-discriminator.js'), 'utf-8');
+  return r.kind === 'price-cut'
+    && r.category === 'market_claims'
+    && /价目表|第三方 API 价格跟踪|口径变化|回升/.test(r.falsification)
+    && r.falsification !== '无明确证伪路径——这本身就是问题'
+    // 源级：映射行必须显式存在（兜底同域，行为断言抓不到摘除）
+    && /'price-cut': 'market_claims'/.test(src);
+})(), '价格下调主张必须带「价目表/第三方价格跟踪/口径变化/回升」证伪路径，归市场主张域');
+
+// ── 组 2：形态族召回（名词+谓语+幅度 / 动词+名词+by-to+幅度 / 幅度+比较级）──
+c39('形态族召回：三族七形', (() => {
+  const { COMMERCIAL_CLAIM_PATTERNS } = require('./human-future/scripts/commercial-discriminator.js');
+  const p = COMMERCIAL_CLAIM_PATTERNS.find(x => x.id === 'price-cut');
+  if (!p) return false;
+  return [
+    // 形态 C：幅度+比较级（live 实证）
+    "Anthropic launches Claude Fable 5.1 and says it's up to 45 percent cheaper for agentic work, and more!",
+    'GPT-5 class models are now 3x cheaper than a year ago',
+    // 形态 A：名词+下调谓语+幅度
+    'API prices fell 20% after the release',
+    'Inference pricing has dropped 40% since last year',
+    'Cloud subscription prices plunged 60% in the last quarter',
+    // 形态 B：下调动词+名词+by/to+幅度
+    'The company cut prices by 30% for enterprise customers',
+    'OpenAI lowered its API prices to $0.50 per million tokens',
+  ].every(s => p.re.test(s));
+})(), 'prices fell 20%/pricing has dropped 40%/plunged 60%/cut prices by 30%/lowered its API prices to $0.50/45 percent cheaper/3x cheaper than 都要命中');
+
+// ── 组 3：精度回归（v3.0.0c 教训：漏报比误报诚实）──
+// TCO 效率句、无幅度降价句、宏观看价句、其它形态库句式、boilerplate 一律
+// 不得命中。含 live 池原句与已知边界句式。
+c39('精度回归：TCO 效率句与无幅度降价句不误命中', (() => {
+  const { COMMERCIAL_CLAIM_PATTERNS } = require('./human-future/scripts/commercial-discriminator.js');
+  const p = COMMERCIAL_CLAIM_PATTERNS.find(x => x.id === 'price-cut');
+  if (!p) return false;
+  return [
+    // TCO/效率主张（live 池原句；名词是 cost 不是 prices，比较级是 lower 不是 cheaper）
+    'NVIDIA Blackwell Ultra delivers up to 50x better performance and 35x lower cost for agentic AI compared with the NVIDIA Hopper platform, according to new SemiAnalysis InferenceX benchmarks',
+    'Oracle is now building more SaaS applications for more industries at a lower cost.',
+    'OpenAI launches GPT-6 Sol and Luna, boasting lower cost and fewer mistakes',
+    'The new chip is 2x cheaper to manufacture at scale',   // cheaper to manufacture=制造成本效率
+    // 无幅度价格变动句（v3.6 同型纪律；已知边界漏报，live 实证 LWiAI #258）
+    'Anthropic releases Opus 5.5 with lower prices and Fable-level performance',
+    'costs are falling',
+    'API prices are falling fast after the launch',   // prices 名词+下调谓语但无幅度
+    // 成本名词主张（名词族只认 prices/pricing——公司运营成本不是市场定价）
+    'Operating costs fell 40% last quarter on lower headcount',
+    // 宏观看价/成本名词单现（live 池原句）
+    'Jet Fuel Prices Up',
+    'Front Month Brent Futures near 2022 Peak Level',
+    'The Cost of Living and Wages',
+    // 其它形态库句式不串台
+    'Data Center Late Fees Hit $5 Million or More Per Day, Spawning New Insurance',
+    'DeepSeek Raises Nearly $16 billion in Second Funding Round',
+    'AWS Largely Sold Out Of Capacity Into 2028, Jassy Says',
+    'Instacart Is Exploring a Sale',
+    "AI delivers 'zero financial payoff' to most companies, Apollo economist says",
+    'Minutes of the Federal Open Market Committee, September 15-16, 2026',
+    // boilerplate
+    'Get your pass and bring someone with you at 50% off. REGISTER NOW.',
+  ].every(s => !p.re.test(s));
+})(), 'TCO 效率句、无幅度降价句、宏观看价句、其它形态库句式、boilerplate 都不得命中');
+
+// ── 组 4：端到端（引擎候选门 + 报告渲染 + cron 注入 + 精度门未破）──
+// 4. 引擎候选门放行 LWiAI #343 条目并辨别；formatReport 渲染价格下调标签。
+//    摘除报告 KIND_CN → 失败；摘除模式 → available=false，失败。
+c39('端到端：LWiAI 降价主张进商业辨别段并渲染', (() => {
+  const { ProjectionEngine, formatReport } = require('./scripts/project-future.js');
+  const item = {
+    title: 'Last Week in AI #343 - GPT-6, OpenAI\u2019s agents chatted on a wiki, Fable 5.1',
+    description: "GPT-6 Astra Is Here, Discovery of a new OpenAI agent message board, Anthropic launches Claude Fable 5.1 and says it's up to 45 percent cheaper for agentic work, and more!",
+    body: '', source: 'Last Week in AI', bucket: 'business',
+    pubDate: 'Mon, 07 Sep 2026 13:02:49 GMT', domains: ['market_claims'],
+    link: 'https://lastweekin.ai/p/last-week-in-ai-343-gpt-6-openais', origin: 'live' };
+  const inst = new ProjectionEngine({});
+  inst.signals = { totalItems: 1, domains: [], undomained: 0, dateRange: null, items: [item] };
+  const cd = inst.buildCommercialDiscrimination();
+  const md = formatReport(new ProjectionEngine({ newsData: { business: { news: [item] } } }).generate());
+  const seg = md.split('## 商业主张辨别')[1] || '';
+  return cd.available === true && cd.audited === 1
+    && cd.results[0].kind === 'price-cut'
+    && cd.results[0].verdict === 'weak-evidence'
+    && cd.results[0].claimSentence.includes('45 percent cheaper')
+    // 必须认「渲染出来的类型标签行」而不是段里任意出现该字符串——note 文本
+    // 里也有「价格下调」，泛匹配会让断言空转（v3.2 反向验证实测同型）。
+    && seg.includes('类型: 价格下调主张 | 来源: Last Week in AI')
+    && seg.includes('[证据不足]')
+    && seg.includes('证伪条件:');
+})(), 'LWiAI #343 条目必须进商业辨别段，报告渲染价格下调主张标签与证伪条件');
+
+// 5. cron 注入脚本 KIND_CN 认识 price-cut（端到端最后一环：agent 看得见
+//    中文标签）。摘除注入脚本 KIND_CN 的 price-cut 行 → 失败。
+c39('cron 注入脚本渲染价格下调主张标签', (() => {
+  const p = require('path').join(require('os').homedir(), '.hermes/scripts/hf-cron-fetch.sh');
+  if (!require('fs').existsSync(p)) return false;
+  const src = require('fs').readFileSync(p, 'utf-8');
+  return /'price-cut': '价格下调主张'/.test(src);
+})(), '注入脚本 KIND_CN 必须含 price-cut，否则 agent 看到英文 kind');
+
+// 6. 精度门没被新模式打穿：Fed 公告/播客/官员言论/无幅度价格谈论/TCO
+//    效率句仍不进辨别（新模式写得过宽就会漏进来——名词族与比较级是重点
+//    盯守对象）。
+c39('精度门未破：非主张文本与无幅度价格谈论仍被挡在辨别外', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const noise = [
+    { title: 'Minutes of the Federal Open Market Committee',
+      description: 'Participants noted that financial market conditions had eased.',
+      body: '', source: 'Federal Reserve (Monetary)', bucket: 'economy',
+      pubDate: 'Tue, 13 Oct 2026 00:44:16 GMT', domains: ['economy_labor'],
+      link: 'https://federalreserve.gov/a', origin: 'live' },
+    { title: 'LWiAI Podcast #252 - GPT 5.6, Grok 4.5, Nemotron-Labs-Diffusion, AI 2040',
+      description: "GPT-5.6 and Grok 4.5, Meta's Muse Spark 1.1, regulatory developments in AI and data centers, interpretability research from Anthropic, and the future of AI policy with AI 2040",
+      body: '', source: 'Last Week in AI', bucket: 'business',
+      pubDate: 'Tue, 13 Oct 2026 00:44:16 GMT', domains: ['capital_flow'],
+      link: 'https://lastweekin.ai/b', origin: 'live' },
+    // live 池原句：无幅度降价谈论（已知边界漏报，如实记录为不进辨别）
+    { title: 'LWiAI Podcast #258 - Opus 5.5, Sol and Luna, Muse, DeepSeek-V4.1-Flash, Xi',
+      description: 'Anthropic releases Opus 5.5 with lower prices and Fable-level performance, OpenAI launches GPT-6 Sol and Luna, boasting lower cost and fewer mistakes',
+      body: '', source: 'Last Week in AI', bucket: 'business',
+      pubDate: 'Tue, 13 Oct 2026 00:44:16 GMT', domains: ['market_claims'],
+      link: 'https://lastweekin.ai/c', origin: 'live' },
+    // live 池原句：TCO 效率主张（sec_filings 条目句式，放 business 桶验证模式本身不误命中）
+    { title: 'NVIDIA Blackwell Ultra delivers up to 50x better performance and 35x lower cost for agentic AI',
+      description: 'compared with the NVIDIA Hopper platform, according to new SemiAnalysis InferenceX benchmarks',
+      body: '', source: 'TechCrunch AI', bucket: 'business',
+      pubDate: 'Tue, 13 Oct 2026 00:44:16 GMT', domains: ['competitor_moves'],
+      link: 'https://techcrunch.com/d', origin: 'live' },
+    { title: 'Trump says tariffs will raise revenue for the government',
+      description: 'The president commented on trade policy during a rally speech.',
+      body: '', source: 'TechCrunch AI', bucket: 'business',
+      pubDate: 'Tue, 13 Oct 2026 00:44:16 GMT', domains: ['market_claims'],
+      link: 'https://techcrunch.com/e', origin: 'live' },
+  ];
+  const inst = new ProjectionEngine({});
+  inst.signals = { totalItems: noise.length, domains: [], undomained: 0, dateRange: null, items: noise };
+  const r = inst.buildCommercialDiscrimination();
+  return r.available === false && /未抽到命中商业主张形态/.test(r.reason || '');
+})(), 'Fed 公告/播客/无幅度降价谈论/TCO 效率句/官员言论不得因 price-cut 新模式进入辨别');
+
+// ── 组 5：版本号一致性（corr-2026-014 同型）────────────────────
+c39('版本号一致性：五处对齐 3.9.0', (() => {
+  const fs2 = require('fs');
+  const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
+  const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
+  const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
+  const pf = fs2.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
+  return VERSION === '3.9.0'
+    && pkg.version === '3.9.0'
+    && rp.includes('文明推演引擎 v3.9.0')      // banner
+    && /version: '3\.9\.0'/.test(pf)          // projection meta
+    && /version: '3\.9\.0'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.9.0，防 corr-2026-014 版本漂移复发');
+
+// ── v3.9 汇总 ──
+(async () => {
+  const results = await Promise.all(v39.map(c => Promise.resolve(c.ok)));
+  let f = 0;
+  v39.forEach((c, i) => {
+    const ok = results[i];
+    if (!ok) f++;
+    console.log(`${ok ? '\u2713' : '\u2717'} ${c.name}${ok ? '' : '  —— ' + c.detail}`);
+  });
+  console.log(`\nv3.9: ${v39.length - f} 通过, ${f} 失败, 共 ${v39.length} 个`);
+  if (f > 0) {
+    console.log('结论：价格下调主张的接入不完整（命中/证伪/召回/精度/端到端/版本有缺）。');
+    process.exitCode = 1;
+  } else {
+    console.log('结论：价格下调主张已进模式库（live 实证 1 条命中），报告与 cron 注入渲染中文标签，精度回归通过。');
   }
 })();

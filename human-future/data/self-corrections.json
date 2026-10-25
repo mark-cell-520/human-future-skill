@@ -276,6 +276,16 @@
       "evidence": "v3.8 实跑 discriminateCommercial：Treasury 标题-only 加豁免前 problems=[no-quantity]、verdict=unfalsifiable 且 decisionRelevant=false；豁免后 problems=[]、verdict=thin-reasoning（推理仍 0/3 不虚抬）、decisionRelevant=true。同期 smoke 实测「Instacart Is Exploring a Sale」仍 problems=[no-quantity]/unfalsifiable——两行自相矛盾输出在该条上复现。",
       "lesson": "通用判据（不可证伪/推理/证据）落到新形态上时要先问「这个判据对这个形态的证伪结构成立吗」——事件型主张的证伪在事件不在数字。本轮只修新维度、登记旧维度，是因为旧维度的判定行为已文档化已测试，静默改动会改写历史记录；但不登记就是知情不报。",
       "date": "2026-10-26"
+    },
+    {
+      "id": "corr-2026-026",
+      "reportVersion": "v3.9.0",
+      "wrongClaim": "版本号/计数只要把 VERSION、banner、meta 这几处代码改对就行——package.json description 和历史断言的名称是「文档」，坏了也不影响运行",
+      "rightClaim": "文档里的计数与断言名和代码是同一条链上的。v3.9 轮实测两处腐烂：① package.json description 写「测试 267→276 项」，而 npm test 实测 v3.8 轮就是 267+11=278（SKILL.md frontmatter 一直写的 278）——文档计数错误，corr-2026-013 同型第三次；② v3.4 段版本断言的名称停在「（3.7.0）」而代码已随 v3.8 改成 version === '3.8.0'——名称腐烂两个版本，corr-2026-014 版本漂移同型。根因是 6 处历史版本断言的代码硬编码「当前版本号」，每轮涨号都要全量同步，上轮只同步了代码没同步名称。",
+      "evidence": "v3.9 轮 npm test 实测 286 项断言（278 基线 + v3.9 新增 8）；修正前 package.json description 含「测试 267→276 项」；test-reasoning-is-derived.js 的 c34 断言名「版本号一致性：banner 与 VERSION 对齐（3.7.0）」配代码 version === '3.8.0'；本轮 python 精确替换 6 处断言代码+名称后 grep 残留 3.8.0 计数为 0，npm test 286 项 0 失败。",
+      "lesson": "涨号轮的收尾清单必须包含「全量 grep 旧版本号与旧计数」——范围是 package.json description、SKILL.md frontmatter、全部历史版本断言的代码与名称、注释里的形态条数；只改 VERSION/banner/meta 五处不够，文档与断言名是同样的腐烂面。另外 package.json 的 description 是给人看的第一入口，它的计数和 frontmatter 不一致时，以 npm test 实测值为准。",
+      "severity": "medium",
+      "recordedAt": "2026-10-25T22:52:48.117Z"
     }
   ]
 }
