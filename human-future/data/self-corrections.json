@@ -222,6 +222,42 @@
       "recordedAt": "2026-10-25T12:06:39.234Z",
       "resolvedAt": "2026-10-25T12:06:39.234Z",
       "fix": "extractActuals 毛利率改 matchAll（global）；营收保持单 match（总收入在前、无 GAAP 分歧，分部营收不取）。"
+    },
+    {
+      "id": "corr-2026-021",
+      "reportVersion": "v3.5.1",
+      "wrongClaim": "v3.5 宣称「settlement 结算元数据随新条目落盘」，历史条目用当期指引句反推兜底——听起来两条路都通",
+      "rightClaim": "落账的元数据 0/47 可用：forecast-discriminator 的辨别结果从不带 ticker/fiscalYear/quarter，登记时写的 settlement.ticker 恒为 null、期间恒缺失——「元数据落账」这条路从落地起就没工作过，全部流量挤在句匹配兜底路径上，指引备案一滑出采集窗口就永久无法结算（实测 29 条到期仅 7 条可结）。",
+      "evidence": "台账实查：47 条 earnings_guidance 的 settlement.ticker 全为 null；v3.5 的 8 条「有元数据」条目也缺 fiscalYear/quarter。修复后 live 一轮新结算 4 条（MRVL×2 带内命中、MU/AMZN beat 带外）。",
+      "lesson": "宣称「X 随条目落盘」必须有一条断言直接检查落盘后的字段值非空（不是字段存在性），并在真实数据上至少验证过一次。「写了赋值语句」≠「值到得了位」——透传链每一环（claim→辨别结果→登记）都要有用例。",
+      "severity": "critical",
+      "recordedAt": "2026-10-25T14:37:58.740Z",
+      "resolvedAt": "2026-10-25T14:37:58.740Z",
+      "fix": "forecast-discriminator 的 guidanceStruct 与返回结果补 ticker/fiscalYear/quarter 三字段透传；登记处 r.ticker || r.guidance.ticker 双路取；测试钉住「新登记条目 settlement 元数据完整」。"
+    },
+    {
+      "id": "corr-2026-022",
+      "reportVersion": "v3.5.1",
+      "wrongClaim": "v3.4 给台账去重的文本 key 加了 dueOn（跨财季同文是不同义务），证据 key 不用加——它有 sources 区分",
+      "rightClaim": "同型修复漏了调用点：SEC EDGAR 自动结算的 evidence.sources 是该 ticker 的备案链接，同一公司不同财季的结算拿到完全相同的来源集合，证据 key 不加 dueOn 就把 NVDA FY2027 Q1 与 Q2 两次承诺并成一个义务——实测 11 条已结算被去成 5 条，Brier 样本与兑现率同步失真（正是 v3.4 要防的「把两次兑现计成一次」）。",
+      "evidence": "live 报告「已结算 5 条（同义务去重后，原始登记 11 条）」；修复后 9 条。测试：同证据不同 dueOn 不合并、同义务（同时点同证据）照常合并。",
+      "lesson": "修一类去重/口径问题时，grep 同一函数的全部分支（文本 key / 证据 key / 公式桥调用点），不能只改触发过问题的那个分支——v3.2 公式桥、v3.4 文本 key、v3.5.1 证据 key，同一坑第三次。",
+      "severity": "high",
+      "recordedAt": "2026-10-25T14:37:58.740Z",
+      "resolvedAt": "2026-10-25T14:37:58.740Z",
+      "fix": "dedupeSameObligation 证据 key 补 dueOn 维度；结算证据来源改按 actualPeriod 匹配提供实际值的备案（不再 find(ticker) 拿最新备案链接）。"
+    },
+    {
+      "id": "corr-2026-023",
+      "reportVersion": "v3.5.1",
+      "wrongClaim": "实际值抽取失败的备案一律按「标题期间抽不到」归因，兜底正则按截断显示猜句式（MU 标题猜成 and fiscal year 2026）",
+      "rightClaim": "两个错误叠加：① MU 真实标题是「REPORTS RECORD FISCAL FOURTH-QUARTER AND FULL-YEAR 2026 RESULTS」（连字符+full-year），猜的句式第一版修复完全无效（live 探针抓出）；② 跳过理由一律写「滑出采集窗口」，实测多数是句式漂移——claim 存的是旧版抽取结果，与当期句子对不上，跟窗口大小无关，归因错了就没法修。",
+      "evidence": "debug 探针实抓 MU 标题全文；live 报告跳过理由改区分后：2 条句式漂移（窗口内有备案但匹配不上）+ 1 条歧义 + 0 条真滑出。",
+      "lesson": "兜底正则必须从完整原文提取，截断显示（slice(0,300)）猜出来的句式直接产出无效修复；跳过/失败理由必须可归因（用 id 里的稳定标识反查当期状态），同一句「滑出窗口」会掩盖两类完全不同的缺陷。",
+      "severity": "medium",
+      "recordedAt": "2026-10-25T14:37:58.740Z",
+      "resolvedAt": "2026-10-25T14:37:58.740Z",
+      "fix": "标题通用形态按实抓原文设计（[\\s-]quarter + and full-year）；跳过理由按 id 内 accession 反查当期窗口，区分「句式漂移」与「备案滑出窗口」，窗口大小引用 MAX_8K_PER_COMPANY 常量。"
     }
   ]
 }

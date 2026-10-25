@@ -69,6 +69,9 @@ const { discriminateCommercial, COMMERCIAL_CLAIM_PATTERNS } = require(path.join(
 // 最硬预测类的承诺（v3.4 登记了 33 条、15 条到期、0 条结算）。纯函数在
 // earnings-settlement.js，本文件只做编排。
 const { settleGuidance, normalizeMetric } = require(path.join(HF, 'earnings-settlement.js'));
+// [v3.5.1] 采集窗口大小：结算层报「指引备案滑出采集窗口」时引用真实值，
+// 不写死数字（v3.4 把它从 2 调到 3，文案没跟着改，报错过窗口大小）。
+const { MAX_8K_PER_COMPANY } = require(path.join(HF, 'edgar-collector.js'));
 // [v2.17] 外部预测基准（Good Judgment Open 开放问题）。这是 SKILL.md
 // 「已知边界」里挂了三个版本的缺口：RSS 前瞻表述多为意图声明，缺带硬
 // 截止日的规范预测。2026-10-24 复测只剩 GJOpen 可达（Metaculus 403、
@@ -337,7 +340,7 @@ class ProjectionEngine {
     }
     const report = {
       meta: {
-        version: '3.5.0',
+        version: '3.5.1',
         heartflowVersion: this.analysis.engineVersion,
         timestamp: this.timestamp,
         modulesLoaded: this.analysis.modulesLoaded,
@@ -1626,8 +1629,12 @@ class ProjectionEngine {
           // 下一期财报实际值配对。指标名归一（gross margins→gross margin）与
           // actuals 侧对齐；无 tolerance 且非 range 的指引结算层会判「不可自动
           // 结算」，元数据照存（供人工或后续轮次用）。
+          // [v3.5.1] ticker/fiscalYear/quarter 现在真的到位：v3.5 时辨别结果
+          // 不带这三个字段，落账的 settlement.ticker 恒为 null——持久化分支
+          // （p.settlement.ticker）从未激活，全部流量挤在句匹配兜底路径上。
+          // forecast-discriminator v3.5.1 已把三字段透传进 r.guidance/r.ticker。
           settlement: r.guidance ? {
-            ticker: r.ticker || null,
+            ticker: r.ticker || r.guidance.ticker || null,
             fiscalYear: r.guidance.fiscalYear,
             quarter: r.guidance.quarter,
             annual: !!r.guidance.annual,
@@ -1683,8 +1690,9 @@ class ProjectionEngine {
   //      GAAP/非 GAAP 毛利率不同值）判歧义跳过，不设法规避；
   //   ③ 单位不兼容跳过；④ 只碰 outcome===null 的条目（不重复结算）。
   // 历史条目（无 settlement 元数据，v3.5 前登记）用当期 EDGAR 指引句反推
-  // 元数据（claim 句匹配）——只在指引仍在「最近两份备案」窗口内时能反推，
-  // 更早的诚实留待后续轮次，不硬结。
+  // 元数据（claim 句匹配）——只在指引仍在「最近三份备案」窗口内时能反推，
+  // 且句匹配可能因抽取版本漂移而失配（跳过理由区分两种情形，不一律归因
+  // 于窗口）。更早的诚实留待后续轮次，不硬结。
   // ───────────────────────────────────────────────────────────────
   settleEarningsGuidance() {
     const edgarItems = this.signals.items.filter(it => it.source === 'SEC EDGAR');
@@ -1740,7 +1748,17 @@ class ProjectionEngine {
         meta = guidanceBySentence.get(nc) || guidanceBySentence.get('pre:' + nc.slice(0, 60)) || null;
       }
       if (!meta || !meta.ticker || !meta.fiscalYear) {
-        skipped.push({ id: p.id, reason: '无结算元数据且当期 EDGAR 无匹配指引句（指引已滑出最近两份备案窗口）' });
+        // [v3.5.1] 区分两种「配不上」，归因错了就没法修：旧文案一律写
+        // 「滑出最近两份备案窗口」，实测多数是句式漂移（claim 存的是旧版
+        // 抽取结果，与当期窗口内的指引句对不上），跟窗口大小无关。
+        // id 内含备案号（fc-sec-edgar-<cik>-<yy>-<seq>-index-htm-...），
+        // 拿它查当期窗口就能区分两种情形。
+        const accM = String(p.id || '').match(/fc-sec-edgar-(\d{10})-(\d{2})-(\d{6})-index-htm/);
+        const acc = accM ? `${accM[1]}-${accM[2]}-${accM[3]}` : null;
+        const inWindow = !!(acc && edgarItems.some(it => it.accession === acc));
+        skipped.push({ id: p.id, reason: inWindow
+          ? '当期窗口内有该备案但指引句匹配不上（claim 句式与当期抽取结果有漂移），不猜元数据'
+          : `指引备案${acc ? ' ' + acc : ''}已滑出采集窗口（最近 ${MAX_8K_PER_COMPANY} 份之外），无法反推结算元数据` });
         continue;
       }
       const key = `${meta.ticker}|${meta.fiscalYear}|${meta.quarter}|${meta.metric}`;
@@ -1759,7 +1777,15 @@ class ProjectionEngine {
       if (p.dueOn && new Date(p.dueOn) > now) { pending++; continue; }
       try {
         predictionLedger.settle(p.id, verdict.hit, {
-          sources: [edgarItems.find(it => it.ticker === meta.ticker)?.link || 'https://www.sec.gov/'],
+          // [v3.5.1] 证据来源取**提供该实际值的备案**（ticker + actualPeriod
+          // 匹配），不是该 ticker 的首个条目——旧代码用 find(ticker) 拿到的
+          // 恒为最新备案链接，同一公司不同财季的结算证据完全相同，配合缺
+          // dueOn 的去重 key 把两次不同承诺并成一个义务（Brier 样本失真）。
+          sources: [edgarItems.find(it => it.ticker === meta.ticker
+            && it.actualPeriod && it.actualPeriod.fiscalYear === meta.fiscalYear
+            && (meta.quarter == null || it.actualPeriod.quarter === meta.quarter))?.link
+            || edgarItems.find(it => it.ticker === meta.ticker)?.link
+            || 'https://www.sec.gov/'],
           summary: `SEC EDGAR 自动结算：${meta.ticker} FY${meta.fiscalYear} Q${meta.quarter || '(全年)'} ${meta.metric} `
             + `指引 ${meta.value}${meta.tolerance ? ' ±' + meta.tolerance : (meta.isRange ? '（区间）' : '')}，`
             + `实际 ${actuals[0]} → ${verdict.direction}，判定 ${verdict.hit ? '命中(带内)' : '未中(带外)'}。`,

@@ -2888,11 +2888,19 @@ c31('端到端：报告 markdown 渲染自我修正登记簿段', (() => {
   }).generate();
   const md = formatReport(rep);
   const seg = md.split('## 自我修正登记簿')[1] || '';
+  // 锚点从数据文件动态取（不写死）：台账增长后 severity 排序的 top-5 会变，
+  // 写死「绕月」在登记簿超过 5 条 critical+high 时腐烂（v3.5.1 实测）。
+  // 断言意图不变：渲染出的教训必须是登记簿里的真实内容。
+  const book = JSON.parse(require('fs').readFileSync(require('path').join(__dirname, 'human-future/data/self-corrections.json'), 'utf8'));
+  const rank = { low: 1, medium: 2, high: 3, critical: 4 };
+  const top = book.corrections.slice().sort((a, b) => (rank[b.severity] || 0) - (rank[a.severity] || 0))[0];
+  const anchor = String(top.lesson || '').slice(0, 12);
   return md.includes('## 自我修正登记簿（历史纠错教训，解读本期信号前必读）')
     && seg.includes('[critical]')            // severity 分布行
     && seg.includes('更正:')                 // wrong→right 结构
     && seg.includes('教训:')
-    && seg.includes('绕月');                 // 真实教训内容（corr-2026-001）
+    && seg.includes(anchor)                  // 真实教训内容（数据文件 top-1 动态锚点）
+    && seg.includes(String(top.wrongClaim).slice(0, 20));   // 真实错误陈述（渲染行截断到 110 字符）
 })(), '登记簿段必须进 markdown 产物，且带真实教训内容');
 
 // 5. 位置纪律：登记簿段必须在「信号热度分组」之前——先读簿子再说话。
@@ -4200,11 +4208,11 @@ c34('cron 注入脚本渲染财报指引（VERDICT_CN/汇总/结构行）', (() 
 })(), '注入脚本必须含 earnings-guidance 标签、guidanceCount 汇总与指引结构行，否则 agent 看不到新维度');
 
 // ── 组 4：版本号（corr-2026-014 同型：banner 腐烂四个补丁轮）─────
-c34('版本号一致性：banner 与 VERSION 对齐（3.5.0）', (() => {
+c34('版本号一致性：banner 与 VERSION 对齐（3.5.1）', (() => {
   const fs2 = require('fs');
   const version = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return version === '3.5.0' && rp.includes('文明推演引擎 v3.5.0');
+  return version === '3.5.1' && rp.includes('文明推演引擎 v3.5.1');
 })(), 'run-pipeline banner 必须与 VERSION 一致（v3.1 修过 banner/meta 同型后又腐烂）');
 
 // ── v3.4 汇总 ──
@@ -4397,15 +4405,15 @@ c35('cron 注入脚本渲染财报指引结算段', (() => {
 })(), '注入脚本必须读 proj.forecastDiscrimination.guidanceSettlement，否则 agent 看不到结算结果');
 
 // ── 组 6：版本号一致性（corr-2026-014 同型，四处对齐）──────────
-c35('版本号一致性：VERSION/package.json/projection meta/banner 对齐 3.5.0', (() => {
+c35('版本号一致性：VERSION/package.json/projection meta/banner 对齐 3.5.1', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.5.0'
-    && /3\.5\.0/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.5.0');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.5.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.5.1'
+    && /3\.5\.1/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.5.1');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.5.1，防 corr-2026-014 版本漂移复发');
 
 // ── v3.5 汇总 ──
 (async () => {
@@ -4422,5 +4430,230 @@ c35('版本号一致性：VERSION/package.json/projection meta/banner 对齐 3.5
     process.exitCode = 1;
   } else {
     console.log('结论：财报指引自动结算端到端成立——实际值抽取、单位感知容差、唯一值+到期门+歧义跳过的保守结算、证据落账、报告与注入可见。');
+  }
+})();
+
+// ════════════════════════════════════════════════════════════════
+// v3.5.1 — 财报指引结算链路修复（维护级：断链修复 + 实际值召回补强）
+//
+// v3.5 审计实测（2026-10-25）：台账 47 条 earnings_guidance，settlement
+// 元数据 0/47 可用——ticker 恒 null、fiscalYear/quarter 恒缺失。根因：
+// forecast-discriminator 的辨别结果从不带这三个字段，登记时写的
+// settlement 是残废的，「元数据随新条目落盘」从落地起就没工作过，
+// 全部流量挤在「当期 EDGAR 指引句反推」兜底路径上。同轮审计还实测
+// MRVL（全部备案）/MU（9 月备案）/AMZN（全部备案）的实际值抽取为 0——
+// 标题期间形态不命中（"of fiscal year" / "FOURTH-QUARTER AND FULL-YEAR"
+// / 标题无年份），到期指引永远找不到对账依据。
+//
+// 本节断言分四组：元数据透传（DOA 修复）/ 实际值抽取扩库（live 实证
+// 三公司 + 精度回归）/ 端到端（登记元数据完整 + 历史残废条目经句匹配
+// 正确结算 + 跳过理由归因诚实）/ 版本号一致性。
+// ════════════════════════════════════════════════════════════════
+const v351 = [];
+function c351(name, ok, detail) { v351.push({ name, ok, detail }); }
+
+// ── 组 1：辨别器元数据透传（v3.5 DOA 断链修复）────────────────
+// 1. discriminate() 结果带 ticker/fiscalYear/quarter
+c351('discriminate() 透传 ticker/fiscalYear/quarter 进结果', (() => {
+  const { discriminate } = require('./human-future/scripts/forecast-discriminator.js');
+  const r = discriminate({
+    text: 'Net revenue is expected to be $2.700 billion +/- 5%',
+    source: 'SEC EDGAR', date: '2026-05-27', url: 'https://sec.gov/mrvl',
+    category: 'earnings_guidance', ticker: 'MRVL', fiscalYearEnd: '0130',
+    guidance: { sentence: 'Net revenue is expected to be $2.700 billion +/- 5%', metric: 'net revenue', value: '$2.700 billion', tolerance: '5%', quarter: 2, fiscalYear: 2027, periodLabel: 'FY2027 Q2', caveats: [] },
+  });
+  const rss = discriminate({ text: 'We plan to expand access next year.', source: 'RSS', date: '2026-10-01' });
+  return r.ticker === 'MRVL' && r.guidance && r.guidance.ticker === 'MRVL'
+    && r.guidance.fiscalYear === 2027 && r.guidance.quarter === 2
+    && r.verdict === 'earnings-guidance'
+    && rss.ticker === null && (rss.guidance === null);   // RSS 无 ticker/无指引结构，不崩
+})(), '结算元数据三字段必须随辨别结果透传；v3.5 时三字段从未落账（ticker 恒 null），持久化分支从未激活');
+
+// ── 组 2：采集器实际值抽取扩库（live 实证三公司）────────────────
+// 2. MRVL/MU/AMZN 三种新标题形态 + 营收值（全部 2026-10-25 从 SEC 实抓原文）
+c351('extractActuals 覆盖 MRVL/MU/AMZN 标题形态（of fiscal year / FOURTH-QUARTER AND FULL-YEAR / ended 锚）', (() => {
+  const { extractActuals } = require('./human-future/scripts/edgar-collector.js');
+  // MRVL live 原文（q227_8kx812026ex-991.htm）：标题 "of Fiscal Year 2027"，
+  // 营收值句 "Net revenue for the second quarter of fiscal 2027 was $2.739 billion"
+  const MRVL = 'EX-99.1 2 q227_8kx812026ex-991.htm EXHIBIT 99.1 Document Exhibit 99.1 Marvell Technology, Inc. Reports Second Quarter of Fiscal Year 2027 Financial Results • Q2 Net Revenue: $2.739 billion, a new record, grew by 37% year-on-year • Q2 Gross Margin: 53.1% GAAP gross margin; 58.9% non-GAAP gross margin SANTA CLARA, Calif., August 27, 2026 — Marvell Technology, Inc. today reported financial results for the second quarter ended August 1, 2026. Net revenue for the second quarter of fiscal 2027 was $2.739 billion.';
+  // MU live 原文（a2026q4ex991-pressrelease.htm）：标题 "FOURTH-QUARTER AND FULL-YEAR 2026"
+  const MU = 'EX-99.1 2 a2026q4ex991-pressrelease.htm EX-99.1 EARNINGS RELEASE Document Exhibit 99.1 FOR IMMEDIATE RELEASE Contacts: Satya Kumar Mark Plungy Investor Relations Media Relations satyakumar@micron.com mplungy@micron.com (408) 450-6199 (408) 203-2910 MICRON TECHNOLOGY, INC. REPORTS RECORD FISCAL FOURTH-QUARTER AND FULL-YEAR 2026 RESULTS AI-driven demand and strong operational execution position Micron for continued growth. Revenue of $54.23 billion for the fourth quarter.';
+  // AMZN live 原文（amzn-20260630xex991.htm）：标题无年份 → ended 锚；
+  // 总量值句 "Net sales increased 20% to $200.6 billion"（紧邻形态）
+  const AMZN = 'EX-99.1 2 amzn-20260630xex991.htm EX-99.1 Document Exhibit 99.1 AMAZON.COM ANNOUNCES SECOND QUARTER RESULTS Net sales increased 20% year-over-year Operating income was $27.5 billion, up 43% year-over-year AWS net sales increased 37%—its fastest growth in 18 quarters—to a $169 billion annualized revenue run rate SEATTLE—(BUSINESS WIRE)—Amazon.com, Inc. today announced financial results for the second quarter ended June 30, 2026. Net sales increased 20% to $200.6 billion, compared with second quarter 2025.';
+  const a = extractActuals(MRVL), b = extractActuals(MU), c = extractActuals(AMZN);
+  const ar = a.actuals.find(x => x.metric === 'revenue');
+  const br = b.actuals.find(x => x.metric === 'revenue');
+  const cr = c.actuals.find(x => x.metric === 'revenue');
+  return a.quarter === 2 && a.fiscalYear === 2027 && ar && ar.value === '$2.739 billion'
+    && b.quarter === 4 && b.fiscalYear === 2026 && br && br.value === '$54.23 billion'
+    && c.quarter === 2 && c.fiscalYear === 2026 && cr && cr.value === '$200.6 billion';
+})(), 'MRVL/MU/AMZN 的期间与营收实际值必须抽出来——抽不到，到期指引永远找不到对账依据');
+
+// 3. 精度回归：AMZN 的营业利润与 AWS 年化 run rate 不得被当成总净销售额
+c351('精度回归：operating income 与 AWS run rate 不误当净销售额', (() => {
+  const { extractActuals } = require('./human-future/scripts/edgar-collector.js');
+  const AMZN = 'AMAZON.COM ANNOUNCES SECOND QUARTER RESULTS Net sales increased 20% year-over-year Operating income was $27.5 billion, up 43% year-over-year AWS net sales increased 37%—its fastest growth in 18 quarters—to a $169 billion annualized revenue run rate SEATTLE—(BUSINESS WIRE)—Amazon.com, Inc. today announced financial results for the second quarter ended June 30, 2026. Net sales increased 20% to $200.6 billion, compared with second quarter 2025.';
+  const ex = extractActuals(AMZN);
+  // 只准有一条营收实际值，且是总量 $200.6 billion
+  return ex.actuals.length === 1 && ex.actuals[0].value === '$200.6 billion'
+    // 同比引用（second quarter 2025，无 ended 日期）不得抢期间锚
+    && ex.fiscalYear === 2026 && ex.quarter === 2;
+})(), '90 字符 gap 曾把 bullet 间的 operating income 桥接成营收；紧邻形态只认总量值句');
+
+// ── 组 3：端到端（登记元数据 / 历史残废条目结算 / 跳过理由归因）──
+// 4. 新登记指引的 settlement 元数据完整（ticker/fiscalYear/quarter 落账）
+c351('端到端：新登记 earnings_guidance 的 settlement 元数据完整', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const items = [{
+    title: 'MRVL 8-K 业绩发布 · 2026-05-27', description: '', body: 'Net revenue is expected to be $2.700 billion +/- 5%.',
+    source: 'SEC EDGAR', bucket: 'sec_filings', origin: 'live',
+    pubDate: '2026-05-27', link: 'https://example.com/edgar-mrvl-meta-351',
+    fiscalYearEnd: '0130', ticker: 'MRVL',
+    guidance: [{ sentence: 'Net revenue is expected to be $2.700 billion +/- 5%', metric: 'net revenue', value: '$2.700 billion', tolerance: '5%', quarter: 2, fiscalYear: 2027, periodLabel: 'FY2027 Q2', caveats: [] }],
+  }];
+  const inst = new ProjectionEngine({});
+  inst.signals = { totalItems: 1, domains: [], undomained: 0, dateRange: null, items };
+  inst.buildForecastDiscrimination();
+  const ledger = require('./human-future/scripts/prediction-ledger.js').load();
+  const p = (ledger.predictions || []).find(x => x.id.includes('edgar-mrvl-meta-351'));
+  return !!p && !!p.settlement && p.settlement.ticker === 'MRVL'
+    && p.settlement.fiscalYear === 2027 && p.settlement.quarter === 2
+    && p.settlement.metric === 'revenue' && p.settlement.value === '$2.700 billion';
+})(), '新登记指引必须带完整结算元数据——v3.5 时 ticker/fiscalYear/quarter 从未落账，持久化分支从未激活');
+
+// 5. 历史残废条目（ticker=null）经当期指引句反推 + 新抽取实际值正确结算
+c351('端到端：残废元数据历史条目经句反推配对实际值结算（MRVL live 场景）', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const fs = require('fs');
+  const LEDGER = path.join(__dirname, 'human-future/data/prediction-ledger.json');
+  const saved = fs.existsSync(LEDGER) ? fs.readFileSync(LEDGER, 'utf-8') : null;
+  try {
+    const mock = { version: '1.0.0', predictions: [
+      // 复刻台账实测残废形态：settlement 在但 ticker/fiscalYear/quarter 全 null
+      { id: 't351-mrvl-q2', claim: 'Net revenue is expected to be $2.700 billion +/- 5%', probability: 0.5, domain: 'earnings_guidance', category: 'earnings_guidance', dueOn: '2026-09-13', outcome: null,
+        settlement: { ticker: null, fiscalYear: null, quarter: null, metric: 'revenue', value: '$2.700 billion', tolerance: '5%', isRange: false } },
+    ]};
+    fs.writeFileSync(LEDGER, JSON.stringify(mock, null, 2));
+    const eng = new ProjectionEngine({});
+    eng.signals = { totalItems: 1, domains: [], items: [
+      { source: 'SEC EDGAR', ticker: 'MRVL', link: 'https://www.sec.gov/Archives/mrvl-q2fy27',
+        actualPeriod: { quarter: 2, fiscalYear: 2027 }, actuals: [{ metric: 'revenue', value: '$2.739 billion' }],
+        guidance: [{ sentence: 'Net revenue is expected to be $2.700 billion +/- 5%', metric: 'net revenue', value: '$2.700 billion', tolerance: '5%', quarter: 2, fiscalYear: 2027 }] },
+    ]};
+    const res = eng.settleEarningsGuidance();
+    const s = res.settled.find(x => x.id === 't351-mrvl-q2');
+    const after = JSON.parse(fs.readFileSync(LEDGER, 'utf-8'));
+    const entry = after.predictions.find(p => p.id === 't351-mrvl-q2');
+    return !!s && s.hit === true && /in-band/.test(s.direction) && s.ticker === 'MRVL'
+      && entry.outcome === true && entry.evidence && entry.evidence.settledBy === 'edgar-auto-settlement'
+      && /2\.739/.test(entry.evidence.summary);
+  } finally {
+    if (saved === null) { try { fs.unlinkSync(LEDGER); } catch (_) {} } else fs.writeFileSync(LEDGER, saved);
+  }
+})(), '残废元数据条目必须能经当期指引句反推配对实际值——MRVL FY2027Q2 指引 $2.700B±5% vs 实际 $2.739B 带内命中');
+
+// 6. 跳过理由归因诚实：句式漂移 vs 滑出窗口分开报
+c351('跳过理由区分「句式漂移」与「备案滑出窗口」', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const fs = require('fs');
+  const LEDGER = path.join(__dirname, 'human-future/data/prediction-ledger.json');
+  const saved = fs.existsSync(LEDGER) ? fs.readFileSync(LEDGER, 'utf-8') : null;
+  try {
+    const mock = { version: '1.0.0', predictions: [
+      // 备案在当期窗口内，但 claim 句式与当期抽取结果漂移（台账实测：claim 是
+      // 旧版抽取的 "P diluted..."，当期句子是 "GAAP diluted..."）
+      { id: 'fc-sec-edgar-0001835632-26-000014-index-htm-2026-09-13-income--0-37-', claim: 'P diluted net income per share is expected to be $0.37 +/- $0.05 per share', probability: 0.5, domain: 'earnings_guidance', category: 'earnings_guidance', dueOn: '2026-09-13', outcome: null, settlement: null },
+      // 备案已滑出窗口（当期无此 accession 的任何条目）
+      { id: 'fc-sec-edgar-0001045810-26-000019-index-htm-2026-06-14-revenue--78-0-billion', claim: 'Revenue is expected to be $78.0 billion, plus or minus 2%', probability: 0.5, domain: 'earnings_guidance', category: 'earnings_guidance', dueOn: '2026-06-14', outcome: null, settlement: null },
+    ]};
+    fs.writeFileSync(LEDGER, JSON.stringify(mock, null, 2));
+    const eng = new ProjectionEngine({});
+    eng.signals = { totalItems: 1, domains: [], items: [
+      { source: 'SEC EDGAR', ticker: 'MRVL', link: 'https://www.sec.gov/Archives/mrvl-may', accession: '0001835632-26-000014',
+        actualPeriod: { quarter: 1, fiscalYear: 2027 }, actuals: [{ metric: 'revenue', value: '$2.418 billion' }],
+        guidance: [{ sentence: 'GAAP diluted net income per share is expected to be $0.37 +/- $0.05 per share', metric: 'income', value: '$0.37', tolerance: '$0.05', quarter: 2, fiscalYear: 2027 }] },
+    ]};
+    const res = eng.settleEarningsGuidance();
+    const drift = res.skipped.find(s => s.id.includes('income--0-37'));
+    const aged = res.skipped.find(s => s.id.includes('revenue--78-0'));
+    return !!drift && /漂移/.test(drift.reason) && /不猜元数据/.test(drift.reason)
+      && !!aged && /滑出采集窗口/.test(aged.reason) && /最近 3 份/.test(aged.reason);
+  } finally {
+    if (saved === null) { try { fs.unlinkSync(LEDGER); } catch (_) {} } else fs.writeFileSync(LEDGER, saved);
+  }
+})(), '旧文案一律归因「滑出窗口」，实测多数是句式漂移——归因错了就没法修；窗口大小引用真实常量不写死');
+
+// 7. 去重证据 key 带 dueOn：同公司跨财季结算不并成一个义务；同义务照常合并
+c351('dedupeSameObligation 证据 key 带 dueOn（跨财季不误合，同义务不回退）', (() => {
+  const ledgerLib = require('./human-future/scripts/prediction-ledger.js');
+  const mk = (id, dueOn) => ({ id, claim: 'c' + id, domain: 'earnings_guidance', outcome: true, dueOn,
+    evidence: { sources: ['https://www.sec.gov/Archives/edgar/data/1045810/000104581026000073/'] } });
+  // 同一 ticker 不同财季的结算（NVDA FY2027 Q1 vs Q2）证据来源相同但是两次承诺
+  const cross = ledgerLib.dedupeSameObligation([mk('q1', '2026-06-14'), mk('q2', '2026-09-14')]);
+  // 同时点同证据（EU AI Act 三页面同义务）照常合并
+  const same = ledgerLib.dedupeSameObligation([mk('a', '2026-08-02'), mk('b', '2026-08-02'), mk('c', '2026-08-02')]);
+  return cross.entries.length === 2 && cross.dedupedCount === 0
+    && same.entries.length === 1 && same.dedupedCount === 2;
+})(), '证据 key 缺 dueOn 会把同公司跨财季结算并成一个义务——实测 11 条已结算被去成 5 条，Brier 样本失真');
+
+// 8. 结算证据来源指向提供实际值的备案（不是该 ticker 的首个条目）
+c351('结算证据来源是提供实际值的备案（actualPeriod 匹配）', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const fs = require('fs');
+  const LEDGER = path.join(__dirname, 'human-future/data/prediction-ledger.json');
+  const saved = fs.existsSync(LEDGER) ? fs.readFileSync(LEDGER, 'utf-8') : null;
+  try {
+    const mock = { version: '1.0.0', predictions: [
+      { id: 't351-nvda-q1', claim: 'Revenue is expected to be $78.0 billion, plus or minus 2%', probability: 0.5, domain: 'earnings_guidance', category: 'earnings_guidance', dueOn: '2026-06-14', outcome: null, settlement: { ticker: 'NVDA', fiscalYear: 2027, quarter: 1, metric: 'revenue', value: '$78.0 billion', tolerance: '2%', isRange: false } },
+      { id: 't351-nvda-q2', claim: 'Revenue is expected to be $91.0 billion, plus or minus 2%', probability: 0.5, domain: 'earnings_guidance', category: 'earnings_guidance', dueOn: '2026-09-14', outcome: null, settlement: { ticker: 'NVDA', fiscalYear: 2027, quarter: 2, metric: 'revenue', value: '$91.0 billion', tolerance: '2%', isRange: false } },
+    ]};
+    fs.writeFileSync(LEDGER, JSON.stringify(mock, null, 2));
+    const eng = new ProjectionEngine({});
+    eng.signals = { totalItems: 2, domains: [], items: [
+      // 最新备案（8 月）在窗口首位：提供 Q2 实际值；5 月备案提供 Q1 实际值
+      { source: 'SEC EDGAR', ticker: 'NVDA', link: 'https://www.sec.gov/Archives/nvda-aug', accession: '0001045810-26-000073',
+        actualPeriod: { quarter: 2, fiscalYear: 2027 }, actuals: [{ metric: 'revenue', value: '$96.2 billion' }], guidance: [] },
+      { source: 'SEC EDGAR', ticker: 'NVDA', link: 'https://www.sec.gov/Archives/nvda-may', accession: '0001045810-26-000051',
+        actualPeriod: { quarter: 1, fiscalYear: 2027 }, actuals: [{ metric: 'revenue', value: '$81.6 billion' }], guidance: [] },
+    ]};
+    const res = eng.settleEarningsGuidance();
+    const after = JSON.parse(fs.readFileSync(LEDGER, 'utf-8'));
+    const q1 = after.predictions.find(p => p.id === 't351-nvda-q1');
+    const q2 = after.predictions.find(p => p.id === 't351-nvda-q2');
+    return res.settled.length === 2
+      && q1.evidence.sources[0] === 'https://www.sec.gov/Archives/nvda-may'
+      && q2.evidence.sources[0] === 'https://www.sec.gov/Archives/nvda-aug';
+  } finally {
+    if (saved === null) { try { fs.unlinkSync(LEDGER); } catch (_) {} } else fs.writeFileSync(LEDGER, saved);
+  }
+})(), 'find(ticker) 拿到的恒为最新备案链接，跨财季结算证据全同——必须按 actualPeriod 匹配提供实际值的那份备案');
+
+// ── 组 4：版本号一致性（corr-2026-014 同型）────────────────────
+c351('版本号一致性：VERSION/package.json/banner 对齐 3.5.1', (() => {
+  const fs2 = require('fs');
+  const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
+  const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
+  const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
+  return VERSION === '3.5.1'
+    && /3\.5\.1/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.5.1');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.5.1，防 corr-2026-014 版本漂移复发');
+
+// ── v3.5.1 汇总 ──
+(async () => {
+  const results = await Promise.all(v351.map(c => Promise.resolve(c.ok)));
+  let f = 0;
+  v351.forEach((c, i) => {
+    const ok = results[i];
+    if (!ok) f++;
+    console.log(`${ok ? '\u2713' : '\u2717'} ${c.name}${ok ? '' : '  —— ' + c.detail}`);
+  });
+  console.log(`\nv3.5.1: ${v351.length - f} 通过, ${f} 失败, 共 ${v351.length} 个`);
+  if (f > 0) {
+    console.log('结论：结算链路修复不完整（元数据透传/实际值召回/端到端/归因/版本有缺）。');
+    process.exitCode = 1;
+  } else {
+    console.log('结论：结算链路修复端到端成立——元数据三字段透传递账、MRVL/MU/AMZN 实际值可抽取、残废历史条目经句反推正确结算、跳过理由归因诚实。');
   }
 })();

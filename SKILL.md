@@ -1,9 +1,27 @@
 ---
 name: human-future-v2
-title: "人类未来 · 文明推演引擎 v3.5.0"
-version: "3.5.0"
+title: "人类未来 · 文明推演引擎 v3.5.1"
+version: "3.5.1"
 description: |-
-  人类未来技能 v3.5.0 — 财报指引自动结算（earnings-settlement，新能力）：
+  人类未来技能 v3.5.1 — 财报指引结算链路修复（维护级：断链修复+实际值召回补强，非新辨别维度）：
+  v3.5 审计实测台账 47 条 earnings_guidance 的 settlement 元数据 0/47 可用——
+  forecast-discriminator 辨别结果从不带 ticker/fiscalYear/quarter，登记时写的
+  settlement.ticker 恒为 null，「元数据随新条目落盘」从落地起就没工作过，全部
+  流量挤在当期指引句反推兜底路径上（三字段已透传，新登记条目元数据完整）；
+  实际值抽取对 MRVL（全部备案）/MU（9 月备案）/AMZN（全部备案）返回空——标题
+  期间形态不命中（"of Fiscal Year 2027" / "FOURTH-QUARTER AND FULL-YEAR 2026" /
+  标题无年份走正文 quarter-ended 锚），补通用季度+年份形态与紧邻 net-sales-
+  increased-to 营收形态（精度回归：operating income 与 AWS 年化 run rate 不误当
+  净销售额——宽 gap 名词组扩 sales 的误配已回退）；跳过理由区分句式漂移与备案
+  滑出采集窗口（引用真实窗口常量）；同轮修第三处同型去重缺口：证据 key 补 dueOn
+  （v3.4 给文本 key 加过、漏了证据 key——同公司跨财季结算被并成一个义务，实测
+  11 条已结算去成 5 条，修复后 9 条），结算证据来源改按 actualPeriod 匹配提供
+  实际值的备案。live 实测新结算 4 条（MRVL FY2027Q1/Q2 营收带内命中；MU FY2026Q4
+  $50B±$1B vs $54.23B、AMZN FY2026Q2 $194-199B vs $200.6B 均 beat 带外），台账
+  已结算 7→11，base rate 首次用上本地台账真实样本（9 条去重后 3 中）。测试
+  241→250 项；8 轮反向验证全部精确失败（摘除修复→断言生效）。登记 corr-2026-021
+  （元数据宣称未验证，critical）/022（同型修复漏调用点）/023（猜句式+归因错误）。
+  历史：v3.5.0 — 财报指引自动结算（earnings-settlement，新能力）：
   v3.5（2026-10-25）兑现 v2.13 核心承诺「到期结算 Brier」对最硬预测类的第一次
   落地。v3.4 把 33 条 SEC EDGAR 财报指引进了台账，但审计实测 15 条到期、0 条
   结算——结算逻辑整个缺失（「登记了但没人对账」）。v3.5 新增 edgar-collector
@@ -275,19 +293,31 @@ description: |-
 
 ---
 
-## 当前状态（v3.5.0 实测）
+## 当前状态（v3.5.1 实测）
 
 以下数字全部来自 2026-10-25 的 `FETCH=1 FETCH_BODY=1 node scripts/run-pipeline.js` 实跑
-（v3.5 轮：pipeline exit 0、28 条 EDGAR 备案进 live；v3.3.1 轮 270 条 live 信号；
+（v3.5.1 轮：pipeline exit 0、42 条 EDGAR 备案进 live、v3.5.1 轮新结算 4 条；
+v3.5 轮：28 条 EDGAR 备案、7 条结算；v3.3.1 轮 270 条 live 信号；
 v3.3.0 轮 258 条、v3.2.2 轮 270 条、v3.1.1 轮 270 条、v3.1 轮 258 条），不是宣称值。
 v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见 frontmatter 历史记录。
 
-**财报指引自动结算层（v3.5 新能力）**
+**财报指引自动结算层（v3.5 新能力，v3.5.1 链路修复）**
 - 定位：兑现 v2.13 核心承诺「到期结算 Brier」对最硬预测类（earnings_guidance）的
   第一次落地。v3.4 登记 33 条、审计实测 15 条到期 0 条结算（结算逻辑整个缺失）。
+- [v3.5.1 断链修复] 结算元数据透传链：v3.5 实测 47 条 earnings_guidance 的
+  settlement.ticker 恒为 null、fiscalYear/quarter 恒缺失——辨别结果从不带这三个
+  字段，「元数据随新条目落账」从落地起没工作过，全部流量挤在句匹配兜底路径。
+  三字段已透传（r.ticker / r.guidance.fiscalYear / r.guidance.quarter），新登记
+  条目元数据完整；测试钉住「落账后的字段值非空」，不只字段存在。
+- [v3.5.1 召回补强] 实际值抽取覆盖：MRVL（全部备案，标题 "of Fiscal Year 2027"）、
+  MU（9 月备案，"FOURTH-QUARTER AND FULL-YEAR 2026"）、AMZN（全部备案，标题无
+  年份走正文 "quarter ended June 30, 2026" 锚 + 紧邻 "Net sales increased 20%
+  to $200.6 billion" 营收形态）。精度回归：AMZN 亮点段 operating income 与 AWS
+  年化 run rate 不得被当成总净销售额（宽 gap 名词组扩 sales 的误配已回退，
+  sales 只认紧邻形态）。
 - 实际值抽取：`edgar-collector.extractActuals` 从同一份 EX-99 抽「上一财季实际值」
-  （过去时 was/were/of，与指引的期望时态对立）；期间取自标题句
-  （"Financial Results for Second Quarter Fiscal 2027"）；只抽营收+毛利率两个头条
+  （过去时 was/were/of，与指引的期望时态对立）；期间取自标题句（三种语序 +
+  v3.5.1 通用季度+年份形态 + quarter-ended 正文锚）；只抽营收+毛利率两个头条
   指标（营收无 GAAP 分歧；毛利率 GAAP≠非GAAP 时抽出两条→结算层判歧义跳过）。
 - 结算判据（earnings-settlement.js）：outcome=实际值是否落在指引容差带内
   [guided ± tolerance]（区间指引落区间内）。单位感知：$+%=相对、$+$=绝对、
@@ -296,14 +326,27 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
 - 保守性（全有测试）：只结有容差/区间的；(ticker,财季,指标) 唯一实际值才结
   （GAAP/非GAAP 多值判歧义跳过，不设法规避）；到期才结（dueOn 未到不提前结）；
   只碰 outcome===null 的条目（幂等，不重复结算）。
-- live 实测：7 条正确结算（NVDA/AMD/MU 营收被 actual 超出带上沿→beat/带外，
-  毛利率命中→带内；MU Q3 $33.5B±$750M vs $41.46B 经复核是 HBM 超级周期真实
-  21% beat，营收轨迹 $13.6B→$23.9B→$41.5B→$50B guided 内部一致）。MRVL
+- live 实测：11 条正确结算（v3.5 轮 7 条 + v3.5.1 轮 4 条：MRVL FY2027Q1/Q2
+  营收 $2.400B±5% vs $2.418B、$2.700B±5% vs $2.739B 均带内命中；MU FY2026Q4
+  $50B±$1B vs $54.23B、AMZN FY2026Q2 $194-199B vs $200.6B 均 beat 带外。
+  NVDA/AMD/MU 营收被 actual 超出带上沿→beat/带外，毛利率命中→带内；MU Q3
+  $33.5B±$750M vs $41.46B 经复核是 HBM 超级周期真实 21% beat）。MRVL
   GAAP/非GAAP 毛利率经 matchAll 修正后正确判歧义跳过（首版单 match 会把非GAAP
   指引错配到 GAAP actual，测试抓出并修复）。
+- [v3.5.1] 跳过理由归因诚实：按 id 内 accession 反查当期采集窗口，区分「句式
+  漂移（窗口内有备案但 claim 匹配不上）」与「备案滑出采集窗口（最近 3 份之外）」，
+  窗口大小引用 MAX_8K_PER_COMPANY 常量不写死。live 实测 3 条跳过：2 条句式
+  漂移（MRVL income 指引，claim 是旧版抽取结果）+ 1 条 GAAP/非GAAP 歧义。
+- [v3.5.1] 去重口径第三处同型修复：证据 key 补 dueOn（v3.4 给文本 key 加过、
+  漏了证据 key）——同公司跨财季结算曾被并成一个义务（11 条已结算去成 5 条，
+  Brier 样本失真），修复后 9 条；结算证据来源改按 actualPeriod 匹配提供实际值
+  的备案（不再 find(ticker) 拿最新备案链接）。
 - 端到端：引擎 settleEarningsGuidance → report.guidanceSettlement → formatReport
-  「财报指引结算」段 → cron 注入第 6.5 段。登记元数据（settlement）随新条目落盘，
-  历史条目用当期 EDGAR 指引句反推（句匹配），更早的诚实留待后续轮次。
+  「财报指引结算」段 → cron 注入第 6.5 段（跳过分类含歧义/滑出/漂移三档）。
+- 已知边界（如实）：v3.5.1 前登记且指引备案已滑出窗口的残废条目无法反推元数据，
+  诚实留待后续轮次（re-fetch 修复候选）；opex/tax/EPS 等指标无实际值来源
+  （只抽营收+毛利率），相关指引保持 pending；MRVL 毛利率为 GAAP/非GAAP 双值，
+  按歧义规则跳过。
 
 **采集层**
 - 源：23 个（tech 2 + humanities 1 + frontier_models 12 + economy 4 + business 4
@@ -387,7 +430,7 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   整条不进辨别；均判 不可证伪（无量化）/无出处(1)，标题-only 不虚抬为决策相关；
   v3.3.1 survey-finding 精度修复后 8→6 条——EconBrowser 站点导航与 LWiAI 播客
   列表两条 incidental 误报消除，Grok 真调查主张保留）/
-  自我修正登记簿 ✅（14 条修正：critical 2 / high 9 / medium 3；v3.3.1 登记
+  自我修正登记簿 ✅（22 条修正：critical 4 / high 12 / medium 6；v3.3.1 登记
   corr-2026-014（版本号漂移：projection meta 停 3.2.2/package.json 停 3.2.1，
   四处对齐+一致性断言）与 corr-2026-015（survey-finding 误报+三处播客夹具
   空转）；v3.3 登记
@@ -647,7 +690,7 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   引擎不代劳——这是心虫铁律，不是能力缺失。
 
 **测试**
-- `npm test`：**241 项断言**（实测各 section 汇总；v3.4 的 230 + v3.5 新增 11：
+- `npm test`：**250 项断言**（实测各 section 汇总；v3.4 的 230 + v3.5 新增 11 + v3.5.1 新增 9：
   2 项纯结算函数（settleGuidance 单位感知容差：相对/绝对/bps/百分点/区间/无容差
   跳过，含区分相对vs绝对的边界用例 / normalizeMetric+parseMetricValue 单位解析）+
   3 项实际值抽取（extractActuals 营收+毛利率+标题期间 / GAAP/非GAAP 不同值抽出
@@ -666,6 +709,19 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   精确失败）；摘除 extractSignals actuals 透传→透传断言失败；摘除 record()
   settlement→持久化断言失败。每轮基线全绿、摘除后断言必生效、diff 校验还原到位、
   收尾基线全绿。
+  v3.5.1 新增 9（2 项辨别器元数据透传（guidanceStruct 三字段 + 结果级 ticker，RSS 无 ticker 不崩）+
+  2 项采集器实际值扩库（MRVL/MU/AMZN 三种 live 标题形态+营收值 / operating income 与 AWS
+  run rate 精度回归）+
+  1 项登记元数据完整（落账后字段值非空，不只字段存在）+
+  1 项残废历史条目经句反推正确结算（MRVL live 场景复现）+
+  1 项跳过理由归因（漂移 vs 滑出，窗口大小引用常量）+
+  1 项去重证据 key dueOn（跨财季不误合、同义务不回退）+
+  1 项证据来源 actualPeriod 匹配+
+  1 项版本号一致性（3.5.1））。
+  v3.5.1 八轮反向验证全部精确失败：摘除 guidanceStruct 三字段→2 条失败；摘除结果级
+  ticker→1 条；摘除通用标题形态→1 条；摘除 ended 锚→2 条；摘除紧邻 sales 形态→2 条；
+  摘除归因区分→1 条；摘除去重 dueOn→1 条；摘除 actualPeriod 匹配→1 条。每轮基线全绿、
+  摘除后断言必生效、备份还原到位、收尾基线全绿。
   同轮测试维护：v2.13n「Brier 分数基于真实结算可算出」的 hitRate 断言从 `=== 1`
   放宽为 `∈ [0,1]`——旧断言「全部命中」是台账只有人工 hits 时的偶然状态，v3.5
   自动结算引入真实 miss（NVDA/AMD/MU 营收 beat→带外）后 hitRate 不再恒为 1；

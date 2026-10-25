@@ -46,6 +46,13 @@ function save(ledger) {
  *   2. 无 evidence.sources → 归一化 claim 文本（同文 = 同主张；
  *      未结算条目的重复登记靠这条合并）
  *
+ * [v3.5.1] 证据 key 补 dueOn 维度（v3.4 给文本 key 加过、漏了这条——
+ * 同型修复必须穷举调用点）：SEC EDGAR 自动结算的 evidence.sources 是该
+ * ticker 的备案链接，同一公司不同财季的结算（NVDA FY2027 Q1 与 Q2 指引
+ * 是两次不同的承诺）会拿到同一组来源，不加 dueOn 就被并成一个义务——
+ * 实测台账 11 条已结算被去成 5 条，Brier 样本与兑现率同步失真。同义务
+ * （同时点同证据，如 3 条 EU AI Act）dueOn 相同，照常合并。
+ *
  * @param {Array} predictions 台账条目（调用方应只传已结算的）
  * @returns {{entries: Array, dedupedCount: number}} entries 为去重后保留的条目
  */
@@ -57,7 +64,7 @@ function dedupeSameObligation(predictions) {
     const cat = p.category || p.domain || 'general';
     const srcs = p.evidence && Array.isArray(p.evidence.sources) ? p.evidence.sources : [];
     const key = srcs.length > 0
-      ? `ev|${cat}|${srcs.map(s => String(s)).sort().join('|')}`
+      ? `ev|${cat}|${p.dueOn || ''}|${srcs.map(s => String(s)).sort().join('|')}`
     // [v3.4] 文本 key 带 dueOn：同一指标的指引跨财季会同文（实测 AMD
     // Q2/Q3 2026 两句都是 "gross margin ... approximately 56%"），它们是两次
     // 不同的承诺，结算时合并会把两次兑现计成一次——与 v2.16 要修的「同义务

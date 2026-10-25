@@ -425,10 +425,19 @@ function discriminate(claim, opts = {}) {
   const settleable = verdict !== 'not-a-forecast' && verdict !== 'reference-text' && dueOn !== null;
 
   // [v3.4] 指引结构透传（元数据优先，句内解析兜底）
+  // [v3.5.1] ticker/fiscalYear/quarter 三字段补进结构：v3.5 把它们写进
+  // 登记时的 settlement 元数据，但辨别结果从未带过这三个字段——实测台账
+  // 47 条 earnings_guidance 的 settlement.ticker 恒为 null、fiscalYear/
+  // quarter 恒缺失，「元数据随新条目落盘」从落地起就没工作过（结算层
+  // 持久化分支 p.settlement.ticker 从未激活过一次，全部流量挤在句匹配
+  // 兜底路径上，指引备案一滑出采集窗口就永久无法结算）。
   const guidanceStruct = isGuidance ? {
     metric: guidanceMeta ? guidanceMeta.metric : (text.match(new RegExp(GUIDANCE_METRIC, 'i')) || [null])[0],
     value: guidanceMeta ? guidanceMeta.value : (text.match(/\$\s?[\d.,]+\s*(?:billion|million)?|[\d.]+\s*%/) || [null])[0],
     tolerance: guidanceMeta ? guidanceMeta.tolerance : (text.match(/(?:\+\/-|±|plus or minus)\s*(\$?\s?[\d.,]+\s*(?:%|billion|million|basis points)?)/i) || [null, null])[1],
+    ticker: claim.ticker || null,
+    fiscalYear: guidanceMeta ? (guidanceMeta.fiscalYear ?? null) : null,
+    quarter: guidanceMeta ? (guidanceMeta.quarter ?? null) : null,
     periodLabel: guidanceMeta ? guidanceMeta.periodLabel : null,
     annual: guidanceMeta ? !!guidanceMeta.annual : false,
     caveats: guidanceMeta ? (guidanceMeta.caveats || []) : [],
@@ -441,6 +450,9 @@ function discriminate(claim, opts = {}) {
     source: claim.source || '(未标注)',
     date: claim.date || null,
     url: claim.url || '',
+    // [v3.5.1] ticker 透传：SEC EDGAR 指引的登记结算元数据靠它把指引对到
+    // 具体公司的财报实际值。RSS 来源没有 ticker，为 null 不参与结算。
+    ticker: claim.ticker || null,
     category,
     dueBasis: dueBasis || null,
     dueNote: guidanceDueNote || null,

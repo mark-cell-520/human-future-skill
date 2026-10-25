@@ -142,17 +142,49 @@ const CAVEAT_RE = /(not assuming|does not include|excluding|excluding any|barrin
 // 期间锚：标题句 "Financial Results for Second Quarter Fiscal 2027" 陈述的是
 // **已报告财季**，是全文件最权威的期间来源；抽不到标题期间的备案不抽实际值
 // （漏报比误报诚实）。三种标题语序都认（for/announces/reports + 前缀/后缀）。
+// [v3.5.1] 实测三种标题形态全部不命中、整份备案的实际值抽不出来（结算层
+// 因此无对账依据，到期指引永远 pending）：
+//   ④ MRVL：「Reports Second Quarter of Fiscal Year 2027 Financial Results」
+//      ——"of fiscal **year** 2027"（旧模式 fiscal 后直接接年份，year 单词
+//      把全部模式挡掉）；MU：「REPORTS RECORD FISCAL FOURTH QUARTER **AND
+//      FISCAL YEAR** 2026 RESULTS」（季度与年份间插 "and fiscal year"）。
+//      新增通用「季度词+年份」形态容忍 of/year/and-fiscal-year 填充。
+//   ⑤ AMZN：「ANNOUNCES SECOND QUARTER RESULTS」——标题只有季度词没有
+//      年份。期间改从正文权威锚取："second quarter ended June 30, 2026"
+//      （已报告财季结束日，QUARTER_ENDED_RE，搜索窗放宽到 2500 字符）。
+//      同比引用（"compared with second quarter 2025"）不含 ended 日期，
+//      天然不命中该锚。
 const RESULTS_HEADLINE_RES = [
   /(?:results?|earnings)\s+(?:for|of)\s+(?:the\s+)?(first|second|third|fourth|1st|2nd|3rd|4th)\s+quarter\s+(?:of\s+)?(?:fiscal\s+)?(20\d{2})/i,
   /(?:announces?|reports?|posts?)\s+(?:the\s+)?(first|second|third|fourth|1st|2nd|3rd|4th)\s+quarter\s+(?:of\s+)?(?:fiscal\s+)?(20\d{2})/i,
   /(first|second|third|fourth|1st|2nd|3rd|4th)\s+quarter\s+(?:of\s+)?(?:fiscal\s+)?(20\d{2})\s+(?:results?|earnings)/i,
+  // [v3.5.1] 通用形态（兜底，放在特定形态之后——特定形态先匹配）：
+  // MRVL「of fiscal year 2027」/ MU「FOURTH-QUARTER AND FULL-YEAR 2026」
+  // （live 实证：季度词可带连字符，与年份间可插 "and full-year"）/
+  // 裸「Second Quarter 2026」。捕获组保持 1=季度 2=年份（extractActuals
+  // 按位置读）。
+  /(first|second|third|fourth|1st|2nd|3rd|4th)[\s-]quarter\s+(?:of\s+)?(?:fiscal\s+)?(?:year\s+)?(?:and\s+(?:fiscal\s+|full[\s-])?year\s+)?(20\d{2})/i,
 ];
+// [v3.5.1] 标题无年份时的正文权威锚：已报告财季的结束日期。
+const QUARTER_ENDED_RE = /(first|second|third|fourth)\s+quarter\s+ended\s+[A-Za-z]+\s+\d{1,2},\s+(20\d{2})/i;
 // 营收实际值："reported revenue for the second quarter ended July 26, 2026,
 // of $96.2 billion" / 亮点行 "Revenue of $96.2 billion" / "revenue was $X"。
 // 指标与数值间的 [^.;]{0,90} 吃掉 "for the ... ended <date>, " 这类插入语；
 // 汇总表行 "Revenue $96,221 $81,615" 无 of/was/were 连接，天然不命中。
+// [v3.5.1 精度教训] 名词组曾加过 sales 容忍 "Net sales were $X billion"——
+// live 实测误配：AMZN 亮点段 bullet 间无句点（strip 后连成一片），90 字符
+// gap 从 "Net sales increased 20% year-over-year" 桥接到下一句 "Operating
+// income was $27.5 billion"，把营业利润当成了营收。sales 形态因此只认
+// **紧邻**句式（无 gap）：ACTUAL_SALES_INCREASED_RE。
 const ACTUAL_REVENUE_RE = new RegExp(
   `\\b(?:record\\s+|total\\s+|net\\s+)?revenue\\b[^.;]{0,90}?\\b(?:of|was|were)\\s+(?:approximately\\s+)?(\\$\\s?[\\d.,]+\\s*(?:billion|million|bn|m))\\b`, 'i');
+// [v3.5.1] "Net sales increased 20% to $200.5 billion"（AMZN live 实证）：
+// 亮点 bullet 只给同比增幅+绝对值，没有 of/was/were 连接词。收紧为
+// increased+数字%+to **紧邻**形态——容忍间隔会把 AWS 分部的 "net sales
+// increased 37%—its fastest growth in 18 quarters—to a $169 billion
+// annualized revenue run rate"（年化 run rate，不是季度总量）误当总净销售额。
+const ACTUAL_SALES_INCREASED_RE = new RegExp(
+  `\\bnet\\s+sales\\s+increased\\s+[\\d.]+\\s*%\\s+to\\s+(\\$\\s?[\\d.,]+\\s*(?:billion|million|bn|m))\\b`, 'i');
 // 毛利率实际值："GAAP and non-GAAP gross margins were both 75.0%" /
 // "GAAP gross margin was 52.1%"。取第一个（若 GAAP 与非 GAAP 不同值会抽出
 // 两条，由结算层唯一性规则挡掉）。
@@ -390,8 +422,9 @@ function extractGuidance(text) {
  * 里两者并存，实际值是指引到期时的对账依据。
  *
  * 期间取自标题句（RESULTS_HEADLINE_RES）："Financial Results for Second
- * Quarter Fiscal 2027" 陈述的是已报告财季，是全文件最权威的期间锚；抽不到
- * 标题期间就返回空 actuals——没有期间的数值无法与指引配对，漏报比误报诚实。
+ * Quarter Fiscal 2027" 陈述的是已报告财季，是全文件最权威的期间锚；标题
+ * 无年份的形态（AMZN）回退正文 "quarter ended <date>" 锚；两者都抽不到
+ * 就返回空 actuals——没有期间的数值无法与指引配对，漏报比误报诚实。
  *
  * 只抽营收与毛利率两个头条指标（理由见 ACTUAL_REVENUE_RE 注释）：营收无
  * GAAP/非 GAAP 分歧；毛利率 GAAP=非 GAAP 时只余一条，不同值时抽出两条、
@@ -409,6 +442,15 @@ function extractActuals(text) {
     const m = head.match(re);
     if (m) { quarter = QWORD[String(m[1]).toLowerCase()] ?? Number(m[1]); fiscalYear = Number(m[2]); break; }
   }
+  // [v3.5.1] 标题句无年份形态（AMZN "ANNOUNCES SECOND QUARTER RESULTS"）：
+  // 到正文前 2500 字符找 "second quarter ended June 30, 2026" 权威锚。
+  // 只认 ended+日期 结构——同比引用（"compared with second quarter 2025"）
+  // 没有 ended 日期，天然不命中；报告期结束日是对「已报告哪个财季」最
+  // 明确的陈述，不是推测。
+  if ((!fiscalYear || !quarter) && QUARTER_ENDED_RE) {
+    const m = t.slice(0, 2500).match(QUARTER_ENDED_RE);
+    if (m) { quarter = QWORD[String(m[1]).toLowerCase()] ?? Number(m[1]); fiscalYear = Number(m[2]); }
+  }
   if (!fiscalYear || !quarter) return { quarter: null, fiscalYear: null, actuals: [] };
   const lead = t.slice(0, 1600);   // 亮点段：实际值在开头陈述，避开汇总表多列数字
   const actuals = [];
@@ -417,6 +459,12 @@ function extractActuals(text) {
   // （"Data Center revenue of $89.0B"）不取，避免把分部当总量。
   const rv = lead.match(ACTUAL_REVENUE_RE);
   if (rv) actuals.push({ metric: 'revenue', value: rv[1].replace(/\s+/g, ' ') });
+  else {
+    // [v3.5.1] AMZN 形态兜底："Net sales increased 20% to $200.5 billion"
+    // （无 of/was/were 连接词，主模式不命中）。紧邻形态，见上方精度注释。
+    const rv2 = lead.match(ACTUAL_SALES_INCREASED_RE);
+    if (rv2) actuals.push({ metric: 'revenue', value: rv2[1].replace(/\s+/g, ' ') });
+  }
   // 毛利率取**全部**匹配：GAAP 与非 GAAP 不同值时抽出两条（MRVL 实测
   // "GAAP gross margin was 52.9% / Non-GAAP ... 57.5%"），驱动结算层
   // 「唯一实际值才结算」判歧义跳过；同值时（NVDA "both 75.0%"）只余一条，
@@ -520,6 +568,7 @@ module.exports = {
   collectEdgarFilings, extractGuidance, extractActuals, stripHtml,
   DEFAULT_TICKERS, GUIDANCE_SENTENCE_RE, PERIOD_PATTERNS,
   ACTUAL_REVENUE_RE, ACTUAL_MARGIN_RE, RESULTS_HEADLINE_RES,
+  ACTUAL_SALES_INCREASED_RE, QUARTER_ENDED_RE, MAX_8K_PER_COMPANY,
 };
 
 if (require.main === module) {
