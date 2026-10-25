@@ -320,7 +320,7 @@ class ProjectionEngine {
     }
     const report = {
       meta: {
-        version: '3.1.1',
+        version: '3.2.2',
         heartflowVersion: this.analysis.engineVersion,
         timestamp: this.timestamp,
         modulesLoaded: this.analysis.modulesLoaded,

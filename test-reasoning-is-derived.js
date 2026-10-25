@@ -3472,3 +3472,146 @@ c321('公式段与台账段 Brier 样本口径一致', (() => {
     console.log('结论：校准跟踪已进 cron 注入（引擎产出+口径限定+agent 可见），公式段与台账段样本口径一致。');
   }
 })();
+
+// ════════════════════════════════════════════════════════════════
+// v3.2.2 新增断言：低置信度守门段端到端接通 cron 注入（第七次同型断链修复）。
+//
+// 背景（2026-10-25 断链审计实测）：把最新 full-report 的 projection 全字段
+// 与注入脚本读取的字段做差集，v3.2.1 修掉 ledgerStatus/formulaAssessment 后
+// 仍有 13 个段「引擎产出了、formatReport 渲染了、注入脚本从未读」。其中
+// 直击假能力防护链的是 lowConfidenceGate：applyLowConfidenceGate() 自 v3
+// 引擎起产出 overall 置信度与阈值 0.6 的比较、每个 stage 的 allowed 与
+// disclosure（实测整体 0.43 < 0.6，「该输出不得作为结论引用」），
+// formatReport 渲染「低置信度守门」段——但注入脚本从未读它。agent 每轮都
+// 在没有置信度门槛的情况下消费 summary 与阶段结论：低置信度推演输出被
+// 当成结论写进报告，正是本引擎要抓的「无保留完成态宣称」在自家产物上的
+// 复发。这是 v2.9/v2.13/v2.17/v3.0.0c/v3.1.1/v3.2.1 之后第七次同型断链
+// （接口存在 ≠ 端到端到达）。
+//
+// 本节断言分三组：① 注入脚本源级（字段+口径限定+降级路径+位置纪律：
+// 守门披露必须先于「推演阶段结论」到达 agent）；② 引擎产出与阈值语义
+// 一致（allowed 由 score 与 0.6 比较决定，不写死）；③ 断链审计差集闭环
+// ——把 v3.2.1 立的「差集审计每轮做」纪律固化为测试动作：产出字段 vs
+// 注入字段的差集必须等于一份逐段结案的有意省略清单，新字段漏注入或
+// 清单腐烂（接入后忘了移除）都失败。
+// ════════════════════════════════════════════════════════════════
+const v322 = [];
+function c322(name, ok, detail) { v322.push({ name, ok, detail }); }
+
+// ── 组 1：注入脚本源级 + 位置纪律 ──
+// 1. 注入脚本必须读 proj.lowConfidenceGate，带口径限定、旧版报告路径，
+//    且段序在「推演阶段结论」之前。摘除整段 → 失败；摘除口径限定 → 失败；
+//    移到阶段结论之后 → 位置断言失败（第七次同型断链的复发防护）。
+c322('cron 注入脚本读取 lowConfidenceGate 且带口径限定与位置纪律', (() => {
+  const p = require('path').join(require('os').homedir(), '.hermes/scripts/hf-cron-fetch.sh');
+  if (!require('fs').existsSync(p)) return false;
+  const src = require('fs').readFileSync(p, 'utf-8');
+  const idxGate = src.indexOf('### 低置信度守门');
+  const idxStage = src.indexOf('### 推演阶段结论');
+  return /const lcg = proj\.lowConfidenceGate/.test(src)
+    && idxGate >= 0
+    && /未包含 lowConfidenceGate 字段/.test(src)             // 旧版报告降级路径
+    && /不得作为结论引用/.test(src)                           // overall 未通过分支语义
+    && /被拦阶段/.test(src)                                   // stages 明细真的渲染
+    && /不是对新闻内容真假的判定/.test(src)                   // 口径限定：守门≠事实判定
+    && /不得引用为结论、预测或行动依据/.test(src)             // 口径限定：用途限定
+    && idxGate < idxStage;                                    // 位置纪律：先于阶段结论
+})(), '注入脚本必须读 lowConfidenceGate，带口径限定/降级路径，且段序先于阶段结论');
+
+// ── 组 2：引擎产出与阈值语义一致（防写死）──
+// 2. applyLowConfidenceGate() 的 allowed 必须由 score 与 threshold 0.6 的
+//    比较决定：0.43 拦、0.9 放行、stage 0.71 放行/0.48 拦。写死 true/false
+//    → 失败。披露文案必须来自模块（disclosure 非空）。
+c322('applyLowConfidenceGate 产出与阈值语义一致（不写死）', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const inst = new ProjectionEngine({});
+  const low = inst.applyLowConfidenceGate({
+    confidence: { score: 0.43 },
+    stages: [
+      { period: '测试阶段A', confidence: 0.71, conclusion: 'x' },
+      { period: '测试阶段B', confidence: 0.48, conclusion: 'y' },
+    ],
+  });
+  const high = inst.applyLowConfidenceGate({
+    confidence: { score: 0.9 },
+    stages: [{ period: '测试阶段A', confidence: 0.95, conclusion: 'x' }],
+  });
+  return low.overall.allowed === false
+    && low.overall.confidence === 0.43
+    && low.threshold === 0.6
+    && typeof low.overall.disclosure === 'string' && low.overall.disclosure.length > 0
+    && low.stages.length === 2
+    && low.stages[0].allowed === true
+    && low.stages[1].allowed === false
+    && high.overall.allowed === true;    // 双向：高置信度必须放行，不是恒 false
+})(), 'allowed 必须由 score 与 threshold 0.6 比较决定（0.43 拦/0.9 放行），不得写死');
+
+// ── 组 3：断链审计差集闭环（v3.2.1 纪律的测试固化）──
+// 3. projection 产出字段（静态提取 project-future.js generate() 的 report
+//    字面量键 + report.X= 赋值）vs 注入脚本读取的 proj.X，差集必须等于
+//    下面这份逐段结案的有意省略清单——本轮 13 段差集逐段看过内容后记录
+//    理由。接入任一段 → 从清单移除；不加清单的新字段 → 失败（断链复发）；
+//    清单里有已接入/已不产出的段 → 失败（结案腐烂）。
+c322('projection 产出字段 vs 注入脚本差集等于已结案清单', (() => {
+  const fs322 = require('fs');
+  const path322 = require('path');
+  const os322 = require('os');
+  const pf = fs322.readFileSync(path322.join(__dirname, 'scripts/project-future.js'), 'utf-8');
+  // 1) generate() 里 report 对象字面量的顶层键
+  const litStart = pf.indexOf('const report = {');
+  if (litStart < 0) return false;
+  let depth = 0, litEnd = -1;
+  for (let i = pf.indexOf('{', litStart); i < pf.length; i++) {
+    if (pf[i] === '{') depth++;
+    else if (pf[i] === '}') { depth--; if (depth === 0) { litEnd = i; break; } }
+  }
+  if (litEnd < 0) return false;
+  const produced = new Set();
+  for (const m of pf.slice(litStart, litEnd).matchAll(/^\s{6}([a-zA-Z0-9_]+):/gm)) produced.add(m[1]);
+  // 2) generate() 里的 report.X = 赋值
+  const genStart = pf.indexOf('generate() {');
+  const genEnd = pf.indexOf('return report;', genStart);
+  if (genStart < 0 || genEnd < 0) return false;
+  for (const m of pf.slice(genStart, genEnd).matchAll(/\breport\.([a-zA-Z0-9_]+)\s*=(?!=)/g)) produced.add(m[1]);
+  // 3) 注入脚本读取的 proj.X
+  const sh = fs322.readFileSync(path322.join(os322.homedir(), '.hermes/scripts/hf-cron-fetch.sh'), 'utf-8');
+  const injected = new Set();
+  for (const m of sh.matchAll(/proj\.([a-zA-Z0-9_]+)/g)) injected.add(m[1]);
+  // 4) 有意省略清单：2026-10-25 v3.2.2 轮断链审计逐段结案（13 段全部看过
+  //    内容与价值后记录理由，不是默认省略）
+  const AUTHORIZED_OMISSIONS = {
+    turningPoints: '与 live 条目段同批信号重叠；probability 是信号强度非预测概率，注入有误读风险',
+    risks: '从 live 信号归纳的 severity/likelihood，agent 可自行归纳；下轮候选',
+    opportunities: '同上，归纳可由 agent 做',
+    recommendations: '引擎生成行动建议与 v3.0.0c 纪律「引擎不生成商业建议」定位冲突，有意不注入',
+    confidence: '已由 v3.2.2 接入的 lowConfidenceGate.overall.confidence 覆盖，合并披露',
+    causalChains: 'edgeSource=cooccurrence 共现兜底不是因果证据，注入须带「共现非因果」限定；下轮候选',
+    crossDomainConduction: '传导矩阵是领域知识静态先验，不是本期信号推出',
+    trendClassification: '判定随源数波动（<3 源中位数退化），报告已展示；下轮候选',
+    timelineConflicts: 'ordered 与 live 条目重叠，conflicts 依赖正文抓取',
+    sourceAdjudication: '分级计数是概览不是条目判定；若立「引用须标 tier」纪律则接入',
+    frontierModelSection: '注入脚本已用 newsData 自行构造 F 区（前 20 条+按来源/按周聚合），重复实现已覆盖',
+    predictionRecording: 'v2.13 起 count 恒 0 无信息量；有登记时 forecastDiscrimination 的 ledgerRegistration 已回显',
+  };
+  const diff = [...produced].filter(k => !injected.has(k) && !(k in AUTHORIZED_OMISSIONS));
+  const stale = Object.keys(AUTHORIZED_OMISSIONS).filter(k => injected.has(k) || !produced.has(k));
+  return diff.length === 0 && stale.length === 0 && produced.has('lowConfidenceGate');
+})(), '差集必须为空：新字段不进注入=断链复发；清单不同步=结案腐烂');
+
+// ── v3.2.2 汇总 ──
+(async () => {
+  const results = await Promise.all(v322.map(c => Promise.resolve(c.ok)));
+  let f = 0;
+  v322.forEach((c, i) => {
+    const ok = results[i];
+    if (!ok) f++;
+    console.log(`${ok ? '✓' : '✗'} ${c.name}${ok ? '' : '  —— ' + c.detail}`);
+  });
+  console.log(`\nv3.2.2: ${v322.length - f} 通过, ${f} 失败, 共 ${v322.length} 个`);
+  if (f > 0) {
+    console.log('结论：低置信度守门的端到端接通不完整（注入/产出一致性/差集结案有缺）。');
+    process.exitCode = 1;
+  } else {
+    console.log('结论：守门披露已进 cron 注入（先于阶段结论+口径限定），差集审计固化为每轮测试动作。');
+  }
+})();
