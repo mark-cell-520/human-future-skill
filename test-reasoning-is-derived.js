@@ -4231,11 +4231,11 @@ c34('cron 注入脚本渲染财报指引（VERDICT_CN/汇总/结构行）', (() 
 
 // ── 组 4：版本号（corr-2026-014 同型：banner 腐烂四个补丁轮）─────
 // [v3.6] 版本推进到 3.6.0（新辨别维度：成本/价格信号），本断言跟着当前版本走。
-c34('版本号一致性：banner 与 VERSION 对齐（3.12.0）', (() => {
+c34('版本号一致性：banner 与 VERSION 对齐（3.13.0）', (() => {
   const fs2 = require('fs');
   const version = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return version === '3.12.0' && rp.includes('文明推演引擎 v3.12.0');
+  return version === '3.13.0' && rp.includes('文明推演引擎 v3.13.0');
 })(), 'run-pipeline banner 必须与 VERSION 一致（v3.1 修过 banner/meta 同型后又腐烂）');
 
 // ── v3.4 汇总 ──
@@ -4429,15 +4429,15 @@ c35('cron 注入脚本渲染财报指引结算段', (() => {
 
 // ── 组 6：版本号一致性（corr-2026-014 同型，四处对齐）──────────
 // [v3.6] 推进到 3.6.0（新辨别维度），断言跟当前版本走。
-c35('版本号一致性：VERSION/package.json/projection meta/banner 对齐 3.12.0', (() => {
+c35('版本号一致性：VERSION/package.json/projection meta/banner 对齐 3.13.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.12.0'
-    && /3\.12\.0/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.12.0');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.12.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.13.0'
+    && /3\.13\.0/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.13.0');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.13.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.5 汇总 ──
 (async () => {
@@ -4515,15 +4515,22 @@ c351('extractActuals 覆盖 MRVL/MU/AMZN 标题形态（of fiscal year / FOURTH-
 })(), 'MRVL/MU/AMZN 的期间与营收实际值必须抽出来——抽不到，到期指引永远找不到对账依据');
 
 // 3. 精度回归：AMZN 的营业利润与 AWS 年化 run rate 不得被当成总净销售额
+// [v3.13 更新] opinc 自本轮起作为**独立指标**抽取（AMZN 到期营业利润
+// 指引的对账依据），原断言 actuals.length===1 随能力扩展失效——精度点
+// （营业利润不并进营收、AWS run rate 不当总量）不变且更强：营收仍只有
+// 总量一条，营业利润单列一个 metric。
 c351('精度回归：operating income 与 AWS run rate 不误当净销售额', (() => {
   const { extractActuals } = require('./human-future/scripts/edgar-collector.js');
   const AMZN = 'AMAZON.COM ANNOUNCES SECOND QUARTER RESULTS Net sales increased 20% year-over-year Operating income was $27.5 billion, up 43% year-over-year AWS net sales increased 37%—its fastest growth in 18 quarters—to a $169 billion annualized revenue run rate SEATTLE—(BUSINESS WIRE)—Amazon.com, Inc. today announced financial results for the second quarter ended June 30, 2026. Net sales increased 20% to $200.6 billion, compared with second quarter 2025.';
   const ex = extractActuals(AMZN);
-  // 只准有一条营收实际值，且是总量 $200.6 billion
-  return ex.actuals.length === 1 && ex.actuals[0].value === '$200.6 billion'
+  const revs = ex.actuals.filter(a => a.metric === 'revenue');
+  const opinc = ex.actuals.filter(a => a.metric === 'operating income');
+  // 营收只准有总量一条（$200.6B）；营业利润单列且不并进营收
+  return revs.length === 1 && revs[0].value === '$200.6 billion'
+    && opinc.length === 1 && opinc[0].value === '$27.5 billion'
     // 同比引用（second quarter 2025，无 ended 日期）不得抢期间锚
     && ex.fiscalYear === 2026 && ex.quarter === 2;
-})(), '90 字符 gap 曾把 bullet 间的 operating income 桥接成营收；紧邻形态只认总量值句');
+})(), '90 字符 gap 曾把 bullet 间的 operating income 桥接成营收；紧邻形态只认总量值句，opinc 单列指标不混入');
 
 // ── 组 3：端到端（登记元数据 / 历史残废条目结算 / 跳过理由归因）──
 // 4. 新登记指引的 settlement 元数据完整（ticker/fiscalYear/quarter 落账）
@@ -4585,9 +4592,11 @@ c351('跳过理由区分「句式漂移」与「备案滑出窗口」', (() => {
   const saved = fs.existsSync(LEDGER) ? fs.readFileSync(LEDGER, 'utf-8') : null;
   try {
     const mock = { version: '1.0.0', predictions: [
-      // 备案在当期窗口内，但 claim 句式与当期抽取结果漂移（台账实测：claim 是
-      // 旧版抽取的 "P diluted..."，当期句子是 "GAAP diluted..."）
-      { id: 'fc-sec-edgar-0001835632-26-000014-index-htm-2026-09-13-income--0-37-', claim: 'P diluted net income per share is expected to be $0.37 +/- $0.05 per share', probability: 0.5, domain: 'earnings_guidance', category: 'earnings_guidance', dueOn: '2026-09-13', outcome: null, settlement: null },
+      // 备案在当期窗口内，但 claim 句式与当期抽取结果漂移（v3.13 更新用例：
+      // 旧用例「P diluted...」自名词对齐 key（guidanceNounKey）起已可解析——
+      // 那正是 MRVL EPS 指引能结算的根因，行为已变；漂移用例改为当期窗口
+      // 里完全不存在的指引句式——opex 口径句，任何 key 都配不上）
+      { id: 'fc-sec-edgar-0001835632-26-000014-index-htm-2026-09-13-income--0-37-', claim: 'Non-GAAP operating expenses are expected to be approximately $1.2 billion, inclusive of stock-based compensation', probability: 0.5, domain: 'earnings_guidance', category: 'earnings_guidance', dueOn: '2026-09-13', outcome: null, settlement: null },
       // 备案已滑出窗口（当期无此 accession 的任何条目）
       { id: 'fc-sec-edgar-0001045810-26-000019-index-htm-2026-06-14-revenue--78-0-billion', claim: 'Revenue is expected to be $78.0 billion, plus or minus 2%', probability: 0.5, domain: 'earnings_guidance', category: 'earnings_guidance', dueOn: '2026-06-14', outcome: null, settlement: null },
     ]};
@@ -4655,15 +4664,15 @@ c351('结算证据来源是提供实际值的备案（actualPeriod 匹配）', (
 
 // ── 组 4：版本号一致性（corr-2026-014 同型）────────────────────
 // [v3.6] 推进到 3.6.0（新辨别维度：成本/价格信号）。
-c351('版本号一致性：VERSION/package.json/banner 对齐 3.12.0', (() => {
+c351('版本号一致性：VERSION/package.json/banner 对齐 3.13.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.12.0'
-    && /3\.12\.0/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.12.0');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.12.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.13.0'
+    && /3\.13\.0/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.13.0');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.13.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.5.1 汇总 ──
 (async () => {
@@ -4858,15 +4867,15 @@ c36('精度门未破：非主张文本仍被挡在辨别外', (() => {
 })(), 'Fed 公告与播客不得因 cost-signal 新模式进入辨别');
 
 // ── 组 5：版本号一致性（corr-2026-014 同型）────────────────────
-c36('版本号一致性：VERSION/package.json/banner 对齐 3.12.0', (() => {
+c36('版本号一致性：VERSION/package.json/banner 对齐 3.13.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.12.0'
-    && /3\.12\.0/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.12.0');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.12.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.13.0'
+    && /3\.13\.0/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.13.0');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.13.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.6 汇总 ──
 (async () => {
@@ -5102,15 +5111,15 @@ c37('精度门未破：非主张文本仍被挡在辨别外', (() => {
 })(), 'Fed 公告与播客不得因 expert-judgment 新模式进入辨别');
 
 // ── 组 5：版本号一致性（corr-2026-014 同型）────────────────────
-c37('版本号一致性：VERSION/package.json/banner 对齐 3.12.0', (() => {
+c37('版本号一致性：VERSION/package.json/banner 对齐 3.13.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.12.0'
-    && /3\.12\.0/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.12.0');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.12.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.13.0'
+    && /3\.13\.0/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.13.0');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.13.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.7 汇总 ──
 (async () => {
@@ -5401,15 +5410,15 @@ c38('精度门未破：非主张文本仍被挡在辨别外', (() => {
 })(), 'Fed 公告/播客/官员言论不得因 regulatory-action 新模式进入辨别');
 
 // ── 组 5：版本号一致性（corr-2026-014 同型）────────────────────
-c38('版本号一致性：VERSION/package.json/banner 对齐 3.12.0', (() => {
+c38('版本号一致性：VERSION/package.json/banner 对齐 3.13.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.12.0'
-    && /3\.12\.0/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.12.0');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.12.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.13.0'
+    && /3\.13\.0/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.13.0');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.13.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.8 汇总 ──
 (async () => {
@@ -5630,18 +5639,18 @@ c39('精度门未破：非主张文本与无幅度价格谈论仍被挡在辨别
 })(), 'Fed 公告/播客/无幅度降价谈论/TCO 效率句/官员言论不得因 price-cut 新模式进入辨别');
 
 // ── 组 5：版本号一致性（corr-2026-014 同型）────────────────────
-c39('版本号一致性：五处对齐 3.12.0', (() => {
+c39('版本号一致性：五处对齐 3.13.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs2.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.12.0'
-    && pkg.version === '3.12.0'
-    && rp.includes('文明推演引擎 v3.12.0')      // banner
-    && /version: '3\.12\.0'/.test(pf)          // projection meta
-    && /version: '3\.12\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.12.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.13.0'
+    && pkg.version === '3.13.0'
+    && rp.includes('文明推演引擎 v3.13.0')      // banner
+    && /version: '3\.13\.0'/.test(pf)          // projection meta
+    && /version: '3\.13\.0'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.13.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.9 汇总 ──
 (async () => {
@@ -6003,18 +6012,18 @@ c310('精度门未破：扩桶后非主张文本仍被挡在辨别外', (() => {
 })(), 'Fed 公告/播客/无数量部署谈话/合作公告/免责声明/泛指交易假设句/官员言论不得因扩池与新模式进入辨别');
 
 // ── 组 7：版本号一致性（corr-2026-014 同型）────────────────────
-c310('版本号一致性：五处对齐 3.12.0', (() => {
+c310('版本号一致性：五处对齐 3.13.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs2.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.12.0'
-    && pkg.version === '3.12.0'
-    && rp.includes('文明推演引擎 v3.12.0')      // banner
-    && /version: '3\.12\.0'/.test(pf)          // projection meta
-    && /version: '3\.12\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.12.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.13.0'
+    && pkg.version === '3.13.0'
+    && rp.includes('文明推演引擎 v3.13.0')      // banner
+    && /version: '3\.13\.0'/.test(pf)          // projection meta
+    && /version: '3\.13\.0'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.13.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.10 汇总 ──
 (async () => {
@@ -6346,18 +6355,18 @@ c3111('精度门未破：非主张文本不因新形态进入辨别', (() => {
 })(), 'Fed 公告/播客/订阅总量/速率上限/无数量部署谈话/合作公告不得因 usage-metric 进辨别');
 
 // ── 组 7：版本号一致性（corr-2026-014 同型）────────────────────
-c3111('版本号一致性：五处对齐 3.12.0', (() => {
+c3111('版本号一致性：五处对齐 3.13.0', (() => {
   const fs311 = require('fs');
   const VERSION = fs311.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs311.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs311.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs311.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.12.0'
-    && pkg.version === '3.12.0'
-    && rp.includes('文明推演引擎 v3.12.0')      // banner
-    && /version: '3\.12\.0'/.test(pf)          // projection meta
-    && /version: '3\.12\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.12.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.13.0'
+    && pkg.version === '3.13.0'
+    && rp.includes('文明推演引擎 v3.13.0')      // banner
+    && /version: '3\.13\.0'/.test(pf)          // projection meta
+    && /version: '3\.13\.0'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.13.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.11 汇总 ──
 (async () => {
@@ -6651,18 +6660,18 @@ c312('精度门未破：营收/工程 scaling/政府资助/无数量规模级句
 })(), '营收句/工程 scaling/政府资助/无数量规模级句/Fed 公告/播客不得因 compute-infra 进辨别');
 
 // ── 组 7：版本号一致性（corr-2026-014 同型）────────────────────
-c312('版本号一致性：五处对齐 3.12.0', (() => {
+c312('版本号一致性：五处对齐 3.13.0', (() => {
   const fs312 = require('fs');
   const VERSION = fs312.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs312.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs312.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs312.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.12.0'
-    && pkg.version === '3.12.0'
-    && rp.includes('文明推演引擎 v3.12.0')      // banner
-    && /version: '3\.12\.0'/.test(pf)          // projection meta
-    && /version: '3\.12\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.12.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.13.0'
+    && pkg.version === '3.13.0'
+    && rp.includes('文明推演引擎 v3.13.0')      // banner
+    && /version: '3\.13\.0'/.test(pf)          // projection meta
+    && /version: '3\.13\.0'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.13.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.12 汇总 ──
 (async () => {
@@ -6679,5 +6688,335 @@ c312('版本号一致性：五处对齐 3.12.0', (() => {
     process.exitCode = 1;
   } else {
     console.log('结论：算力基建承诺（GW/MW/GPU/资本额，建设动词+量化+锚点三段同句共现）进模式库（live 实证 7 句命中、引擎级 4 条进辨别），营收/融资/订阅/工程 scaling/政府资助/无数量规模级句精确排除，报告与 cron 注入渲染中文标签。');
+  }
+})();
+
+// ════════════════════════════════════════════════════════════════
+// v3.13 — 财报指引结算指标扩展（已知边界推进：opex/税率/EPS/营业利润）
+//
+// v3.5.1 白纸黑字的已知边界：「opex/tax/EPS 等指标无实际值来源（只抽
+// 营收+毛利率），相关指引保持 pending」。v3.13 轮审计实测：台账 18 条
+// 到期未结算的 earnings_guidance 里，10 条有容差/区间可结算——卡住的
+// 不是指引侧而是实际值侧：MRVL 亮点段只在标题 bullet 里陈述毛利率
+// （"53.1% GAAP gross margin"，无 was/were 连接词，旧正则整个不命中）、
+// EPS 实际值在 "or $0.33 per diluted share" 形态、AMZN 营业利润在
+// "Operating income increased to $27.5 billion" 形态。且 GAAP/非 GAAP
+// 不分口径时同财季同指标天然多值，v3.5 起一律判歧义——MRVL 6 条到期
+// 毛利率/EPS 因此永远 pending。
+//
+// 本轮（全部 2026-10-26 从 SEC EDGAR 实抓原文驱动）：
+//   ① extractActuals 扩三个指标族（毛利率 bullet 形态/EPS/营业利润），
+//      每条实际值带口径标记，每（族,口径）只收第一个（全年值不混进
+//      财季 key——NVDA 02-25 实测旧 matchAll 把全年 71.1% 塞进 Q4 key）
+//   ② 指引侧补 settleMetric（句推导，EPS→diluted eps）+ gaapBasis
+//      （从**原文**名词前限定词推——14 字符回扩窗口会把 "GAAP and
+//      non-GAAP" 切成 "non-GAAP"，句子里口径已丢）
+//   ③ 结算层口径分 key 配对（gaap+non-gaap 双口径同值句对两边都有效），
+//      未限定口径查裸 key（多值判歧义，不设法规避——MU 双列指引表）
+//   ④ 同轮维护：句索引按 claim id 内备案号作用域（同句连续备案指引
+//      不同财季，AMD/MRVL live 实证）+ 名词对齐 key（旧抽取把 "GAAP"
+//      切成 "P" 的 artifact claim 仍可配对）+ dedup 证据 key 补指标口径
+//      （同财季不同指标指引曾被并成一个义务，Brier 样本失真）
+// live 端到端：到期未结算 18 条 → 新结算 7 条（MRVL 毛利率×4 全带内
+// 命中、MRVL EPS×2 一命中一低于带、AMZN 营业利润 beat 带外），跳过 10
+// （8 条无容差点值指引 + 2 条 MU 口径未限定歧义），pending 1（NVDA 全年
+// 税率——备案亮点段无可直读实际值句）。Brier 已结算 10→11 义务（原始
+// 登记 14→21 条）。
+// ════════════════════════════════════════════════════════════════
+const v313 = [];
+function c313(name, ok, detail) { v313.push({ name, ok, detail }); }
+
+// ── 组 1：采集器实际值抽取扩库（live 实证原文）──────────────────
+// 1. MRVL 标题 bullet 毛利率 + EPS（08-27 备案 live 原文）
+c313('extractActuals：MRVL bullet 毛利率与 EPS 双口径抽取', (() => {
+  const { extractActuals } = require('./human-future/scripts/edgar-collector.js');
+  // 2026-10-26 从 SEC 实抓（q227_8kx812026ex-991.htm）：亮点段只在标题
+  // bullet 里陈述毛利率（无 was/were），EPS 在 "or $X per diluted share"
+  const MRVL = 'EX-99.1 2 q227_8kx812026ex-991.htm EXHIBIT 99.1 Document Exhibit 99.1 Marvell Technology, Inc. Reports Second Quarter of Fiscal Year 2027 Financial Results • Q2 Net Revenue: $2.739 billion, a new record, grew by 37% year-on-year • Q2 Gross Margin: 53.1% GAAP gross margin; 58.9% non-GAAP gross margin • Q2 Diluted income per share: $0.33 GAAP diluted income per share; $0.94 non-GAAP diluted income per share. GAAP net income for the second quarter of fiscal 2027 was $308.0 million, or $0.33 per diluted share. Non-GAAP net income for the second quarter of fiscal 2027 was $865.9 million, or $0.94 per diluted share.';
+  const ex = extractActuals(MRVL);
+  const gm = ex.actuals.filter(a => a.metric === 'gross margin');
+  const eps = ex.actuals.filter(a => a.metric === 'diluted eps');
+  const rev = ex.actuals.find(a => a.metric === 'revenue');
+  return ex.quarter === 2 && ex.fiscalYear === 2027
+    && rev && rev.value === '$2.739 billion'
+    && gm.length === 2
+    && gm.find(a => a.gaapBasis === 'gaap' && a.value === '53.1%')
+    && gm.find(a => a.gaapBasis === 'non-gaap' && a.value === '58.9%')
+    && eps.length === 2
+    && eps.find(a => a.gaapBasis === 'gaap' && a.value === '$0.33')
+    && eps.find(a => a.gaapBasis === 'non-gaap' && a.value === '$0.94');
+})(), 'MRVL 亮点段只在 bullet 里给毛利率（无 was/were）、EPS 在 or $X per diluted share 形态——抽不到，6 条到期毛利率/EPS 指引永远 pending');
+
+// 2. MU EPS 双口径（06-24 备案 live 原文；小数点容差——$28.24 的句点不是句读）
+c313('extractActuals：MU EPS 双口径（or $X per diluted share，小数点不截断）', (() => {
+  const { extractActuals } = require('./human-future/scripts/edgar-collector.js');
+  const MU = 'EX-99.1 2 a2026q3ex991-pressrelease.htm EX-99.1 - PRESS RELEASE Document Exhibit 99.1 FOR IMMEDIATE RELEASE Contacts: Satya Kumar Mark Plungy Investor Relations Media Relations satyakumar@micron.com mplungy@micron.com (408) 450-6199 (408) 203-2910 MICRON TECHNOLOGY, INC. REPORTS RECORD RESULTS FOR THE THIRD QUARTER OF FISCAL 2026 Micron executes transformational Strategic Customer Agreements BOISE, Idaho, June 24, 2026 – Micron Technology, Inc. (Nasdaq: MU) today announced results for its third quarter of fiscal 2026, which ended May 28, 2026. Fiscal Q3 2026 highlights • Revenue of $41.46 billion versus $23.86 billion for the prior quarter and $9.30 billion for the same period last year • GAAP net income of $28.24 billion, or $24.67 per diluted share • Non-GAAP net income of $28.86 billion, or $25.11 per diluted share • Operating cash flow of $25.39 billion versus $11.90 billion for the prior quarter and $4.61 billion for the same period last year';
+  const ex = extractActuals(MU);
+  const eps = ex.actuals.filter(a => a.metric === 'diluted eps');
+  return ex.quarter === 3 && ex.fiscalYear === 2026
+    && eps.length === 2
+    && eps.find(a => a.gaapBasis === 'gaap' && a.value === '$24.67')
+    && eps.find(a => a.gaapBasis === 'non-gaap' && a.value === '$25.11')
+    && ex.actuals.find(a => a.metric === 'revenue' && a.value === '$41.46 billion');
+})(), 'GAAP net income of $28.24 billion, or $24.67 per diluted share——[^.;] 跨不过 $28.24 的小数点（v3.4 同型坑），必须数字间小数点容差');
+
+// 3. AMZN 营业利润（07-30 live 原文：分部行不误抽 + 亮点行与 bullet 同值去重）
+c313('extractActuals：AMZN 营业利润抽取，分部行（segment）不误入', (() => {
+  const { extractActuals } = require('./human-future/scripts/edgar-collector.js');
+  const AMZN = 'EX-99.1 2 amzn-20260630xex991.htm EX-99.1 Document Exhibit 99.1 AMAZON.COM ANNOUNCES SECOND QUARTER RESULTS Net sales increased 20% year-over-year Operating income was $27.5 billion, up 43% year-over-year AWS net sales increased 37%—its fastest growth in 18 quarters—to a $169 billion annualized revenue run rate SEATTLE—(BUSINESS WIRE)—Amazon.com, Inc. today announced financial results for the second quarter ended June 30, 2026. Net sales increased 20% to $200.6 billion, compared with second quarter 2025. • Operating income increased to $27.5 billion in the second quarter, compared with $19.2 billion in second quarter 2025. • North America segment operating income was $9.1 billion, compared with $7.5 billion in second quarter 2025. • International segment operating income was $1.7 billion, compared with $1.5 billion in second quarter 2025. • AWS segment operating income was $16.6 billion, compared with $10.2 billion in second quarter 2025.';
+  const ex = extractActuals(AMZN);
+  const opinc = ex.actuals.filter(a => a.metric === 'operating income');
+  return ex.quarter === 2 && ex.fiscalYear === 2026
+    && opinc.length === 1 && opinc[0].value === '$27.5 billion'   // 亮点行+bullet 同值去重；分部值不并入
+    && ex.actuals.find(a => a.metric === 'revenue' && a.value === '$200.6 billion');
+})(), 'segment operating income 是分部值不是合并值（lookbehind 挡）；亮点行与 bullet 同值只收一个');
+
+// 4. NVDA 全年值不混进财季 key（02-25 live 原文；守卫窗口不跨句）
+c313('extractActuals：全年实际值不混进财季 key（NVDA 02-25 live）', (() => {
+  const { extractActuals } = require('./human-future/scripts/edgar-collector.js');
+  const NVDA = 'EX-99.1 NVIDIA Announces Financial Results for Fourth Quarter Fiscal 2026 • Revenue of $68.1 billion, up 22% from the previous quarter. NVIDIA today reported revenue for the fourth quarter ended January 25, 2026, of $68.1 billion, up 22% from the previous quarter and up 75% from a year ago, driven by the major platform shift. For the quarter, GAAP and non-GAAP gross margins were 75.0% and 75.2%, respectively. For fiscal 2026, GAAP and non-GAAP gross margins were 71.1% and 71.3%, respectively. GAAP and non-GAAP earnings per diluted share were $1.76 and $1.62, respectively.';
+  const ex = extractActuals(NVDA);
+  const gm = ex.actuals.filter(a => a.metric === 'gross margin');
+  return ex.quarter === 4 && ex.fiscalYear === 2026
+    && gm.length === 1 && gm[0].value === '75.0%' && gm[0].gaapBasis === 'gaap+non-gaap'
+    && ex.actuals.filter(a => a.metric === 'diluted eps').length === 0;   // NVDA 双值句不抽（无 net income+or 结构）
+})(), '全年毛利率（For fiscal 2026…71.1%）按标题财季建 key 就是错配——旧 matchAll 把它塞进 FY26Q4 key（corr-2026-030）；守卫窗口前后截到句边界，不跨句误杀季度值');
+
+// 5. 口径推导 + 指标族推导（纯函数）
+c313('gaapBasisOf/settleMetricOf：口径三段 + 指标族 + 词边界', (() => {
+  const { gaapBasisOf, settleMetricOf } = require('./human-future/scripts/edgar-collector.js');
+  return gaapBasisOf('GAAP and non-GAAP ') === 'gaap+non-gaap'
+    && gaapBasisOf('Non-GAAP ') === 'non-gaap'
+    && gaapBasisOf('GAAP ') === 'gaap'
+    && gaapBasisOf('') === ''
+    && gaapBasisOf('Apollo ') === ''            // \b 边界：Apollo 不含 gaap 子串误配（corr-2026-024 同型）
+    && settleMetricOf('diluted net income per share is expected to be $0.37 +/- $0.05 per share', 'income') === 'diluted eps'
+    && settleMetricOf('Diluted earnings per share $30.73 ± $1.00', 'diluted earnings per share') === 'diluted eps'
+    && settleMetricOf('GAAP gross margin is expected to be 52.1% to 53.1%', 'gross margin') === 'gross margin'
+    && settleMetricOf('Net revenue is expected to be $3.150 billion +/- 5%', 'net revenue') === 'revenue'
+    && settleMetricOf('Operating income is expected to be between $20.0 billion and $24.0 billion', 'operating income') === 'operating income';
+})(), '口径三段（双口径同值/非GAAP/GAAP/未限定）+ 指标族句推导——名词 income 分不清净利润与每股');
+
+// ── 组 2：指引侧口径/指标族（live 实证原文）────────────────────
+// 6. MRVL EPS 指引：settleMetric/gaapBasis 从**原文**名前限定词推导
+c313('extractGuidance：MRVL EPS 指引的指标族与口径（原文名前限定词）', (() => {
+  const { extractGuidance } = require('./human-future/scripts/edgar-collector.js');
+  const MRVL = 'Marvell Technology, Inc. Reports First Quarter of Fiscal Year 2027 Financial Results. Second Quarter of Fiscal 2027 Financial Outlook • Net revenue is expected to be $2.700 billion +/- 5%. • GAAP gross margin is expected to be 52.1% to 53.1%. • Non-GAAP gross margin is expected to be 58.25% to 59.25%. • GAAP operating expenses are expected to be approximately $960 million. • GAAP diluted net income per share is expected to be $0.37 +/- $0.05 per share. • Non-GAAP diluted net income per share is expected to be $0.93 +/- $0.05 per share.';
+  const { guidance } = extractGuidance(MRVL);
+  const eps = guidance.find(g => /0\.37/.test(g.value));
+  const gmG = guidance.find(g => /52\.1%/.test(g.value));
+  return eps && eps.settleMetric === 'diluted eps' && eps.gaapBasis === 'gaap'
+    && eps.metric === 'income'                 // 名词级 metric 不变（登记 id 的幂等维度）
+    && gmG && gmG.gaapBasis === 'gaap' && gmG.settleMetric === 'gross margin'
+    && guidance.find(g => /58\.25%/.test(g.value)).gaapBasis === 'non-gaap';
+})(), '14 字符回扩窗口把句首 "GAAP" 切掉（句子只剩 "diluted net income per share…"），口径必须从原文名词前推——从句子推就丢了');
+
+// 7. MU 表格形态不标口径（表头列名不进句子）
+c313('extractGuidance：表格形态不推导口径（MU 双列表头 live）', (() => {
+  const { extractGuidance } = require('./human-future/scripts/edgar-collector.js');
+  const MU = 'MICRON TECHNOLOGY, INC. REPORTS RECORD FISCAL FOURTH-QUARTER AND FULL-YEAR 2026 RESULTS. Business Outlook The following table presents Micron\'s guidance for the first quarter of 2027: FQ1-27 GAAP (1) Outlook Non-GAAP (2) Outlook Revenue $61.5 billion ± $1.5 billion $61.5 billion ± $1.5 billion Gross margin Approximately 85.95% Approximately 86.25% Operating expenses Approximately $2.31 billion Approximately $2.06 billion Diluted earnings per share $37.84 ± $1.00 $38.15 ± $1.00';
+  const { guidance } = extractGuidance(MU);
+  const rev = guidance.find(g => /61\.5/.test(g.value));
+  const eps = guidance.find(g => /37\.84/.test(g.value));
+  // 表头 "Non-GAAP (2) Outlook" 离名词一两百字符，30 字符回看窗会抓到它——
+  // 第一版修复用 form.re !== GUIDANCE_TABLE_RE 引用比较恒真（新 RegExp
+  // 对象），空转一轮；表格形态一律未限定，结算层查裸 key。
+  return rev && rev.gaapBasis === '' && rev.settleMetric === 'revenue'
+    && eps && eps.gaapBasis === '' && eps.settleMetric === 'diluted eps'
+    && eps.tolerance === '$1.00' && eps.quarter === 1 && eps.fiscalYear === 2027;
+})(), '表单调取句不带口径限定词（列头不进句子）——从回看窗推会把表头 Non-GAAP (2) Outlook 误标成指引口径');
+
+// ── 组 3：结算编排（口径配对 / 名词对齐 / 备案作用域 / 去重）──────
+// 8. 口径配对端到端（MRVL×4 + AMZN + MU 歧义；含 "P diluted" artifact 配对）
+c313('settleEarningsGuidance：口径分 key 配对（MRVL 毛利率×4/EPS×2 + AMZN 营业利润 + MU 歧义）', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const fs = require('fs');
+  const LEDGER = path.join(__dirname, 'human-future/data/prediction-ledger.json');
+  const saved = fs.existsSync(LEDGER) ? fs.readFileSync(LEDGER, 'utf-8') : null;
+  try {
+    const mock = { version: '1.0.0', predictions: [
+      { id: 't313-mrvl-gm-g', claim: 'GAAP gross margin is expected to be 52.1% to 53.1%', probability: 0.5, domain: 'earnings_guidance', category: 'earnings_guidance', dueOn: '2026-09-13', outcome: null },
+      { id: 't313-mrvl-gm-ng', claim: 'Non-GAAP gross margin is expected to be 58.25% to 59.25%', probability: 0.5, domain: 'earnings_guidance', category: 'earnings_guidance', dueOn: '2026-09-13', outcome: null },
+      { id: 't313-mrvl-eps-q2', claim: 'P diluted net income per share is expected to be $0.37 +/- $0.05 per share', probability: 0.5, domain: 'earnings_guidance', category: 'earnings_guidance', dueOn: '2026-09-13', outcome: null },
+      { id: 't313-mrvl-eps-q1', claim: 'diluted net income per share is expected to be $0.31 +/- $0.05 per share', probability: 0.5, domain: 'earnings_guidance', category: 'earnings_guidance', dueOn: '2026-06-14', outcome: null },
+      { id: 't313-amzn-opinc', claim: 'Operating income is expected to be between $20.0 billion and $24.0 billion,', probability: 0.5, domain: 'earnings_guidance', category: 'earnings_guidance', dueOn: '2026-08-14', outcome: null },
+      { id: 't313-mu-eps', claim: 'Diluted earnings per share $18.90 ± $0.40', probability: 0.5, domain: 'earnings_guidance', category: 'earnings_guidance', dueOn: '2026-07-17', outcome: null },
+    ]};
+    fs.writeFileSync(LEDGER, JSON.stringify(mock, null, 2));
+    const eng = new ProjectionEngine({});
+    eng.signals = { totalItems: 6, domains: [], items: [
+      { source: 'SEC EDGAR', ticker: 'MRVL', link: 'https://www.sec.gov/Archives/mrvl-aug', accession: '0001835632-26-000022',
+        actualPeriod: { quarter: 2, fiscalYear: 2027 },
+        actuals: [{ metric: 'revenue', value: '$2.739 billion', gaapBasis: '' }, { metric: 'gross margin', value: '53.1%', gaapBasis: 'gaap' }, { metric: 'gross margin', value: '58.9%', gaapBasis: 'non-gaap' }, { metric: 'diluted eps', value: '$0.33', gaapBasis: 'gaap' }, { metric: 'diluted eps', value: '$0.94', gaapBasis: 'non-gaap' }],
+        guidance: [{ sentence: 'GAAP gross margin is expected to be 52.9% to 53.9%', metric: 'gross margin', settleMetric: 'gross margin', gaapBasis: 'gaap', value: '52.9% to 53.9%', tolerance: null, isRange: true, quarter: 3, fiscalYear: 2027 }] },
+      { source: 'SEC EDGAR', ticker: 'MRVL', link: 'https://www.sec.gov/Archives/mrvl-may', accession: '0001835632-26-000014',
+        actualPeriod: { quarter: 1, fiscalYear: 2027 },
+        actuals: [{ metric: 'gross margin', value: '52.1%', gaapBasis: 'gaap' }, { metric: 'gross margin', value: '58.9%', gaapBasis: 'non-gaap' }, { metric: 'diluted eps', value: '$0.04', gaapBasis: 'gaap' }],
+        guidance: [
+          { sentence: 'GAAP gross margin is expected to be 52.1% to 53.1%', metric: 'gross margin', settleMetric: 'gross margin', gaapBasis: 'gaap', value: '52.1% to 53.1%', tolerance: null, isRange: true, quarter: 2, fiscalYear: 2027 },
+          { sentence: 'Non-GAAP gross margin is expected to be 58.25% to 59.25%', metric: 'gross margin', settleMetric: 'gross margin', gaapBasis: 'non-gaap', value: '58.25% to 59.25%', tolerance: null, isRange: true, quarter: 2, fiscalYear: 2027 },
+          { sentence: 'GAAP diluted net income per share is expected to be $0.37 +/- $0.05 per share', metric: 'income', settleMetric: 'diluted eps', gaapBasis: 'gaap', value: '$0.37', tolerance: '$0.05', isRange: false, quarter: 2, fiscalYear: 2027 },
+        ] },
+      { source: 'SEC EDGAR', ticker: 'MRVL', link: 'https://www.sec.gov/Archives/mrvl-mar', accession: '0001835632-26-000006',
+        actualPeriod: { quarter: 4, fiscalYear: 2026 },
+        actuals: [{ metric: 'diluted eps', value: '$0.46', gaapBasis: 'gaap' }],
+        guidance: [{ sentence: 'diluted net income per share is expected to be $0.31 +/- $0.05 per share', metric: 'income', settleMetric: 'diluted eps', gaapBasis: 'gaap', value: '$0.31', tolerance: '$0.05', isRange: false, quarter: 1, fiscalYear: 2027 }] },
+      { source: 'SEC EDGAR', ticker: 'AMZN', link: 'https://www.sec.gov/Archives/amzn-apr', accession: '0001018724-26-000012',
+        actualPeriod: { quarter: 1, fiscalYear: 2026 },
+        actuals: [{ metric: 'operating income', value: '$23.9 billion', gaapBasis: '' }],
+        guidance: [{ sentence: 'Operating income is expected to be between $20.0 billion and $24.0 billion, compared with $19.2 billion in second quarter 2025.', metric: 'operating income', settleMetric: 'operating income', gaapBasis: '', value: 'between $20.0 billion and $24.0 billion', tolerance: null, isRange: true, quarter: 2, fiscalYear: 2026 }] },
+      { source: 'SEC EDGAR', ticker: 'AMZN', link: 'https://www.sec.gov/Archives/amzn-jul', accession: '0001018724-26-000024',
+        actualPeriod: { quarter: 2, fiscalYear: 2026 },
+        actuals: [{ metric: 'operating income', value: '$27.5 billion', gaapBasis: '' }],
+        guidance: [{ sentence: 'Operating income is expected to be between $22.5 billion and $26.5 billion, compared with $17.4 billion in third quarter 2025.', metric: 'operating income', settleMetric: 'operating income', gaapBasis: '', value: 'between $22.5 billion and $26.5 billion', tolerance: null, isRange: true, quarter: 3, fiscalYear: 2026 }] },
+      { source: 'SEC EDGAR', ticker: 'MU', link: 'https://www.sec.gov/Archives/mu-mar', accession: '0000723125-26-000004',
+        actualPeriod: { quarter: 2, fiscalYear: 2026 },
+        actuals: [{ metric: 'revenue', value: '$20.31 billion', gaapBasis: '' }],
+        guidance: [{ sentence: 'Diluted earnings per share $18.90 ± $0.40', metric: 'diluted earnings per share', settleMetric: 'diluted eps', gaapBasis: '', value: '$18.90', tolerance: '$0.40', isRange: false, quarter: 3, fiscalYear: 2026 }] },
+      // 6 月备案（Q3 实际值）：双列指引表抽出的句子不带口径词 → 结算层查裸 key，
+      // GAAP/非 GAAP 两个值都在裸 key 下 → 判歧义跳过（live 同型：MU 双列表）
+      { source: 'SEC EDGAR', ticker: 'MU', link: 'https://www.sec.gov/Archives/mu-jun', accession: '0000723125-26-000009',
+        actualPeriod: { quarter: 3, fiscalYear: 2026 },
+        actuals: [{ metric: 'diluted eps', value: '$12.07', gaapBasis: 'gaap' }, { metric: 'diluted eps', value: '$12.20', gaapBasis: 'non-gaap' }],
+        guidance: [] },
+    ]};
+    const res = eng.settleEarningsGuidance();
+    const byId = Object.fromEntries(res.settled.map(s => [s.id, s]));
+    const after = JSON.parse(fs.readFileSync(LEDGER, 'utf-8'));
+    const epsQ1 = after.predictions.find(p => p.id === 't313-mrvl-eps-q1');
+    return res.settled.length === 5 && res.hits === 3 && res.misses === 2
+      && byId['t313-mrvl-gm-g'] && byId['t313-mrvl-gm-g'].hit === true     // 52.1-53.1% vs gaap 53.1%
+      && byId['t313-mrvl-gm-ng'] && byId['t313-mrvl-gm-ng'].hit === true   // 58.25-59.25% vs non-gaap 58.9%
+      && byId['t313-mrvl-eps-q2'] && byId['t313-mrvl-eps-q2'].hit === true // $0.37±$0.05 vs gaap $0.33（"P diluted" artifact 经名词对齐 key 配对）
+      && byId['t313-mrvl-eps-q1'] && byId['t313-mrvl-eps-q1'].hit === false && /below/.test(byId['t313-mrvl-eps-q1'].direction)
+      && byId['t313-amzn-opinc'] && byId['t313-amzn-opinc'].hit === false && /beat/.test(byId['t313-amzn-opinc'].direction)
+      && res.skipped.some(s => s.id === 't313-mu-eps' && /歧义/.test(s.reason))   // 口径未限定：裸 key 双值
+      && after.predictions.find(p => p.id === 't313-mu-eps').outcome === null
+      && epsQ1.evidence.metric === 'diluted eps' && epsQ1.evidence.gaapBasis === 'gaap';
+  } finally {
+    if (saved === null) { try { fs.unlinkSync(LEDGER); } catch (_) {} } else fs.writeFileSync(LEDGER, saved);
+  }
+})(), '口径一致才配对：MRVL GAAP/非GAAP 毛利率与 EPS 各判各的；口径未限定（MU 双列表）判歧义不设法规避；旧 artifact claim（"P diluted"）经名词对齐 key 仍可配对');
+
+// 9. 备案作用域句索引：同句连续备案指引不同财季（AMD live 实证）
+c313('句索引按 claim id 内备案号作用域（同句连续备案指引不同财季）', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const fs = require('fs');
+  const LEDGER = path.join(__dirname, 'human-future/data/prediction-ledger.json');
+  const saved = fs.existsSync(LEDGER) ? fs.readFileSync(LEDGER, 'utf-8') : null;
+  try {
+    // live 实证：AMD 05-05 与 08-04 两份备案都有 "Non-GAAP gross margin
+    // is expected to be approximately 56%"，前者指引 FY26Q2、后者 FY26Q3。
+    // 全局 first-registered-wins 会把 Q2 claim 解析到 Q3 去。
+    const mock = { version: '1.0.0', predictions: [
+      { id: 'fc-sec-edgar-0000002488-26-000072-index-htm-2026-08-10-gross-margin-56-', claim: 'Non-GAAP gross margin is expected to be approximately 56%', probability: 0.5, domain: 'earnings_guidance', category: 'earnings_guidance', dueOn: '2026-08-10', outcome: null },
+      { id: 'fc-sec-edgar-0000002488-26-000121-index-htm-2026-11-06-gross-margin-56-', claim: 'Non-GAAP gross margin is expected to be approximately 56%', probability: 0.5, domain: 'earnings_guidance', category: 'earnings_guidance', dueOn: '2026-11-06', outcome: null },
+    ]};
+    fs.writeFileSync(LEDGER, JSON.stringify(mock, null, 2));
+    const eng = new ProjectionEngine({});
+    eng.signals = { totalItems: 2, domains: [], items: [
+      { source: 'SEC EDGAR', ticker: 'AMD', link: 'https://www.sec.gov/Archives/amd-aug', accession: '0000002488-26-000121',
+        actualPeriod: { quarter: 2, fiscalYear: 2026 },
+        actuals: [{ metric: 'gross margin', value: '56%', gaapBasis: 'non-gaap' }],
+        guidance: [{ sentence: 'Non-GAAP gross margin is expected to be approximately 56%', metric: 'gross margin', settleMetric: 'gross margin', gaapBasis: 'non-gaap', value: '56%', tolerance: null, isRange: false, quarter: 3, fiscalYear: 2026 }] },
+      { source: 'SEC EDGAR', ticker: 'AMD', link: 'https://www.sec.gov/Archives/amd-may', accession: '0000002488-26-000072',
+        actualPeriod: { quarter: 1, fiscalYear: 2026 },
+        actuals: [{ metric: 'gross margin', value: '55%', gaapBasis: 'non-gaap' }],
+        guidance: [{ sentence: 'Non-GAAP gross margin is expected to be approximately 56%', metric: 'gross margin', settleMetric: 'gross margin', gaapBasis: 'non-gaap', value: '56%', tolerance: null, isRange: false, quarter: 2, fiscalYear: 2026 }] },
+    ]};
+    const res = eng.settleEarningsGuidance();
+    const q2 = res.skipped.find(s => s.id.includes('000072'));
+    const q3Pending = res.pending === 1 && res.settled.length === 0;
+    // Q2 claim 解析到 05-05 备案的 FY26Q2 指引 → 配上 Q2 实际值 56% → 无容差跳过
+    // （解析错到 Q3 的表现是 pending：Q3 无实际值——两者可区分）
+    return !!q2 && /无容差/.test(q2.reason) && q3Pending;
+  } finally {
+    if (saved === null) { try { fs.unlinkSync(LEDGER); } catch (_) {} } else fs.writeFileSync(LEDGER, saved);
+  }
+})(), '同一句指引在连续两份备案里指引不同财季——按 claim id 内备案号定位；全局索引 first-registered-wins 会把旧 claim 配到新财季实际值（v3.13 第一轮 live 实测踩过）');
+
+// 10. dedup 证据 key 补指标+口径（同轮维护：同财季不同指标不并成一个义务）
+c313('dedupeSameObligation 证据 key 带 metric+口径（同财季不同指标不并成一个义务）', (() => {
+  const ledgerLib = require('./human-future/scripts/prediction-ledger.js');
+  const mk = (id, dueOn, metric, basis) => ({ id, claim: 'c' + id, domain: 'earnings_guidance', outcome: true, dueOn,
+    evidence: { sources: ['https://www.sec.gov/Archives/x/'], metric, gaapBasis: basis } });
+  const multi = ledgerLib.dedupeSameObligation([
+    mk('rev', '2026-09-13', 'revenue', ''),
+    mk('gm-g', '2026-09-13', 'gross margin', 'gaap'),
+    mk('gm-ng', '2026-09-13', 'gross margin', 'non-gaap'),
+    mk('eps', '2026-09-13', 'diluted eps', 'gaap'),
+    mk('rev-dup', '2026-09-13', 'revenue', ''),     // 同义务重复登记照常合并
+  ]);
+  const legacy = ledgerLib.dedupeSameObligation([
+    { id: 'l1', claim: 'c1', domain: 'earnings_guidance', outcome: true, dueOn: '2026-08-02', evidence: { sources: ['u'] } },
+    { id: 'l2', claim: 'c2', domain: 'earnings_guidance', outcome: true, dueOn: '2026-08-02', evidence: { sources: ['u'] } },
+  ]);
+  return multi.entries.length === 4 && multi.dedupedCount === 1
+    && legacy.entries.length === 1 && legacy.dedupedCount === 1;   // 旧条目无 metric/basis→空后缀，分组不变
+})(), '同财季的营收/毛利率(GAAP)/毛利率(非GAAP)/EPS 是四个义务——旧 key 把它们并成一个，v3.13 轮实测 7 条新结算被并成 1 个，Brier 样本失真');
+
+// ── 组 4：端到端 + cron 注入 + 版本号 ──────────────────────────
+// 11. formatReport 渲染结算段（口径限定新措辞；只认渲染行）
+c313('端到端：formatReport 渲染结算段（口径一致才配对限定）', (() => {
+  const { ProjectionEngine, formatReport } = require('./scripts/project-future.js');
+  const items = [{
+    title: 'MRVL 8-K 业绩发布 · 2026-05-27', description: '财报指引（FY2027 Q2）：GAAP gross margin is expected to be 52.1% to 53.1%',
+    body: 'GAAP gross margin is expected to be 52.1% to 53.1%. Non-GAAP gross margin is expected to be 58.25% to 59.25%. GAAP diluted net income per share is expected to be $0.37 +/- $0.05 per share.',
+    source: 'SEC EDGAR', bucket: 'sec_filings', origin: 'live',
+    pubDate: '2026-05-27', link: 'https://example.com/edgar-v313-render', fiscalYearEnd: '0130', ticker: 'MRVL',
+    guidance: [
+      { sentence: 'GAAP gross margin is expected to be 52.1% to 53.1%', metric: 'gross margin', settleMetric: 'gross margin', gaapBasis: 'gaap', value: '52.1% to 53.1%', tolerance: null, isRange: true, quarter: 2, fiscalYear: 2027, periodLabel: 'FY2027 Q2', caveats: [] },
+      { sentence: 'GAAP diluted net income per share is expected to be $0.37 +/- $0.05 per share', metric: 'income', settleMetric: 'diluted eps', gaapBasis: 'gaap', value: '$0.37', tolerance: '$0.05', isRange: false, quarter: 2, fiscalYear: 2027, periodLabel: 'FY2027 Q2', caveats: [] },
+    ],
+  }];
+  const md = formatReport(new ProjectionEngine({ newsData: { sec_filings: { domain: 'sec_filings', news: items } } }).generate());
+  const seg = md.split('## 财报指引结算')[1] || '';
+  return seg.includes('## 财报指引结算') || md.includes('## 财报指引结算')
+    && /口径\*\*一致\*\*才配对/.test(seg)
+    && /口径未限定/.test(seg)
+    && /不得把 beat 读成/.test(seg);
+})(), '结算段必须渲染口径配对限定（v3.13 措辞）——限定先于被限定者；beat/below 方向口径保留');
+
+// 12. cron 注入源级（口径措辞同步进 agent prompt）
+c313('cron 注入源级：口径一致才配对措辞进注入脚本', (() => {
+  const fs313 = require('fs');
+  const p = require('path').join(require('os').homedir(), '.hermes/scripts/hf-cron-fetch.sh');
+  if (!fs313.existsSync(p)) return false;
+  const sh = fs313.readFileSync(p, 'utf-8');
+  return /口径一致才配对/.test(sh)
+    && /口径未限定/.test(sh)
+    && /歧义\(GAAP\/非GAAP多值或口径未限定\)/.test(sh)
+    && /guidanceSettlement/.test(sh);   // v3.5 注入不断链
+})(), 'hf-cron-fetch.sh 必须含口径配对限定与歧义新措辞——引擎产出了但注入脚本不读＝agent 看不到（同型断链纪律）');
+
+// 13. 版本号一致性（五处对齐 3.13.0）
+c313('版本号一致性：五处对齐 3.13.0', (() => {
+  const fs313 = require('fs');
+  const VERSION = fs313.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
+  const pkg = JSON.parse(fs313.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
+  const rp = fs313.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
+  const pf = fs313.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
+  return VERSION === '3.13.0'
+    && pkg.version === '3.13.0'
+    && rp.includes('文明推演引擎 v3.13.0')      // banner
+    && /version: '3\.13\.0'/.test(pf)          // projection meta
+    && /version: '3\.13\.0'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.13.0，防 corr-2026-014 版本漂移复发');
+
+// ── v3.13 汇总 ──
+(async () => {
+  const results = await Promise.all(v313.map(c => Promise.resolve(c.ok)));
+  let f = 0;
+  v313.forEach((c, i) => {
+    const ok = results[i];
+    if (!ok) f++;
+    console.log(`${ok ? '✓' : '✗'} ${c.name}${ok ? '' : '  —— ' + c.detail}`);
+  });
+  console.log(`\nv3.13: ${v313.length - f} 通过, ${f} 失败, 共 ${v313.length} 个`);
+  if (f > 0) {
+    console.log('结论：结算指标扩展不完整（抽取/口径/配对/作用域/去重/端到端/版本有缺）。');
+    process.exitCode = 1;
+  } else {
+    console.log('结论：结算指标从 2 个扩到 4 个族（毛利率 bullet 形态/EPS/营业利润；opex/税率无实际值来源留边界），GAAP/非 GAAP 口径分 key 配对，全年值不混进财季 key，同句连续备案按备案号定位财季，旧 artifact claim 经名词对齐 key 配对。live 端到端新结算 7 条（5 命中/2 未中），Brier 义务样本 10→11。');
   }
 })();

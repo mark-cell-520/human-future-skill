@@ -44,6 +44,8 @@
  * - 不得因为一条预测「结构良好」就判定它「可能为真」——结构良好只说明可结算。
  */
 
+// [v3.13] 口径/指标族推导复用 EDGAR 采集器（单一事实源，两边判据一致）
+const { gaapBasisOf, settleMetricOf } = require('./edgar-collector.js');
 const { dedupeSameObligation } = require('./prediction-ledger.js');
 
 /** 通用基准概率：无同类历史时的默认锚。每个值都注明来源与口径。 */
@@ -441,6 +443,24 @@ function discriminate(claim, opts = {}) {
     periodLabel: guidanceMeta ? guidanceMeta.periodLabel : null,
     annual: guidanceMeta ? !!guidanceMeta.annual : false,
     caveats: guidanceMeta ? (guidanceMeta.caveats || []) : [],
+    // [v3.13] 口径标记 + 结算指标族透传（v3.5.1 补过 ticker/fiscalYear/
+    // quarter 三字段的同型断链——少了这两个，结算层只能用名词级 metric
+    // 配对：MRVL EPS 指引指标名是 income，与实际值侧 diluted eps 配不上；
+    // GAAP/非 GAAP 口径丢失则同财季同指标天然多值、一律判歧义跳过）。
+    // 无元数据路径（句内解析兜底）从 claim 文本补推，推不到就是 ''。
+    gaapBasis: guidanceMeta ? (guidanceMeta.gaapBasis || '') : (() => {
+      // 无元数据路径（句内解析兜底，RSS 来源）：只认指标名词**前**的限定词
+      // ——「GAAP gross margin is expected to…」。不扫全句：句尾提一句
+      // non-GAAP 的句子（口径说明 boilerplate）会被误标。
+      const tx = String(text || '');
+      const mm = tx.match(new RegExp(GUIDANCE_METRIC, 'i'));
+      if (!mm) return '';
+      const idx = tx.toLowerCase().indexOf(mm[0].toLowerCase());
+      return gaapBasisOf(tx.slice(Math.max(0, idx - 30), idx));
+    })(),
+    settleMetric: guidanceMeta
+      ? (guidanceMeta.settleMetric || null)
+      : settleMetricOf(String(text || ''), (text.match(new RegExp(GUIDANCE_METRIC, 'i')) || [null])[0]),
     fromMetadata: !!guidanceMeta,
   } : null;
 

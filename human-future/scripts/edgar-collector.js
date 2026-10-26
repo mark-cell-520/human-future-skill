@@ -130,6 +130,42 @@ const QWORD = { first: 1, second: 2, third: 3, fourth: 4, '1st': 1, '2nd': 2, '3
 // 指引附带的前提削减（口径限定）：同节里「不假设/不含/排除」类句子
 const CAVEAT_RE = /(not assuming|does not include|excluding|excluding any|barring|absent|does not assume|not include)/i;
 
+// ── [v3.13] GAAP/非GAAP 口径标记 + 结算指标族（结算配对用）─────────────
+// 为什么需要：MRVL 同财季同时指引「GAAP gross margin 52.1%-53.1%」与
+// 「Non-GAAP gross margin 58.25%-59.25%」，实际值也分两个口径——不区分
+// 口径时 (ticker,财季,指标) key 下天然多值，v3.5 起一律判「歧义跳过」，
+// 台账 18 条到期指引里 6 条 MRVL 毛利率/EPS 因此永远 pending。口径一致
+// 才配对；不一致或未限定仍按歧义跳过，不设法规避。
+// 三段：'gaap+non-gaap'（同句给两个口径且通常同值——NVDA「GAAP and
+// non-GAAP gross margins were both 75.0%」，对 GAAP 与非 GAAP 指引都
+// 是有效实际值）/ 'non-gaap' / 'gaap' / ''（未限定）。
+function gaapBasisOf(prefix) {
+  const p = String(prefix || '');
+  if (/non-?gaap/i.test(p) && /\bgaap\b/i.test(p.replace(/non-?gaap/gi, ''))) return 'gaap+non-gaap';
+  if (/non-?gaap/i.test(p)) return 'non-gaap';
+  if (/\bgaap\b/i.test(p)) return 'gaap';
+  return '';
+}
+
+// [v3.13] 结算用指标族：从**指引句**推导，不从指标名词——名词 'income'
+// 分不清净利润与每股（MRVL「GAAP diluted net income per share is
+// expected to be $0.37」旧抽取指标名是 income，与实际值侧配不上；且
+// 14 字符回扩窗口把句首的 "GAAP" 切掉，口径信息在句子里也丢了）。
+// 每股句 → diluted eps；其余按名词族映射，与 earnings-settlement.js
+// normalizeMetric 口径一致（双保险）。句匹配优先于 settlement 持久化
+// 元数据（后者的 metric 是旧名词级归一），见 project-future 结算层。
+function settleMetricOf(sentence, metricNoun) {
+  const s = String(sentence || '');
+  if (/diluted\s+(?:net\s+)?income\s+per\s+share|(?:diluted\s+)?earnings\s+per\s+(?:diluted\s+)?share|\bEPS\b/i.test(s)) return 'diluted eps';
+  const m = String(metricNoun || '').toLowerCase();
+  if (/gross\s+margin/.test(m)) return 'gross margin';
+  if (/(net\s+|total\s+)?(revenue|revenues|sales)/.test(m)) return 'revenue';
+  if (/operating\s+income/.test(m)) return 'operating income';
+  if (/operating\s+expenses/.test(m)) return 'operating expenses';
+  if (/tax\s+rates?/.test(m)) return 'tax rate';
+  return m;
+}
+
 // ── [v3.5] 实际值句式（过去时，与指引的 "is expected to be" 对立）────────
 // 定位：v3.4 登记了 33 条财报指引、15 条到期未结算——v2.13 核心承诺「到期
 // 结算 Brier」对最硬的预测类从未兑现（结算逻辑整个缺失）。业绩发布 EX-99
@@ -185,11 +221,46 @@ const ACTUAL_REVENUE_RE = new RegExp(
 // annualized revenue run rate"（年化 run rate，不是季度总量）误当总净销售额。
 const ACTUAL_SALES_INCREASED_RE = new RegExp(
   `\\bnet\\s+sales\\s+increased\\s+[\\d.]+\\s*%\\s+to\\s+(\\$\\s?[\\d.,]+\\s*(?:billion|million|bn|m))\\b`, 'i');
+// [v3.13] MRVL 亮点 bullet 营收形态："Q2 Net Revenue: $2.739 billion"——
+// 冒号连接（无 of/was/were）。2026-10-26 从 SEC 实抓（MRVL
+// q227_8kx812026ex-991.htm）：MRVL 亮点段整段是 "X: value" bullet，
+// 主模式与 sales-increased 形态都不命中，到期营收指引找不到对账依据。
+// 精度：冒号紧跟名词（只容忍空白）、值紧跟冒号；取第一个匹配——总量
+// 惯例在最前（与主模式同一首匹配纪律，分部营收 bullets 在后不取）。
+const ACTUAL_REVENUE_COLON_RE = new RegExp(
+  `\\b(?:record\\s+|total\\s+|net\\s+)?revenue\\s*:\\s*(?:approximately\\s+)?(\\$\\s?[\\d.,]+\\s*(?:billion|million|bn|m))\\b`, 'i');
 // 毛利率实际值："GAAP and non-GAAP gross margins were both 75.0%" /
 // "GAAP gross margin was 52.1%"。取第一个（若 GAAP 与非 GAAP 不同值会抽出
 // 两条，由结算层唯一性规则挡掉）。
 const ACTUAL_MARGIN_RE = new RegExp(
   `\\bgross\\s+margins?\\b[^.;]{0,50}?\\b(?:was|were)\\s+(?:both\\s+|approximately\\s+)?([\\d.]+\\s*%)`, 'i');
+// [v3.13] 全年值守卫：财季备案的亮点段同时陈述全年值（NVDA「For fiscal
+// 2026, …gross margins were 71.1%」/ MRVL「GAAP net income for fiscal
+// 2026 … $3.07 per diluted share」/ AMZN「Operating income increased to
+// $80.0 billion in 2025」）。actualPeriod 取标题财季，全年值按财季建 key
+// 就是错配——旧 matchAll 把 NVDA 71.1% 全年毛利率混进 FY26Q4 key（该条
+// 无 Q4 毛利率指引所以没暴露，corr-2026-030 登记）。判据：匹配点前后
+// 窗内的全年期间标记（for fiscal YYYY / for the fiscal year / in YYYY）。
+const FULLYEAR_GUARD_RE = /for\s+(?:the\s+)?(?:fiscal\s+year|full[\s-]?year)|for\s+fiscal\s+20\d{2}|\bin\s+(?:19|20)\d{2}\b/i;
+// [v3.13] MRVL 标题 bullet 毛利率实际值：「Q2 Gross Margin: 53.1% GAAP
+// gross margin; 58.9% non-GAAP gross margin」——MRVL 亮点段只在这里陈述
+// 毛利率实际值（无 was/were 连接词，ACTUAL_MARGIN_RE 整个不命中，到期
+// 毛利率指引永远找不到对账依据）。值在前、口径词在后，双列都收。
+const ACTUAL_MARGIN_BULLET_RE = /(\d+(?:\.\d+)?)\s*%\s*(non-?gaap|gaap)\s+gross\s+margin/gi;
+// [v3.13] 每股收益实际值：口径词 + net income + of/for 连接 + or $X per
+// diluted share（MRVL「GAAP net income for the second quarter of fiscal
+// 2027 was $308.0 million, or $0.33 per diluted share」；MU「GAAP net
+// income of $28.24 billion, or $24.67 per diluted share」——2026-10-26
+// 从 SEC 实抓原文）。NVDA「GAAP and non-GAAP earnings per diluted share
+// were $2.46 and $2.22」双值句不抽：没有 net income+or 结构，抽出来也
+// 无法归属口径（NVDA 也无 EPS 指引，无配对需求）。
+const ACTUAL_EPS_RE = /(non-?gaap|gaap)\s+net\s+income\s+(?:of|for)\b(?:(?<=\d)\.(?=\d)|[^.;]){0,170}?or\s+\$([\d.]+)\s+per\s+diluted\s+share/gi;
+// [v3.13] 合并营业利润实际值（AMZN live 实证）：「Operating income was
+// $27.5 billion, up 43% year-over-year」/「Operating income increased to
+// $27.5 billion in the second quarter, compared with $19.2 billion in
+// second quarter 2025」。分部行（North America/AWS segment operating
+// income）用 lookbehind 挡；全年行由 FULLYEAR_GUARD_RE 挡。
+const ACTUAL_OPINC_RE = /(?<!segment\s)operating\s+income\s+(?:increased\s+to|was)\s+\$([\d.]+)\s*(billion|million)/gi;
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
@@ -303,10 +374,14 @@ function extractGuidance(text) {
   // "Non-GAAP gross margin is expected..." 丢掉限定词后 GAAP 与非 GAAP
   // 两条指引在句子上无法区分）；form B 扩 90 字符把 "For the third
   // quarter of 2026, AMD" 这段主体包进句子。
+  // [v3.13] 表格形态带 isTable 标记：它的抽取句不含口径限定词（列头离
+  // 名词一两百字符且不进句子），口径推导必须跳过——不能用引用比较
+  // （form.re 是 new RegExp(...) 新对象，与 GUIDANCE_TABLE_RE 永不 ===，
+  // 实测第一版修复因此空转，MU 营收指引仍被表头误标 non-gaap）。
   const forms = [
     { re: new RegExp(GUIDANCE_SENTENCE_RE.source, 'gi'), extendBack: 14 },
     { re: new RegExp(GUIDANCE_EXPECTS_RE.source, 'gi'), extendBack: 90 },
-    { re: new RegExp(GUIDANCE_TABLE_RE.source, 'gi'), extendBack: 0 },
+    { re: new RegExp(GUIDANCE_TABLE_RE.source, 'gi'), extendBack: 0, isTable: true },
   ];
   const seen = new Set();
   for (const form of forms) {
@@ -376,6 +451,21 @@ function extractGuidance(text) {
       }
       // 指标/数值/容差/区间
       const metricM = sentence.match(new RegExp(METRIC_NOUNS, 'i'));
+      // [v3.13] 口径标记从**原文**指标名词前的限定词推导：GUIDANCE_SENTENCE_RE
+      // 与表格形态的 m[0] 以名词开头（nounIdx=m.index），expects 在前形态
+      // 名词在句内（indexOf 定位）。不从 sentence 推——14 字符回扩窗口会把
+      // "GAAP and non-GAAP" 切成 "non-GAAP"（NVDA 实测），口径信息在句子里
+      // 已经丢了，原文里还在。
+      const nounIdx = metricM
+        ? m.index + Math.max(0, m[0].toLowerCase().indexOf(metricM[0].toLowerCase()))
+        : -1;
+      // 表单调取句（GUIDANCE_TABLE_RE）不带口径限定词——列头（"GAAP (1)
+      // Outlook Non-GAAP (2) Outlook"）离名词一两百字符且不进句子，从
+      // 回看窗推会抓到列头（MU 实测营收指引被误标 non-gaap）。表格形态
+      // 一律未限定：结算层查裸 key，多值判歧义（MU EPS 双列即此形态）。
+      const gaapBasis = (nounIdx >= 0 && !form.isTable)
+        ? gaapBasisOf(text.slice(Math.max(0, nounIdx - 30), nounIdx))
+        : '';
       const rangeM = sentence.match(/between\s+\$?\s?([\d.,]+)\s*(billion|million)?\s+and\s+\$?\s?([\d.,]+)\s*(billion|million)?/i)
         || sentence.match(/([\d.]+)\s*%\s+to\s+([\d.]+)\s*%/i);
       const valueM = sentence.match(/\$\s?[\d.,]+\s*(?:billion|million|bn|tn|trillion)?/i)
@@ -392,6 +482,11 @@ function extractGuidance(text) {
       guidance.push({
         sentence,
         metric: metricM ? metricM[0].toLowerCase() : null,
+        // [v3.13] 结算配对字段：口径标记 + 指标族（句推导）。不进 metric——
+        // metric 是登记 id 的幂等维度之一（同备案多指引靠 metric+value
+        // 区分），改它会让旧条目换 id 重复登记。
+        gaapBasis,
+        settleMetric: settleMetricOf(sentence, metricM ? metricM[0] : null),
         value: rangeM ? rangeM[0].replace(/\s+/g, ' ') : (valueM ? valueM[0].replace(/\s+/g, ' ') : null),
         isRange: !!rangeM,
         tolerance: tolM ? tolM[1].replace(/\s+/g, ' ') : null,
@@ -426,10 +521,16 @@ function extractGuidance(text) {
  * 无年份的形态（AMZN）回退正文 "quarter ended <date>" 锚；两者都抽不到
  * 就返回空 actuals——没有期间的数值无法与指引配对，漏报比误报诚实。
  *
- * 只抽营收与毛利率两个头条指标（理由见 ACTUAL_REVENUE_RE 注释）：营收无
- * GAAP/非 GAAP 分歧；毛利率 GAAP=非 GAAP 时只余一条，不同值时抽出两条、
- * 由结算层「唯一实际值才结算」挡掉。metric 用规范名（revenue / gross
- * margin），与指引侧 normalizeMetric 对齐。
+ * 指标覆盖（v3.5 起两个头条 + v3.13 扩三个）：营收/毛利率（was 与
+ * MRVL bullet 两形态）/ 每股收益（diluted eps，MRVL+MU 两形态）/ 合并
+ * 营业利润（operating income，AMZN）。理由：v3.5.1 台账实测 18 条到期
+ * 未结算指引里 8 条是 opex/税率/EPS/营业利润——「只抽营收+毛利率」
+ * 是当时写死的已知边界，本轮按 live 实证推进（opex/税率实际值在备案
+ * 亮点段无可直读句子或无容差指引，仍留边界，见 SKILL.md）。
+ * [v3.13] 每条实际值带 gaapBasis 口径标记，且每（指标族,口径）只收第一个
+ * （全年值不混进财季 key，corr-2026-030）。metric 用规范名（revenue /
+ * gross margin / diluted eps / operating income），与指引侧 settleMetric
+ * 和 earnings-settlement normalizeMetric 对齐。
  *
  * @returns {{quarter: number|null, fiscalYear: number|null, actuals: Array<{metric:string, value:string}>}}
  */
@@ -454,24 +555,70 @@ function extractActuals(text) {
   if (!fiscalYear || !quarter) return { quarter: null, fiscalYear: null, actuals: [] };
   const lead = t.slice(0, 1600);   // 亮点段：实际值在开头陈述，避开汇总表多列数字
   const actuals = [];
+  // [v3.13] 每（指标族, 口径）只收**第一个**匹配：亮点段先陈述本财季、
+  // 全年段落在后（NVDA「For the quarter…75.0%」先于「For fiscal 2026…
+  // 71.1%」），先到即本财季。GAAP 与非 GAAP 是不同口径、都收（v3.13 起
+  // 按口径分 key 配对，不再一律判歧义）；同口径重复陈述（AMZN 亮点行与
+  // bullet 都给 $27.5B）去重。
+  const seen = new Set();
+  const push = (family, basis, value) => {
+    const v = String(value).replace(/\s+/g, ' ');
+    const k = `${family}|${basis}`;
+    if (seen.has(k)) return;
+    seen.add(k);
+    actuals.push({ metric: family, value: v, gaapBasis: basis });
+  };
+  // 句子边界（句点/分号+空白；小数点后是数字，天然不是边界）。守卫窗口
+  // 前后各截到边界：向前最多 40 字符、向后最多 80 字符，不跨句——跨句会
+  // 把**下一句**的全年标记（"…respectively. For fiscal 2026, …"）算到
+  // 本财季值头上（NVDA 02-25 实测：季度毛利率 75.0% 被误杀，corr-2026-030
+  // 修复过程的第二轮实测）。
+  const notFullYear = (m) => {
+    const fwd = /[.;]\s/g; fwd.lastIndex = m.index;
+    const f = fwd.exec(lead);
+    const winEnd = Math.min(f ? f.index + 1 : lead.length, m.index + 80);
+    let start = Math.max(0, m.index - 40);
+    start = Math.max(start, lead.lastIndexOf('. ', start) + 2, lead.lastIndexOf('; ', start) + 2, 0);
+    return !FULLYEAR_GUARD_RE.test(lead.slice(start, winEnd));
+  };
   // 营收取**第一个**匹配：总收入惯例上在亮点段最前（"Revenue of $96.2B"），
   // 且营收无 GAAP/非 GAAP 分歧——取第一个即总收入，后面的分部营收
   // （"Data Center revenue of $89.0B"）不取，避免把分部当总量。
   const rv = lead.match(ACTUAL_REVENUE_RE);
-  if (rv) actuals.push({ metric: 'revenue', value: rv[1].replace(/\s+/g, ' ') });
+  if (rv) push('revenue', '', rv[1]);
   else {
     // [v3.5.1] AMZN 形态兜底："Net sales increased 20% to $200.5 billion"
     // （无 of/was/were 连接词，主模式不命中）。紧邻形态，见上方精度注释。
     const rv2 = lead.match(ACTUAL_SALES_INCREASED_RE);
-    if (rv2) actuals.push({ metric: 'revenue', value: rv2[1].replace(/\s+/g, ' ') });
+    if (rv2) push('revenue', '', rv2[1]);
+    else {
+      // [v3.13] MRVL bullet 冒号形态（"Net Revenue: $2.739 billion"）
+      const rv3 = lead.match(ACTUAL_REVENUE_COLON_RE);
+      if (rv3) push('revenue', '', rv3[1]);
+    }
   }
-  // 毛利率取**全部**匹配：GAAP 与非 GAAP 不同值时抽出两条（MRVL 实测
-  // "GAAP gross margin was 52.9% / Non-GAAP ... 57.5%"），驱动结算层
-  // 「唯一实际值才结算」判歧义跳过；同值时（NVDA "both 75.0%"）只余一条，
-  // 照常结算。用 matchAll（global）——单 match 只取第一个会把歧义吞掉。
+  // 毛利率 was/were 形态：**全部**匹配（GAAP 与非 GAAP 不同值时两条都留），
+  // 口径标记取匹配点前 30 字符的限定词（"GAAP and non-GAAP gross margins
+  // were both 75.0%" → gaap+non-gaap；"Non-GAAP gross margin was 57.5%"
+  // → non-gaap）。用 matchAll（global）——单 match 只取第一个会把歧义吞掉。
   const mgnRe = new RegExp(ACTUAL_MARGIN_RE.source, 'gi');
   for (const m of lead.matchAll(mgnRe)) {
-    actuals.push({ metric: 'gross margin', value: m[1].replace(/\s+/g, ' ') });
+    if (!notFullYear(m)) continue;
+    push('gross margin', gaapBasisOf(lead.slice(Math.max(0, m.index - 30), m.index)), m[1]);
+  }
+  // [v3.13] MRVL 标题 bullet 毛利率形态（was/were 连接词不存在的公司）
+  for (const m of lead.matchAll(ACTUAL_MARGIN_BULLET_RE)) {
+    push('gross margin', gaapBasisOf(m[2]), m[1] + '%');
+  }
+  // [v3.13] 每股收益实际值（MRVL/MU 两种连接形态）
+  for (const m of lead.matchAll(ACTUAL_EPS_RE)) {
+    if (!notFullYear(m)) continue;
+    push('diluted eps', gaapBasisOf(m[1]), '$' + m[2]);
+  }
+  // [v3.13] 合并营业利润实际值（AMZN）
+  for (const m of lead.matchAll(ACTUAL_OPINC_RE)) {
+    if (!notFullYear(m)) continue;
+    push('operating income', '', '$' + m[1] + ' ' + m[2]);
   }
   return { quarter, fiscalYear, actuals };
 }
@@ -564,11 +711,29 @@ async function collectEdgarFilings(opts = {}) {
   return result;
 }
 
+/**
+ * [v3.13] 指引句索引 key：归一到**指标名词起**（小写、压空白、剥尾部标点）。
+ * 为什么：旧版抽取的 14 字符回扩窗口会把句首限定词切掉半个——MRVL 实测
+ * "GAAP diluted net income per share is expected to be $0.37" 存进台账的
+ * claim 是 "P diluted net income per share…"（GAAP 只剩 P），与当期抽取
+ * 句逐字匹配不上，元数据反推失败、到期指引永远 pending。两侧都从名词起
+ * 对齐后，"P " 与 "GAAP " 的前缀差异不再影响配对。
+ */
+function guidanceNounKey(sentence) {
+  const s = String(sentence || '').toLowerCase().replace(/\s+/g, ' ').trim();
+  const m = s.match(new RegExp(METRIC_NOUNS, 'i'));
+  const from = m ? Math.max(0, s.toLowerCase().indexOf(m[0].toLowerCase())) : 0;
+  return s.slice(from).replace(/[\s,;:.]+$/, '');
+}
+
 module.exports = {
   collectEdgarFilings, extractGuidance, extractActuals, stripHtml,
   DEFAULT_TICKERS, GUIDANCE_SENTENCE_RE, PERIOD_PATTERNS,
-  ACTUAL_REVENUE_RE, ACTUAL_MARGIN_RE, RESULTS_HEADLINE_RES,
+  ACTUAL_REVENUE_RE, ACTUAL_REVENUE_COLON_RE, ACTUAL_MARGIN_RE, RESULTS_HEADLINE_RES,
   ACTUAL_SALES_INCREASED_RE, QUARTER_ENDED_RE, MAX_8K_PER_COMPANY,
+  // [v3.13] 结算配对用导出：口径推导 / 指标族推导 / 新实际值形态（测试）
+  gaapBasisOf, settleMetricOf, guidanceNounKey, METRIC_NOUNS,
+  ACTUAL_MARGIN_BULLET_RE, ACTUAL_EPS_RE, ACTUAL_OPINC_RE, FULLYEAR_GUARD_RE,
 };
 
 if (require.main === module) {

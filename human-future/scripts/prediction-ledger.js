@@ -63,8 +63,16 @@ function dedupeSameObligation(predictions) {
   for (const p of (Array.isArray(predictions) ? predictions : [])) {
     const cat = p.category || p.domain || 'general';
     const srcs = p.evidence && Array.isArray(p.evidence.sources) ? p.evidence.sources : [];
+    // [v3.13] 证据 key 补 metric+口径维度：同一份备案同财季的**不同指标**
+    // 指引（营收 vs 毛利率 vs EPS，GAAP vs 非 GAAP）是不同的可证伪主张，
+    // 旧 key（类目+dueOn+证据源）把它们并成一个义务——v3.13 轮实测 7 条
+    // 新结算（MRVL 毛利率×4/EPS×2+AMZN 营业利润）被并成 1 个，Brier
+    // 样本失真（与 v3.4 修 dueOn 同型：那次是跨财季误合，这次是跨指标/
+    // 跨口径误合）。旧条目 evidence 无这两个字段→空后缀，分组不变。
+    const evMetric = (p.evidence && p.evidence.metric) || '';
+    const evBasis = (p.evidence && p.evidence.gaapBasis) || '';
     const key = srcs.length > 0
-      ? `ev|${cat}|${p.dueOn || ''}|${srcs.map(s => String(s)).sort().join('|')}`
+      ? `ev|${cat}|${p.dueOn || ''}|${srcs.map(s => String(s)).sort().join('|')}|${evMetric}|${evBasis}`
     // [v3.4] 文本 key 带 dueOn：同一指标的指引跨财季会同文（实测 AMD
     // Q2/Q3 2026 两句都是 "gross margin ... approximately 56%"），它们是两次
     // 不同的承诺，结算时合并会把两次兑现计成一次——与 v2.16 要修的「同义务
@@ -119,7 +127,7 @@ function record(p) {
  *
  * @param {string} id
  * @param {boolean} outcome
- * @param {{sources?: string[], summary?: string, settledBy?: string}} [evidence]
+ * @param {{sources?: string[], summary?: string, settledBy?: string, metric?: string, gaapBasis?: string}} [evidence]
  */
 function settle(id, outcome, evidence) {
   const ledger = load();
@@ -139,6 +147,13 @@ function settle(id, outcome, evidence) {
     sources: Array.isArray(evidence.sources) ? evidence.sources.slice(0, 8) : [],
     summary: String(evidence.summary || '').slice(0, 500),
     settledBy: String(evidence.settledBy || 'unspecified'),
+    // [v3.13] 结算指标族与 GAAP 口径随证据落账：同义务去重
+    // （dedupeSameObligation）的证据 key 靠这两个维度区分同财季的不同
+    // 指标指引——只传不落账，去重 key 永远读空后缀，「同财季的营收/
+    // 毛利率/EPS 是四个义务」的修复在 live 数据上不生效（端到端断链）。
+    // 旧结算不补字段（无来源），去重 key 对旧条目走空后缀、分组不变。
+    ...(typeof evidence.metric === 'string' && evidence.metric ? { metric: evidence.metric } : {}),
+    ...(typeof evidence.gaapBasis === 'string' && evidence.gaapBasis ? { gaapBasis: evidence.gaapBasis } : {}),
   };
   save(ledger);
   return p;

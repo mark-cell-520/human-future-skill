@@ -1,9 +1,53 @@
 ---
 name: human-future-v2
-title: "人类未来 · 文明推演引擎 v3.12.0"
-version: "3.12.0"
+title: "人类未来 · 文明推演引擎 v3.13.0"
+version: "3.13.0"
 description: |-
-  人类未来技能 v3.12.0 — 商业主张辨别器新增「算力基建承诺/规模主张」形态
+  人类未来技能 v3.13.0 — 财报指引自动结算指标扩展（已知边界推进，非新辨别
+  维度）：v3.5.1 白纸黑字的已知边界「opex/tax/EPS 等指标无实际值来源，相关
+  指引保持 pending」本轮按 live 实证推进（2026-10-26 从 SEC EDGAR 实抓原文
+  驱动）——台账 18 条到期未结算的 earnings_guidance 里 10 条有容差/区间
+  可结算，卡点在实际值侧而非指引侧：MRVL 亮点段只在标题 bullet 陈述毛利率
+  （"Q2 Gross Margin: 53.1% GAAP gross margin"，无 was/were 连接词，旧正则
+  整个不命中）、营收在 "Q2 Net Revenue: $2.739 billion" 冒号 bullet 形态、
+  EPS 在 "GAAP net income … was $308.0 million, or $0.33 per diluted share"
+  形态、AMZN 营业利润在 "Operating income increased to $27.5 billion" 形态。
+  且 GAAP/非 GAAP 不分口径时同财季同指标天然多值，v3.5 起一律判歧义跳过，
+  MRVL 6 条到期毛利率/EPS 因此永远 pending。本轮：① extractActuals 扩指标
+  族（营收冒号形态/毛利率 bullet/EPS/营业利润），每条实际值带口径标记
+  （gaapBasisOf：双口径同值/非GAAP/GAAP/未限定四态），每（族,口径）只收
+  第一个+全年值守卫（NVDA 02-25 实测旧 matchAll 把全年 71.1% 毛利率混进
+  FY26Q4 key，corr-2026-030；守卫窗口前后截到句边界，不跨句误杀季度值）；
+  ② 指引侧补 settleMetric（句推导，EPS→diluted eps；名词级 metric 对 EPS
+  是 income 配不上）+ gaapBasis（从原文名词前限定词推——14 字符回扩窗口
+  会把 "GAAP and non-GAAP" 切成 "non-GAAP"，句子里口径已丢；表格形态一律
+  未限定，MU 双列指引表实测）；③ 结算层口径分 key 配对（BASIS_FALLBACK：
+  gaap→[gaap, gaap+non-gaap, '']，双口径同值句对两边都有效；未限定查裸
+  key，多值判歧义不设法规避）；④ 句索引三 key（逐字/前 60 字符/名词对齐）
+  × 备案作用域（claim id 内备案号——同句连续备案指引不同财季，AMD live
+  实证）+ 名词对齐 key（旧抽取把 "GAAP" 切成 "P" 的 artifact claim 仍可
+  配对）；⑤ 同轮修一个端到端断链（corr-2026-031）：settle() 只落
+  sources/summary/settledBy，project-future 传的 metric/gaapBasis 被丢——
+  dedupeSameObligation 证据 key 读的正是这两个字段，不修则「同财季不同
+  指标不并成一个义务」在 live 数据上永不生效；dedup 证据 key 同轮补
+  metric+口径维度（7 条新结算曾被并成 1 个义务，Brier 样本失真）。live
+  端到端：到期未结算 18 条 → 新结算 7 条（MRVL 毛利率×4 全带内命中、MRVL
+  EPS×2 一命中一低于带、AMZN 营业利润 beat 带外），台账已结算 11→18 条，
+  去重后 Brier 样本 11 个义务、brier 0.2548、兑现率 0.455；最终代码复跑
+  幂等 0 新结算、跳过 4（AMD 点值无容差×2 + MU 口径未限定歧义×2）、
+  pending 25。仍在库外（如实）：opex/税率实际值在备案亮点段无可直读句子
+  或无容差指引。测试 328→341 项；3 轮反向验证全部精确失败（摘除冒号营收
+  形态→1/摘除 settle() 证据落账→1/恢复旧夹具→1）。历史：v3.12 算力基建
+  承诺/规模主张（新辨别维度）；v3.11 用量/牵引度指标主张+引号切分修复；
+  v3.10 一手信源桶接入+部署规模主张；v3.9 价格下调主张；v3.8 监管行动主张；
+  v3.7 专家/机构判断主张；v3.6 成本/价格信号主张；v3.5.1 结算链路修复
+  （维护）；v3.5 财报指引自动结算；v3.4 财报指引+SEC EDGAR；v3.3.1
+  survey-finding 精度修复（维护）；v3.3 并购/交易过程主张；v3.2.2/3.2.1
+  断链修复；v3.2 产能/供给约束主张；v3.1.1 口径错位精度修复；v3.1 接入
+  self-correction-ledger；v3.0.0c 商业段断链修复；v2.17 接入 GJOpen；
+  v2.16 基准概率断链修复；v2.15 参考文本单列；v2.14 sitemap 真实发布
+  时间；v2.13 停止假推演。
+  历史：v3.12 商业主张辨别器新增「算力基建承诺/规模主张」形态
   （新辨别维度）：
   live 实证（2026-10-26 轮 300 条池，corr-2026-028 纪律的全池测量「未命中
   条目过堂」——sec_filings 的 8-K highlights 段与 frontier_models 的厂商
@@ -520,9 +564,17 @@ poll 分支没有触发机会；v3.7 放行 Apollo economist 条目后，round 6
 
 ---
 
-## 当前状态（v3.12.0 实测）
+## 当前状态（v3.13.0 实测）
 
 以下数字全部来自 2026-10-26 的 `FETCH=1 FETCH_BODY=1 node scripts/run-pipeline.js` 实跑
+（v3.13.0 轮：pipeline exit 0、288 条 live 信号（专项大模型域 162）、
+财报指引结算指标扩展的 live 端到端——到期未结算 18 条 → 新结算 7 条
+（MRVL FY2027Q1/Q2 毛利率×4 全带内命中、MRVL EPS×2 一命中一低于带、
+AMZN FY2026Q2 营业利润 beat 带外），台账已结算 11→18 条、去重后 Brier
+样本 11 个义务（brier 0.2548、兑现率 0.455=5/11）；最终代码复跑幂等
+0 新结算、跳过 4 条（AMD 点值指引无容差×2 + MU 双列 EPS 口径未限定
+歧义×2——live 实证口径分支生效）、pending 25；商业辨别段 27 条、forecast
+辨别 41 条、byKind 12 种与 v3.12 轮逐一一致（零串台零丢失））；
 （v3.12.0 轮：pipeline exit 0、300 条 live 信号（business 48 + economy 46 +
 frontier_models 142 + sec_filings 42 + tech 22 + humanities 12）、商业辨别段 23→27 条
 含新维度算力基建承诺/规模 4 条（byKind 新增 compute-infra:4——NVDA 备案
@@ -605,8 +657,14 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   sales 只认紧邻形态）。
 - 实际值抽取：`edgar-collector.extractActuals` 从同一份 EX-99 抽「上一财季实际值」
   （过去时 was/were/of，与指引的期望时态对立）；期间取自标题句（三种语序 +
-  v3.5.1 通用季度+年份形态 + quarter-ended 正文锚）；只抽营收+毛利率两个头条
-  指标（营收无 GAAP 分歧；毛利率 GAAP≠非GAAP 时抽出两条→结算层判歧义跳过）。
+  v3.5.1 通用季度+年份形态 + quarter-ended 正文锚）。指标覆盖：v3.5 起两个
+  头条（营收 of/was/were + AMZN increased 紧邻形态 / 毛利率 was/were）→ v3.13
+  五个族（+ MRVL 冒号 bullet 营收 "Net Revenue: $2.739 billion" / MRVL 标题
+  bullet 毛利率 "53.1% GAAP gross margin" 无连接词形态 / EPS "or $X per
+  diluted share" / AMZN 合并营业利润，分部行用 lookbehind 挡）。每条实际值
+  带口径标记（gaapBasisOf），每（指标族,口径）只收第一个匹配（先本季、后
+  全年；同口径重复陈述去重），全年值守卫（FULLYEAR_GUARD_RE + 句边界截断
+  窗口，corr-2026-030）。
 - 结算判据（earnings-settlement.js）：outcome=实际值是否落在指引容差带内
   [guided ± tolerance]（区间指引落区间内）。单位感知：$+%=相对、$+$=绝对、
   %+bps=百分点、%+%=百分点。方向（beat 超带上沿 / below 低于带下沿 / in-band）
@@ -614,7 +672,11 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
 - 保守性（全有测试）：只结有容差/区间的；(ticker,财季,指标) 唯一实际值才结
   （GAAP/非GAAP 多值判歧义跳过，不设法规避）；到期才结（dueOn 未到不提前结）；
   只碰 outcome===null 的条目（幂等，不重复结算）。
-- live 实测：11 条正确结算（v3.5 轮 7 条 + v3.5.1 轮 4 条：MRVL FY2027Q1/Q2
+- live 实测：18 条正确结算（v3.5 轮 7 条 + v3.5.1 轮 4 条 + v3.13 轮 7 条：
+  MRVL FY2027Q1/Q2 毛利率×4 全带内 [GAAP 52.1-53.1% vs 53.1%、58.25-59.25%
+  vs 58.9%、51.4-52.4% vs 52.1%]、MRVL EPS×2 [$0.37±$0.05 vs $0.33 命中、
+  $0.31±$0.05 vs $0.04 below]、AMZN FY2026Q2 营业利润 $20-24B vs $27.5B
+  beat 带外）。v3.13 前 11 条（v3.5 轮 7 条 + v3.5.1 轮 4 条：MRVL FY2027Q1/Q2
   营收 $2.400B±5% vs $2.418B、$2.700B±5% vs $2.739B 均带内命中；MU FY2026Q4
   $50B±$1B vs $54.23B、AMZN FY2026Q2 $194-199B vs $200.6B 均 beat 带外。
   NVDA/AMD/MU 营收被 actual 超出带上沿→beat/带外，毛利率命中→带内；MU Q3
@@ -629,12 +691,48 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   漏了证据 key）——同公司跨财季结算曾被并成一个义务（11 条已结算去成 5 条，
   Brier 样本失真），修复后 9 条；结算证据来源改按 actualPeriod 匹配提供实际值
   的备案（不再 find(ticker) 拿最新备案链接）。
+- [v3.13] 口径标记与结算指标族（指引侧）：settleMetric 从**指引句**推导
+  （每股句→diluted eps，名词级 metric 对 EPS 是 income 与实际值侧配不上），
+  gaapBasis 从**原文**指标名词前 30 字符限定词推导（14 字符回扩窗口会把句首
+  "GAAP and non-GAAP" 切成 "non-GAAP"，句子里口径已丢；表格形态一律未限定
+  ——列头 "GAAP (1) Outlook Non-GAAP (2) Outlook" 离名词一两百字符不进句子，
+  MU 双列指引表实测，从回看窗推会误标）。两字段随辨别结果透传
+  （forecast-discriminator）+ 落账（v3.5.1 三字段同型断链的再一次：少了
+  这两个，结算层只能用名词级 metric 配对、口径丢失则同财季同指标天然多值）。
+- [v3.13] 口径分 key 配对（结算层）：实际值查找表 (ticker|财季|[口径 ]指标)
+  → 值数组；口径候选序 BASIS_FALLBACK（gaap→[gaap, gaap+non-gaap, '']、
+  non-gaap→[non-gaap, gaap+non-gaap, '']、gaap+non-gaap→四态、''→['']），
+  先用元数据口径再回落双口径同值形态最后裸 key；裸 key 多值=口径未限定
+  歧义，判跳过不设法规避（MU 双列指引表 live 实证：两条 EPS 指引均走
+  此路径）。口径化实际值同时登记裸 key——无限定口径的旧元数据查找行为
+  不变（NVDA 双口径同值 "both 75.0%" 只余一条照常结算）。
+- [v3.13] 句索引三 key × 备案作用域：逐字归一句（历史默认）/ 前 60 字符
+  （容忍 claim 截断）/ 名词对齐 key guidanceNounKey（旧抽取把 "GAAP" 切成
+  "P" 的 artifact claim 仍可配对）× 两个作用域（claim id 内备案号优先——
+  同一句指引出现在连续两份备案且指引不同财季时，全局 first-registered-wins
+  会把旧 claim 解析到新财季去，AMD live 实证；备案滑出窗口的残废条目靠
+  全局句兜底）。元数据解析改为**当期指引句反推优先**、持久化 settlement
+  兜底（颠倒顺序：句元数据带指标族+口径，旧 settlement.metric 是名词级归一）。
+- [v3.13 断链修复 corr-2026-031] settle() 证据落账：project-future 传的
+  metric/gaapBasis 被 settle() 的白名单式 evidence 构造静默丢弃（只写
+  sources/summary/settledBy）——dedupeSameObligation 证据 key 读的正是
+  这两个字段，「同财季不同指标不并成一个义务」在 live 数据上永不生效。
+  已补落账（旧结算不补字段，去重 key 对旧条目走空后缀、分组不变——v3.13
+  轮 7 条新结算落账于修复前，evidence 无这两个字段，如实记录不补造）。
+- [v3.13] 同义务去重证据 key 补 metric+口径维度：同财季的营收/毛利率
+  (GAAP)/毛利率(非GAAP)/EPS 是四个义务，旧 key（类目+dueOn+证据源）把它们
+  并成一个（实测 7 条新结算被并成 1 个，Brier 样本失真）。
 - 端到端：引擎 settleEarningsGuidance → report.guidanceSettlement → formatReport
-  「财报指引结算」段 → cron 注入第 6.5 段（跳过分类含歧义/滑出/漂移三档）。
+  「财报指引结算」段 → cron 注入第 6.5 段（跳过分类含歧义/滑出/漂移三档；
+  v3.13 歧义措辞同步为「GAAP/非GAAP多值或口径未限定」，限定句加「口径
+  **一致**才配对（MRVL 毛利率/EPS 分口径各判各的）」。
 - 已知边界（如实）：v3.5.1 前登记且指引备案已滑出窗口的残废条目无法反推元数据，
-  诚实留待后续轮次（re-fetch 修复候选）；opex/tax/EPS 等指标无实际值来源
-  （只抽营收+毛利率），相关指引保持 pending；MRVL 毛利率为 GAAP/非GAAP 双值，
-  按歧义规则跳过。
+  诚实留待后续轮次（re-fetch 修复候选）；EPS/营业利润指标 v3.13 已推进
+  （MRVL/MU/AMZN live 实证可结算），**opex/税率实际值在备案亮点段无可直读
+  句子或无容差指引**（AMD/NVDA opex 指引全是点值），相关指引保持 pending/
+  无容差跳过；MRVL 毛利率为 GAAP/非GAAP 双值，v3.13 起按口径分 key 各判
+  各的；v3.13 轮 7 条新结算落账于 settle() 修复前，evidence 无 metric/
+  gaapBasis 字段（去重时按旧口径并组，4 个义务而非 7 个——向后生效不补造）。
 
 **采集层**
 - 源：23 个（tech 2 + humanities 1 + frontier_models 12 + economy 4 + business 4
@@ -1343,11 +1441,19 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   严格过滤，漏掉数据里 2 条 critical（都是「整段推演作废」级的假能力审计），
   接入后会少报高危数（说 4 实际 6）。改为按等级表比较（critical > high >
   medium > low），critical 排最前。这是修 bug，不算升级——升级点是接入本身。
-- 边界（如实声明）：登记簿 28 条（v3.12 轮新增 corr-2026-029 后：critical 4 /
-  high 14 / medium 10——corr-2026-029 记的是「反向验证报 0 失败的新空转
-  形态：用例触达不到被测分支」——v3.12 精度回归用两句金额含小数点的营收句钉
-  accelerate 动词门，小数点的句点切断 [^.!?] lookahead 段，R7 摘除修复后
-  用例恒真（0 失败），补无小数点营收句才精确失败；含 corr-2026-024/025
+- 边界（如实声明）：登记簿 30 条（v3.13 轮新增 corr-2026-030/031 后：
+  critical 4 / high 15 / medium 11——corr-2026-029 记的是「反向验证报 0
+  失败的新空转形态：用例触达不到被测分支」——v3.12 精度回归用两句金额含
+  小数点的营收句钉 accelerate 动词门，小数点的句点切断 [^.!?] lookahead
+  段，R7 摘除修复后用例恒真（0 失败），补无小数点营收句才精确失败；
+  corr-2026-030 记的是「matchAll 全部匹配时要想同类陈述的其它期间」——
+  财报亮点段先本季后全年，全年实际值按标题财季建 key 就是错配（NVDA 02-25
+  实测 71.1% 全年毛利率混进 FY26Q4 key），期间守卫窗口还必须截到句边界
+  （第一版跨句窗把下一句的全年标记算到本财季值头上，季度值被误杀）；
+  corr-2026-031 记的是「传参 ≠ 落账」的端到端断链新形态——settle() 白名单
+  式 evidence 构造静默丢弃调用方传的 metric/gaapBasis，而 dedupe 证据 key
+  读的正是这两个字段，mock 测试（夹具直接构造 evidence）全绿而 live 数据
+  上修复永不生效；断言必须读落账后的字段值；含 corr-2026-024/025
   两条前轮手写条目未设 severity、
   按 medium 计；corr-2026-027 记的是「候选池桶白名单是另一种断链」：SEC 备案与
   厂商一手公告采集了三个版本，商业辨别器的门口却写着「只认 business/economy」，
@@ -1497,7 +1603,7 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   引擎不代劳——这是心虫铁律，不是能力缺失。
 
 **测试**
-- `npm test`：**328 项断言**（实测各 section 汇总；v3.4 的 230 + v3.5 新增 11 + v3.5.1 新增 9 + v3.6 新增 8 + v3.7 新增 9 + v3.8 新增 11 + v3.9 新增 8 + v3.10 新增 13 + v3.11 新增 15 + v3.12 新增 14：
+- `npm test`：**341 项断言**（实测各 section 汇总；v3.4 的 230 + v3.5 新增 11 + v3.5.1 新增 9 + v3.6 新增 8 + v3.7 新增 9 + v3.8 新增 11 + v3.9 新增 8 + v3.10 新增 13 + v3.11 新增 15 + v3.12 新增 14 + v3.13 新增 13：
   2 项纯结算函数（settleGuidance 单位感知容差：相对/绝对/bps/百分点/区间/无容差
   跳过，含区分相对vs绝对的边界用例 / normalizeMetric+parseMetricValue 单位解析）+
   3 项实际值抽取（extractActuals 营收+毛利率+标题期间 / GAAP/非GAAP 不同值抽出
@@ -1791,6 +1897,38 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   会被 U.S. 句点切碎、主张句从片段起，已知边界如实记录）；④ 反向
   验证驱动第一版对 .sh 注入脚本误用 node --check（bash 脚本报语法
   坏）——改用 bash -n 后 R5 才精确失败。
+  v3.13 新增 13（1 项 extractActuals MRVL bullet 毛利率+EPS 双口径抽取
+  （live 实抓原文：亮点段只在 bullet 给毛利率无 was/were、EPS 在 or $X per
+  diluted share 形态、营收在冒号 bullet 形态——三形态全命中，抽不到 6 条
+  到期毛利率/EPS 指引永远 pending）
+  + 1 项 MU EPS 双口径（小数点不截断：[^.;] 跨不过 $28.24 的句点，必须
+  数字间小数点容差）
+  + 1 项 AMZN 营业利润抽取（分部行 segment lookbehind 挡 + 亮点行与 bullet
+  同值去重）
+  + 1 项全年实际值不混进财季 key（NVDA 02-25 live：季度 75.0% 收、全年
+  71.1% 不收；corr-2026-030 防回归）
+  + 1 项 gaapBasisOf/settleMetricOf 纯函数（口径四态+词边界 Apollo 不含
+  gaap 子串 / 指标族句推导）
+  + 1 项 extractGuidance MRVL EPS 指引口径从原文名词前推（14 字符回扩窗口
+  切掉句首 GAAP 的 artifact）
+  + 1 项 extractGuidance 表格形态不推导口径（MU 双列表头；第一版修复用
+  引用比较恒真空转，isTable 标记才精确）
+  + 1 项 settleEarningsGuidance 口径分 key 配对端到端（MRVL 毛利率×2/EPS×2
+  + AMZN 营业利润 + MU 歧义 + "P diluted" artifact 经名词对齐 key 配对 +
+  落账后 evidence.metric/gaapBasis 非空）
+  + 1 项句索引备案作用域（同句连续备案指引不同财季，AMD live 实证）
+  + 1 项 dedupeSameObligation 证据 key 带 metric+口径（旧条目空后缀分组
+  不变）
+  + 1 项 formatReport 渲染结算段（口径一致才配对限定+口径未限定措辞——
+  只认渲染行）
+  + 1 项 cron 注入源级（hf-cron-fetch.sh 口径措辞+歧义新措辞+截断披露）
+  + 1 项版本号一致性（五处对齐 3.13.0））。
+  v3.13 三轮反向验证全部精确失败：摘除冒号营收形态调用点→1（MRVL 抽取
+  断言）；摘除 settle() 证据落账两行→1（结算编排断言的 evidence 字段）；
+  恢复旧夹具（MU 实际值挂 Q2 actualPeriod + 计数 6/4/2）→1（MU 落空
+  pending 到不了歧义分支——夹具自身矛盾：6 条预测里 MU 跳过就不可能
+  settled 6）。每轮基线全绿、摘除后断言必生效、备份还原到位（diff 校验）、
+  收尾基线全绿（341/0）。
   历史：v3.4 的 230 + v3.4 新增 16：
   5 项采集器抽取（NVDA/AMZN/AMD/MRVL/MU 五种 live 句式命中 / 4 类精度回归 0 误报 /
   期间就近+同比排除+Oracle 两种期间形态 / 小数不截断+句点不冲段 / 词边界）+
@@ -1917,7 +2055,9 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   预测辨别 / **财报指引结算（v3.5 补入，预测辨别之后——被结算的对象就是那段
   登记的财报指引，限定先于被限定者；读 proj.forecastDiscrimination.guidanceSettlement，
   含口径限定：outcome=实际值落在指引容差带内，beat/below 方向单独陈述，beat 不得
-  读成「公司没做到」；只结有容差/区间且实际值唯一的指引）** /
+  读成「公司没做到」；只结有容差/区间且实际值唯一的指引；[v3.13] 歧义措辞同步为
+  「GAAP/非GAAP多值或口径未限定」，限定句加「口径**一致**才配对（MRVL 毛利率/EPS
+  分口径各判各的），口径未限定（如 MU 双列指引表）判歧义跳过，不设法规避」）** /
   **商业主张辨别（v3.0.0c 补入，第 6 段；KIND_CN 标签随形态库扩充：
   v3.2 产能/供给约束、v3.3 并购/交易过程、v3.6 成本/价格信号、v3.7 专家/机构
   判断、v3.8 监管行动、v3.9 价格下调、v3.10 部署规模、v3.11 用量/牵引度

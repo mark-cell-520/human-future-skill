@@ -1,5 +1,5 @@
 {
-  "version": "1.2.0",
+  "version": "3.13.0",
   "corrections": [
     {
       "id": "corr-2026-007",
@@ -316,6 +316,26 @@
       "lesson": "反向验证报「0 失败」时必须先区分「修复无效」与「用例触达不到被测分支」——后者要换用例不是改预期。lookahead/同句判定下，选用例要确认各部件事件落在同一个 [^.!?] 段内：金额含小数点的句子会被句点切断，跨段共现类用例（无论正反）都可能恒真。这与 v3.11 的「模式摘除类测试先防护」是同族问题的两面：一个防摘除崩溃，一个防用例空转。",
       "severity": "medium",
       "recordedAt": "2026-10-26T05:58:25.944Z"
+    },
+    {
+      "id": "corr-2026-030",
+      "reportVersion": "v3.13",
+      "wrongClaim": "extractActuals 的毛利率 matchAll 把备案亮点段里所有 gross margins … was/were 匹配都按标题财季建 key——财季备案的亮点段同时陈述全年值（NVDA 02-25「For the quarter, GAAP and non-GAAP gross margins were 75.0% and 75.2%」先、「For fiscal 2026, …were 71.1% and 71.3%」后），全年值被塞进 FY26Q4 的 key。",
+      "rightClaim": "全年值与财季值是不同事件，actualPeriod 取标题财季，全年值按财季建 key 就是错配。加 FULLYEAR_GUARD_RE 守卫（匹配点前后窗内的全年期间标记 for fiscal YYYY / for the fiscal year / in YYYY），且守卫窗口前后各截到句边界（向前 40、向后 80 字符）——第一版窗口跨句，把下一句的全年标记（\"…respectively. For fiscal 2026, …\"）算到本财季值头上，季度毛利率 75.0% 被误杀（corr-2026-030 修复过程第二轮实测才发现）。该条当轮无 Q4 毛利率指引所以没暴露，靠测试夹具钉住。",
+      "evidence": "v3.13 测试「extractActuals：全年实际值不混进财季 key（NVDA 02-25 live）」：gm.length===1 且值为 75.0%（71.1% 全年值不进 key）；摘除守卫窗口截断（恢复跨句窗）→ 该断言失败。",
+      "lesson": "匹配全部出现位置（matchAll）时要想「同一文档里有没有同类陈述的其它期间」——财报亮点段惯例先本季后全年，期间守卫与指标抽取必须同轮考虑，不能只当「多值歧义」交给结算层。",
+      "severity": "medium",
+      "recordedAt": "2026-10-26T12:14:20.259Z"
+    },
+    {
+      "id": "corr-2026-031",
+      "reportVersion": "v3.13",
+      "wrongClaim": "v3.13 给 project-future 的 settle() 调用补了 metric/gaapBasis 两个证据字段、给 dedupeSameObligation 的证据 key 也加了这两个维度，「同财季不同指标不并成一个义务」看起来修好了——mock 测试（夹具直接构造 evidence 对象）也全绿。",
+      "rightClaim": "settle() 的 evidence 落账是白名单式只写 sources/summary/settledBy，多传的 metric/gaapBasis 被静默丢弃——dedupe 证据 key 读的正是这两个字段，live 数据上永远读空后缀，「修复」在端到端不生效。这是「接口存在 ≠ 端到端到达」同型断链的第 N 次：调用方传了、接收方收了（签名没报错）、落账函数没写。",
+      "evidence": "live 实证：v3.13 轮 7 条新结算落账后 evidence.metric/gaapBasis 均为 undefined（settleAt 2026-10-26）；补落账后 mock 复跑 epsQ1.evidence.metric==='diluted eps'；R2 反向验证（摘除落账两行）→ 结算编排断言精确失败 1 条。",
+      "lesson": "跨模块传字段时，「接收函数签收了吗」要看到落盘后的文件内容才算数——JSON 台账是最终消费者，断言必须读落账后的字段值（v3.5.1「登记元数据完整」断言同型：不只字段存在，要值非空）。传参与落账之间任何一层做白名单过滤，整条链路就是断的。",
+      "severity": "high",
+      "recordedAt": "2026-10-26T12:14:20.259Z"
     }
   ]
 }

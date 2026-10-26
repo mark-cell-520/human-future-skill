@@ -71,7 +71,7 @@ const { discriminateCommercial, COMMERCIAL_CLAIM_PATTERNS } = require(path.join(
 const { settleGuidance, normalizeMetric } = require(path.join(HF, 'earnings-settlement.js'));
 // [v3.5.1] 采集窗口大小：结算层报「指引备案滑出采集窗口」时引用真实值，
 // 不写死数字（v3.4 把它从 2 调到 3，文案没跟着改，报错过窗口大小）。
-const { MAX_8K_PER_COMPANY } = require(path.join(HF, 'edgar-collector.js'));
+const { MAX_8K_PER_COMPANY, gaapBasisOf, METRIC_NOUNS, guidanceNounKey } = require(path.join(HF, 'edgar-collector.js'));
 // [v2.17] 外部预测基准（Good Judgment Open 开放问题）。这是 SKILL.md
 // 「已知边界」里挂了三个版本的缺口：RSS 前瞻表述多为意图声明，缺带硬
 // 截止日的规范预测。2026-10-24 复测只剩 GJOpen 可达（Metaculus 403、
@@ -340,7 +340,7 @@ class ProjectionEngine {
     }
     const report = {
       meta: {
-        version: '3.12.0',
+        version: '3.13.0',
         heartflowVersion: this.analysis.engineVersion,
         timestamp: this.timestamp,
         modulesLoaded: this.analysis.modulesLoaded,
@@ -1643,7 +1643,12 @@ class ProjectionEngine {
             fiscalYear: r.guidance.fiscalYear,
             quarter: r.guidance.quarter,
             annual: !!r.guidance.annual,
-            metric: normalizeMetric(r.guidance.metric),
+            // [v3.13] 指标族优先用 settleMetric（句推导，每股句→diluted eps；
+            // 名词级 metric 对 EPS 指引是 income，与实际值侧配不上），
+            // 口径标记同轮落账。v3.13 前登记的条目没有这两个字段，由结算层
+            // 用当期指引句反推补全（抽取句式未变，旧 claim 仍逐字匹配）。
+            metric: normalizeMetric(r.guidance.settleMetric || r.guidance.metric),
+            gaapBasis: r.guidance.gaapBasis || null,
             value: r.guidance.value,
             tolerance: r.guidance.tolerance,
             isRange: !!r.guidance.isRange,
@@ -1700,23 +1705,67 @@ class ProjectionEngine {
   // 于窗口）。更早的诚实留待后续轮次，不硬结。
   // ───────────────────────────────────────────────────────────────
   settleEarningsGuidance() {
+    // [v3.13] 从 claim 文本补推口径标记：指标名词前 30 字符的限定词。
+    // 旧条目（无 settlement.gaapBasis）靠它把「GAAP gross margin is
+    // expected to be 52.1% to 53.1%」对到 GAAP 实际值；推不到返回 ''
+    // （未限定→裸 key 查找→多值判歧义，不设法规避）。
+    const claimGaapBasis = (claim) => {
+      const c = String(claim || '');
+      const mm = c.match(new RegExp(METRIC_NOUNS, 'i'));
+      if (!mm) return '';
+      const idx = c.toLowerCase().indexOf(mm[0].toLowerCase());
+      return gaapBasisOf(c.slice(Math.max(0, idx - 30), idx));
+    };
     const edgarItems = this.signals.items.filter(it => it.source === 'SEC EDGAR');
     if (edgarItems.length === 0) {
       return { available: false, reason: '本期无 SEC EDGAR 采集数据，无法结算财报指引', settled: [], skipped: [], pending: 0 };
     }
-    // 实际值查找表：(ticker|fy|q|metric) → [value,...]
+    // 实际值查找表：(ticker|fy|q|[basis ]metric) → [value,...]
+    // [v3.13] 口径分 key：GAAP 与非 GAAP 是同财季同指标的两个不同事实
+    // （MRVL 毛利率 GAAP 52.1%-53.1% vs 非 GAAP 58.25%-59.25%）——不区分
+    // 时 key 下天然多值，v3.5 起一律判「歧义跳过」，台账 18 条到期指引里
+    // 6 条 MRVL 毛利率/EPS 因此永远 pending。口径化实际值**同时**登记裸
+    // key：无限定口径的旧元数据（v3.13 前登记）查找行为不变——裸 key 多值
+    // 仍判歧义，NVDA 双口径同值（both 75.0%）只余一条照常结算。
     const actualIndex = new Map();
-    // 指引句索引：归一句 → 结构化元数据（供无 settlement 的历史条目反推）
-    const guidanceBySentence = new Map();
+    // [v3.13] 口径候选序：'gaap+non-gaap' 实际值（同句两口径同值）对
+    // GAAP 与非 GAAP 指引都有效；'gaap'/'non-gaap' 元数据最后才回落裸
+    // key（裸 key 含全部口径的值，多值即歧义——与 v3.5 行为一致）。
+    const BASIS_FALLBACK = {
+      'gaap': ['gaap', 'gaap+non-gaap', ''],
+      'non-gaap': ['non-gaap', 'gaap+non-gaap', ''],
+      'gaap+non-gaap': ['gaap+non-gaap', 'gaap', 'non-gaap', ''],
+      '': [''],
+    };
+    // 指引句索引：多 key → 结构化元数据（供无 settlement 的历史条目反推）。
+    // [v3.13] 三种 key × 两个作用域：
+    //   ① 逐字归一句（历史默认）
+    //   ② 前 60 字符（容忍 claim 截断——AMZN opinc 指引 claim 停在逗号）
+    //   ③ 名词对齐 key（tolerates 句首限定词被旧抽取窗口切掉——MRVL EPS
+    //      旧 claim "P diluted net income per share…" 的 "GAAP" 只剩 P）
+    //   作用域：claim id 内嵌备案号（fc-sec-edgar-<cik>-<yy>-<seq>-…）时
+    //   先查该备案——同一句指引出现在**连续两份备案**且指引不同财季时
+    //   （AMD 实测："Non-GAAP gross margin is expected to be approximately
+    //   56%" 在 05-05 备案指引 FY26Q2、在 08-04 备案指引 FY26Q3），全局
+    //   first-registered-wins 会把旧 claim 解析到新财季去。备案作用域
+    //   查不到再回落全局（备案滑出窗口的残废条目靠全局句仍能配对）。
+    const guidanceByKey = new Map();
+    const putKey = (k, meta) => { if (k && !guidanceByKey.has(k)) guidanceByKey.set(k, meta); };
     const normSentence = (s) => String(s || '').toLowerCase().replace(/\s+/g, ' ').trim();
+    const addActual = (key, value) => {
+      const arr = actualIndex.get(key) || [];
+      if (!arr.includes(value)) arr.push(value);   // 同值重复陈述（亮点行+bullet）去重
+      actualIndex.set(key, arr);
+    };
     for (const it of edgarItems) {
       const tk = it.ticker;
       const ap = it.actualPeriod;
       if (tk && ap && ap.fiscalYear && Array.isArray(it.actuals)) {
         for (const a of it.actuals) {
-          const key = `${tk}|${ap.fiscalYear}|${ap.quarter}|${normalizeMetric(a.metric)}`;
-          if (!actualIndex.has(key)) actualIndex.set(key, []);
-          actualIndex.get(key).push(a.value);
+          const base = normalizeMetric(a.metric);
+          const basis = a.gaapBasis || '';
+          addActual(`${tk}|${ap.fiscalYear}|${ap.quarter}|${basis ? basis + ' ' : ''}${base}`, a.value);
+          if (basis) addActual(`${tk}|${ap.fiscalYear}|${ap.quarter}|${base}`, a.value);
         }
       }
       if (tk && Array.isArray(it.guidance)) {
@@ -1724,13 +1773,22 @@ class ProjectionEngine {
           if (!g.fiscalYear) continue;
           const meta = {
             ticker: tk, fiscalYear: g.fiscalYear, quarter: g.quarter, annual: !!g.annual,
-            metric: normalizeMetric(g.metric), value: g.value, tolerance: g.tolerance, isRange: !!g.isRange,
+            // [v3.13] 指标族用 settleMetric（句推导）——旧 settlement 的
+            // 名词级 metric 对 EPS 是 income，与实际值侧配不上。
+            metric: normalizeMetric(g.settleMetric || g.metric), gaapBasis: g.gaapBasis || '',
+            value: g.value, tolerance: g.tolerance, isRange: !!g.isRange,
           };
           const ns = normSentence(g.sentence);
-          if (ns && !guidanceBySentence.has(ns)) guidanceBySentence.set(ns, meta);
-          // 同时按前 60 字符建索引，容忍 claim 截断/细微差异
+          const nk = guidanceNounKey(g.sentence);
           const pre = ns.slice(0, 60);
-          if (pre && !guidanceBySentence.has('pre:' + pre)) guidanceBySentence.set('pre:' + pre, meta);
+          if (it.accession) {
+            putKey(`${it.accession}|${ns}`, meta);
+            putKey(`${it.accession}|pre:${pre}`, meta);
+            putKey(`${it.accession}|noun:${nk}`, meta);
+          }
+          putKey(ns, meta);
+          putKey(`pre:${pre}`, meta);
+          putKey(`noun:${nk}`, meta);
         }
       }
     }
@@ -1746,11 +1804,35 @@ class ProjectionEngine {
     for (const p of (ledger.predictions || [])) {
       if ((p.category || p.domain) !== 'earnings_guidance') continue;
       if (p.outcome !== null && p.outcome !== undefined) continue;   // 已结算，不重复
-      // 取结算元数据：新条目用持久化的 settlement；历史条目用当期指引句反推
-      let meta = p.settlement && p.settlement.ticker ? p.settlement : null;
-      if (!meta) {
-        const nc = normSentence(p.claim);
-        meta = guidanceBySentence.get(nc) || guidanceBySentence.get('pre:' + nc.slice(0, 60)) || null;
+      // 取结算元数据：[v3.13] **当期指引句反推优先**，持久化 settlement
+      // 兜底。颠倒过顺序（v3.5.1 起 settlement 优先）——句元数据带指标族+
+      // 口径（本轮新增），而 v3.12 及以前登记的 settlement.metric 是名词级
+      // 归一（EPS 指引存的是 income），配不上实际值侧。句匹配不上（抽取
+      // 漂移/备案滑出窗口）才退回 settlement。
+      const nc = normSentence(p.claim);
+      // claim id 内嵌备案号 → 备案作用域优先（同句连续备案指引不同财季的
+      // 唯一定位手段）；查不到再全局逐字 → 前 60 字符 → 名词对齐。
+      const accM = String(p.id || '').match(/fc-sec-edgar-(\d{10})-(\d{2})-(\d{6})-index-htm/);
+      const acc = accM ? `${accM[1]}-${accM[2]}-${accM[3]}` : null;
+      const nk = guidanceNounKey(p.claim);
+      const lookupKeys = acc
+        ? [`${acc}|${nc}`, `${acc}|pre:${nc.slice(0, 60)}`, `${acc}|noun:${nk}`,
+          nc, `pre:${nc.slice(0, 60)}`, `noun:${nk}`]
+        : [nc, `pre:${nc.slice(0, 60)}`, `noun:${nk}`];
+      let meta = null;
+      for (const k of lookupKeys) { meta = guidanceByKey.get(k) || null; if (meta) break; }
+      if (!meta && p.settlement && p.settlement.ticker) {
+        meta = {
+          ticker: p.settlement.ticker, fiscalYear: p.settlement.fiscalYear,
+          quarter: p.settlement.quarter, annual: !!p.settlement.annual,
+          metric: normalizeMetric(p.settlement.metric),
+          // 旧 settlement 无口径字段：从 claim 里指标名词前的限定词补推
+          // （「GAAP gross margin is expected to be…」→ gaap）。补不到就是
+          // ''——未限定口径只查裸 key，多值判歧义，不猜（MU 指引表双列
+          // GAAP/非GAAP、抽取句只拿第一列数值不带限定词，实测即此形态）。
+          gaapBasis: p.settlement.gaapBasis || claimGaapBasis(p.claim),
+          value: p.settlement.value, tolerance: p.settlement.tolerance, isRange: !!p.settlement.isRange,
+        };
       }
       if (!meta || !meta.ticker || !meta.fiscalYear) {
         // [v3.5.1] 区分两种「配不上」，归因错了就没法修：旧文案一律写
@@ -1766,11 +1848,18 @@ class ProjectionEngine {
           : `指引备案${acc ? ' ' + acc : ''}已滑出采集窗口（最近 ${MAX_8K_PER_COMPANY} 份之外），无法反推结算元数据` });
         continue;
       }
-      const key = `${meta.ticker}|${meta.fiscalYear}|${meta.quarter}|${meta.metric}`;
-      const actuals = actualIndex.get(key) || [];
+      // [v3.13] 口径候选序查找：先用元数据口径，再回落双口径同值形态，
+      // 最后裸 key（裸 key 多值=歧义，与 v3.5 行为一致）。
+      const keyBase = `${meta.ticker}|${meta.fiscalYear}|${meta.quarter}|`;
+      let actuals = [];
+      for (const b of (BASIS_FALLBACK[meta.gaapBasis] || BASIS_FALLBACK[''])) {
+        const vals = actualIndex.get(`${keyBase}${b ? b + ' ' : ''}${meta.metric}`) || [];
+        if (vals.length === 1) { actuals = vals; break; }
+        if (vals.length > 1) { actuals = vals; break; }   // 歧义：停下报错，不继续找「能配上的」
+      }
       if (actuals.length === 0) { pending++; continue; }             // 财季未报告/未抽到
       if (actuals.length > 1) {
-        skipped.push({ id: p.id, reason: `${key} 有 ${actuals.length} 条实际值（GAAP/非 GAAP 分歧），判歧义不自动结算` });
+        skipped.push({ id: p.id, reason: `${keyBase}${meta.metric} 有 ${actuals.length} 条实际值（GAAP/非 GAAP 分歧或口径未限定），判歧义不自动结算` });
         continue;
       }
       const verdict = settleGuidance({ value: meta.value, tolerance: meta.tolerance, isRange: meta.isRange }, actuals[0]);
@@ -1782,6 +1871,11 @@ class ProjectionEngine {
       if (p.dueOn && new Date(p.dueOn) > now) { pending++; continue; }
       try {
         predictionLedger.settle(p.id, verdict.hit, {
+          // [v3.13] 指标+口径随证据落账：同义务去重（dedupeSameObligation）
+          // 的证据 key 靠这两个维度区分同财季的不同指标指引——不落账，
+          // 7 条新结算会被并成 1 个义务，Brier 样本失真。
+          metric: meta.metric,
+          gaapBasis: meta.gaapBasis || '',
           // [v3.5.1] 证据来源取**提供该实际值的备案**（ticker + actualPeriod
           // 匹配），不是该 ticker 的首个条目——旧代码用 find(ticker) 拿到的
           // 恒为最新备案链接，同一公司不同财季的结算证据完全相同，配合缺
@@ -2577,14 +2671,15 @@ function formatReport(report) {
       const noMeta = gs.skipped.filter(s => /滑出|无结算元数据/.test(s.reason)).length;
       const other = gs.skipped.length - amb - noMeta;
       lines.push('');
-      lines.push(`跳过 ${gs.skipped.length} 条：歧义(GAAP/非GAAP多值) ${amb} | 无元数据且指引滑出采集窗口 ${noMeta}`
+      lines.push(`跳过 ${gs.skipped.length} 条：歧义(GAAP/非GAAP多值或口径未限定) ${amb} | 无元数据且指引滑出采集窗口 ${noMeta}`
         + ` | 其它(无容差/单位不兼容) ${other}`);
     }
     lines.push('');
     lines.push('> 结算判据＝实际值是否落在指引容差带内 [guided ± tolerance]（区间指引落在区间内）。'
       + '「未中(带外)」含两种方向：beat（实际超带上沿，常见于保守指引）与 below（低于带下沿）——'
       + '逐条 summary 已记方向，不得把 beat 读成「公司没做到」。只结算有容差/区间且实际值唯一的指引；'
-      + 'GAAP/非 GAAP 分歧（多值）判歧义跳过，不设法规避。');
+      + 'GAAP/非 GAAP 口径**一致**才配对（v3.13：MRVL 毛利率/EPS 分口径各判各的），口径分歧或未限定'
+      + '（如 MU 双列指引表抽出的句子不带口径词）判歧义跳过，不设法规避。');
   }
   lines.push('');
 

@@ -131,12 +131,22 @@ function settleGuidance(g, actualValue) {
  * 指标名归一：指引侧与 actuals 侧从不同句子抽指标，单复数/净总额写法不一
  * （"gross margins" vs "gross margin"、"net revenue" vs "revenue"、"net sales"）。
  * 结算配对前两边都过一遍本函数，避免同指标因写法差异配不上。
- * 只归一本引擎实际会结算的两个指标族；其余原样返回（配不上就不结算，不硬凑）。
+ * [v3.13] 指标族从两个扩到六个：营收/毛利率（v3.5）+ 每股收益/营业利润/
+ * 营业支出/税率（v3.13 live 实证——18 条到期未结算指引里 MRVL EPS、
+ * AMZN 营业利润有容差/区间可结算，opex/税率或无容差或无实际值来源，
+ * 见 SKILL.md「仍在库外」）。每股写法（diluted net income per share /
+ * diluted earnings per share / EPS）都归 diluted eps——旧实现只归两名，
+ * MRVL EPS 指引的指标名是 income，与实际值侧配不上。
+ * 其余原样返回（配不上就不结算，不硬凑）。
  */
 function normalizeMetric(m) {
   const s = String(m || '').toLowerCase().trim();
   if (/gross\s+margin/.test(s)) return 'gross margin';
   if (/(net\s+|total\s+)?(revenue|revenues|sales)/.test(s)) return 'revenue';
+  if (/diluted\s+(?:net\s+)?income\s+per\s+share|diluted\s+earnings\s+per\s+share|earnings\s+per\s+(?:diluted\s+)?share|\beps\b/.test(s)) return 'diluted eps';
+  if (/operating\s+income/.test(s)) return 'operating income';
+  if (/operating\s+expenses/.test(s)) return 'operating expenses';
+  if (/tax\s+rates?/.test(s)) return 'tax rate';
   return s;
 }
 
