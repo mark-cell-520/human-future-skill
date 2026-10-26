@@ -344,7 +344,7 @@ class ProjectionEngine {
     }
     const report = {
       meta: {
-        version: '3.15.0',
+        version: '3.16.0',
         heartflowVersion: this.analysis.engineVersion,
         timestamp: this.timestamp,
         modulesLoaded: this.analysis.modulesLoaded,
@@ -2636,7 +2636,12 @@ function formatReport(report) {
       // [v3.4] 财报指引：厂商一手备案里的自报预测（SEC EDGAR）
       'earnings-guidance': '财报指引',
     };
-    for (const r of fd.results.slice(0, 12)) {
+    // [v3.16] 渲染上限 12→30 并加截断披露（v3.10/v3.11/v3.12 同型纪律：
+    // v3.14 把 claim 额度修到 70 后 live 实测 61 条 EDGAR 指引全进辨别/
+    // 登记/结算，但本段渲染上限停在 12——50 条在 md 里静默切尾，
+    // 「辨别了但看不见」。上限与 edgarClaimsTruncation 披露配套：
+    // 超出时明确写「另有 N 条未显示」，不静默切尾。
+    for (const r of fd.results.slice(0, 30)) {
       lines.push(`[${VERDICT_CN[r.verdict] || r.verdict}] ${r.text.slice(0, 110)}`);
       lines.push(`  来源: ${r.source} | 类别: ${r.category} | 结算点: ${r.dueOn || '(无)'}`
         + ` | 可结算: ${r.settleable ? '是' : '否'}`);
@@ -2692,6 +2697,10 @@ function formatReport(report) {
         lines.push(`  文本性质: ${r.textNature.markers.map(m => `${m.label}——${m.guidance}`).join('；')}`);
       }
       if (r.calibrationWarning) lines.push(`  ⚠ ${r.calibrationWarning.message}`);
+    }
+    // [v3.16] 截断披露：辨别条数超渲染上限时如实报数（全文在报告 JSON）
+    if (fd.results.length > 30) {
+      lines.push(`…另有 ${fd.results.length - 30} 条未显示（详见报告 JSON 的 projection.forecastDiscrimination.results）`);
     }
     lines.push('');
     lines.push(`> ${fd.note}`);

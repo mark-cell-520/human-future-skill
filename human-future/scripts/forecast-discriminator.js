@@ -439,6 +439,14 @@ function discriminate(claim, opts = {}) {
     metric: guidanceMeta ? guidanceMeta.metric : (text.match(new RegExp(GUIDANCE_METRIC, 'i')) || [null])[0],
     value: guidanceMeta ? guidanceMeta.value : (text.match(/\$\s?[\d.,]+\s*(?:billion|million)?|[\d.]+\s*%/) || [null])[0],
     tolerance: guidanceMeta ? guidanceMeta.tolerance : (text.match(/(?:\+\/-|±|plus or minus)\s*(\$?\s?[\d.,]+\s*(?:%|billion|million|basis points)?)/i) || [null, null])[1],
+    // [v3.16] isRange 透传（同型断链修复）：旧代码从 v3.4 起漏了这个字段，
+    // 登记时 isRange: !!r.guidance.isRange 恒为 false——区间指引的持久化
+    // settlement 把区间值当点值存，备案滑出采集窗口后（句子索引路径失效、
+    // 回落持久化分支）guidanceBand 判「无容差/区间的点值指引」跳过，区间
+    // 指引到期永远无法结算（META/NVDA/AMZN/MRVL/GOOGL 存量区间条目全部
+    // 中招；live 结算走句子索引所以没暴露——与 v3.5.1 ticker 恒 null 同型：
+    // 传了不等于落账，落账了不等于每条路径都读得到）。
+    isRange: guidanceMeta ? !!guidanceMeta.isRange : false,
     ticker: claim.ticker || null,
     fiscalYear: guidanceMeta ? (guidanceMeta.fiscalYear ?? null) : null,
     quarter: guidanceMeta ? (guidanceMeta.quarter ?? null) : null,

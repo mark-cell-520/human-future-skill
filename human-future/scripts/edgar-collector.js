@@ -164,7 +164,11 @@ const MULTI_PERIOD_RE = /(?:remaining|following|next)\s+quarters|quarters\s+of\s
 // 被右侧邻近的 "first quarter of fiscal 2027"（outlook 段头）抢走，
 // 错记成 FY27Q1 指引（live 实证：台账 dueOn 2026-06-14 而非 2027-03，
 // v3.4 起三个版本的隐藏错配）。
-const ANNUAL_PERIOD_PATTERN = /(?:full\s+)?(?:fiscal\s+year|FY|year)\s*(?:fiscal\s+)?(20\d{2})\b[^.;•]{0,40}?(?:guidance|outlook|expect)/i;
+// [v3.16] lookbehind 挡季度前缀（同轮维护）："Guidance for Q2 FY 2027 Financial Outlook."
+// 形态（锚词在年份后同句）会被本模式命中且比季度模式更靠右、rightmost-wins 抢成
+// 全年；live 实证 ORCL 真文标题句后接句点不命中（期间归属正确），冒号形态
+//（"outlook for Q2 FY 2027 is as follows:"，: 不在 [^.;•] 排除类）会误判。
+const ANNUAL_PERIOD_PATTERN = /(?<![Qq][1-4]\s*)(?:full\s+)?(?:fiscal\s+year|FY|year)\s*(?:fiscal\s+)?(20\d{2})\b[^.;•]{0,40}?(?:guidance|outlook|expect)/i;
 // [v3.14] META 评论式全年指引形态：「We now expect full year 2026 total
 // expenses to be in the range of $175-179 billion」——锚词 expect 在
 // 年份**之前**，ANNUAL_PERIOD_PATTERN 要求锚词在年份之后（NVDA「For
@@ -181,7 +185,29 @@ const ANNUAL_BARE_YEAR_RE = new RegExp(
 // [v3.14] 全年形态集合：readPeriod 按集合成员判 annual（旧代码用
 // `p === ANNUAL_PERIOD_PATTERN` 身份比较，加新形态必须同步，否则
 // 全年指引被当季度解析、quarter=null 配不上实际值 key）。
-const ANNUAL_PERIOD_SET = new Set([ANNUAL_PERIOD_PATTERN, ANNUAL_EXPECT_RE, ANNUAL_BARE_YEAR_RE]);
+// [v3.16] 年份在名词前的全年形态（GOOGL FY2026 capex live 实证，2026-10-27
+// 从 SEC EDGAR 实抓 0001652044-26-000012）：「To meet customer demand ...,
+// our 2026 CapEx investments are anticipated to be in the range of $175
+// to $185 billion.」——期间是裸年份且在名词**之前**，动词 are anticipated
+// 在名词之后。三条旧年度模式全部不命中：ANNUAL_PERIOD_PATTERN 要年份词
+// （fiscal year/FY/year）在年份前、ANNUAL_EXPECT_RE 与 ANNUAL_BARE_YEAR_RE
+// 要动词在年份前。旧代码全文兜底匹配到文首的 "q42025"（文档名），全年指引
+// 被错记成 FY2025Q4、dueOn 2026-02-14 已过期——v3.14/v3.15 两轮白纸黑字的
+// 残废条目已知边界（「两个形态 + 残废条目重登记是下轮候选」即本条）。
+// 精度纪律（季度指引不得被抢成全年，逐条有测试钉住）：
+// ① 年份与名词之间只容忍空白——"third quarter of 2026, revenue"（逗号
+//    间隔）与 "in 2026, capital expenditures" 不命中，季度句天然安全；
+// ② lookbehind 挡季度前缀——"Q3 2026 revenue is expected" 与 "third
+//    quarter 2026 revenue is expected" 的年份前有季度词（含 "Q3 FY2026"
+//    的 FY 形态），整句不命中；否则新形态比季度模式更靠右，rightmost-wins
+//    会把季度指引抢成全年（与 ANNUAL_PERIOD_PATTERN 对 "Q3 FY2026" 的
+//    同款风险，见 SKILL.md 已知边界）；
+// ③ 动词只认期望时态（is/are + anticipated/expected/projected/forecast/
+//    guided + to be）——实际值句（was/were 过去时）不是指引；
+// ④ 捕获组只有 1 个（年份），与其余年度形态同形，readPeriod 按集合判全年。
+const ANNUAL_YEAR_NOUN_RE = new RegExp(
+  `(?<![Qq][1-4]\\s*(?:FY|fiscal\\s+year|fiscal)?\\s*)(?<!(?:first|second|third|fourth|1st|2nd|3rd|4th)[\\s-]quarter\\s*(?:of\\s+)?(?:fiscal\\s+)?)\\b(20\\d{2})\\s+(?:${METRIC_NOUNS})\\b[^.;•]{0,80}?\\b(?:is|are)\\s+(?:anticipated|expected|projected|forecast|guided)\\s+to\\s+be\\b`, 'i');
+const ANNUAL_PERIOD_SET = new Set([ANNUAL_PERIOD_PATTERN, ANNUAL_EXPECT_RE, ANNUAL_BARE_YEAR_RE, ANNUAL_YEAR_NOUN_RE]);
 const PERIOD_PATTERNS = [
   /(?:outlook|guidance)\s+for\s+(?:the\s+)?(first|second|third|fourth|1st|2nd|3rd|4th)\s+quarter\s+of\s+fiscal\s+(20\d{2})/i,
   /(first|second|third|fourth|1st|2nd|3rd|4th)\s+quarter\s+(?:of\s+)?(?:fiscal\s+)?(20\d{2})\b[^.;•]{0,30}?(?:outlook|guidance)/i,
@@ -196,6 +222,9 @@ const PERIOD_PATTERNS = [
   // （见下方 fallback 分支），新形态优先级低于既有形态，不影响旧行为。
   ANNUAL_EXPECT_RE,
   ANNUAL_BARE_YEAR_RE,
+  // [v3.16] 年份在名词前的全年形态（GOOGL capex live 实证）追加在末尾：
+  // 全文兜底匹配按数组顺序取第一个，新形态优先级低于既有形态。
+  ANNUAL_YEAR_NOUN_RE,
 ];
 const QWORD = { first: 1, second: 2, third: 3, fourth: 4, '1st': 1, '2nd': 2, '3rd': 3, '4th': 4 };
 
@@ -234,6 +263,10 @@ function settleMetricOf(sentence, metricNoun) {
   if (/(net\s+|total\s+)?(revenue|revenues|sales)/.test(m)) return 'revenue';
   if (/operating\s+income/.test(m)) return 'operating income';
   if (/operating\s+expenses/.test(m)) return 'operating expenses';
+  // [v3.16] capex 族归一（GOOGL live 实证：指引句指标名词是 "CapEx"、
+  // 全年实际值族是 "capital expenditures"，两边不归一时期间/区间修好了
+  // 也永远配不上——与 v3.13 EPS 族归一同型，残废条目修复的下一环）
+  if (/capital\s+expenditures?|\bcapex\b/.test(m)) return 'capital expenditures';
   if (/tax\s+rates?/.test(m)) return 'tax rate';
   return m;
 }
@@ -559,7 +592,11 @@ function extractGuidance(text) {
         || sentence.match(/([\d.]+)\s*%\s+to\s+([\d.]+)\s*%/i)
         // [v3.14] 连字符美元区间（META live）：「in the range of $73-76
         // billion」两端同单位（billion 只写一次，不吃进来单位就丢）
-        || sentence.match(/in\s+the\s+range\s+of\s+\$?\s?([\d.,]+)\s*[-–]\s*\$?\s?([\d.,]+)\s*(billion|million)?/i)
+        // [v3.16] 分隔符泛化为连字符或 to（GOOGL live 实证：「in the
+        // range of $175 to $185 billion」——X-to-Y 形态旧正则整个不命中，
+        // value 退化成点值 $175、无容差不可结算）；首侧补可选单位
+        //（"$175 million to $1 billion" 两端不同单位时各折各的）
+        || sentence.match(/in\s+the\s+range\s+of\s+\$?\s?([\d.,]+)\s*(?:million|billion)?\s*(?:[-–]|\bto\b)\s*\$?\s?([\d.,]+)\s*(billion|million)/i)
         // [v3.14] 单百分号区间（META live）：「between 15-17%」（旧 % 区间
         // 正则要求两端都有 %，单 % 形态整个不命中）
         || sentence.match(/between\s+([\d.]+)\s*[-–]\s*([\d.]+)\s*%/i);
@@ -1005,7 +1042,7 @@ module.exports = {
   ACTUAL_MARGIN_BULLET_RE, ACTUAL_EPS_RE, ACTUAL_OPINC_RE, FULLYEAR_GUARD_RE,
   // [v3.14] META CFO 评论式指引形态 + 多季度守卫 + bullet 营收实际值（测试）
   GUIDANCE_EXPECTS_GAP_RE, MULTI_PERIOD_RE, ACTUAL_REVENUE_BULLET_RE,
-  ANNUAL_EXPECT_RE, ANNUAL_BARE_YEAR_RE, ANNUAL_PERIOD_SET,
+  ANNUAL_EXPECT_RE, ANNUAL_BARE_YEAR_RE, ANNUAL_PERIOD_SET, ANNUAL_YEAR_NOUN_RE,
   ANNUAL_PERIOD_PATTERN, GUIDANCE_EXPECTS_RE,
 };
 

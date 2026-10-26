@@ -64,6 +64,10 @@ function parseMetricValue(str) {
  * 支持 "between $197.0 billion and $202.0 billion" / "52.1% to 53.1%" /
  * [v3.14] "in the range of $73-76 billion"（连字符区间，两端同单位）/
  * "between 15-17%"（单百分号区间）——META CFO 评论式指引 live 实证。
+ * [v3.16] 分隔符泛化为连字符或 to（GOOGL FY2026 capex live 实证："in the
+ * range of $175 to $185 billion"——X-to-Y 形态旧正则整个不命中，value 退化
+ * 成点值 $175、无容差不可结算）；首侧补可选单位（"$175 million to $1
+ * billion" 两端不同单位各折各的，缺省按尾侧单位）。
  */
 function parseRange(str) {
   const s = String(str || '');
@@ -82,11 +86,15 @@ function parseRange(str) {
   }
   // [v3.14] 连字符美元区间：「in the range of $73-76 billion」两端同单位
   // （billion 只写一次——不吃进来两端都按 billion 折，$135-145 就是 1350 亿）
-  const mDashUsd = s.match(/in\s+the\s+range\s+of\s+\$\s?([\d.,]+)\s*[-–]\s*\$?\s?([\d.,]+)\s*(billion|million)/i);
+  // [v3.16] 分隔符泛化（连字符或 to）+ 首侧可选单位：与 edgar-collector
+  // rangeM 第四形态同构（抽取侧存 m[0]、本函数解析，两边正则必须一致）
+  const mDashUsd = s.match(/in\s+the\s+range\s+of\s+\$?\s?([\d.,]+)\s*(million|billion)?\s*(?:[-–]|\bto\b)\s*\$?\s?([\d.,]+)\s*(billion|million)/i);
   if (mDashUsd) {
-    const sc = SCALE[mDashUsd[3].toLowerCase()];
-    return { lo: Number(mDashUsd[1].replace(/,/g, '')) * sc,
-      hi: Number(mDashUsd[2].replace(/,/g, '')) * sc, unit: 'usd' };
+    // 首侧无单位时按尾侧单位折（"$175 to $185 billion" 两端都按 billion）
+    const scLo = SCALE[(mDashUsd[2] || mDashUsd[4]).toLowerCase()];
+    const scHi = SCALE[mDashUsd[4].toLowerCase()];
+    return { lo: Number(mDashUsd[1].replace(/,/g, '')) * scLo,
+      hi: Number(mDashUsd[3].replace(/,/g, '')) * scHi, unit: 'usd' };
   }
   const mPct = s.match(/([\d.]+)\s*%\s*(?:to|and|-|–)\s*([\d.]+)\s*%/i);
   if (mPct) return { lo: Number(mPct[1]), hi: Number(mPct[2]), unit: 'pct' };
@@ -169,6 +177,10 @@ function normalizeMetric(m) {
   if (/diluted\s+(?:net\s+)?income\s+per\s+share|diluted\s+earnings\s+per\s+share|earnings\s+per\s+(?:diluted\s+)?share|\beps\b/.test(s)) return 'diluted eps';
   if (/operating\s+income/.test(s)) return 'operating income';
   if (/operating\s+expenses/.test(s)) return 'operating expenses';
+  // [v3.16] capex 族归一（GOOGL live 实证：指引句指标名词是 "CapEx"、
+  // 全年实际值族是 "capital expenditures"——两边不归一时期间/区间修好了
+  // 也永远配不上，与 v3.13 EPS 族归一同型）
+  if (/capital\s+expenditures?|\bcapex\b/.test(s)) return 'capital expenditures';
   if (/total\s+(?:costs\s+and\s+)?expenses/.test(s)) return 'total expenses';
   if (/tax\s+rates?/.test(s)) return 'tax rate';
   return s;
@@ -195,6 +207,11 @@ if (require.main === module) {
     ['between 16.0% and 18.0%', null, true, '17.1%', true, 'in-band'],
     // [v3.14] 单位不混：美元区间 vs 百分点实际值不可结算
     ['in the range of $58-61 billion', null, true, '16.2%', null, null],
+    // [v3.16] X-to-Y 美元区间（GOOGL FY2026 capex live 实证）
+    ['in the range of $175 to $185 billion', null, true, '$180 billion', true, 'in-band'],
+    ['in the range of $175 to $185 billion', null, true, '$190 billion', false, 'beat'],
+    // [v3.16] 两端不同单位（首侧 million 尾侧 billion，各折各的）
+    ['in the range of $175 million to $1 billion', null, true, '$500 million', true, 'in-band'],
   ];
   let pass = 0, fail = 0;
   for (const [gv, tol, isRange, av, expHit, expDir] of cases) {

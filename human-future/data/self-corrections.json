@@ -366,6 +366,15 @@
       "lesson": "同函数里给 A/B/C 路径加守卫时，要逐条路径数一遍调用点——「守卫写在这个函数里」不等于「每条抽值路径都过了哨」。corr-2026-030 修的是 matchAll 内部漏期间（窗口截到句边界），本次是整条营收路径从落地起（v3.5）没接守卫；新增抽值形态时（v3.5.1/v3.13/v3.14 各加过两种）守卫补丁必须同步跟上，否则沉默漏一个版本",
       "severity": "medium",
       "recordedAt": "2026-10-26T18:06:58.897Z"
+    },
+    {
+      "id": "corr-2026-035",
+      "reportVersion": "v3.16",
+      "wrongClaim": "（沿用假设）GOOGL FY2026 capex 残废条目修好抽取侧（期间形态+区间语法）就算修完——与 v3.5.1「ticker/fiscalYear/quarter 恒 null」、v3.13「metric/gaapBasis 被 settle() 白名单丢弃」同型：每轮都只补当期发现的那一两个透传字段，补完不再全链对账",
+      "rightClaim": "残废条目修复暴露结算链四环 + 一个同型断链：① 期间形态（年份在名词前）不修，全年指引错记 FY2025Q4、dueOn 过期；② 区间语法（X-to-Y）不修，value 退化成点值 $175 无容差不可结算；③ 指标族不归一（指引名词 capex vs 全年实际值族 capital expenditures），期间/区间修好了也永远配不上；④ guidanceStruct 从 v3.4 起不漏 isRange——登记时 isRange: !!r.guidance.isRange 恒为 false，全部区间指引（META 费用/capex×6、NVDA 全年税率×3、AMZN、MRVL、GOOGL）的持久化 settlement 把区间值当点值存；句子索引路径（当期窗口）不受影响所以 live 结算看起来正常，备案一滑出采集窗口就回落持久化分支、guidanceBand 判「无容差/区间的点值指引」跳过——区间指引到期永远无法结算（GOOGL FY2026 capex due 2027-02-14，Q4-2025 备案届时已滑出窗口，正中此路）。v3.16 四环同修 + isRange 补透传",
+      "evidence": "2026-10-27 live 实证：全池 61 条指引逐条 diff，唯一变化即残废条目修正（其余 60 条零漂移）；新登记条目 settlement.isRange=true（修复前中间轮次登记的同 id 条目 isRange=false，已删除重登——同轮半成品非历史结算记录）；受控台账测试三条路径全通（句反推/持久化归一/到期门）。测试 11 项（live 逐字/精度回归四形态/零漂移/parseRange/归一/结算链端到端/已知边界/注入/透传/渲染披露/版本号）；8 轮反向验证全部精确失败",
+      "lesson": "残废条目的「修好」判据是到期能结算，不是抽取层能抽出——期间/区间/指标族/持久化透传四环缺一环都不可结；每给辨别结果加一个指导出字段（ticker/fiscalYear/quarter→metric/gaapBasis→isRange），就要问一次「持久化 settlement 带不带、备案滑出窗口后还结不结」——透传字段逐个对账，不能只补当期报错的那一个",
+      "severity": "high"
     }
   ]
 }

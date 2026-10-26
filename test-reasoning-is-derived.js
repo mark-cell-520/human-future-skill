@@ -4231,11 +4231,11 @@ c34('cron 注入脚本渲染财报指引（VERDICT_CN/汇总/结构行）', (() 
 
 // ── 组 4：版本号（corr-2026-014 同型：banner 腐烂四个补丁轮）─────
 // [v3.6] 版本推进到 3.6.0（新辨别维度：成本/价格信号），本断言跟着当前版本走。
-c34('版本号一致性：banner 与 VERSION 对齐（3.15.0）', (() => {
+c34('版本号一致性：banner 与 VERSION 对齐（3.16.0）', (() => {
   const fs2 = require('fs');
   const version = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return version === '3.15.0' && rp.includes('文明推演引擎 v3.15.0');
+  return version === '3.16.0' && rp.includes('文明推演引擎 v3.16.0');
 })(), 'run-pipeline banner 必须与 VERSION 一致（v3.1 修过 banner/meta 同型后又腐烂）');
 
 // ── v3.4 汇总 ──
@@ -4429,15 +4429,15 @@ c35('cron 注入脚本渲染财报指引结算段', (() => {
 
 // ── 组 6：版本号一致性（corr-2026-014 同型，四处对齐）──────────
 // [v3.6] 推进到 3.6.0（新辨别维度），断言跟当前版本走。
-c35('版本号一致性：VERSION/package.json/projection meta/banner 对齐 3.15.0', (() => {
+c35('版本号一致性：VERSION/package.json/projection meta/banner 对齐 3.16.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.15.0'
-    && /3\.15\.0/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.15.0');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.15.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.16.0'
+    && /3\.16\.0/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.16.0');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.16.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.5 汇总 ──
 (async () => {
@@ -4664,15 +4664,15 @@ c351('结算证据来源是提供实际值的备案（actualPeriod 匹配）', (
 
 // ── 组 4：版本号一致性（corr-2026-014 同型）────────────────────
 // [v3.6] 推进到 3.6.0（新辨别维度：成本/价格信号）。
-c351('版本号一致性：VERSION/package.json/banner 对齐 3.15.0', (() => {
+c351('版本号一致性：VERSION/package.json/banner 对齐 3.16.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.15.0'
-    && /3\.15\.0/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.15.0');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.15.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.16.0'
+    && /3\.16\.0/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.16.0');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.16.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.5.1 汇总 ──
 (async () => {
@@ -4867,15 +4867,15 @@ c36('精度门未破：非主张文本仍被挡在辨别外', (() => {
 })(), 'Fed 公告与播客不得因 cost-signal 新模式进入辨别');
 
 // ── 组 5：版本号一致性（corr-2026-014 同型）────────────────────
-c36('版本号一致性：VERSION/package.json/banner 对齐 3.15.0', (() => {
+c36('版本号一致性：VERSION/package.json/banner 对齐 3.16.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.15.0'
-    && /3\.15\.0/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.15.0');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.15.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.16.0'
+    && /3\.16\.0/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.16.0');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.16.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.6 汇总 ──
 (async () => {
@@ -5111,15 +5111,15 @@ c37('精度门未破：非主张文本仍被挡在辨别外', (() => {
 })(), 'Fed 公告与播客不得因 expert-judgment 新模式进入辨别');
 
 // ── 组 5：版本号一致性（corr-2026-014 同型）────────────────────
-c37('版本号一致性：VERSION/package.json/banner 对齐 3.15.0', (() => {
+c37('版本号一致性：VERSION/package.json/banner 对齐 3.16.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.15.0'
-    && /3\.15\.0/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.15.0');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.15.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.16.0'
+    && /3\.16\.0/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.16.0');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.16.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.7 汇总 ──
 (async () => {
@@ -5410,15 +5410,15 @@ c38('精度门未破：非主张文本仍被挡在辨别外', (() => {
 })(), 'Fed 公告/播客/官员言论不得因 regulatory-action 新模式进入辨别');
 
 // ── 组 5：版本号一致性（corr-2026-014 同型）────────────────────
-c38('版本号一致性：VERSION/package.json/banner 对齐 3.15.0', (() => {
+c38('版本号一致性：VERSION/package.json/banner 对齐 3.16.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.15.0'
-    && /3\.15\.0/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.15.0');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.15.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.16.0'
+    && /3\.16\.0/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.16.0');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.16.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.8 汇总 ──
 (async () => {
@@ -5639,18 +5639,18 @@ c39('精度门未破：非主张文本与无幅度价格谈论仍被挡在辨别
 })(), 'Fed 公告/播客/无幅度降价谈论/TCO 效率句/官员言论不得因 price-cut 新模式进入辨别');
 
 // ── 组 5：版本号一致性（corr-2026-014 同型）────────────────────
-c39('版本号一致性：五处对齐 3.15.0', (() => {
+c39('版本号一致性：五处对齐 3.16.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs2.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.15.0'
-    && pkg.version === '3.15.0'
-    && rp.includes('文明推演引擎 v3.15.0')      // banner
-    && /version: '3\.15\.0'/.test(pf)          // projection meta
-    && /version: '3\.15\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.15.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.16.0'
+    && pkg.version === '3.16.0'
+    && rp.includes('文明推演引擎 v3.16.0')      // banner
+    && /version: '3\.16\.0'/.test(pf)          // projection meta
+    && /version: '3\.16\.0'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.16.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.9 汇总 ──
 (async () => {
@@ -6012,18 +6012,18 @@ c310('精度门未破：扩桶后非主张文本仍被挡在辨别外', (() => {
 })(), 'Fed 公告/播客/无数量部署谈话/合作公告/免责声明/泛指交易假设句/官员言论不得因扩池与新模式进入辨别');
 
 // ── 组 7：版本号一致性（corr-2026-014 同型）────────────────────
-c310('版本号一致性：五处对齐 3.15.0', (() => {
+c310('版本号一致性：五处对齐 3.16.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs2.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.15.0'
-    && pkg.version === '3.15.0'
-    && rp.includes('文明推演引擎 v3.15.0')      // banner
-    && /version: '3\.15\.0'/.test(pf)          // projection meta
-    && /version: '3\.15\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.15.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.16.0'
+    && pkg.version === '3.16.0'
+    && rp.includes('文明推演引擎 v3.16.0')      // banner
+    && /version: '3\.16\.0'/.test(pf)          // projection meta
+    && /version: '3\.16\.0'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.16.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.10 汇总 ──
 (async () => {
@@ -6355,18 +6355,18 @@ c3111('精度门未破：非主张文本不因新形态进入辨别', (() => {
 })(), 'Fed 公告/播客/订阅总量/速率上限/无数量部署谈话/合作公告不得因 usage-metric 进辨别');
 
 // ── 组 7：版本号一致性（corr-2026-014 同型）────────────────────
-c3111('版本号一致性：五处对齐 3.15.0', (() => {
+c3111('版本号一致性：五处对齐 3.16.0', (() => {
   const fs311 = require('fs');
   const VERSION = fs311.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs311.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs311.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs311.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.15.0'
-    && pkg.version === '3.15.0'
-    && rp.includes('文明推演引擎 v3.15.0')      // banner
-    && /version: '3\.15\.0'/.test(pf)          // projection meta
-    && /version: '3\.15\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.15.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.16.0'
+    && pkg.version === '3.16.0'
+    && rp.includes('文明推演引擎 v3.16.0')      // banner
+    && /version: '3\.16\.0'/.test(pf)          // projection meta
+    && /version: '3\.16\.0'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.16.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.11 汇总 ──
 (async () => {
@@ -6660,18 +6660,18 @@ c312('精度门未破：营收/工程 scaling/政府资助/无数量规模级句
 })(), '营收句/工程 scaling/政府资助/无数量规模级句/Fed 公告/播客不得因 compute-infra 进辨别');
 
 // ── 组 7：版本号一致性（corr-2026-014 同型）────────────────────
-c312('版本号一致性：五处对齐 3.15.0', (() => {
+c312('版本号一致性：五处对齐 3.16.0', (() => {
   const fs312 = require('fs');
   const VERSION = fs312.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs312.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs312.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs312.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.15.0'
-    && pkg.version === '3.15.0'
-    && rp.includes('文明推演引擎 v3.15.0')      // banner
-    && /version: '3\.15\.0'/.test(pf)          // projection meta
-    && /version: '3\.15\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.15.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.16.0'
+    && pkg.version === '3.16.0'
+    && rp.includes('文明推演引擎 v3.16.0')      // banner
+    && /version: '3\.16\.0'/.test(pf)          // projection meta
+    && /version: '3\.16\.0'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.16.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.12 汇总 ──
 (async () => {
@@ -6989,19 +6989,19 @@ c313('cron 注入源级：口径一致才配对措辞进注入脚本', (() => {
     && /guidanceSettlement/.test(sh);   // v3.5 注入不断链
 })(), 'hf-cron-fetch.sh 必须含口径配对限定与歧义新措辞——引擎产出了但注入脚本不读＝agent 看不到（同型断链纪律）');
 
-// 13. 版本号一致性（五处对齐 3.15.0）
-c313('版本号一致性：五处对齐 3.15.0', (() => {
+// 13. 版本号一致性（五处对齐 3.16.0）
+c313('版本号一致性：五处对齐 3.16.0', (() => {
   const fs313 = require('fs');
   const VERSION = fs313.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs313.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs313.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs313.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.15.0'
-    && pkg.version === '3.15.0'
-    && rp.includes('文明推演引擎 v3.15.0')      // banner
-    && /version: '3\.15\.0'/.test(pf)          // projection meta
-    && /version: '3\.15\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.15.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.16.0'
+    && pkg.version === '3.16.0'
+    && rp.includes('文明推演引擎 v3.16.0')      // banner
+    && /version: '3\.16\.0'/.test(pf)          // projection meta
+    && /version: '3\.16\.0'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.16.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.13 汇总 ──
 (async () => {
@@ -7261,19 +7261,19 @@ c314('精度回归：无区间标记期望句不进库 + 旧形态夹具逐一�
     && nvOld.find(g => g.metric === 'revenue').quarter === 1;
 })(), 'form D 间隔词≥1 与 form B 零重叠（点值区间句不重复抽取）；无区间标记的期望句不是可证伪主张；NVDA 02-25 旧夹具期间从 FY27Q1 纠正为 FY27 全年');
 
-// 8. 版本号一致性（五处对齐 3.15.0）
-c314('版本号一致性：五处对齐 3.15.0', (() => {
+// 8. 版本号一致性（五处对齐 3.16.0）
+c314('版本号一致性：五处对齐 3.16.0', (() => {
   const fs314 = require('fs');
   const VERSION = fs314.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs314.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs314.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs314.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.15.0'
-    && pkg.version === '3.15.0'
-    && rp.includes('文明推演引擎 v3.15.0')      // banner
-    && /version: '3\.15\.0'/.test(pf)          // projection meta
-    && /version: '3\.15\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.15.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.16.0'
+    && pkg.version === '3.16.0'
+    && rp.includes('文明推演引擎 v3.16.0')      // banner
+    && /version: '3\.16\.0'/.test(pf)          // projection meta
+    && /version: '3\.16\.0'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.16.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.14 汇总 ──
 (async () => {
@@ -7536,19 +7536,19 @@ c315('cron 注入脚本渲染全年结算口径限定', (() => {
     && /双值句取全年值/.test(src);
 })(), '全年结算语义（annual key/双值句取全年值/年份必须等于标题财年）必须随结算段进注入脚本，否则 agent 看不到限定');
 
-// 10. 版本号一致性（五处对齐 3.15.0）
-c315('版本号一致性：五处对齐 3.15.0', (() => {
+// 10. 版本号一致性（五处对齐 3.16.0）
+c315('版本号一致性：五处对齐 3.16.0', (() => {
   const fs315 = require('fs');
   const VERSION = fs315.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs315.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs315.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs315.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.15.0'
-    && pkg.version === '3.15.0'
-    && rp.includes('文明推演引擎 v3.15.0')      // banner
-    && /version: '3\.15\.0'/.test(pf)          // projection meta
-    && /version: '3\.15\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.15.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.16.0'
+    && pkg.version === '3.16.0'
+    && rp.includes('文明推演引擎 v3.16.0')      // banner
+    && /version: '3\.16\.0'/.test(pf)          // projection meta
+    && /version: '3\.16\.0'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.16.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.15 汇总 ──
 (async () => {
@@ -7565,5 +7565,281 @@ c315('版本号一致性：五处对齐 3.15.0', (() => {
     process.exitCode = 1;
   } else {
     console.log('结论：全年实际值（Q4 备案「季度+全年」双值句取全年值 + 单值全年句）抽取进库，annual key（quarter=null）配对成立——全年指引从「永远 pending」变为到期可结算；营收路径全年守卫同轮修复（AMD live 误报）。');
+  }
+})();
+
+// ════════════════════════════════════════════════════════════════
+// v3.16 — GOOGL FY2026 capex 残废条目修复（已知边界推进：全年指引结算链第三环）
+//
+// 定位：v3.14/v3.15 两轮白纸黑字的残废条目——live 实证（SEC EDGAR
+// 0001652044-26-000012，2026-10-27 实抓原文）：「To meet customer
+// demand and capitalize on the growing opportunities we have ahead
+// of us, our 2026 CapEx investments are anticipated to be in the
+// range of $175 to $185 billion.」期间是裸年份且在名词**之前**，
+// 三条旧年度模式全部不命中（ANNUAL_PERIOD_PATTERN 要年份词在年份前、
+// ANNUAL_EXPECT_RE/ANNUAL_BARE_YEAR_RE 要动词在年份前），全文兜底匹配
+// 到文首的 "q42025"（文档名），全年指引错记成 FY2025Q4、dueOn
+// 2026-02-14 已过期；区间语法也不认 "in the range of $175 to $185
+// billion" 的 X-to-Y 形态，value 退化成点值 $175（无容差不可结算）。
+// 本轮：① 新年度期间形态 ANNUAL_YEAR_NOUN_RE（lookbehind 挡季度前缀）；
+// ② 区间语法泛化 X-to-Y（抽取侧 rangeM 与结算侧 parseRange 同构）；
+// ③ capex 指标族归一（settleMetricOf 与 normalizeMetric 两侧同修——
+// 不归一则期间/区间修好了也配不上全年实际值族 capital expenditures）；
+// ④ 同轮维护：ANNUAL_PERIOD_PATTERN 补季度前缀 lookbehind。
+// live 端到端：全池 61 条指引逐条 diff，唯一变化即残废条目修正
+// （其余 60 条零漂移，NVDA/AMD/MRVL/MU/AMZN/META/ORCL 期间与数值不变）。
+// ════════════════════════════════════════════════════════════════
+const v316 = [];
+function c316(name, ok, detail) { v316.push({ name, ok, detail }); }
+
+// ── 组 1：残废条目抽取修复（live 逐字）─────────────────────────
+// 1. GOOGL Q4-2025 live 逐字：FY2026 全年 + X-to-Y 区间 + 指标族归一
+c316('extractGuidance：GOOGL live 逐字 capex 句修正为 FY2026 全年 + X-to-Y 区间', (() => {
+  const { extractGuidance } = require('./human-future/scripts/edgar-collector.js');
+  // live 逐字（SEC EDGAR 0001652044-26-000012，googexhibit991q42025.htm）
+  const GOOGL_Q4 = [
+    'Alphabet Announces Fourth Quarter and Full Year 2025 Results',
+    'And Google Cloud ended 2025 at an annual run rate of over $70 billion, representing a wide breadth of customers, driven by demand for AI products.',
+    'We\'re seeing our AI investments and infrastructure drive revenue and growth across the board.',
+    'To meet customer demand and capitalize on the growing opportunities we have ahead of us, our 2026 CapEx investments are anticipated to be in the range of $175 to $185 billion.',
+    'Q4 2025 Financial Highlights The following table summarizes our consolidated financial results for the quarter and fiscal year ended December 31, 2024 and 2025.',
+  ].join(' ');
+  const g = extractGuidance(GOOGL_Q4).guidance;
+  return g.length === 1
+    && g[0].annual === true && g[0].quarter === null && g[0].fiscalYear === 2026
+    && g[0].periodLabel === 'FY2026 全年'
+    && g[0].isRange === true && g[0].value === 'in the range of $175 to $185 billion'
+    && g[0].settleMetric === 'capital expenditures'   // 指标族归一（旧形态是 capex）
+    && g[0].metric === 'capex';                        // 原始名词不变（登记 id 稳定维度）
+})(), '残废条目三处全修：期间 FY2025Q4→FY2026 全年、点值 $175→区间、指标名保持 capex 但 settleMetric 归一为 capital expenditures');
+
+// ── 组 2：精度回归（季度指引不得被抢成全年）────────────────────
+// 2. 季度句四形态 + 实际值句：新形态与 ANNUAL_PERIOD_PATTERN lookbehind 都不误判
+c316('精度回归：季度句四形态不被抢成全年 + 实际值句不进指引', (() => {
+  const { extractGuidance } = require('./human-future/scripts/edgar-collector.js');
+  const doc = (s) => 'Outlook section follows. ' + s + ' End of outlook.';
+  const q1 = extractGuidance(doc('Q3 2026 revenue is expected to be $78.0 billion, plus or minus 2%.')).guidance[0];
+  // 「Q3 FY2026」锚词同句在年份后——ANNUAL_PERIOD_PATTERN 补 lookbehind 前会被抢成全年
+  const q2 = extractGuidance(doc('Guidance for Q2 FY 2027 Financial Outlook. Revenue is expected to be $18.5 billion, plus or minus $500 million.')).guidance[0];
+  const q3 = extractGuidance(doc('For the third quarter of 2026, revenue is expected to be $78.0 billion.')).guidance[0];
+  const q4 = extractGuidance(doc('We expect third quarter 2026 revenue to be in the range of $73-76 billion.')).guidance[0];
+  // 实际值句（过去时/无期望动词）不是指引
+  const a1 = extractGuidance(doc('In 2025, revenue was $96.5 billion, an increase of 22% year-over-year.')).guidance;
+  const a2 = extractGuidance(doc('2025 revenue was $96.5 billion for the full year.')).guidance;
+  // 全年形态不被误伤（GOOGL 同句 fiscal 前缀）
+  const an = extractGuidance(doc('our fiscal 2026 CapEx investments are anticipated to be in the range of $175 to $185 billion')).guidance[0];
+  return q1 && q1.periodLabel === 'FY2026 Q3' && !q1.annual
+    && q2 && q2.periodLabel === 'FY2027 Q2' && !q2.annual
+    && q3 && q3.periodLabel === 'FY2026 Q3' && !q3.annual
+    && q4 && q4.periodLabel === 'FY2026 Q3' && !q4.annual
+    && a1.length === 0 && a2.length === 0
+    && an && an.annual === true && an.periodLabel === 'FY2026 全年';
+})(), '「Q3 2026 / Q3 FY2026 / third quarter of 2026 / third quarter 2026 + 指标 + is expected」全部保持季度；过去时实际值句不进指引；fiscal 前缀的全年形态不误伤');
+
+// 3. 既有年度/季度指引形态零漂移（META/NVDA/ORCL live 句式）
+c316('零漂移：META/NVDA/ORCL live 句式的期间与数值逐条不变', (() => {
+  const { extractGuidance } = require('./human-future/scripts/edgar-collector.js');
+  // META live（v3.14 逐字夹具句）：动词+裸年份+名词 → ANNUAL_BARE_YEAR_RE
+  const meta = extractGuidance('We anticipate 2026 capital expenditures, including principal payments on finance leases, to be in the range of $135-145 billion.').guidance[0];
+  // NVDA live（v3.4 逐字夹具句）：outlook 标题季度形态
+  const nvda = extractGuidance('NVIDIA\'s outlook for the first quarter of fiscal 2027 is as follows: • Revenue is expected to be $78.0 billion, plus or minus 2%.').guidance[0];
+  // ORCL live（2026-09-10 备案逐字）：Full FY 标题全年形态
+  const orcl = extractGuidance('Guidance for Full FY 2027 For fiscal year 2027, we now expect total revenue to be at least $90 billion, and non-GAAP EPS to be at $8.10.').guidance[0];
+  return meta && meta.annual === true && meta.periodLabel === 'FY2026 全年'
+    && meta.value === 'in the range of $135-145 billion'
+    && nvda && !nvda.annual && nvda.periodLabel === 'FY2027 Q1' && nvda.value === '$78.0 billion'
+    && orcl && orcl.annual === true && orcl.periodLabel === 'FY2027 全年';
+})(), '新形态追加在 PERIOD_PATTERNS 末尾（优先级最低）+ ANNUAL_PERIOD_PATTERN lookbehind 只在年份词前紧邻 Q[1-4] 时阻断——旧形态零漂移（全池 live diff 亦实证 60/61 条不变）');
+
+// ── 组 3：区间语法 + 指标族归一（纯函数）────────────────────────
+// 4. parseRange X-to-Y 美元区间（含两端不同单位）
+c316('parseRange：X-to-Y 美元区间（GOOGL live）+ 两端不同单位各折各的', (() => {
+  const { parseRange } = require('./human-future/scripts/earnings-settlement.js');
+  const r1 = parseRange('in the range of $175 to $185 billion');
+  const r2 = parseRange('in the range of $175 million to $1 billion');
+  const r3 = parseRange('in the range of $73-76 billion');       // 旧连字符形态不回归
+  return r1 && r1.lo === 175e9 && r1.hi === 185e9 && r1.unit === 'usd'
+    && r2 && r2.lo === 175e6 && r2.hi === 1e9 && r2.unit === 'usd'
+    && r3 && r3.lo === 73e9 && r3.hi === 76e9;
+})(), '"in the range of $175 to $185 billion"（GOOGL live）与连字符形态同构解析；首侧无单位按尾侧折；两端异单位（million/billion）各折各的');
+
+// 5. capex 指标族归一（settleMetricOf 抽取侧 + normalizeMetric 结算侧同修）
+c316('capex 指标族归一：settleMetricOf 与 normalizeMetric 两侧同修', (() => {
+  const { settleMetricOf } = require('./human-future/scripts/edgar-collector.js');
+  const { normalizeMetric } = require('./human-future/scripts/earnings-settlement.js');
+  return settleMetricOf('our 2026 CapEx investments are anticipated to be', 'CapEx') === 'capital expenditures'
+    && settleMetricOf('2026 capital expenditures are anticipated to be', 'capital expenditures') === 'capital expenditures'
+    && normalizeMetric('capex') === 'capital expenditures'
+    && normalizeMetric('capital expenditures') === 'capital expenditures'
+    && normalizeMetric('Capex') === 'capital expenditures'
+    // 其它族不串台
+    && normalizeMetric('total expenses') === 'total expenses'
+    && normalizeMetric('tax rate') === 'tax rate';
+})(), '指引名词 CapEx 与全年实际值族 capital expenditures 归一族才可配对（v3.13 EPS 族归一同型：同型修复必须穷举抽取侧与结算侧两个调用点）');
+
+// ── 组 4：settleEarningsGuidance 端到端（受控台账）──────────────
+// 6. 三条路径全通：新登记到期门 pending + 残废条目句反推结算 + 持久化 capex 归一结算
+c316('settleEarningsGuidance：GOOGL FY2026 capex 全年区间结算链端到端', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const fs = require('fs');
+  const LEDGER = path.join(__dirname, 'human-future/data/prediction-ledger.json');
+  const saved = fs.existsSync(LEDGER) ? fs.readFileSync(LEDGER, 'utf-8') : null;
+  try {
+    const SENT = 'us, our 2026 CapEx investments are anticipated to be in the range of $175 to $185 billion';
+    const mock = { version: '1.0.0', predictions: [
+      // ① 新登记形态：dueOn 2027-02-14 未到 → pending（到期门，不硬结）
+      { id: 't316-googl-new', claim: SENT, probability: 0.5, domain: 'earnings_guidance', category: 'earnings_guidance', dueOn: '2027-02-14', outcome: null,
+        settlement: { ticker: 'GOOGL', fiscalYear: 2026, quarter: null, annual: true, metric: 'capital expenditures', value: 'in the range of $175 to $185 billion', tolerance: null, isRange: true } },
+      // ② 残废条目（台账实录 id/claim/dueOn/残废 settlement）：句反推拿正确元数据 → 结算
+      { id: 'fc-sec-edgar-0001652044-26-000012-index-htm-2026-02-14-capex--175-', claim: SENT, probability: 0.4, domain: 'earnings_guidance', category: 'earnings_guidance', dueOn: '2026-02-14', outcome: null,
+        settlement: { ticker: 'GOOGL', fiscalYear: 2025, quarter: 4, annual: false, metric: 'capex', value: '$175 ', tolerance: null, isRange: false } },
+      // ③ 持久化路径：claim 与当期指引句匹配不上（备案滑出窗口的残废形态），
+      //    settlement.metric 是旧抽取的名词级 'capex' —— normalizeMetric 归一后才配对
+      { id: 't316-googl-persisted', claim: 'our 2026 CapEx investments are expected to be in the range of $175 to $185 billion for the full year', probability: 0.5, domain: 'earnings_guidance', category: 'earnings_guidance', dueOn: '2026-03-15', outcome: null,
+        settlement: { ticker: 'GOOGL', fiscalYear: 2026, quarter: null, annual: true, metric: 'capex', value: 'in the range of $175 to $185 billion', tolerance: null, isRange: true } },
+    ]};
+    fs.writeFileSync(LEDGER, JSON.stringify(mock, null, 2));
+    const eng = new ProjectionEngine({});
+    eng.signals = { totalItems: 2, domains: [], items: [
+      // GOOGL Q4-2025 备案（残废条目来源，仍在采集窗口）：修正后的指引句
+      { source: 'SEC EDGAR', ticker: 'GOOGL', link: 'https://sec.gov/googl-q4-2025', accession: '0001652044-26-000012',
+        actualPeriod: { quarter: 4, fiscalYear: 2025 }, actuals: [], annualActuals: [],
+        guidance: [
+          { sentence: SENT, metric: 'capex', settleMetric: 'capital expenditures', value: 'in the range of $175 to $185 billion', isRange: true, quarter: null, fiscalYear: 2026, annual: true, gaapBasis: '' },
+        ] },
+      // GOOGL Q4-2026 备案（全年实际值来源）：capital expenditures 全年值
+      { source: 'SEC EDGAR', ticker: 'GOOGL', link: 'https://sec.gov/googl-q4-2026', accession: '0001652044-27-000009',
+        actualPeriod: { quarter: 4, fiscalYear: 2026 }, actuals: [{ metric: 'revenue', value: '$113.8 billion', gaapBasis: '' }],
+        annualActuals: [{ metric: 'capital expenditures', value: '$180 billion', gaapBasis: '' }], guidance: [] },
+    ]};
+    const res = eng.settleEarningsGuidance();
+    const byId = Object.fromEntries(res.settled.map(s => [s.id, s]));
+    const after = JSON.parse(fs.readFileSync(LEDGER, 'utf-8'));
+    const canfei = after.predictions.find(p => p.id === 'fc-sec-edgar-0001652044-26-000012-index-htm-2026-02-14-capex--175-');
+    const persisted = after.predictions.find(p => p.id === 't316-googl-persisted');
+    const neu = after.predictions.find(p => p.id === 't316-googl-new');
+    return byId['fc-sec-edgar-0001652044-26-000012-index-htm-2026-02-14-capex--175-']
+      && byId['fc-sec-edgar-0001652044-26-000012-index-htm-2026-02-14-capex--175-'].hit === true   // $180B 落在 $175-185B 带内
+      && byId['fc-sec-edgar-0001652044-26-000012-index-htm-2026-02-14-capex--175-'].actual === '$180 billion'
+      && byId['fc-sec-edgar-0001652044-26-000012-index-htm-2026-02-14-capex--175-'].period === 'FY2026 全年'
+      && byId['t316-googl-persisted'] && byId['t316-googl-persisted'].hit === true                  // 持久化 'capex' 归一路径
+      && res.settled.length === 2 && res.pending === 1
+      && neu.outcome === null                                                                       // 到期门：dueOn 2027-02-14 不提前结
+      && canfei.outcome === true && canfei.evidence.metric === 'capital expenditures'
+      && canfei.evidence.sources[0] === 'https://sec.gov/googl-q4-2026'                              // 证据指向提供全年实际值的备案
+      && persisted.outcome === true && persisted.evidence.metric === 'capital expenditures';
+  } finally {
+    if (saved === null) { try { fs.unlinkSync(LEDGER); } catch (_) {} } else fs.writeFileSync(LEDGER, saved);
+  }
+})(), '残废条目经句反推拿 FY2026 全年区间元数据并带内命中；持久化名词级 capex 经归一配对；新登记条目按到期门 pending（META/NVDA 全年指引同款纪律，不硬结）');
+
+// ── 组 5：已知边界如实（GOOGL capex 全年实际值抽不到）───────────
+// 7. GOOGL Q4-2025 live：全年 capex 实际值在现金流量表（表格式陈述），形态族不收
+c316('已知边界如实：GOOGL 全年 capex 实际值在现金流表（TTM 列），全年形态族不收', (() => {
+  const { extractAnnualActuals } = require('./human-future/scripts/edgar-collector.js');
+  // live 逐字（googexhibit991q42025.htm）：亮点段给的是指引句；实际值只在
+  // 现金流量表（"Less: purchases of property and equipment (17,197) ... (91,447)"
+  // TTM 列）与 FCF 定义句，无 "were $X and $Y ... respectively" 双值句
+  const GOOGL_Q4 = [
+    'To meet customer demand and capitalize on the growing opportunities we have ahead of us, our 2026 CapEx investments are anticipated to be in the range of $175 to $185 billion.',
+    'Quarter Ended TTM Q1 2025 Q2 2025 Q3 2025 Q4 2025 Q4 2025 Net cash provided by operating activities $ 36,150 $ 27,747 $ 48,414 $ 52,402 $ 164,713 Less: purchases of property and equipment (17,197) (22,446) (23,953) (27,851) (91,447) Free cash flow $ 18,953 $ 5,301 $ 24,461 $ 24,551 $ 73,266',
+    'Free cash flow: We define free cash flow as net cash provided by operating activities less capital expenditures.',
+  ].join(' ');
+  const ann = extractAnnualActuals(GOOGL_Q4, { fiscalYear: 2025 });
+  return ann.length === 0;
+})(), '指引侧修好了但对账依据缺位——FY2026 capex 指引到期时若无 Q4 备案双值句/全年标记句，按 pending/无实际值跳过如实处理（漏报比误报诚实，表格式 capex 实际值抽取是下轮候选）');
+
+// ── 组 6：端到端（cron 注入 / 版本号）──────────────────────────
+// 8. cron 注入源级：[v3.16] 口径限定随结算段进 agent prompt
+c316('cron 注入脚本渲染 v3.16 口径限定', (() => {
+  const p = require('path').join(require('os').homedir(), '.hermes/scripts/hf-cron-fetch.sh');
+  if (!require('fs').existsSync(p)) return false;
+  const src = require('fs').readFileSync(p, 'utf-8');
+  return /\[v3\.16\] 年份在名词前的全年指引形态进库/.test(src)
+    && /X-to-Y 美元区间/.test(src)
+    && /季度前缀 lookbehind/.test(src);
+})(), '残废修复语义（年份在名词前形态/X-to-Y 区间/季度前缀 lookbehind）必须随结算段进注入脚本，否则 agent 看不到限定');
+
+// 9. guidanceStruct 透传 isRange（v3.5.1「ticker 恒 null」同型断链）
+c316('guidanceStruct 透传 isRange：登记时区间指引不再退化成点值', (() => {
+  const { discriminate } = require('./human-future/scripts/forecast-discriminator.js');
+  const rangeClaim = {
+    text: 'us, our 2026 CapEx investments are anticipated to be in the range of $175 to $185 billion',
+    source: 'SEC EDGAR', date: '2026-02-04', url: 'https://sec.gov/x', category: 'earnings_guidance',
+    guidance: { metric: 'capex', settleMetric: 'capital expenditures', value: 'in the range of $175 to $185 billion', tolerance: null, isRange: true, quarter: null, fiscalYear: 2026, annual: true, gaapBasis: '', periodLabel: 'FY2026 全年' },
+    ticker: 'GOOGL',
+  };
+  const pointClaim = {
+    text: 'Revenue is expected to be $78.0 billion, plus or minus 2%',
+    source: 'SEC EDGAR', date: '2026-02-25', url: 'https://sec.gov/y', category: 'earnings_guidance',
+    guidance: { metric: 'revenue', settleMetric: 'revenue', value: '$78.0 billion', tolerance: '2%', isRange: false, quarter: 1, fiscalYear: 2027, annual: false, gaapBasis: '', periodLabel: 'FY2027 Q1' },
+    ticker: 'NVDA',
+  };
+  const rRange = discriminate(rangeClaim, {});
+  const rPoint = discriminate(pointClaim, {});
+  return rRange.guidance && rRange.guidance.isRange === true
+    && rPoint.guidance && rPoint.guidance.isRange === false;
+})(), '旧代码 guidanceStruct 从 v3.4 起不漏 isRange——登记时 isRange: !!r.guidance.isRange 恒为 false，区间指引（META 费用/capex×6/NVDA 税率×3/AMZN/MRVL/GOOGL）的持久化 settlement 把区间值当点值存；备案滑出采集窗口后（句子索引失效、回落持久化分支）guidanceBand 判「无容差/区间的点值指引」跳过，区间指引到期永远无法结算');
+
+// 11. 版本号一致性（五处对齐 3.16.0）
+c316('版本号一致性：五处对齐 3.16.0', (() => {
+  const fs316 = require('fs');
+  const VERSION = fs316.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
+  const pkg = JSON.parse(fs316.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
+  const rp = fs316.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
+  const pf = fs316.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
+  return VERSION === '3.16.0'
+    && pkg.version === '3.16.0'
+    && rp.includes('文明推演引擎 v3.16.0')      // banner
+    && /version: '3\.16\.0'/.test(pf)          // projection meta
+    && /version: '3\.16\.0'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.16.0，防 corr-2026-014 版本漂移复发');
+
+// 10. forecast 段渲染截断披露（v3.10/v3.11 同型纪律：辨别了但看不见=没交付）
+c316('forecast 渲染上限 30 + 超限披露「另有 N 条未显示」', (() => {
+  const { ProjectionEngine, formatReport } = require('./scripts/project-future.js');
+  const mk = (i) => ({
+    verdict: 'earnings-guidance', text: `Revenue is expected to be $${i} billion`, source: 'SEC EDGAR',
+    category: 'earnings_guidance', dueOn: '2026-12-15', settleable: true,
+    guidance: { periodLabel: 'FY2027 Q1', value: `$${i} billion`, tolerance: null, isRange: false, caveats: [] },
+    reasoning: { score: 0, checks: [] }, baseRate: { rate: 0.45, sample: 11, source: 'local-ledger' },
+    falsifiability: { problems: [] }, textNature: { isReferenceProse: false, markers: [] },
+  });
+  // 真 projection（引擎 generate 的全字段形状）+ 替换 forecastDiscrimination
+  const base = new ProjectionEngine({ newsData: { frontier_models: { domain: 'frontier_models', news: [
+    { title: 'OpenAI releases a new model', description: 'A new frontier model was released today.',
+      source: 'OpenAI News', link: 'https://openai.com/index/x', pubDate: 'Mon, 26 Oct 2026 10:00:00 +0000', origin: 'live' },
+  ] } } }).generate();
+  const withFd = (n) => {
+    const rep = JSON.parse(JSON.stringify(base));
+    rep.forecastDiscrimination = {
+      available: true, audited: n, results: Array.from({ length: n }, (_, i) => mk(i + 1)),
+      summary: { settleableCount: n, guidanceCount: n }, note: 'test',
+    };
+    return formatReport(rep);
+  };
+  const md = withFd(31);
+  const rendered = (md.match(/\[财报指引\]/g) || []).length;
+  const md2 = withFd(5);
+  return rendered === 30
+    && /另有 1 条未显示/.test(md)
+    && !/另有 .* 条未显示/.test(md2);      // 未超限不出现披露行
+})(), 'v3.14 把 claim 额度修到 70 后 live 实测 61 条 EDGAR 指引全进辨别/登记/结算，但渲染上限停在 slice(0,12)——50 条在 md 里静默切尾（GOOGL 修正条目正落在切尾区）；上限 12→30 且超限明示「另有 N 条未显示（详见报告 JSON）」');
+
+// ── v3.16 汇总 ──
+(async () => {
+  const results = await Promise.all(v316.map(c => Promise.resolve(c.ok)));
+  let f = 0;
+  v316.forEach((c, i) => {
+    const ok = results[i];
+    if (!ok) f++;
+    console.log(`${ok ? '✓' : '✗'} ${c.name}${ok ? '' : '  —— ' + c.detail}`);
+  });
+  console.log(`\nv3.16: ${v316.length - f} 通过, ${f} 失败, 共 ${v316.length} 个`);
+  if (f > 0) {
+    console.log('结论：GOOGL FY2026 capex 残废条目修复不完整（抽取/精度/区间/归一/结算/端到端/版本有缺）。');
+    process.exitCode = 1;
+  } else {
+    console.log('结论：残废条目三处全修（期间 FY2025Q4→FY2026 全年、点值→X-to-Y 区间、capex 指标族归一），结算链端到端成立；季度指引零误判、既有形态零漂移；GOOGL capex 全年实际值缺位如实记边界。');
   }
 })();
