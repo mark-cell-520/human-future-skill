@@ -356,6 +356,16 @@
       "lesson": "「全年 vs 季度」的期间判据错配不会报错、只会静默改变结算点（dueOn 差 9 个月），且实际值缺失时连「结错」都暴露不了——pending 把错位藏起来了。判据修复的验证不能只看「修好后对」，要拿**修复前会怎样**对照：本次是靠「台账里已存在 dueOn 2026-06-14 的全年税率条目」反推出来的。另：rightmost-wins 期间匹配让错配总是倒向**最近**的季度词——年度形态漏配时，最近的季度段头就是接盘者。",
       "severity": "medium",
       "recordedAt": "2026-10-26T14:55:00.951Z"
+    },
+    {
+      "id": "corr-2026-034",
+      "reportVersion": "v3.15",
+      "wrongClaim": "（沿用假设）extractActuals 的全年值守卫覆盖了所有实际值路径——v3.13 给毛利率/EPS/营业利润加了 notFullYear 守卫（corr-2026-030），营收抽取就在同一个函数里，理所当然认为全覆盖",
+      "rightClaim": "营收三形态（主形态 ACTUAL_REVENUE_RE / sales-increased / 冒号）从来没有调 notFullYear。AMD Q4-FY2025 live 实证：「For the full year 2025, AMD reported record revenue of $34.6 billion, gross margin of 50%, operating income of $3.7 billion, ...」的**全年**营收 $34.6B 被当成财季实际值索引进 (AMD|2025|4|revenue)——该条无 Q4 营收指引所以没造成错结算，但查找表里躺着错事实（若 AMD Q4-2025 有营收区间指引就是假结算）。v3.15 三形态补齐守卫，全年值由 extractAnnualActuals 收进 annual key（quarter=null），财季 key 只收财季值",
+      "evidence": "2026-10-27 从 SEC EDGAR 实抓 AMD 8-K 0000002488-26-000014（q42025991.htm）：修复前 extractActuals 返回 actuals 含 {metric:revenue, value:$34.6 billion}（全年值混进财季 key），修复后财季 actuals 只剩毛利率 54%/57% 与营业利润 $1.8B（该备案亮点段无 Q4-only 营收句，财季营收不再抽取——漏报比误报诚实），$34.6B 由 annualActuals 收（FY2025 全年）。测试精度回归钉住：AMD 全年营收不进财季 key、全年值进 annualActuals、财季毛利率照常",
+      "lesson": "同函数里给 A/B/C 路径加守卫时，要逐条路径数一遍调用点——「守卫写在这个函数里」不等于「每条抽值路径都过了哨」。corr-2026-030 修的是 matchAll 内部漏期间（窗口截到句边界），本次是整条营收路径从落地起（v3.5）没接守卫；新增抽值形态时（v3.5.1/v3.13/v3.14 各加过两种）守卫补丁必须同步跟上，否则沉默漏一个版本",
+      "severity": "medium",
+      "recordedAt": "2026-10-26T18:06:58.897Z"
     }
   ]
 }

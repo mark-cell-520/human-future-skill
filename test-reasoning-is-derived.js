@@ -4231,11 +4231,11 @@ c34('cron 注入脚本渲染财报指引（VERDICT_CN/汇总/结构行）', (() 
 
 // ── 组 4：版本号（corr-2026-014 同型：banner 腐烂四个补丁轮）─────
 // [v3.6] 版本推进到 3.6.0（新辨别维度：成本/价格信号），本断言跟着当前版本走。
-c34('版本号一致性：banner 与 VERSION 对齐（3.14.0）', (() => {
+c34('版本号一致性：banner 与 VERSION 对齐（3.15.0）', (() => {
   const fs2 = require('fs');
   const version = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return version === '3.14.0' && rp.includes('文明推演引擎 v3.14.0');
+  return version === '3.15.0' && rp.includes('文明推演引擎 v3.15.0');
 })(), 'run-pipeline banner 必须与 VERSION 一致（v3.1 修过 banner/meta 同型后又腐烂）');
 
 // ── v3.4 汇总 ──
@@ -4429,15 +4429,15 @@ c35('cron 注入脚本渲染财报指引结算段', (() => {
 
 // ── 组 6：版本号一致性（corr-2026-014 同型，四处对齐）──────────
 // [v3.6] 推进到 3.6.0（新辨别维度），断言跟当前版本走。
-c35('版本号一致性：VERSION/package.json/projection meta/banner 对齐 3.14.0', (() => {
+c35('版本号一致性：VERSION/package.json/projection meta/banner 对齐 3.15.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.14.0'
-    && /3\.14\.0/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.14.0');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.14.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.15.0'
+    && /3\.15\.0/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.15.0');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.15.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.5 汇总 ──
 (async () => {
@@ -4664,15 +4664,15 @@ c351('结算证据来源是提供实际值的备案（actualPeriod 匹配）', (
 
 // ── 组 4：版本号一致性（corr-2026-014 同型）────────────────────
 // [v3.6] 推进到 3.6.0（新辨别维度：成本/价格信号）。
-c351('版本号一致性：VERSION/package.json/banner 对齐 3.14.0', (() => {
+c351('版本号一致性：VERSION/package.json/banner 对齐 3.15.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.14.0'
-    && /3\.14\.0/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.14.0');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.14.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.15.0'
+    && /3\.15\.0/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.15.0');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.15.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.5.1 汇总 ──
 (async () => {
@@ -4867,15 +4867,15 @@ c36('精度门未破：非主张文本仍被挡在辨别外', (() => {
 })(), 'Fed 公告与播客不得因 cost-signal 新模式进入辨别');
 
 // ── 组 5：版本号一致性（corr-2026-014 同型）────────────────────
-c36('版本号一致性：VERSION/package.json/banner 对齐 3.14.0', (() => {
+c36('版本号一致性：VERSION/package.json/banner 对齐 3.15.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.14.0'
-    && /3\.14\.0/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.14.0');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.14.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.15.0'
+    && /3\.15\.0/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.15.0');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.15.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.6 汇总 ──
 (async () => {
@@ -5111,15 +5111,15 @@ c37('精度门未破：非主张文本仍被挡在辨别外', (() => {
 })(), 'Fed 公告与播客不得因 expert-judgment 新模式进入辨别');
 
 // ── 组 5：版本号一致性（corr-2026-014 同型）────────────────────
-c37('版本号一致性：VERSION/package.json/banner 对齐 3.14.0', (() => {
+c37('版本号一致性：VERSION/package.json/banner 对齐 3.15.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.14.0'
-    && /3\.14\.0/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.14.0');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.14.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.15.0'
+    && /3\.15\.0/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.15.0');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.15.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.7 汇总 ──
 (async () => {
@@ -5410,15 +5410,15 @@ c38('精度门未破：非主张文本仍被挡在辨别外', (() => {
 })(), 'Fed 公告/播客/官员言论不得因 regulatory-action 新模式进入辨别');
 
 // ── 组 5：版本号一致性（corr-2026-014 同型）────────────────────
-c38('版本号一致性：VERSION/package.json/banner 对齐 3.14.0', (() => {
+c38('版本号一致性：VERSION/package.json/banner 对齐 3.15.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.14.0'
-    && /3\.14\.0/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.14.0');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.14.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.15.0'
+    && /3\.15\.0/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.15.0');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.15.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.8 汇总 ──
 (async () => {
@@ -5639,18 +5639,18 @@ c39('精度门未破：非主张文本与无幅度价格谈论仍被挡在辨别
 })(), 'Fed 公告/播客/无幅度降价谈论/TCO 效率句/官员言论不得因 price-cut 新模式进入辨别');
 
 // ── 组 5：版本号一致性（corr-2026-014 同型）────────────────────
-c39('版本号一致性：五处对齐 3.14.0', (() => {
+c39('版本号一致性：五处对齐 3.15.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs2.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.14.0'
-    && pkg.version === '3.14.0'
-    && rp.includes('文明推演引擎 v3.14.0')      // banner
-    && /version: '3\.14\.0'/.test(pf)          // projection meta
-    && /version: '3\.14\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.14.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.15.0'
+    && pkg.version === '3.15.0'
+    && rp.includes('文明推演引擎 v3.15.0')      // banner
+    && /version: '3\.15\.0'/.test(pf)          // projection meta
+    && /version: '3\.15\.0'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.15.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.9 汇总 ──
 (async () => {
@@ -6012,18 +6012,18 @@ c310('精度门未破：扩桶后非主张文本仍被挡在辨别外', (() => {
 })(), 'Fed 公告/播客/无数量部署谈话/合作公告/免责声明/泛指交易假设句/官员言论不得因扩池与新模式进入辨别');
 
 // ── 组 7：版本号一致性（corr-2026-014 同型）────────────────────
-c310('版本号一致性：五处对齐 3.14.0', (() => {
+c310('版本号一致性：五处对齐 3.15.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs2.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.14.0'
-    && pkg.version === '3.14.0'
-    && rp.includes('文明推演引擎 v3.14.0')      // banner
-    && /version: '3\.14\.0'/.test(pf)          // projection meta
-    && /version: '3\.14\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.14.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.15.0'
+    && pkg.version === '3.15.0'
+    && rp.includes('文明推演引擎 v3.15.0')      // banner
+    && /version: '3\.15\.0'/.test(pf)          // projection meta
+    && /version: '3\.15\.0'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.15.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.10 汇总 ──
 (async () => {
@@ -6355,18 +6355,18 @@ c3111('精度门未破：非主张文本不因新形态进入辨别', (() => {
 })(), 'Fed 公告/播客/订阅总量/速率上限/无数量部署谈话/合作公告不得因 usage-metric 进辨别');
 
 // ── 组 7：版本号一致性（corr-2026-014 同型）────────────────────
-c3111('版本号一致性：五处对齐 3.14.0', (() => {
+c3111('版本号一致性：五处对齐 3.15.0', (() => {
   const fs311 = require('fs');
   const VERSION = fs311.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs311.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs311.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs311.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.14.0'
-    && pkg.version === '3.14.0'
-    && rp.includes('文明推演引擎 v3.14.0')      // banner
-    && /version: '3\.14\.0'/.test(pf)          // projection meta
-    && /version: '3\.14\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.14.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.15.0'
+    && pkg.version === '3.15.0'
+    && rp.includes('文明推演引擎 v3.15.0')      // banner
+    && /version: '3\.15\.0'/.test(pf)          // projection meta
+    && /version: '3\.15\.0'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.15.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.11 汇总 ──
 (async () => {
@@ -6660,18 +6660,18 @@ c312('精度门未破：营收/工程 scaling/政府资助/无数量规模级句
 })(), '营收句/工程 scaling/政府资助/无数量规模级句/Fed 公告/播客不得因 compute-infra 进辨别');
 
 // ── 组 7：版本号一致性（corr-2026-014 同型）────────────────────
-c312('版本号一致性：五处对齐 3.14.0', (() => {
+c312('版本号一致性：五处对齐 3.15.0', (() => {
   const fs312 = require('fs');
   const VERSION = fs312.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs312.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs312.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs312.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.14.0'
-    && pkg.version === '3.14.0'
-    && rp.includes('文明推演引擎 v3.14.0')      // banner
-    && /version: '3\.14\.0'/.test(pf)          // projection meta
-    && /version: '3\.14\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.14.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.15.0'
+    && pkg.version === '3.15.0'
+    && rp.includes('文明推演引擎 v3.15.0')      // banner
+    && /version: '3\.15\.0'/.test(pf)          // projection meta
+    && /version: '3\.15\.0'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.15.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.12 汇总 ──
 (async () => {
@@ -6989,19 +6989,19 @@ c313('cron 注入源级：口径一致才配对措辞进注入脚本', (() => {
     && /guidanceSettlement/.test(sh);   // v3.5 注入不断链
 })(), 'hf-cron-fetch.sh 必须含口径配对限定与歧义新措辞——引擎产出了但注入脚本不读＝agent 看不到（同型断链纪律）');
 
-// 13. 版本号一致性（五处对齐 3.14.0）
-c313('版本号一致性：五处对齐 3.14.0', (() => {
+// 13. 版本号一致性（五处对齐 3.15.0）
+c313('版本号一致性：五处对齐 3.15.0', (() => {
   const fs313 = require('fs');
   const VERSION = fs313.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs313.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs313.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs313.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.14.0'
-    && pkg.version === '3.14.0'
-    && rp.includes('文明推演引擎 v3.14.0')      // banner
-    && /version: '3\.14\.0'/.test(pf)          // projection meta
-    && /version: '3\.14\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.14.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.15.0'
+    && pkg.version === '3.15.0'
+    && rp.includes('文明推演引擎 v3.15.0')      // banner
+    && /version: '3\.15\.0'/.test(pf)          // projection meta
+    && /version: '3\.15\.0'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.15.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.13 汇总 ──
 (async () => {
@@ -7261,19 +7261,19 @@ c314('精度回归：无区间标记期望句不进库 + 旧形态夹具逐一�
     && nvOld.find(g => g.metric === 'revenue').quarter === 1;
 })(), 'form D 间隔词≥1 与 form B 零重叠（点值区间句不重复抽取）；无区间标记的期望句不是可证伪主张；NVDA 02-25 旧夹具期间从 FY27Q1 纠正为 FY27 全年');
 
-// 8. 版本号一致性（五处对齐 3.14.0）
-c314('版本号一致性：五处对齐 3.14.0', (() => {
+// 8. 版本号一致性（五处对齐 3.15.0）
+c314('版本号一致性：五处对齐 3.15.0', (() => {
   const fs314 = require('fs');
   const VERSION = fs314.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs314.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs314.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs314.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.14.0'
-    && pkg.version === '3.14.0'
-    && rp.includes('文明推演引擎 v3.14.0')      // banner
-    && /version: '3\.14\.0'/.test(pf)          // projection meta
-    && /version: '3\.14\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.14.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.15.0'
+    && pkg.version === '3.15.0'
+    && rp.includes('文明推演引擎 v3.15.0')      // banner
+    && /version: '3\.15\.0'/.test(pf)          // projection meta
+    && /version: '3\.15\.0'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.15.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.14 汇总 ──
 (async () => {
@@ -7290,5 +7290,280 @@ c314('版本号一致性：五处对齐 3.14.0', (() => {
     process.exitCode = 1;
   } else {
     console.log('结论：META CFO 评论式指引（动词+期间间隔+连字符/单百分号区间）进库，bullet 营收实际值可抽，全年期间修复（full year fiscal YYYY + 锚词在前 + 裸年份），多季度指引守卫，EDGAR claim 额度 40→70 不静默切尾；live 端到端 10 条登记、Q2 营收区间 in-band 命中。');
+  }
+})();
+
+// v3.15 — 全年实际值抽取 + annual key 配对（已知边界推进：全年指引结算能力）
+//
+// 定位：v3.14 把 META FY2026 全年费用/capex 区间指引登记进台账（dueOn
+// 2027-02-14），白纸黑字的已知边界是「全年实际值在 Q4 备案的『季度+全年』
+// 双值句里（"were $22.14 billion and $72.x billion"），抽全年值+annual
+// key 索引是后续轮次候选」——全年指引永远 pending，「到期结算」对全年类
+// 指引从未覆盖。台账 9 条 annual=true 全年指引（META FY2026 费用/capex×6
+// + NVDA FY2027 全年税率×3，live 台账实证）全部押在这个能力上。
+//
+// 本轮（全部 2026-10-27 从 SEC EDGAR 实抓原文驱动，六家 Q4 备案）：
+//   ① extractAnnualActuals 新函数：双值句取全年值（第二个值）+ 单值
+//      全年句（for fiscal YYYY / full year YYYY / 尾部 in YYYY）
+//   ② annual key 索引（quarter=null）：全年指引的结算元数据 quarter 恒
+//      null，keyBase 就是 ${tk}|${fy}|null|——全年实际值必须落同一段
+//   ③ 营收路径补全年值守卫（AMD Q4-FY2025 live 实证：「For the full
+//      year 2025, AMD reported record revenue of $34.6 billion」的全年
+//      营收被当成财季实际值索引进 (AMD|2025|4|revenue)——旧代码只有毛
+//      利率/EPS/营业利润三条路径过守卫，营收主路径不过）——同轮维护
+//   ④ 证据来源 annual 感知：全年结算的证据指向真的提供全年实际值的备案
+// live 实证：META Q4-2025 全年营收 $200.97B/费用 $117.69B/capex
+// $72.22B、NVDA FY2026 全年营收 $215.9B、AMD FY2025 四项、MRVL FY2026
+// 营收+EPS 双口径、AMZN FY2025 营收+营业利润全部抽中；Q1-Q3 备案零全年
+// 实际值、财季值逐条不变（AMD 全年营收不再漏进财季 key）。
+// ════════════════════════════════════════════════════════════════
+const v315 = [];
+function c315(name, ok, detail) { v315.push({ name, ok, detail }); }
+
+// ── 组 1：extractAnnualActuals 抽取（五家 live 逐字夹具）─────────
+// 1. META Q4-2025 双值句：季度在前全年在后，全年值=第二个值
+c315('extractAnnualActuals：META Q4-2025 live 逐字双值句（营收/费用/capex 取全年值）', (() => {
+  const { extractAnnualActuals } = require('./human-future/scripts/edgar-collector.js');
+  // live 逐字（SEC EDGAR 0001628280-26-003832，meta-12312025xexhibit991.htm）
+  const META_Q4 = [
+    'Meta Reports Fourth Quarter and Full Year 2025 Results',
+    'MENLO PARK, Calif. – January 28, 2026 – Meta Platforms, Inc. (Nasdaq: META) today reported financial results for the quarter and full year ended December 31, 2025.',
+    'Fourth Quarter and Full Year 2025 Operational and Other Financial Highlights',
+    '• Revenue – Revenue was $59.89 billion and $200.97 billion, representing increases of 24% and 22% year-over-year for the fourth quarter and full year 2025, respectively.',
+    '• Costs and expenses – Total costs and expenses were $35.15 billion and $117.69 billion, representing increases of 40% and 24% year-over-year for the fourth quarter and full year 2025, respectively.',
+    '• Capital expenditures – Capital expenditures, including principal payments on finance leases, were $22.14 billion and $72.22 billion for the fourth quarter and full year 2025, respectively.',
+    '• Cash flow – Cash flow from operating activities was $36.21 billion and $115.80 billion, and free cash flow was $14.08 billion and $43.59 billion for the fourth quarter and full year 2025, respectively.',
+  ].join(' ');
+  const ann = extractAnnualActuals(META_Q4, { fiscalYear: 2025 });
+  const byF = Object.fromEntries(ann.map(a => [a.metric, a.value]));
+  return byF.revenue === '$200.97 billion'
+    && byF['total expenses'] === '$117.69 billion'
+    && byF['capital expenditures'] === '$72.22 billion'
+    && ann.length === 3              // FCF/经营现金流不在结算指标族（无指引可配对）
+    && ann.every(a => a.gaapBasis === '');
+})(), 'META 双值句 "were $X and $Y ... for the fourth quarter and full year 2025" 的全年值是第二个；SKILL.md v3.14 边界里的 "were $22.14 billion and $72.x billion" 即 capex 那句');
+
+// 2. NVDA Q4-FY2026 单值全年句 + 双百分号 respectively 无法归属口径整句跳过
+c315('extractAnnualActuals：NVDA Q4-FY2026 live 逐字（单值全年句 + respectively 双值跳过）', (() => {
+  const { extractAnnualActuals } = require('./human-future/scripts/edgar-collector.js');
+  const NVDA_Q4 = [
+    'EX-99.1 2 q4fy26pr.htm EX-99.1 Document NVIDIA Announces Financial Results for Fourth Quarter and Fiscal 2026',
+    '• Record quarterly revenue of $68.1 billion, up 20% from Q3 and up 73% from a year ago',
+    'Reported revenue for the fourth quarter ended January 25, 2026 of $68.1 billion.',
+    'For fiscal 2026, revenue was $215.9 billion, up 65% from a year ago.',
+    'For fiscal 2026, GAAP and non-GAAP gross margins were 71.1% and 71.3%, respectively.',
+    'NVIDIA\'s outlook for the first quarter of fiscal 2027 is as follows: • Revenue is expected to be $78.0 billion, plus or minus 2%.',
+  ].join(' ');
+  const ann = extractAnnualActuals(NVDA_Q4, { fiscalYear: 2026 });
+  return ann.length === 1 && ann[0].metric === 'revenue' && ann[0].value === '$215.9 billion';
+})(), '"For fiscal 2026, revenue was $215.9 billion" 单值全年句抽中；"gross margins were 71.1% and 71.3%, respectively" 双口径不同值无法归属，整句跳过（错归口径比漏报危险）；亮点标题句（Fourth Quarter and Fiscal 2026 • Record quarterly revenue of $68.1 billion）不当全年');
+
+// 3. AMD Q4-FY2025 一句多指标（名词+of+值）
+c315('extractAnnualActuals：AMD Q4-FY2025 live 逐字一句多指标（营收/毛利率/营业利润/EPS）', (() => {
+  const { extractAnnualActuals } = require('./human-future/scripts/edgar-collector.js');
+  const AMD_Q4 = [
+    'AMD Reports Fourth Quarter and Full Year 2025 Results',
+    'AMD Communications reported financial results for the quarter and year ended December 27, 2025.',
+    'For the full year 2025, AMD reported record revenue of $34.6 billion, gross margin of 50%, operating income of $3.7 billion, net income of $4.3 billion, and diluted earnings per share of $2.65.',
+    'GAAP gross margin was 54% and non-GAAP gross margin was 57% for the fourth quarter.',
+  ].join(' ');
+  const ann = extractAnnualActuals(AMD_Q4, { fiscalYear: 2025 });
+  const byF = Object.fromEntries(ann.map(a => [a.metric, a.value]));
+  return byF.revenue === '$34.6 billion' && byF['gross margin'] === '50%'
+    && byF['operating income'] === '$3.7 billion' && byF['diluted eps'] === '$2.65'
+    && ann.length === 4;            // net income 不在结算指标族
+})(), 'AMD "reported record revenue of $34.6 billion, gross margin of 50%, ..." 一句多指标全抽中；EPS 值不带尾随句点（"of $2.65." → "$2.65"）');
+
+// 4. MRVL Q4-FY2026 全年营收 + EPS 双口径
+c315('extractAnnualActuals：MRVL Q4-FY2026 live 逐字（全年营收 + EPS GAAP/非GAAP 双口径）', (() => {
+  const { extractAnnualActuals } = require('./human-future/scripts/edgar-collector.js');
+  const MRVL_Q4 = [
+    'Marvell Technology, Inc. Reports Fourth Quarter and Fiscal Year 2026 Financial Results',
+    '• Q4 Net Revenue: $2.219 billion, a new record, grew by 22% year-on-year',
+    'Net revenue for the fourth quarter of fiscal 2026 was $2.219 billion, $19.0 million above the mid-point of the Company\'s guidance provided on December 2 , 2025.',
+    'Net revenue for fiscal 2026 was $8.195 billion, a new record.',
+    'GAAP net income for fiscal 2026 was $2.670 billion, or $3.07 per diluted share.',
+    'Non-GAAP net income for fiscal 2026 was $2.466 billion, or $2.84 per diluted share.',
+    'First Quarter of Fiscal 2027 Financial Outlook • Net revenue is expected to be $2.400 billion +/- 5%.',
+  ].join(' ');
+  const ann = extractAnnualActuals(MRVL_Q4, { fiscalYear: 2026 });
+  const eps = ann.filter(a => a.metric === 'diluted eps');
+  return ann.some(a => a.metric === 'revenue' && a.value === '$8.195 billion')
+    && eps.length === 2
+    && eps.find(e => e.gaapBasis === 'gaap').value === '$3.07'
+    && eps.find(e => e.gaapBasis === 'non-gaap').value === '$2.84';
+})(), 'MRVL "Net revenue for fiscal 2026 was $8.195 billion" + "GAAP/Non-GAAP net income for fiscal 2026 was ..., or $X per diluted share" 双口径各抽各的');
+
+// 5. AMZN Q4-FY2025 尾部 in YYYY + 同比从句剥除
+c315('extractAnnualActuals：AMZN Q4-FY2025 live 逐字（尾部 in 2025 + compared with 剥除）', (() => {
+  const { extractAnnualActuals } = require('./human-future/scripts/edgar-collector.js');
+  const AMZN_Q4 = [
+    'EX-99.1 2 amzn-20251231xex991.htm EX-99.1 Document Exhibit 99.1 AMAZON.COM ANNOUNCES FOURTH QUARTER RESULTS',
+    'SEATTLE—(BUSINESS WIRE) February 5, 2026—Amazon.com, Inc. (NASDAQ: AMZN) today announced financial results for its fourth quarter ended December 31, 2025.',
+    'Fourth Quarter 2025 • Net sales increased 14% to $213.4 billion in the fourth quarter, compared with $187.8 billion in fourth quarter 2024.',
+    '• Operating income increased to $25.0 billion in the fourth quarter, compared with $21.2 billion in fourth quarter 2024.',
+    'Full Year 2025 • Net sales increased 12% to $716.9 billion in 2025, compared with $638.0 billion in 2024.',
+    '• North America segment sales increased 10% year-over-year to $426.3 billion.',
+    '• Operating income increased to $80.0 billion in 2025, compared with $68.6 billion in 2024.',
+    '• North America segment operating income was $29.6 billion, compared with operating income of $25.0 billion in 2024.',
+    '• Net income increased to $77.7 billion in 2025, or $7.17 per diluted share, compared with $59.2 billion, or $5.53 per diluted share, in 2024.',
+  ].join(' ');
+  const ann = extractAnnualActuals(AMZN_Q4, { fiscalYear: 2025 });
+  const byF = Object.fromEntries(ann.map(a => [a.metric, a.value]));
+  return byF.revenue === '$716.9 billion' && byF['operating income'] === '$80.0 billion'
+    && ann.length === 2;
+})(), 'AMZN 全年段 "increased 12% to $716.9 billion in 2025, compared with $638.0 billion in 2024"：同比从句先剥（金额小数点不能截断剥除），先出现的值才是全年值；分部句（segment operating income was $29.6 billion ... in 2024）剥同比后无年份残留，不误收');
+
+// ── 组 2：精度回归（漏报比误报诚实）────────────────────────────
+// 6. 季度句/标题句/指引句/年份不符/FCF 都不进全年；财季路径不受影响
+c315('精度回归：季度句/标题句/指引句/年份不符句不进全年 + AMD 全年营收不漏进财季 key', (() => {
+  const { extractAnnualActuals, extractActuals } = require('./human-future/scripts/edgar-collector.js');
+  const fy = 2026;
+  // ① 季度实际值句（for the fourth quarter of fiscal 2026）——含季度标记只走双值形态
+  const QTR = 'Net revenue for the fourth quarter of fiscal 2026 was $2.219 billion, a new record.';
+  // ② 亮点标题句（Fourth Quarter and Fiscal 2026 + Record quarterly revenue）
+  const HEAD = 'NVIDIA Announces Financial Results for Fourth Quarter and Fiscal 2026 • Record quarterly revenue of $68.1 billion, up 20% from Q3.';
+  // ③ 指引句（expect ... to be）
+  const GUIDE = 'We expect full year 2026 total expenses to be in the range of $175-179 billion.';
+  // ④ 年份不等于标题财年（2025 ≠ 2026）
+  const WRONGYEAR = 'For fiscal 2025, revenue was $130.5 billion, up 60% from a year ago.';
+  // ⑤ FCF 双值句（不在结算指标族）
+  const FCF = 'Adjusted free cash flow (2) was $33.20 billion for the fourth quarter of 2026 and $62.31 billion for the full year of 2026.';
+  // ⑥ AMD Q4-FY2025 live：财季路径不再把全年营收当财季值（v3.15 守卫修复）
+  const AMD_Q4 = [
+    'AMD Reports Fourth Quarter and Full Year 2025 Results',
+    'AMD Communications reported financial results for the quarter and year ended December 27, 2025.',
+    'For the full year 2025, AMD reported record revenue of $34.6 billion, gross margin of 50%, operating income of $3.7 billion, net income of $4.3 billion, and diluted earnings per share of $2.65.',
+    'GAAP gross margin was 54% and non-GAAP gross margin was 57% for the fourth quarter.',
+  ].join(' ');
+  const annualHits = [QTR, HEAD, GUIDE, WRONGYEAR, FCF].map(s => extractAnnualActuals(s, { fiscalYear: fy }).length);
+  const ex = extractActuals(AMD_Q4);
+  const qRev = ex.actuals.filter(a => a.metric === 'revenue');
+  return annualHits.every(n => n === 0)
+    && qRev.length === 0                      // 全年营收 $34.6B 不再进 (AMD|2025|4|revenue)
+    && ex.annualActuals.some(a => a.metric === 'revenue' && a.value === '$34.6 billion')  // 全年值由全年路径收
+    && ex.actuals.some(a => a.metric === 'gross margin' && a.value === '54%');  // 财季毛利率照常
+})(), '五类句子零误收；v3.15 同轮修复：营收路径补 notFullYear 守卫后 AMD 全年营收不再漏进财季 key（财季毛利率不受影响）');
+
+// ── 组 3：settleEarningsGuidance annual 配对端到端（受控台账）────
+// 7. annual key 配对：区间指引 vs 全年实际值 + 到期门 + 句反推 + 证据来源
+c315('settleEarningsGuidance annual 配对：全年区间指引 hit + 到期门 + 证据指向 Q4 备案', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const fs = require('fs');
+  const LEDGER = path.join(__dirname, 'human-future/data/prediction-ledger.json');
+  const saved = fs.existsSync(LEDGER) ? fs.readFileSync(LEDGER, 'utf-8') : null;
+  try {
+    const mock = { version: '1.0.0', predictions: [
+      // FY2025 全年费用区间 $115-120B vs 实际 $117.69B → 带内命中（dueOn 已过）
+      { id: 't315-meta-exp', claim: 'expect full year 2025 total expenses to be in the range of $115-120 billion', probability: 0.5, domain: 'earnings_guidance', category: 'earnings_guidance', dueOn: '2026-03-15', outcome: null, settlement: { ticker: 'META', fiscalYear: 2025, quarter: null, annual: true, metric: 'total expenses', value: 'in the range of $115-120 billion', tolerance: null, isRange: true } },
+      // FY2026 全年 capex：dueOn 未到 → pending 不提前结（到期门）
+      { id: 't315-meta-capex', claim: 'anticipate 2026 capital expenditures to be in the range of $135-145 billion', probability: 0.5, domain: 'earnings_guidance', category: 'earnings_guidance', dueOn: '2027-02-14', outcome: null, settlement: { ticker: 'META', fiscalYear: 2026, quarter: null, annual: true, metric: 'capital expenditures', value: 'in the range of $135-145 billion', tolerance: null, isRange: true } },
+      // 句反推路径：无 settlement 持久化元数据，claim 句与当期指引句逐字匹配
+      { id: 't315-nvda-rev', claim: 'For fiscal 2026, we expect revenue to be in the range of $210-220 billion', probability: 0.5, domain: 'earnings_guidance', category: 'earnings_guidance', dueOn: '2026-04-01', outcome: null },
+    ]};
+    fs.writeFileSync(LEDGER, JSON.stringify(mock, null, 2));
+    const eng = new ProjectionEngine({});
+    eng.signals = { totalItems: 3, domains: [], items: [
+      // META Q1-FY2025 备案（同财年、无全年实际值）——证据来源断言的对照：
+      // 摘除 annual 感知条件后 find() 会命中它（fiscalYear 相同且 quarter==null
+      // 放行），证据指向没提供全年实际值的备案；有annualActuals非空条件才定位 Q4
+      { source: 'SEC EDGAR', ticker: 'META', link: 'https://sec.gov/meta-q1-2025', accession: '0001628280-25-000009',
+        actualPeriod: { quarter: 1, fiscalYear: 2025 },
+        actuals: [{ metric: 'revenue', value: '$42.0 billion', gaapBasis: '' }],
+        annualActuals: [], guidance: [] },
+      // META Q4-2025 备案：全年实际值（live 实抓值）
+      { source: 'SEC EDGAR', ticker: 'META', link: 'https://sec.gov/meta-q4-2025', accession: '0001628280-26-003832',
+        actualPeriod: { quarter: 4, fiscalYear: 2025 },
+        actuals: [{ metric: 'revenue', value: '$59.89 billion', gaapBasis: '' }],
+        annualActuals: [
+          { metric: 'revenue', value: '$200.97 billion', gaapBasis: '' },
+          { metric: 'total expenses', value: '$117.69 billion', gaapBasis: '' },
+          { metric: 'capital expenditures', value: '$72.22 billion', gaapBasis: '' },
+        ], guidance: [] },
+      // NVDA Q4-FY2026 备案：全年营收实际值 + 当期指引句（句反推）
+      { source: 'SEC EDGAR', ticker: 'NVDA', link: 'https://sec.gov/nvda-q4-fy26', accession: '0001045810-26-000019',
+        actualPeriod: { quarter: 4, fiscalYear: 2026 },
+        actuals: [{ metric: 'revenue', value: '$68.1 billion', gaapBasis: '' }],
+        annualActuals: [{ metric: 'revenue', value: '$215.9 billion', gaapBasis: '' }],
+        guidance: [
+          { sentence: 'For fiscal 2026, we expect revenue to be in the range of $210-220 billion', metric: 'revenue', settleMetric: 'revenue', value: 'in the range of $210-220 billion', isRange: true, quarter: null, fiscalYear: 2026, annual: true, gaapBasis: '' },
+        ] },
+    ]};
+    const res = eng.settleEarningsGuidance();
+    const byId = Object.fromEntries(res.settled.map(s => [s.id, s]));
+    const after = JSON.parse(fs.readFileSync(LEDGER, 'utf-8'));
+    const expE = after.predictions.find(p => p.id === 't315-meta-exp');
+    const nvE = after.predictions.find(p => p.id === 't315-nvda-rev');
+    return byId['t315-meta-exp'] && byId['t315-meta-exp'].hit === true
+      && byId['t315-meta-exp'].actual === '$117.69 billion'
+      && /FY2025 全年/.test(byId['t315-meta-exp'].period)
+      && byId['t315-nvda-rev'] && byId['t315-nvda-rev'].hit === true      // 句反推路径也走 annual key
+      && after.predictions.find(p => p.id === 't315-meta-capex').outcome === null  // 到期门
+      && res.pending === 1
+      && expE.outcome === true && /全年/.test(expE.evidence.summary)
+      && expE.evidence.sources[0] === 'https://sec.gov/meta-q4-2025'      // 证据指向提供全年实际值的备案
+      && nvE.outcome === true && nvE.evidence.sources[0] === 'https://sec.gov/nvda-q4-fy26';
+  } finally {
+    if (saved === null) { try { fs.unlinkSync(LEDGER); } catch (_) {} } else fs.writeFileSync(LEDGER, saved);
+  }
+})(), '全年指引（quarter=null）按 annual key 与 Q4 备案全年实际值配对：区间内判命中、到期门不提前结、证据来源指向真的提供全年值的备案（不落在该公司任一 FY 备案上）');
+
+// ── 组 4：端到端（extractSignals 透传 / cron 注入 / 版本号）─────
+// 8. extractSignals 透传 annualActuals（v2.14/v3.4/v3.5 同型断链防护）
+c315('extractSignals 透传 annualActuals', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const items = [{
+    title: 'META 8-K', description: '', body: 'Revenue was $59.89 billion', source: 'SEC EDGAR',
+    bucket: 'sec_filings', origin: 'live', pubDate: '2026-01-28', link: 'https://x/meta',
+    fiscalYearEnd: '1231', ticker: 'META', company: 'Meta Platforms', accession: '0001-26-1',
+    actualPeriod: { quarter: 4, fiscalYear: 2025 }, actuals: [{ metric: 'revenue', value: '$59.89 billion' }],
+    annualActuals: [{ metric: 'revenue', value: '$200.97 billion', gaapBasis: '' }],
+    guidance: [],
+  }];
+  const sig = new ProjectionEngine({ newsData: { sec_filings: { domain: 'sec_filings', news: items } } }).extractSignals();
+  const it = sig.items[0];
+  return Array.isArray(it.annualActuals) && it.annualActuals.length === 1
+    && it.annualActuals[0].value === '$200.97 billion';
+})(), 'annualActuals 不在 extractSignals 重建时带上，annual key 永远建不起来（v2.14 同型：字段在采集层打上、读取层有，中间重建时丢）');
+
+// 9. cron 注入源级：全年结算口径限定随结算段进 agent prompt
+c315('cron 注入脚本渲染全年结算口径限定', (() => {
+  const p = require('path').join(require('os').homedir(), '.hermes/scripts/hf-cron-fetch.sh');
+  if (!require('fs').existsSync(p)) return false;
+  const src = require('fs').readFileSync(p, 'utf-8');
+  return /guidanceSettlement/.test(src)
+    && /\[v3\.15\] 全年指引（quarter=null）与 Q4 备案的全年实际值按 annual key 配对/.test(src)
+    && /双值句取全年值/.test(src);
+})(), '全年结算语义（annual key/双值句取全年值/年份必须等于标题财年）必须随结算段进注入脚本，否则 agent 看不到限定');
+
+// 10. 版本号一致性（五处对齐 3.15.0）
+c315('版本号一致性：五处对齐 3.15.0', (() => {
+  const fs315 = require('fs');
+  const VERSION = fs315.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
+  const pkg = JSON.parse(fs315.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
+  const rp = fs315.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
+  const pf = fs315.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
+  return VERSION === '3.15.0'
+    && pkg.version === '3.15.0'
+    && rp.includes('文明推演引擎 v3.15.0')      // banner
+    && /version: '3\.15\.0'/.test(pf)          // projection meta
+    && /version: '3\.15\.0'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.15.0，防 corr-2026-014 版本漂移复发');
+
+// ── v3.15 汇总 ──
+(async () => {
+  const results = await Promise.all(v315.map(c => Promise.resolve(c.ok)));
+  let f = 0;
+  v315.forEach((c, i) => {
+    const ok = results[i];
+    if (!ok) f++;
+    console.log(`${ok ? '✓' : '✗'} ${c.name}${ok ? '' : '  —— ' + c.detail}`);
+  });
+  console.log(`\nv3.15: ${v315.length - f} 通过, ${f} 失败, 共 ${v315.length} 个`);
+  if (f > 0) {
+    console.log('结论：全年实际值抽取与 annual key 配对不完整（抽取/精度/配对/端到端/版本有缺）。');
+    process.exitCode = 1;
+  } else {
+    console.log('结论：全年实际值（Q4 备案「季度+全年」双值句取全年值 + 单值全年句）抽取进库，annual key（quarter=null）配对成立——全年指引从「永远 pending」变为到期可结算；营收路径全年守卫同轮修复（AMD live 误报）。');
   }
 })();

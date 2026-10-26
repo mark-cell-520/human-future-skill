@@ -220,6 +220,10 @@ class ProjectionEngine {
           // 拿不到对账依据与 ticker，结算路径整段走不到（v2.14/v3.4 同型断链）。
           actuals: Array.isArray(n.actuals) ? n.actuals : null,
           actualPeriod: n.actualPeriod || null,
+          // [v3.15] 全年实际值透传（v2.14/v3.4/v3.5 同型断链防护）：不带上，
+          // settleEarningsGuidance 的 annual key 永远建不起来，全年指引
+          // （META 费用/capex 等）到期找不到对账依据。
+          annualActuals: Array.isArray(n.annualActuals) ? n.annualActuals : null,
           ticker: n.ticker || null,
           company: n.company || null,
           accession: n.accession || null,
@@ -340,7 +344,7 @@ class ProjectionEngine {
     }
     const report = {
       meta: {
-        version: '3.14.0',
+        version: '3.15.0',
         heartflowVersion: this.analysis.engineVersion,
         timestamp: this.timestamp,
         modulesLoaded: this.analysis.modulesLoaded,
@@ -1783,6 +1787,20 @@ class ProjectionEngine {
           if (basis) addActual(`${tk}|${ap.fiscalYear}|${ap.quarter}|${base}`, a.value);
         }
       }
+      // [v3.15] 全年实际值按 **annual key**（quarter=null）建索引：全年指引的
+      // 结算元数据 quarter 恒 null（readPeriod 对全年形态 quarter=null），
+      // keyBase 就是 `${tk}|${fy}|null|`——全年实际值必须落在同一段上才配对。
+      // 与财季 key 不冲突：extractActuals 抽不到季度期间时 actuals 为空，
+      // 财季值永远不会落在 null 段。口径登记规则与财季路径相同（口径化
+      // key + 裸 key 双登记）。
+      if (tk && ap && ap.fiscalYear && Array.isArray(it.annualActuals)) {
+        for (const a of it.annualActuals) {
+          const base = normalizeMetric(a.metric);
+          const basis = a.gaapBasis || '';
+          addActual(`${tk}|${ap.fiscalYear}|null|${basis ? basis + ' ' : ''}${base}`, a.value);
+          if (basis) addActual(`${tk}|${ap.fiscalYear}|null|${base}`, a.value);
+        }
+      }
       if (tk && Array.isArray(it.guidance)) {
         for (const g of it.guidance) {
           if (!g.fiscalYear) continue;
@@ -1895,18 +1913,28 @@ class ProjectionEngine {
           // 匹配），不是该 ticker 的首个条目——旧代码用 find(ticker) 拿到的
           // 恒为最新备案链接，同一公司不同财季的结算证据完全相同，配合缺
           // dueOn 的去重 key 把两次不同承诺并成一个义务（Brier 样本失真）。
+          // [v3.15] 全年结算的证据来源必须是**真的提供了全年实际值**的备案：
+          // 全年指引（quarter=null）按 fiscalYear 匹配会命中该公司任一 FY
+          // 备案（META FY2026 有三份），旧条件拿第一条——证据指向没提供
+          // 该实际值的备案。加 annualActuals 非空条件后，Q4 备案（全年值
+          // 的唯一来源）才被定位。财季路径（quarter 非 null）条件不变。
           sources: [edgarItems.find(it => it.ticker === meta.ticker
             && it.actualPeriod && it.actualPeriod.fiscalYear === meta.fiscalYear
-            && (meta.quarter == null || it.actualPeriod.quarter === meta.quarter))?.link
+            && (meta.quarter == null
+              ? (Array.isArray(it.annualActuals) && it.annualActuals.length > 0)
+              : it.actualPeriod.quarter === meta.quarter))?.link
+            || edgarItems.find(it => it.ticker === meta.ticker
+              && it.actualPeriod && it.actualPeriod.fiscalYear === meta.fiscalYear
+              && (meta.quarter == null || it.actualPeriod.quarter === meta.quarter))?.link
             || edgarItems.find(it => it.ticker === meta.ticker)?.link
             || 'https://www.sec.gov/'],
-          summary: `SEC EDGAR 自动结算：${meta.ticker} FY${meta.fiscalYear} Q${meta.quarter || '(全年)'} ${meta.metric} `
+          summary: `SEC EDGAR 自动结算：${meta.ticker} FY${meta.fiscalYear} ${meta.quarter ? 'Q' + meta.quarter : '全年'} ${meta.metric} `
             + `指引 ${meta.value}${meta.tolerance ? ' ±' + meta.tolerance : (meta.isRange ? '（区间）' : '')}，`
             + `实际 ${actuals[0]} → ${verdict.direction}，判定 ${verdict.hit ? '命中(带内)' : '未中(带外)'}。`,
           settledBy: 'edgar-auto-settlement',
         });
         settled.push({
-          id: p.id, ticker: meta.ticker, period: `FY${meta.fiscalYear} Q${meta.quarter || '全年'}`,
+          id: p.id, ticker: meta.ticker, period: `FY${meta.fiscalYear} ${meta.quarter ? 'Q' + meta.quarter : '全年'}`,
           metric: meta.metric, guided: meta.value, actual: actuals[0],
           hit: verdict.hit, direction: verdict.direction,
         });

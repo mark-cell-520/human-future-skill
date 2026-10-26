@@ -679,17 +679,25 @@ function extractActuals(text) {
   // 营收取**第一个**匹配：总收入惯例上在亮点段最前（"Revenue of $96.2B"），
   // 且营收无 GAAP/非 GAAP 分歧——取第一个即总收入，后面的分部营收
   // （"Data Center revenue of $89.0B"）不取，避免把分部当总量。
+  // [v3.15] 三个营收形态全部补 notFullYear 全年值守卫（旧代码只有毛利率/
+  // EPS/营业利润三条路径过守卫，营收主路径不过）：AMD Q4-FY2025 live 实证
+  // 「For the full year 2025, AMD reported record revenue of $34.6 billion」
+  // 的**全年**营收被当成财季实际值索引进 (AMD|2025|4|revenue)——该条无
+  // Q4 营收指引所以没造成错结算，但查找表里躺着错事实。全年值由
+  // extractAnnualActuals 收（v3.15 同轮新增），财季 key 只收财季值。
   const rv = lead.match(ACTUAL_REVENUE_RE);
-  if (rv) push('revenue', '', rv[1]);
+  if (rv && notFullYear(rv)) push('revenue', '', rv[1]);
   else {
     // [v3.5.1] AMZN 形态兜底："Net sales increased 20% to $200.5 billion"
     // （无 of/was/were 连接词，主模式不命中）。紧邻形态，见上方精度注释。
+    // [v3.15] 全年值守卫同上（AMZN 全年段 "Net sales increased 12% to
+    // $716.9 billion in 2025" 同型，live 实证）。
     const rv2 = lead.match(ACTUAL_SALES_INCREASED_RE);
-    if (rv2) push('revenue', '', rv2[1]);
+    if (rv2 && notFullYear(rv2)) push('revenue', '', rv2[1]);
     else {
       // [v3.13] MRVL bullet 冒号形态（"Net Revenue: $2.739 billion"）
       const rv3 = lead.match(ACTUAL_REVENUE_COLON_RE);
-      if (rv3) push('revenue', '', rv3[1]);
+      if (rv3 && notFullYear(rv3)) push('revenue', '', rv3[1]);
       else {
         // [v3.14] META 亮点 bullet 形态（"Revenue – Revenue was $64.60
         // billion"）：实际值句在汇总表之后、超出 lead=1600 窗口，搜索窗
@@ -723,7 +731,160 @@ function extractActuals(text) {
     if (!notFullYear(m)) continue;
     push('operating income', '', '$' + m[1] + ' ' + m[2]);
   }
-  return { quarter, fiscalYear, actuals };
+  // [v3.15] 全年实际值（Q4 备案「季度+全年」双值句的全年值 + 单值全年句）：
+  // 与上面的财季抽取完全分离——财季路径的全年守卫把全年句滤掉，全年路径
+  // 只收带全年期间标记的句子。见 extractAnnualActuals 注释。
+  const annualActuals = extractAnnualActuals(t, { fiscalYear });
+  return { quarter, fiscalYear, actuals, annualActuals };
+}
+
+/**
+ * [v3.15] 从备案正文抽**全年实际值**（财年口径，供全年指引到期结算）。
+ *
+ * 为什么需要：v3.14 把 META FY2026 全年费用/capex 区间指引登记进台账
+ * （dueOn 2027-02-14），但 extractActuals 只抽财季实际值、且 FULLYEAR_
+ * GUARD 主动把全年句滤掉——全年指引永远找不到对账依据，「到期结算」
+ * 对全年类指引从未覆盖。台账 9 条 annual=true 全年指引（META FY2026
+ * 费用/capex×6 + NVDA FY2027 全年税率×3，live 台账实证）全部压在这个
+ * 能力上；ORCL FY2027 全年营收×2 同年登记（无持久化 settlement，按全年
+ * 句反推），GOOGL FY2026 capex 是被错记成 FY2025Q4 的残废条目（年份在
+ * 名词前的全年形态不命中，下轮候选）。
+ *
+ * live 实证（2026-10-27 从 SEC EDGAR 实抓原文驱动，六家 Q4 备案）：
+ *   ① META Q4-2025（0001628280-26-003832）：「Total costs and expenses
+ *      were $35.15 billion and $117.69 billion, ... for the fourth
+ *      quarter and full year 2025, respectively.」——双值句，季度在前
+ *      全年在后，全年值=第二个（revenue / capital expenditures 同型；
+ *      SKILL.md v3.14 边界里的 "were $22.14 billion and $72.x billion"
+ *      就是 capex 那句）
+ *   ② NVDA Q4-FY2026：「For fiscal 2026, revenue was $215.9 billion」
+ *      ——单值全年句（句内无季度标记）
+ *   ③ AMD Q4-FY2025：「For the full year 2025, AMD reported record
+ *      revenue of $34.6 billion, gross margin of 50%, operating income
+ *      of $3.7 billion, ... diluted earnings per share of $2.65.」
+ *      ——一句多指标，名词+of+值
+ *   ④ MRVL Q4-FY2026：「Net revenue for fiscal 2026 was $8.195
+ *      billion」+「GAAP net income for fiscal 2026 was $2.670
+ *      billion, or $3.07 per diluted share」（非 GAAP 同型）
+ *   ⑤ AMZN Q4-FY2025：「Net sales increased 12% to $716.9 billion in
+ *      2025, compared with $638.0 billion in 2024.」——值在前年份在尾，
+ *      同比从句先剥掉（先出现的值才是全年值；Operating income 同型）
+ *   （MU Q4-FY2026 也有双值句但指标是 free cash flow，不在结算指标族
+ *    内，不收——没有配对需求。）
+ *
+ * 精度纪律（漏报比误报诚实，全部有测试钉住）：
+ *   ① 句内全年标记的年份必须等于备案标题财年（Q4 备案刚结束的财年）
+ *      ——同比从句（in 2024）与其它年份的句子天然被挡
+ *   ② 含季度标记的句子只走双值形态（季度在前、全年标记在后，取第二个
+ *      值）；不含季度标记的走单值形态——季度实际值句（"Net revenue
+ *      for the fourth quarter of fiscal 2026 was $2.219 billion"）
+ *      与亮点标题句（"Fourth Quarter and Fiscal 2026 • Record
+ *      quarterly revenue of $68.1 billion"）都不会被当全年
+ *   ③ 指引句（expect/anticipate ... to be）不是实际值：未来时态守卫
+ *   ④ 双百分号 respectively（"GAAP and non-GAAP gross margins were
+ *      71.1% and 71.3%, respectively"）无法归属口径，整句跳过（NVDA
+ *      全年毛利率 live 实证）——错归口径比漏报危险
+ *   ⑤ FCF / net income 等无结算指引的指标族不收
+ *
+ * @param {string} text 备案正文（stripHtml 后）
+ * @param {{fiscalYear: number|null}} headline 标题句解析出的已报告财年
+ * @returns {Array<{metric:string, value:string, gaapBasis:string}>} 全年实际值
+ */
+// 全年期间标记：for (the) (fiscal year|full year|fiscal) [fiscal] [of] YYYY
+// （NVDA "for fiscal 2026" / AMD "for the full year 2025" / MU "for the
+// full year of 2026" / NVDA 指引 "for the full year fiscal 2027"）+
+// 裸 "full year YYYY"（META 双值句 "…and full year 2025, respectively"
+// 的年份在 full year 之后、前面没有 for）+ 尾部 "in YYYY"（AMZN 全年段
+// "…to $716.9 billion in 2025"）。季度句的 "for the fourth quarter of
+// fiscal 2026" 不命中任何分支（for 后不是 fiscal/full year）。
+const ANNUAL_MARKER_RE = /for\s+(?:the\s+)?(?:fiscal\s+year|full[\s-]?year|fiscal)\s*(?:fiscal\s+)?(?:of\s+)?(20\d{2})|\bfull\s+year\s+(20\d{2})\b|\bin\s+(20\d{2})\b/gi;
+// 季度标记（句内含季度词的句子只走双值形态，不走单值形态）
+const ANNUAL_QUARTER_MARK_RE = /(?:first|second|third|fourth|1st|2nd|3rd|4th)[\s-]?quarter|\bQ[1-4]\b/i;
+// 未来时态守卫：期望/指引句不是实际值（META "We expect full year 2026
+// total expenses to be in the range of…" / NVDA outlook 段 / AMZN 指引段）
+const ANNUAL_FUTURE_RE = /\b(?:expects?|anticipates?|projects?|forecasts?)\b[^.;]{0,90}?\bto\s+be\b|\b(?:is|are)\s+expected\s+to\s+be\b|\bwill\s+be\b/i;
+// 双值形态（季度在前全年在后，取第二个值）：META live 三指标
+const ANNUAL_DUAL_FORMS = [
+  { family: 'revenue', re: /\b(?:record\s+|total\s+|net\s+)?revenue\b[^.;]{0,90}?\b(?:was|were)\s+(?:approximately\s+)?(\$\s?[\d.,]+\s*(?:billion|million|bn|m))\s*,?\s+and\s+(?:approximately\s+)?(\$\s?[\d.,]+\s*(?:billion|million|bn|m))/i },
+  { family: 'total expenses', re: /\btotal\s+(?:costs\s+and\s+)?expenses\b[^.;]{0,90}?\b(?:was|were)\s+(?:approximately\s+)?(\$\s?[\d.,]+\s*(?:billion|million|bn|m))\s*,?\s+and\s+(?:approximately\s+)?(\$\s?[\d.,]+\s*(?:billion|million|bn|m))/i },
+  { family: 'capital expenditures', re: /\bcapital\s+expenditures?\b[^.;]{0,90}?\b(?:was|were)\s+(?:approximately\s+)?(\$\s?[\d.,]+\s*(?:billion|million|bn|m))\s*,?\s+and\s+(?:approximately\s+)?(\$\s?[\d.,]+\s*(?:billion|million|bn|m))/i },
+];
+// 单值全年形态（句内无季度标记）：NVDA/MRVL/AMD/AMZN live 实证
+// valueFrom: 'g1'=第一组即值 / 'g2'=第二组（or $X per diluted share 形态）
+// basisFrom: 'prefix'=从匹配点前 30 字符推 / 'match'=口径词在捕获组里
+const ANNUAL_SINGLE_FORMS = [
+  { family: 'revenue', re: /\b(?:record\s+|total\s+|net\s+)?revenue\b[^.;]{0,90}?\b(?:of|was|were)\s+(?:approximately\s+)?(\$\s?[\d.,]+\s*(?:billion|million|bn|m))\b/i, valueFrom: 'g1' },
+  { family: 'revenue', re: /\bnet\s+sales\s+increased\s+[\d.]+\s*%\s+to\s+(\$\s?[\d.,]+\s*(?:billion|million|bn|m))\b/i, valueFrom: 'g1' },
+  { family: 'gross margin', re: /\bgross\s+margins?\b[^.;]{0,50}?\b(?:was|were)\s+(?:both\s+|approximately\s+)?([\d.]+\s*%)/, valueFrom: 'g1', basisFrom: 'prefix' },
+  { family: 'gross margin', re: /\bgross\s+margin\s+of\s+([\d.]+\s*%)/i, valueFrom: 'g1' },
+  { family: 'operating income', re: /\boperating\s+income\s+(?:increased\s+to|was|of)\s+(\$\s?[\d.,]+\s*(?:billion|million|bn|m))\b/i, valueFrom: 'g1' },
+  { family: 'diluted eps', re: /(non-?gaap|gaap)\s+net\s+income\s+(?:of|for)\b(?:(?<=\d)\.(?=\d)|[^.;]){0,170}?or\s+\$([\d.]+)\s+per\s+diluted\s+share/gi, valueFrom: 'g2', basisFrom: 'match' },
+  // 值组用 \d+(?:\.\d+)? 不用 [\d.]+：句末 "of $2.65." 的句点会被
+  // [\d.]+ 吞进值里（AMD live 实测抽成 "$2.65."，parseMetricValue 解析出错）
+  { family: 'diluted eps', re: /\bdiluted\s+(?:net\s+)?(?:income|earnings)\s+per\s+(?:diluted\s+)?share\s+of\s+\$(\d+(?:\.\d+)?)/i, valueFrom: 'g1' },
+];
+function extractAnnualActuals(text, headline) {
+  const t = String(text || '');
+  const fy = headline && headline.fiscalYear;
+  if (!fy) return [];
+  const out = [];
+  const seen = new Set();
+  const push = (family, basis, value) => {
+    const v = String(value).replace(/\s+/g, ' ');
+    const k = `${family}|${basis}`;
+    if (seen.has(k)) return;
+    seen.add(k);
+    out.push({ metric: family, value: v, gaapBasis: basis });
+  };
+  // 全年实际值固定在亮点段（live 实测六家全部在 @600-@3100），扫描窗
+  // 取前 8000 字符（与 v3.14 META bullet 营收形态同款宽窗）
+  const win = t.slice(0, 8000);
+  // 同比从句先剥掉再取年份："compared with $638.0 billion in 2024" 的
+  // 2024 不是全年值年份（值本身在从句前，取早出现的那个）
+  const sents = win.split(/(?<=[.!?。！？]["'」』]?)\s+/);
+  for (const sent of sents) {
+    // 同比从句剥除要用小数点容差字符类（NUM_OR_TERM 同款）："compared
+    // with $638.0 billion in 2024" 的金额含小数点，[^.;]* 会停在 "638"
+    // 把 "0 billion in 2024" 残留下来——年份集合混进 2024，整句被拒
+    // （AMZN live 实测第一版全年段抽空即此因）。
+    const noCompare = sent.replace(/compared (?:with|to|versus|against)(?:(?<=\d)\.(?=\d)|[^.;])*/gi, ' ');
+    // ① 全年期间标记 + 年份必须等于标题财年
+    ANNUAL_MARKER_RE.lastIndex = 0;
+    let ym; const years = new Set();
+    while ((ym = ANNUAL_MARKER_RE.exec(noCompare)) !== null) {
+      years.add(Number(ym[1] || ym[2] || ym[3]));
+    }
+    if (years.size !== 1 || !years.has(fy)) continue;
+    const hasQ = ANNUAL_QUARTER_MARK_RE.test(sent);
+    if (hasQ) {
+      // ② 双值形态：季度在前全年在后，取第二个值
+      for (const f of ANNUAL_DUAL_FORMS) {
+        const m = sent.match(f.re);
+        if (!m) continue;
+        push(f.family, gaapBasisOf(sent.slice(Math.max(0, m.index - 30), m.index)), m[2]);
+      }
+    } else {
+      // ③ 单值形态：先过未来时态守卫（指引句不是实际值）
+      if (ANNUAL_FUTURE_RE.test(sent)) continue;
+      // ④ 双百分号 respectively 无法归属口径，整句跳过毛利率
+      const dualPct = /\d+(?:\.\d+)?\s*%\s+and\s+\d+(?:\.\d+)?\s*%/.test(sent);
+      for (const f of ANNUAL_SINGLE_FORMS) {
+        if (f.family === 'gross margin' && dualPct) continue;
+        const g = new RegExp(f.re.source, f.re.flags.includes('g') ? f.re.flags : f.re.flags + 'g');
+        let m;
+        while ((m = g.exec(sent)) !== null) {
+          const basis = f.basisFrom === 'prefix'
+            ? gaapBasisOf(sent.slice(Math.max(0, m.index - 30), m.index))
+            : (f.basisFrom === 'match' ? gaapBasisOf(m[1]) : '');
+          const raw = f.valueFrom === 'g2' ? m[2] : m[1];
+          const value = f.family === 'diluted eps' ? '$' + raw : raw;
+          push(f.family, basis, value);
+          break;   // 每形态取第一个匹配（总量惯例在最前，与财季路径同纪律）
+        }
+      }
+    }
+  }
+  return out;
 }
 
 /**
@@ -788,6 +949,11 @@ async function collectEdgarFilings(opts = {}) {
             // [v3.5] 已报告财季的实际值（营收/毛利率）+ 期间，供 earnings-settlement 结算
             actuals: actualEx.actuals,
             actualPeriod: actualEx.fiscalYear ? { quarter: actualEx.quarter, fiscalYear: actualEx.fiscalYear } : null,
+            // [v3.15] 全年实际值（Q4 备案「季度+全年」双值句的全年值 + 单值
+            // 全年句）——全年指引（META 费用/capex、NVDA/ORCL 全年）到期
+            // 时的对账依据。期间锚与 actualPeriod 同一财年
+            // （Q4 备案刚结束的财年），结算层按 quarter=null 建 annual key。
+            annualActuals: actualEx.annualActuals || [],
           });
         }
       } catch (e) {
@@ -830,7 +996,7 @@ function guidanceNounKey(sentence) {
 }
 
 module.exports = {
-  collectEdgarFilings, extractGuidance, extractActuals, stripHtml,
+  collectEdgarFilings, extractGuidance, extractActuals, extractAnnualActuals, stripHtml,
   DEFAULT_TICKERS, GUIDANCE_SENTENCE_RE, PERIOD_PATTERNS,
   ACTUAL_REVENUE_RE, ACTUAL_REVENUE_COLON_RE, ACTUAL_MARGIN_RE, RESULTS_HEADLINE_RES,
   ACTUAL_SALES_INCREASED_RE, QUARTER_ENDED_RE, MAX_8K_PER_COMPANY,
