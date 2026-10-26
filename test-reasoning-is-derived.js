@@ -4231,11 +4231,11 @@ c34('cron 注入脚本渲染财报指引（VERDICT_CN/汇总/结构行）', (() 
 
 // ── 组 4：版本号（corr-2026-014 同型：banner 腐烂四个补丁轮）─────
 // [v3.6] 版本推进到 3.6.0（新辨别维度：成本/价格信号），本断言跟着当前版本走。
-c34('版本号一致性：banner 与 VERSION 对齐（3.16.0）', (() => {
+c34('版本号一致性：banner 与 VERSION 对齐（3.17.0）', (() => {
   const fs2 = require('fs');
   const version = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return version === '3.16.0' && rp.includes('文明推演引擎 v3.16.0');
+  return version === '3.17.0' && rp.includes('文明推演引擎 v3.17.0');
 })(), 'run-pipeline banner 必须与 VERSION 一致（v3.1 修过 banner/meta 同型后又腐烂）');
 
 // ── v3.4 汇总 ──
@@ -4429,15 +4429,15 @@ c35('cron 注入脚本渲染财报指引结算段', (() => {
 
 // ── 组 6：版本号一致性（corr-2026-014 同型，四处对齐）──────────
 // [v3.6] 推进到 3.6.0（新辨别维度），断言跟当前版本走。
-c35('版本号一致性：VERSION/package.json/projection meta/banner 对齐 3.16.0', (() => {
+c35('版本号一致性：VERSION/package.json/projection meta/banner 对齐 3.17.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.16.0'
-    && /3\.16\.0/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.16.0');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.16.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.17.0'
+    && /3\.17\.0/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.17.0');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.17.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.5 汇总 ──
 (async () => {
@@ -4664,15 +4664,15 @@ c351('结算证据来源是提供实际值的备案（actualPeriod 匹配）', (
 
 // ── 组 4：版本号一致性（corr-2026-014 同型）────────────────────
 // [v3.6] 推进到 3.6.0（新辨别维度：成本/价格信号）。
-c351('版本号一致性：VERSION/package.json/banner 对齐 3.16.0', (() => {
+c351('版本号一致性：VERSION/package.json/banner 对齐 3.17.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.16.0'
-    && /3\.16\.0/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.16.0');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.16.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.17.0'
+    && /3\.17\.0/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.17.0');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.17.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.5.1 汇总 ──
 (async () => {
@@ -4867,15 +4867,15 @@ c36('精度门未破：非主张文本仍被挡在辨别外', (() => {
 })(), 'Fed 公告与播客不得因 cost-signal 新模式进入辨别');
 
 // ── 组 5：版本号一致性（corr-2026-014 同型）────────────────────
-c36('版本号一致性：VERSION/package.json/banner 对齐 3.16.0', (() => {
+c36('版本号一致性：VERSION/package.json/banner 对齐 3.17.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.16.0'
-    && /3\.16\.0/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.16.0');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.16.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.17.0'
+    && /3\.17\.0/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.17.0');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.17.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.6 汇总 ──
 (async () => {
@@ -5111,15 +5111,15 @@ c37('精度门未破：非主张文本仍被挡在辨别外', (() => {
 })(), 'Fed 公告与播客不得因 expert-judgment 新模式进入辨别');
 
 // ── 组 5：版本号一致性（corr-2026-014 同型）────────────────────
-c37('版本号一致性：VERSION/package.json/banner 对齐 3.16.0', (() => {
+c37('版本号一致性：VERSION/package.json/banner 对齐 3.17.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.16.0'
-    && /3\.16\.0/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.16.0');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.16.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.17.0'
+    && /3\.17\.0/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.17.0');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.17.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.7 汇总 ──
 (async () => {
@@ -5410,15 +5410,15 @@ c38('精度门未破：非主张文本仍被挡在辨别外', (() => {
 })(), 'Fed 公告/播客/官员言论不得因 regulatory-action 新模式进入辨别');
 
 // ── 组 5：版本号一致性（corr-2026-014 同型）────────────────────
-c38('版本号一致性：VERSION/package.json/banner 对齐 3.16.0', (() => {
+c38('版本号一致性：VERSION/package.json/banner 对齐 3.17.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.16.0'
-    && /3\.16\.0/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.16.0');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.16.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.17.0'
+    && /3\.17\.0/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.17.0');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.17.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.8 汇总 ──
 (async () => {
@@ -5639,18 +5639,18 @@ c39('精度门未破：非主张文本与无幅度价格谈论仍被挡在辨别
 })(), 'Fed 公告/播客/无幅度降价谈论/TCO 效率句/官员言论不得因 price-cut 新模式进入辨别');
 
 // ── 组 5：版本号一致性（corr-2026-014 同型）────────────────────
-c39('版本号一致性：五处对齐 3.16.0', (() => {
+c39('版本号一致性：五处对齐 3.17.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs2.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.16.0'
-    && pkg.version === '3.16.0'
-    && rp.includes('文明推演引擎 v3.16.0')      // banner
-    && /version: '3\.16\.0'/.test(pf)          // projection meta
-    && /version: '3\.16\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.16.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.17.0'
+    && pkg.version === '3.17.0'
+    && rp.includes('文明推演引擎 v3.17.0')      // banner
+    && /version: '3\.17\.0'/.test(pf)          // projection meta
+    && /version: '3\.17\.0'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.17.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.9 汇总 ──
 (async () => {
@@ -6012,18 +6012,18 @@ c310('精度门未破：扩桶后非主张文本仍被挡在辨别外', (() => {
 })(), 'Fed 公告/播客/无数量部署谈话/合作公告/免责声明/泛指交易假设句/官员言论不得因扩池与新模式进入辨别');
 
 // ── 组 7：版本号一致性（corr-2026-014 同型）────────────────────
-c310('版本号一致性：五处对齐 3.16.0', (() => {
+c310('版本号一致性：五处对齐 3.17.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs2.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.16.0'
-    && pkg.version === '3.16.0'
-    && rp.includes('文明推演引擎 v3.16.0')      // banner
-    && /version: '3\.16\.0'/.test(pf)          // projection meta
-    && /version: '3\.16\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.16.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.17.0'
+    && pkg.version === '3.17.0'
+    && rp.includes('文明推演引擎 v3.17.0')      // banner
+    && /version: '3\.17\.0'/.test(pf)          // projection meta
+    && /version: '3\.17\.0'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.17.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.10 汇总 ──
 (async () => {
@@ -6355,18 +6355,18 @@ c3111('精度门未破：非主张文本不因新形态进入辨别', (() => {
 })(), 'Fed 公告/播客/订阅总量/速率上限/无数量部署谈话/合作公告不得因 usage-metric 进辨别');
 
 // ── 组 7：版本号一致性（corr-2026-014 同型）────────────────────
-c3111('版本号一致性：五处对齐 3.16.0', (() => {
+c3111('版本号一致性：五处对齐 3.17.0', (() => {
   const fs311 = require('fs');
   const VERSION = fs311.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs311.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs311.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs311.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.16.0'
-    && pkg.version === '3.16.0'
-    && rp.includes('文明推演引擎 v3.16.0')      // banner
-    && /version: '3\.16\.0'/.test(pf)          // projection meta
-    && /version: '3\.16\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.16.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.17.0'
+    && pkg.version === '3.17.0'
+    && rp.includes('文明推演引擎 v3.17.0')      // banner
+    && /version: '3\.17\.0'/.test(pf)          // projection meta
+    && /version: '3\.17\.0'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.17.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.11 汇总 ──
 (async () => {
@@ -6660,18 +6660,18 @@ c312('精度门未破：营收/工程 scaling/政府资助/无数量规模级句
 })(), '营收句/工程 scaling/政府资助/无数量规模级句/Fed 公告/播客不得因 compute-infra 进辨别');
 
 // ── 组 7：版本号一致性（corr-2026-014 同型）────────────────────
-c312('版本号一致性：五处对齐 3.16.0', (() => {
+c312('版本号一致性：五处对齐 3.17.0', (() => {
   const fs312 = require('fs');
   const VERSION = fs312.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs312.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs312.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs312.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.16.0'
-    && pkg.version === '3.16.0'
-    && rp.includes('文明推演引擎 v3.16.0')      // banner
-    && /version: '3\.16\.0'/.test(pf)          // projection meta
-    && /version: '3\.16\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.16.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.17.0'
+    && pkg.version === '3.17.0'
+    && rp.includes('文明推演引擎 v3.17.0')      // banner
+    && /version: '3\.17\.0'/.test(pf)          // projection meta
+    && /version: '3\.17\.0'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.17.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.12 汇总 ──
 (async () => {
@@ -6989,19 +6989,19 @@ c313('cron 注入源级：口径一致才配对措辞进注入脚本', (() => {
     && /guidanceSettlement/.test(sh);   // v3.5 注入不断链
 })(), 'hf-cron-fetch.sh 必须含口径配对限定与歧义新措辞——引擎产出了但注入脚本不读＝agent 看不到（同型断链纪律）');
 
-// 13. 版本号一致性（五处对齐 3.16.0）
-c313('版本号一致性：五处对齐 3.16.0', (() => {
+// 13. 版本号一致性（五处对齐 3.17.0）
+c313('版本号一致性：五处对齐 3.17.0', (() => {
   const fs313 = require('fs');
   const VERSION = fs313.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs313.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs313.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs313.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.16.0'
-    && pkg.version === '3.16.0'
-    && rp.includes('文明推演引擎 v3.16.0')      // banner
-    && /version: '3\.16\.0'/.test(pf)          // projection meta
-    && /version: '3\.16\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.16.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.17.0'
+    && pkg.version === '3.17.0'
+    && rp.includes('文明推演引擎 v3.17.0')      // banner
+    && /version: '3\.17\.0'/.test(pf)          // projection meta
+    && /version: '3\.17\.0'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.17.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.13 汇总 ──
 (async () => {
@@ -7261,19 +7261,19 @@ c314('精度回归：无区间标记期望句不进库 + 旧形态夹具逐一�
     && nvOld.find(g => g.metric === 'revenue').quarter === 1;
 })(), 'form D 间隔词≥1 与 form B 零重叠（点值区间句不重复抽取）；无区间标记的期望句不是可证伪主张；NVDA 02-25 旧夹具期间从 FY27Q1 纠正为 FY27 全年');
 
-// 8. 版本号一致性（五处对齐 3.16.0）
-c314('版本号一致性：五处对齐 3.16.0', (() => {
+// 8. 版本号一致性（五处对齐 3.17.0）
+c314('版本号一致性：五处对齐 3.17.0', (() => {
   const fs314 = require('fs');
   const VERSION = fs314.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs314.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs314.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs314.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.16.0'
-    && pkg.version === '3.16.0'
-    && rp.includes('文明推演引擎 v3.16.0')      // banner
-    && /version: '3\.16\.0'/.test(pf)          // projection meta
-    && /version: '3\.16\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.16.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.17.0'
+    && pkg.version === '3.17.0'
+    && rp.includes('文明推演引擎 v3.17.0')      // banner
+    && /version: '3\.17\.0'/.test(pf)          // projection meta
+    && /version: '3\.17\.0'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.17.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.14 汇总 ──
 (async () => {
@@ -7536,19 +7536,19 @@ c315('cron 注入脚本渲染全年结算口径限定', (() => {
     && /双值句取全年值/.test(src);
 })(), '全年结算语义（annual key/双值句取全年值/年份必须等于标题财年）必须随结算段进注入脚本，否则 agent 看不到限定');
 
-// 10. 版本号一致性（五处对齐 3.16.0）
-c315('版本号一致性：五处对齐 3.16.0', (() => {
+// 10. 版本号一致性（五处对齐 3.17.0）
+c315('版本号一致性：五处对齐 3.17.0', (() => {
   const fs315 = require('fs');
   const VERSION = fs315.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs315.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs315.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs315.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.16.0'
-    && pkg.version === '3.16.0'
-    && rp.includes('文明推演引擎 v3.16.0')      // banner
-    && /version: '3\.16\.0'/.test(pf)          // projection meta
-    && /version: '3\.16\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.16.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.17.0'
+    && pkg.version === '3.17.0'
+    && rp.includes('文明推演引擎 v3.17.0')      // banner
+    && /version: '3\.17\.0'/.test(pf)          // projection meta
+    && /version: '3\.17\.0'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.17.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.15 汇总 ──
 (async () => {
@@ -7735,7 +7735,7 @@ c316('settleEarningsGuidance：GOOGL FY2026 capex 全年区间结算链端到端
 
 // ── 组 5：已知边界如实（GOOGL capex 全年实际值抽不到）───────────
 // 7. GOOGL Q4-2025 live：全年 capex 实际值在现金流量表（表格式陈述），形态族不收
-c316('已知边界如实：GOOGL 全年 capex 实际值在现金流表（TTM 列），全年形态族不收', (() => {
+c316('已知边界（v3.17 部分推进）：FCF 对账表 TTM 列形态仍不收——现金流量表形态已进库', (() => {
   const { extractAnnualActuals } = require('./human-future/scripts/edgar-collector.js');
   // live 逐字（googexhibit991q42025.htm）：亮点段给的是指引句；实际值只在
   // 现金流量表（"Less: purchases of property and equipment (17,197) ... (91,447)"
@@ -7747,7 +7747,7 @@ c316('已知边界如实：GOOGL 全年 capex 实际值在现金流表（TTM 列
   ].join(' ');
   const ann = extractAnnualActuals(GOOGL_Q4, { fiscalYear: 2025 });
   return ann.length === 0;
-})(), '指引侧修好了但对账依据缺位——FY2026 capex 指引到期时若无 Q4 备案双值句/全年标记句，按 pending/无实际值跳过如实处理（漏报比误报诚实，表格式 capex 实际值抽取是下轮候选）');
+})(), '指引侧修好了但对账依据缺位——FY2026 capex 指引到期时若无 Q4 备案双值句/全年标记句，按 pending/无实际值跳过如实处理（v3.17 已推进现金流量表形态见该轮组 1；FCF 对账表 TTM 列仍是库外形态，漏报比误报诚实）');
 
 // ── 组 6：端到端（cron 注入 / 版本号）──────────────────────────
 // 8. cron 注入源级：[v3.16] 口径限定随结算段进 agent prompt
@@ -7781,19 +7781,19 @@ c316('guidanceStruct 透传 isRange：登记时区间指引不再退化成点值
     && rPoint.guidance && rPoint.guidance.isRange === false;
 })(), '旧代码 guidanceStruct 从 v3.4 起不漏 isRange——登记时 isRange: !!r.guidance.isRange 恒为 false，区间指引（META 费用/capex×6/NVDA 税率×3/AMZN/MRVL/GOOGL）的持久化 settlement 把区间值当点值存；备案滑出采集窗口后（句子索引失效、回落持久化分支）guidanceBand 判「无容差/区间的点值指引」跳过，区间指引到期永远无法结算');
 
-// 11. 版本号一致性（五处对齐 3.16.0）
-c316('版本号一致性：五处对齐 3.16.0', (() => {
+// 11. 版本号一致性（五处对齐 3.17.0）
+c316('版本号一致性：五处对齐 3.17.0', (() => {
   const fs316 = require('fs');
   const VERSION = fs316.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs316.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs316.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs316.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.16.0'
-    && pkg.version === '3.16.0'
-    && rp.includes('文明推演引擎 v3.16.0')      // banner
-    && /version: '3\.16\.0'/.test(pf)          // projection meta
-    && /version: '3\.16\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.16.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.17.0'
+    && pkg.version === '3.17.0'
+    && rp.includes('文明推演引擎 v3.17.0')      // banner
+    && /version: '3\.17\.0'/.test(pf)          // projection meta
+    && /version: '3\.17\.0'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.17.0，防 corr-2026-014 版本漂移复发');
 
 // 10. forecast 段渲染截断披露（v3.10/v3.11 同型纪律：辨别了但看不见=没交付）
 c316('forecast 渲染上限 30 + 超限披露「另有 N 条未显示」', (() => {
@@ -7841,5 +7841,216 @@ c316('forecast 渲染上限 30 + 超限披露「另有 N 条未显示」', (() =
     process.exitCode = 1;
   } else {
     console.log('结论：残废条目三处全修（期间 FY2025Q4→FY2026 全年、点值→X-to-Y 区间、capex 指标族归一），结算链端到端成立；季度指引零误判、既有形态零漂移；GOOGL capex 全年实际值缺位如实记边界。');
+  }
+})();
+
+// v3.17 — 表格式全年 capex 实际值抽取（已知边界推进：现金流量表进库）
+//
+// 定位：v3.16 白纸黑字的已知边界——GOOGL FY2026 capex 指引（台账 dueOn
+// 2027-02-14，区间 $175-185B）的实际值只在现金流量表「Purchases of
+// property and equipment」行，全年实际值形态族（双值句/全年标记句）不收
+// 表格式陈述，FY2026 指引到期时无对账依据。本轮按 live 实证推进
+// （2026-10-27 从 SEC EDGAR 实抓四家 Q4 备案原文驱动）。
+//
+// ① extractAnnualActuals 增补表形态：现金流量表标题锚 + 全年列标记
+//   （Year/Twelve Months Ended；GOOGL Q2 的「Year To Date」与 META Q3 的
+//   「Nine Months Ended」天然拒绝）+ 仅 Q4 备案（AMZN Q1/Q2 live 实证：
+//   Q1-Q3 的 Twelve Months Ended 是 TTM 列且年份与标题财年相同——期间
+//   守卫 quarter===4，live 端到端实测抓到的误收，corr-2026-036）+ 列对齐
+//   （数据行数值个数驱动，全年列=后两列，表头年份匹配标题财年）+ 单位只认百万；
+// ② 双来源去重：叙事口径优先（META live 实证：叙事 $72.22B 含融资租赁
+//   本金、报表行 $69.691B 不含——两个不同值落同一 annual key 会判歧义
+//   跳过，把可结算指引变成跳过比漏报更糟）；
+// ③ 结算链端到端：真实抽取的全年 capex 值直通 annual key 配对。
+// live 实证：GOOGL FY2025 $91.447B / AMD FY2025 $974M / MRVL FY2026
+// $354.1M / AMZN FY2025 $131.819B 全部抽中；NVDA 发布不含现金流表
+// （如实漏报）；财季值与商业辨别段零漂移（live 端到端 diff 实证）。
+// ════════════════════════════════════════════════════════════════
+const v317 = [];
+function c317(name, ok, detail) { v317.push({ name, ok, detail }); }
+
+// live 逐字夹具（2026-10-27 SEC EDGAR 实抓，现金流量表区域原样）
+// GOOGL 0001652044-26-000012（googexhibit991q42025.htm，Q4-2025）
+const GOOGL_Q4_STMT = 'CONSOLIDATED STATEMENTS OF CASH FLOWS (In millions) Quarter Ended December 31, Year Ended December 31, 2024 2025 2024 2025 (unaudited) (unaudited) Operating activities Net income $ 26,536 $ 34,455 $ 100,118 $ 132,170 Adjustments: Depreciation of property and equipment 4,205 6,040 15,311 21,136 Stock-based compensation expense 5,810 7,071 22,785 24,953 Deferred income taxes (1,448) 1,218 (5,257) 8,348 Loss (gain) on debt and equity securities, net 67 (2,354) (2,671) (24,620) Other 827 1,265 3,419 2,108 Changes in assets and liabilities, net of effects of acquisitions: Accounts receivable, net (4,570) (4,943) (5,891) (8,779) Income taxes, net 379 66 (2,418) (3,226) Other assets 937 (482) (1,397) (4,542) Accounts payable 401 227 359 907 Accrued expenses and other liabilities 5,205 7,937 (1,161) 12,939 Accrued revenue share 581 799 1,059 899 Deferred revenue 183 1,103 1,043 2,420 Net cash provided by operating activities 39,113 52,402 125,299 164,713 Investing activities Purchases of property and equipment (14,276) (27,851) (52,535) (91,447) Purchases of marketable securities';
+// AMD 0000002488-26-000014（q42025991.htm，Q4-FY2025）
+const AMD_Q4_STMT = 'STATEMENTS OF CASH FLOWS (Millions) (Unaudited) Three Months Ended Year Ended December 27, 2025 December 28, 2024 December 27, 2025 December 28, 2024 Cash flows from operating activities: Net income $ 1,511 $ 482 $ 4,335 $ 1,641 (Income) loss from discontinued operations, net of tax 109 — (66) — Adjustments to reconcile net income to net cash provided by operating activities: Depreciation and amortization 194 172 750 671 Amortization of acquisition-related intangibles 557 583 2,254 2,393 Stock-based compensation 486 339 1,638 1,407 (Gains) losses on long-term investments, net (280) — (341) — Deferred income taxes 230 (300) 248 (1,163) Inventory loss at (recovery from) contract manufacturer — — (67) 65 Other 30 93 120 125 Changes in operating assets and liabilities: Accounts receivable, net (114) 96 (121) (1,865) Inventories (610) (362) (2,189) (1,458) Prepaid expenses and other assets 248 510 (11) 339 Accounts payable (588) (571) 410 3 Accrued and other liabilities 531 257 (467) 883 Net cash provided by operating activities of continuing operations 2,304 1,299 6,493 3,041 Net cash provided by operating activities of discontinued operations 296 — 1,216 — Net cash provided by operations 2,600 1,299 7,709 3,041 Cash flows from investing activities: Purchases of property and equipment (222) (208) (974) (636) Purchases of short-term investments';
+// MRVL 0001835632-26-000006（q426_8kx1312026ex-991.htm，Q4-FY2026）
+const MRVL_Q4_STMT = 'Statements of Cash Flows (Unaudited) (In millions) Three Months Ended Year Ended January 31, 2026 February 1, 2025 January 31, 2026 February 1, 2025 Cash flows from operating activities: Net income (loss) $ 396.1 $ 200.2 $ 2,670.1 $ (885.0) Adjustments to reconcile net income (loss) to net cash provided by operating activities: Depreciation and amortization 93.4 78.8 348.6 304.3 Stock-based compensation 143.0 147.6 590.8 597.4 Amortization of acquired intangible assets 223.6 247.1 942.0 1,052.6 Restructuring related charges (gains), net — 4.7 (14.0) 528.8 Deferred income taxes 44.4 (5.7) 42.2 (111.9) Gain on sale of business — — (1,830.4) — Other expense, net 24.4 23.8 109.5 65.9 Changes in assets and liabilities, net of acquisitions: Accounts receivable (640.2) (30.5) (1,158.2) 93.2 Prepaid expenses and other assets 41.1 (172.8) (242.4) 3.4 Inventories (370.5) (169.8) (389.8) (230.0) Accounts payable 378.4 71.7 299.3 181.5 Accrued employee compensation 57.5 31.6 (10.5) 43.5 Accrued liabilities and other non-current liabilities (17.5) 87.3 393.3 37.5 Net cash provided by operating activities 373.7 514.0 1,750.5 1,681.2 Cash flows from investing activities: Purchases of technology licenses (1.1) (0.8) (4.5) (7.0) Purchases of property and equipment (114.3) (69.9) (354.1) (284.6) Proceeds from sales of property';
+// AMZN 0001018724-26-000002（amzn-20251231xex991.htm，Q4-2025）
+const AMZN_Q4_STMT = 'Statements of Cash Flows (in millions) (unaudited) Three Months Ended December 31, Twelve Months Ended December 31, 2024 2025 2024 2025 CASH, CASH EQUIVALENTS, AND RESTRICTED CASH, BEGINNING OF PERIOD $ 78,677 $ 70,464 $ 73,890 $ 82,312 OPERATING ACTIVITIES: Net income 20,004 21,192 59,248 77,670 Adjustments to reconcile net income to net cash from operating activities: Depreciation and amortization of property and equipment and capitalized content costs, operating lease assets, and other 15,631 19,471 52,795 65,756 Stock-based compensation 4,995 4,397 22,011 19,467 Non-operating expense (income), net (486) (693) 2,012 (14,880) Deferred income taxes (1,608) 822 (4,648) 11,470 Changes in operating assets and liabilities: Inventories 934 3,101 (1,884) (3,002) Accounts receivable, net and other (4,023) (5,478) (3,249) (7,333) Other assets (4,190) (5,220) (14,483) (15,632) Accounts payable 8,726 11,065 2,972 11,231 Accrued expenses and other 4,042 5,993 (2,904) (5,019) Unearned revenue 1,611 (191) 4,007 (214) Net cash provided by (used in) operating activities 45,636 54,459 115,877 139,514 INVESTING ACTIVITIES: Purchases of property and equipment (27,834) (39,522) (82,999) (131,819) Proceeds from property and equipment sales';
+// GOOGL 0001652044-26-000066（googexhibit991q22026.htm，Q2-2026，YTD 形态）
+const GOOGL_Q2_STMT = 'STATEMENTS OF CASH FLOWS (In millions, unaudited) Quarter Ended June 30, Year To Date June 30, 2025 2026 2025 2026 Operating activities Net income $ 28,196 $ 112,193 $ 62,736 $ 174,771 Adjustments: Depreciation of property and equipment 4,998 7,104 9,485 13,586 Stock-based compensation expense 5,998 7,957 11,514 14,708 Deferred income taxes (444) 20,618 (1,596) 27,538 Loss (gain) on debt and equity securities, net (1,451) (98,999) (11,411) (135,803) Other 560 1,896 1,041 3,161 Changes in assets and liabilities, net of effects of acquisitions: Accounts receivable, net (2,839) (6,541) (1,201) (6,904) Inventory (198) (6,696) (628) (7,739) Income taxes, net (9,631) 203 (2,434) 8,304 Other assets (1,281) (7,590) (2,139) (9,950) Accounts payable 553 2,330 (327) 2,090 Accrued expenses and other liabilities 3,150 6,310 (1,779) 308 Deferred revenue 136 284 636 789 Net cash provided by operating activities 27,747 39,069 63,897 84,859 Investing activities Purchases of property and equipment (22,446) (44,924) (39,643) (80,598) Purchases of marketable securities';
+// META 0001628280-26-066700（meta-09302026xexhibit991.htm，Q3-2026，九个月形态）
+const META_Q3_STMT = 'STATEMENTS OF CASH FLOWS (In millions) (Unaudited) Three Months Ended September 30, Nine Months Ended September 30, 2026 2025 2026 2025 Cash flows from operating activities Net income $ 9,860 $ 2,709 $ 52,481 $ 37,690 Adjustments to reconcile net income to net cash provided by operating activities: Depreciation and amortization 7,154 4,963 19,509 13,205 Share-based compensation 7,363 5,555 21,053 14,537 Deferred income taxes 2,117 19,868 3,685 17,704 Unrealized (gain) and loss on equity investments 18 (962) 1,204 (642) Other (329) 17 (402) (359) Changes in assets and liabilities: Accounts receivable (999) (807) (3,272) 660 Prepaid expenses and other current assets (936) (1,033) (4,166) (348) Other assets (2,437) 33 (4,973) (209) Accounts payable 1,596 (63) 1,242 (637) Accrued expenses and other current liabilities 1,940 455 7,602 (2,883) Other liabilities 7,439 (736) 2,910 868 Net cash provided by operating activities 32,786 29,999 96,873 79,586 Cash flows from investing activities Purchases of property and equipment (33,942) (18,829) (83,055) (48,308) Purchases of marketable securities';
+// META 0001628280-26-003832（meta-12312025xexhibit991.htm，Q4-2025 报表行）
+const META_Q4_STMT = 'STATEMENTS OF CASH FLOWS (In millions) (Unaudited) Three Months Ended December 31, Twelve Months Ended December 31, 2025 2024 2025 2024 Cash flows from operating activities Net income $ 22,768 $ 20,838 $ 60,458 $ 62,360 Adjustments to reconcile net income to net cash provided by operating activities: Depreciation and amortization 5,411 4,460 18,616 15,498 Share-based compensation 5,890 4,262 20,427 16,690 Deferred income taxes 1,033 (1,332) 18,738 (4,738) Unrealized (gain) loss on equity investments (496) 2 (1,138) (53) Impairment charges for facilities consolidation — 94 — 383 Other (56) 167 (416) 140 Changes in assets and liabilities: Accounts receivable (2,475) (2,978) (1,815) (1,485) Prepaid expenses and other current assets 259 (530) (89) (698) Other assets (272) (200) (481) (270) Accounts payable 623 568 (14) 373 Accrued expenses and other current liabilities 3,960 1,523 1,077 323 Other liabilities (431) 1,114 437 2,805 Net cash provided by operating activities 36,214 27,988 115,800 91,328 Cash flows from investing activities Purchases of property and equipment (21,383) (14,425) (69,691) (37,256) Purchases of marketable securities';
+// AMZN 0001018724-26-000012（amzn-20260331xex991.htm，Q1-2026，TTM 列形态）
+const AMZN_Q1_STMT = 'Statements of Cash Flows (in millions) (unaudited) Three Months Ended March 31, Twelve Months Ended March 31, 2025 2026 2025 2026 CASH, CASH EQUIVALENTS, AND RESTRICTED CASH, BEGINNING OF PERIOD $ 82,312 $ 90,106 $ 73,332 $ 69,893 OPERATING ACTIVITIES: Net income 17,127 30,255 65,944 90,798 Adjustments to reconcile net income to net cash from operating activities: Depreciation and amortization of property and equipment and capitalized content costs, operating lease assets, and other 14,262 18,945 55,373 70,439 Stock-based compensation 3,689 4,032 20,739 19,810 Non-operating expense (income), net (2,817) (15,632) (3,539) (27,695) Deferred income taxes 507 12,798 (3,203) 23,761 Changes in operating assets and liabilities: Inventories (1,222) 1,622 (4,882) (158) Accounts receivable, net and other 1,247 (5,750) (5,686) (14,330) Other assets (3,402) (3,811) (15,184) (16,041) Accounts payable (9,043) (8,737) 5,211 11,537 Accrued expenses and other (4,061) (8,045) (4,037) (9,003) Unearned revenue 728 355 3,167 (587) Net cash provided by (used in) operating activities 17,015 26,032 113,903 148,531 INVESTING ACTIVITIES: Purchases of property and equipment (25,019) (44,203) (93,093) (151,003) Proceeds from property and equipment sales';
+// AMZN 0001018724-26-000024（amzn-20260630xex991.htm，Q2-2026，3M/6M/TTM 六列形态）
+const AMZN_Q2_STMT = 'Statements of Cash Flows (in millions) (unaudited) Three Months Ended June 30, Six Months Ended June 30, Twelve Months Ended June 30, 2025 2026 2025 2026 2025 2026 CASH, CASH EQUIVALENTS, AND RESTRICTED CASH, BEGINNING OF PERIOD $ 69,893 $ 104,692 $ 82,312 $ 90,106 $ 71,673 $ 61,453 OPERATING ACTIVITIES: Net income 18,164 62,647 35,291 92,902 70,623 135,281 Adjustments to reconcile net income to net cash from operating activities: Depreciation and amortization of property and equipment and capitalized content costs, operating lease assets, and other 15,227 19,988 29,489 38,933 58,562 75,200 Stock-based compensation 6,534 6,038 10,223 10,070 20,551 19,314 Non-operating expense (income), net (1,258) (53,381) (4,075) (69,013) (4,702) (79,818) Deferred income taxes 11 17,691 518 30,489 (2,407) 41,441 Changes in operating assets and liabilities: Inventories (4,054) (1,818) (5,276) (196) (5,851) 2,078 Accounts receivable, net and other (1,125) (8,204) 122 (13,954) (4,602) (21,409) Other assets (2,971) (4,717) (6,373) (8,528) (15,100) (17,787) Accounts payable 7,058 9,442 (1,985) 705 6,264 13,921 Accrued expenses and other (4,952) (2,018) (9,013) (10,063) (4,842) (6,069) Unearned revenue (119) (281) 609 74 2,641 (749) Net cash provided by (used in) operating activities 32,515 45,387 49,530 71,419 121,137 161,403 INVESTING ACTIVITIES: Purchases of property and equipment (32,183) (54,208) (57,202) (98,411) (107,656) (173,028) Proceeds from property and equipment sales';
+
+// ── 组 1：表格式全年 capex 抽取（四家 live 逐字夹具）─────────
+// 1. GOOGL Q4-2025：全年 capex 只在现金流表（v3.16 已知边界的推进）
+c317('extractAnnualActuals：GOOGL Q4-2025 live 逐字现金流表（FY2025 capex $91.447B）', (() => {
+  const { extractAnnualActuals } = require('./human-future/scripts/edgar-collector.js');
+  const ann = extractAnnualActuals(GOOGL_Q4_STMT, { fiscalYear: 2025, quarter: 4 });
+  return ann.length === 1 && ann[0].metric === 'capital expenditures'
+    && ann[0].value === '$91.447 billion' && ann[0].gaapBasis === '';
+})(), 'v3.16 边界原话「GOOGL capex 全年实际值在现金流量表（purchases of property and equipment）……全年实际值形态族不收表格式陈述」的推进：四列（Q4\'24/Q4\'25/FY\'24/FY\'25）全年列在后两列，表头年份 2025 命中取第 4 值 (91,447)');
+
+// 2. AMD Q4-FY2025：全年列是第 3 列（年份顺序 2025 2024 2025 2024）
+c317('extractAnnualActuals：AMD Q4-FY2025 live 逐字（FY2025 capex $974M，列序 2025 2024 2025 2024）', (() => {
+  const { extractAnnualActuals } = require('./human-future/scripts/edgar-collector.js');
+  const ann = extractAnnualActuals(AMD_Q4_STMT, { fiscalYear: 2025, quarter: 4 });
+  return ann.length === 1 && ann[0].value === '$974 million';
+})(), 'AMD 表头年份序 [2025,2024,2025,2024]（当前年在先）——全年列=后两列 [2025,2024]，fy=2025 命中第 3 值 (974)，不是末列 (636)；证明列对齐按表头年份寻列而非恒取末列');
+
+// 3. MRVL Q4-FY2026：财年终年 1/31、小数金额
+c317('extractAnnualActuals：MRVL Q4-FY2026 live 逐字（FY2026 capex $354.1M，年终年 1/31）', (() => {
+  const { extractAnnualActuals } = require('./human-future/scripts/edgar-collector.js');
+  const ann = extractAnnualActuals(MRVL_Q4_STMT, { fiscalYear: 2026, quarter: 4 });
+  return ann.length === 1 && ann[0].value === '$354.1 million';
+})(), 'MRVL 财年标签与日历年终年同数（FY2026 = Year Ended January 31, 2026，表头年份 [2026,2025,2026,2025]）；金额带小数点 (354.1)——数值 token 正则容忍小数点，不按句点截断');
+
+// 4. AMZN Q4-2025：Twelve Months Ended 标签形态
+c317('extractAnnualActuals：AMZN Q4-2025 live 逐字（FY2025 capex $131.819B，Twelve Months Ended）', (() => {
+  const { extractAnnualActuals } = require('./human-future/scripts/edgar-collector.js');
+  const ann = extractAnnualActuals(AMZN_Q4_STMT, { fiscalYear: 2025, quarter: 4 });
+  return ann.length === 1 && ann[0].value === '$131.819 billion';
+})(), 'AMZN 全年列标记是「Twelve Months Ended」（不是 Year Ended）——全年标记正则三形态覆盖；亮点段叙事「purchases of property and equipment, net of proceeds from sales and incentives」在报表标题之前，标题锚天然不抢');
+
+// ── 组 2：精度回归（漏报比误报诚实）────────────────────────────
+// 5. 六形态零误收
+c317('精度回归：YTD 两形态/AMZN TTM 两形态/Q4 五列/FCF 对账表/叙事提及/千分位单位/年份不符 全部零误收', (() => {
+  const { extractAnnualActuals } = require('./human-future/scripts/edgar-collector.js');
+  // ① GOOGL Q2-2026 live 逐字：「Year To Date June 30」不是全年列标记
+  // ② META Q3-2026 live 逐字：「Nine Months Ended」YTD 列
+  // ③ FCF 对账表（GOOGL live 逐字，v3.16 夹具）：无报表标题 + 5 列含 TTM
+  const FCF_RECON = 'Quarter Ended TTM Q1 2025 Q2 2025 Q3 2025 Q4 2025 Q4 2025 Net cash provided by operating activities $ 36,150 $ 27,747 $ 48,414 $ 52,402 $ 164,713 Less: purchases of property and equipment (17,197) (22,446) (23,953) (27,851) (91,447) Free cash flow $ 18,953 $ 5,301 $ 24,461 $ 24,551 $ 73,266';
+  // ④ AMZN live 叙事提及（亮点段，无表格结构）
+  const AMZN_NARR = 'Free cash flow decreased to $11.2 billion for the trailing twelve months, driven primarily by a year-over-year increase of $50.7 billion in purchases of property and equipment, net of proceeds from sales and incentives.';
+  // ⑤ 千分位单位（守卫用例非 live 实证：错标度 1000 倍比漏报危险）
+  const IN_THOUSANDS = 'STATEMENTS OF CASH FLOWS (In thousands) Three Months Ended Year Ended December 31, 2024 2025 2024 2025 Purchases of property and equipment (14,276) (27,851) (52,535) (91,447)';
+  // ⑥ Q4 备案五列形态（防御性守卫用例非 live 实证：live 池 Q4 备案全是 2/4 列；
+  //    AMZN Q2 的 3M/6M/TTM 六列是 Q2 备案、被期间守卫先挡——列数守卫对 Q4 的
+  //    非 2/4 列形态兜底，防末列错当月度列）
+  const FIVE_COL_Q4 = 'STATEMENTS OF CASH FLOWS (In millions) Three Months Ended Year Ended December 31, 2024 2025 2024 2025 2026 Purchases of property and equipment (100) (200) (300) (400) (500)';
+  const hits = [
+    extractAnnualActuals(GOOGL_Q2_STMT, { fiscalYear: 2026, quarter: 2 }).length,   // YTD：Year To Date 不匹配全年标记
+    extractAnnualActuals(META_Q3_STMT, { fiscalYear: 2026, quarter: 3 }).length,    // YTD：Nine Months Ended
+    extractAnnualActuals(FCF_RECON, { fiscalYear: 2025, quarter: 4 }).length,       // FCF 对账表：无报表标题（+5 列）
+    extractAnnualActuals(AMZN_NARR, { fiscalYear: 2025, quarter: 4 }).length,       // 叙事提及：无报表标题
+    extractAnnualActuals(IN_THOUSANDS, { fiscalYear: 2025, quarter: 4 }).length,    // 千分位单位
+    extractAnnualActuals(FIVE_COL_Q4, { fiscalYear: 2025, quarter: 4 }).length,     // Q4 五列形态
+    extractAnnualActuals(AMD_Q4_STMT, { fiscalYear: 2023, quarter: 4 }).length,     // 年份不在表头
+    // AMZN Q1-2026 live 逐字：Q1 备案的 Twelve Months Ended 是 TTM 列（$93.093B/$151.003B
+    // 两个 TTM 值），期间守卫（quarter===4）挡——live 端到端实测抓到的误收（corr-2026-036）
+    extractAnnualActuals(AMZN_Q1_STMT, { fiscalYear: 2025, quarter: 1 }).length,
+    // AMZN Q2-2026 live 逐字：3M/6M/TTM 六列，列数守卫挡
+    extractAnnualActuals(AMZN_Q2_STMT, { fiscalYear: 2026, quarter: 2 }).length,
+  ];
+  return hits.every(n => n === 0);
+})(), 'GOOGL Q2「Year To Date June 30」连全年标记都不匹配、META Q3「Nine Months Ended」被月份标记守卫挡；AMZN Q1（TTM 列年份与标题财年相同！）被 quarter===4 期间守卫挡、AMZN Q2 六列被列数守卫挡；FCF 对账表（5 列含 TTM）与 AMZN 叙事提及无报表标题；千分位单位防错标度；年份不在表头不猜列');
+
+// 6. 列对齐双向精度：同表 FY2024 列可寻（$636M）
+c317('列对齐双向精度：AMD 同表 fy=2024 取 $636M（按年份寻列不是恒取某列）', (() => {
+  const { extractAnnualActuals } = require('./human-future/scripts/edgar-collector.js');
+  const a24 = extractAnnualActuals(AMD_Q4_STMT, { fiscalYear: 2024, quarter: 4 });
+  return a24.length === 1 && a24[0].value === '$636 million';
+})(), '同一张 AMD 表 fy=2025 → $974M（第 3 列）、fy=2024 → $636M（第 4 列）——列对齐真的按表头年份寻列；反向固定取末列会让 FY2025 抽到 FY2024 值');
+
+// ── 组 3：双来源去重 + 结算端到端（受控台账）────────────────
+// 7. META 双来源：叙事 capex（含融资租赁本金）优先于报表行
+c317('双来源去重：META 叙事 capex $72.22B 优先于报表行 $69.691B（口径一致才配对）', (() => {
+  const { extractAnnualActuals } = require('./human-future/scripts/edgar-collector.js');
+  // META live 逐字（v3.15 夹具句，0001628280-26-003832）：叙事带 finance leases 限定词
+  const NARR = '• Capital expenditures – Capital expenditures, including principal payments on finance leases, were $22.14 billion and $72.22 billion for the fourth quarter and full year 2025, respectively.';
+  const ann = extractAnnualActuals([NARR, META_Q4_STMT].join(' '), { fiscalYear: 2025, quarter: 4 });
+  const cap = ann.filter(a => a.metric === 'capital expenditures');
+  return cap.length === 1 && cap[0].value === '$72.22 billion';
+})(), 'META Q4-2025 live 实证：叙事「Capital expenditures, including principal payments on finance leases, were ... $72.22 billion」与报表行「(69,691)」是同一指标的两个口径——指引句带 finance leases 限定词时叙事值才是同口径实际值；两个不同值落同一 annual key 会判歧义跳过（把可结算指引变成跳过比漏报更糟），叙事先到先收');
+
+// 8. settleEarningsGuidance：真实抽取值直通 annual key 结算 + 季度 key 隔离
+c317('settleEarningsGuidance：表格式抽取的全年 capex 带内命中 + 残废季度形态不被误结算', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const { extractAnnualActuals } = require('./human-future/scripts/edgar-collector.js');
+  const fs = require('fs');
+  const LEDGER = path.join(__dirname, 'human-future/data/prediction-ledger.json');
+  const saved = fs.existsSync(LEDGER) ? fs.readFileSync(LEDGER, 'utf-8') : null;
+  try {
+    // 真实抽取（不手写 annualActuals）：GOOGL Q4-2025 live 现金流报表
+    const ann = extractAnnualActuals(GOOGL_Q4_STMT, { fiscalYear: 2025, quarter: 4 });
+    const mock = { version: '1.0.0', predictions: [
+      // ① 全年 capex 区间指引（dueOn 已过）vs 抽取值 $91.447B → 带内命中
+      { id: 't317-googl-annual', claim: 'expect 2025 capital expenditures to be in the range of $85 to $95 billion', probability: 0.5, domain: 'earnings_guidance', category: 'earnings_guidance', dueOn: '2026-03-01', outcome: null,
+        settlement: { ticker: 'GOOGL', fiscalYear: 2025, quarter: null, annual: true, metric: 'capital expenditures', value: 'in the range of $85 to $95 billion', tolerance: null, isRange: true } },
+      // ② 残废形态（台账实录：FY2025Q4 持久化元数据 + 名词级 capex + 点值无容差）
+      { id: 't317-googl-qtr', claim: 'our 2025 CapEx investments are anticipated to be $175', probability: 0.4, domain: 'earnings_guidance', category: 'earnings_guidance', dueOn: '2026-03-01', outcome: null,
+        settlement: { ticker: 'GOOGL', fiscalYear: 2025, quarter: 4, annual: false, metric: 'capex', value: '$175', tolerance: null, isRange: false } },
+    ]};
+    fs.writeFileSync(LEDGER, JSON.stringify(mock, null, 2));
+    const eng = new ProjectionEngine({});
+    eng.signals = { totalItems: 1, domains: [], items: [
+      { source: 'SEC EDGAR', ticker: 'GOOGL', link: 'https://sec.gov/googl-q4-2025', accession: '0001652044-26-000012',
+        actualPeriod: { quarter: 4, fiscalYear: 2025 }, actuals: [], annualActuals: ann, guidance: [] },
+    ]};
+    const res = eng.settleEarningsGuidance();
+    const byId = Object.fromEntries(res.settled.map(s => [s.id, s]));
+    const after = JSON.parse(fs.readFileSync(LEDGER, 'utf-8'));
+    const qtr = after.predictions.find(p => p.id === 't317-googl-qtr');
+    return byId['t317-googl-annual'] && byId['t317-googl-annual'].hit === true
+      && byId['t317-googl-annual'].actual === '$91.447 billion'
+      && /FY2025 全年/.test(byId['t317-googl-annual'].period)
+      && !byId['t317-googl-qtr']              // 季度 key 隔离：全年实际值不误结季度指引
+      && qtr.outcome === null
+      && res.settled.length === 1;
+  } finally {
+    if (saved === null) { try { fs.unlinkSync(LEDGER); } catch (_) {} } else fs.writeFileSync(LEDGER, saved);
+  }
+})(), '抽取值（$91.447 billion，百万折算格式）与指引带（$85-95B）单位量纲一致、直通 annual key 结算；残废形态条目（FY2025Q4 + 名词级 capex + 点值）走季度 key，全年实际值落在 null 段不误配（v3.15 annual key 隔离纪律）');
+
+// ── 组 4：端到端（cron 注入 / 版本号）──────────────────────────
+// 9. cron 注入源级：[v3.17] 口径限定随结算段进 agent prompt
+c317('cron 注入脚本渲染 v3.17 表格式 capex 口径限定', (() => {
+  const p = require('path').join(require('os').homedir(), '.hermes/scripts/hf-cron-fetch.sh');
+  if (!require('fs').existsSync(p)) return false;
+  const src = require('fs').readFileSync(p, 'utf-8');
+  return /\[v3\.17\] 表格式全年 capex 实际值进库/.test(src)
+    && /Purchases of property and equipment/.test(src)
+    && /仅 Q4 备案（Q1-Q3 的 Twelve Months Ended 是 TTM 列/.test(src)
+    && /YTD 列（Nine\/Six/.test(src)
+    && /六列（3M\/6M\/TTM）/.test(src)
+    && /叙事口径（如 META 含融资租赁本金的 capex）优先于报表行/.test(src);
+})(), '表格式抽取语义（报表标题锚/仅 Q4 备案的期间守卫/YTD 与 TTM 列拒收/叙事口径优先）必须随结算段进注入脚本，否则 agent 看不到限定');
+
+// 10. 版本号一致性（五处对齐 3.17.0）
+c317('版本号一致性：五处对齐 3.17.0', (() => {
+  const fs317 = require('fs');
+  const VERSION = fs317.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
+  const pkg = JSON.parse(fs317.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
+  const rp = fs317.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
+  const pf = fs317.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
+  return VERSION === '3.17.0'
+    && pkg.version === '3.17.0'
+    && rp.includes('文明推演引擎 v3.17.0')      // banner
+    && /version: '3\.17\.0'/.test(pf)          // projection meta
+    && /version: '3\.17\.0'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.17.0，防 corr-2026-014 版本漂移复发');
+
+// ── v3.17 汇总 ──
+(async () => {
+  const results = await Promise.all(v317.map(c => Promise.resolve(c.ok)));
+  let f = 0;
+  v317.forEach((c, i) => {
+    const ok = results[i];
+    if (!ok) f++;
+    console.log(`${ok ? '✓' : '✗'} ${c.name}${ok ? '' : '  —— ' + c.detail}`);
+  });
+  console.log(`\nv3.17: ${v317.length - f} 通过, ${f} 失败, 共 ${v317.length} 个`);
+  if (f > 0) {
+    console.log('结论：表格式 capex 抽取不完整（抽取/精度/去重/结算/端到端/版本有缺）。');
+    process.exitCode = 1;
+  } else {
+    console.log('结论：现金流量表形态进库，GOOGL FY2025 $91.447B/AMD $974M/MRVL $354.1M/AMZN $131.819B 实测抽中；YTD 列/FCF 对账表/叙事提及/千分位零误收；叙事口径优先去重；抽取值直通 annual key 结算。');
   }
 })();

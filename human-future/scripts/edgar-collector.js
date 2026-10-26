@@ -771,7 +771,9 @@ function extractActuals(text) {
   // [v3.15] 全年实际值（Q4 备案「季度+全年」双值句的全年值 + 单值全年句）：
   // 与上面的财季抽取完全分离——财季路径的全年守卫把全年句滤掉，全年路径
   // 只收带全年期间标记的句子。见 extractAnnualActuals 注释。
-  const annualActuals = extractAnnualActuals(t, { fiscalYear });
+  // [v3.17] quarter 透传：表格式 capex 仅 Q4 备案收（Q1-Q3 的 Twelve
+  // Months Ended 是 TTM 列，AMZN Q1 live 实证）。
+  const annualActuals = extractAnnualActuals(t, { fiscalYear, quarter });
   return { quarter, fiscalYear, actuals, annualActuals };
 }
 
@@ -921,7 +923,118 @@ function extractAnnualActuals(text, headline) {
       }
     }
   }
+  // [v3.17] 表格式全年 capex 实际值（现金流量表）：v3.16 白纸黑字的已知
+  // 边界——GOOGL FY2026 capex 指引（台账 dueOn 2027-02-14）的实际值只在
+  // 现金流量表（"Purchases of property and equipment" 行），双值句/全年
+  // 标记句两种叙事形态都收不到，FY2026 指引到期时无对账依据。走同一个
+  // push()/seen：同一备案叙事形态已收 capital expenditures 族时不重复收
+  // （META live 实证：叙事 "Capital expenditures, including principal
+  // payments on finance leases, were ... $72.22 billion" 与报表行
+  // "(69,691)" 口径不一致——指引句带 finance leases 限定词时叙事值才是
+  // 同口径实际值；两个不同值落同一 annual key 会判歧义跳过，把可结算
+  // 指引变成跳过比漏报更糟）。
+  for (const a of extractAnnualCapexFromTable(t, headline)) push(a.metric, a.gaapBasis, a.value);
   return out;
+}
+
+/**
+ * [v3.17] 从现金流量表抽**全年 capex 实际值**（表格式陈述）——v3.16 已知
+ * 边界「全年实际值形态族不收表格式陈述」的推进。
+ *
+ * live 实证（2026-10-27 从 SEC EDGAR 实抓四家 Q4 备案原文驱动）：
+ *   GOOGL 0001652044-26-000012「CONSOLIDATED STATEMENTS OF CASH FLOWS
+ *     (In millions) Quarter Ended December 31, Year Ended December 31,
+ *     2024 2025 2024 2025 … Purchases of property and equipment
+ *     (14,276) (27,851) (52,535) (91,447)」→ FY2025 = $91.447B
+ *   AMD 0000002488-26-000014「…Three Months Ended Year Ended
+ *     December 27, 2025 December 28, 2024 December 27, 2025
+ *     December 28, 2024 … (222) (208) (974) (636)」→ FY2025 = $974M
+ *   MRVL 0001835632-26-000006「…Three Months Ended Year Ended
+ *     January 31, 2026 February 1, 2025 January 31, 2026 February 1,
+ *     2025 … (114.3) (69.9) (354.1) (284.6)」→ FY2026 = $354.1M
+ *   AMZN 0001018724-26-000002「Statements of Cash Flows (in millions)
+ *     … Three Months Ended December 31, Twelve Months Ended
+ *     December 31, 2024 2025 2024 2025 … (27,834) (39,522)
+ *     (82,999) (131,819)」→ FY2025 = $131.819B
+ *   NVDA Q4-FY2026 发布不含现金流量表 → 不收（如实漏报）
+ *
+ * 精度纪律（漏报比误报诚实，v3.0.0c/v3.2/v3.6 同款）：
+ *   ① 只认现金流量表区域——标题锚定，capex 行取标题后第一个匹配。
+ *      FCF 对账表的 "Less: purchases of property and equipment"
+ *      （GOOGL live 实证，5 列含 TTM）与叙事 "purchases of property
+ *      and equipment, net of proceeds"（AMZN 亮点段）不是报表行；
+ *   ② 表头必须含全年列标记（Year/Twelve Months/Fiscal Year Ended），
+ *      且该标记之后不得再有月份数标记（Nine/Six/Three Months
+ *      Ended——Q1-Q3 备案的 YTD 列不是全年值；GOOGL Q2 的 "Year To
+ *      Date June 30" 连年份标记都不匹配，天然拒绝）；
+ *   ③ **仅 Q4 备案**（headline.quarter===4）——live 实证（AMZN
+ *      Q1/Q2）：Q1-Q3 备案的 "Twelve Months Ended" 是 **TTM 列**
+ *      （AMZN Q1-2026「Three Months Ended March 31, Twelve Months
+ *      Ended March 31, 2025 2026 2025 2026」，TTM 列年份 2026 与
+ *      标题财年相同！），TTM ≠ 全年——错当月度值会污染 annual key
+ *      （AMZN Q1 live：$93.093B/$151.003B 两个 TTM 值之一落在
+ *      (AMZN|FY|null|capital expenditures)，与 Q4 备案真全年值撞
+ *      key 判歧义）。Q4 备案的 TTM 列按定义等于全年列；
+ *   ④ 列对齐由数据行数值个数驱动：4 列（2 季度+2 全年）或 2 列（纯
+ *      全年），其它列数不解析（AMZN Q2 live：3M/6M/TTM 六列拒收）；
+ *      全年列=后两列，表头年份 token 取与 headline.fiscalYear 相等者
+ *      （MRVL FY2026 = Year Ended January 31, 2026，财年标签与日历
+ *      年终年同数，live 实证）；
+ *   ⑤ 单位只认百万（(In millions)/(Millions)——四家 live 实证），
+ *      千分位报表不解析（错标度 1000 倍比漏报危险）；
+ *   ⑥ 括号=现金流出取绝对值；≥1000（百万）折算 billion（指引带以
+ *      billion 计价，同量纲），否则保留 million——与其它
+ *      annualActuals 值格式一致（结算层 parseMetricValue 单位感知）。
+ */
+const CF_STATEMENT_TITLE_RE = /statements?\s+of\s+cash\s+flows/i;
+const CF_YEAR_LABEL_RE = /(?:twelve\s+months?|fiscal\s+year|year)\s+ended/i;
+const CF_MONTH_LABEL_RE = /(?:nine|six|three)\s+months?\s+ended/i;
+const CF_CAPEX_ROW_RE = /purchases\s+of\s+property\s+and\s+equipment/i;
+// 年份 token 带边界保护：数据行的 "26,536" 不得被误配成 2024 类年份
+const CF_YEAR_TOKEN_RE = /(?<![\d.,])(?:19|20)\d{2}(?![\d.,])/g;
+
+function extractAnnualCapexFromTable(text, headline) {
+  const t = String(text || '');
+  const fy = headline && headline.fiscalYear;
+  if (!fy) return [];
+  // ③ 仅 Q4 备案：Q1-Q3 备案的全年列标记（Twelve Months Ended）是 TTM
+  // 列不是全年列——AMZN Q1-2026 live 实证 TTM 列年份与标题财年相同
+  // （2026），只靠年份匹配会把 TTM 值当月度值落进 annual key。Q4 备案
+  // 的 TTM 列按定义等于全年列。
+  if (headline.quarter !== 4) return [];
+  // ① 现金流量表标题锚：capex 行必须属于现金流量表
+  const stmt = CF_STATEMENT_TITLE_RE.exec(t);
+  if (!stmt) return [];
+  // 表头窗：标题后 400 字符（live 实测四家表头都在 @250 内；再往里是
+  // 数据行，边界保护的年份正则不会被逗号数字误配）
+  const headWin = t.slice(stmt.index, stmt.index + 400);
+  // ② 全年列标记 + 其后不得有月份数标记（YTD 列不是全年值）
+  const yEnd = CF_YEAR_LABEL_RE.exec(headWin);
+  if (!yEnd) return [];
+  if (CF_MONTH_LABEL_RE.test(headWin.slice(yEnd.index + yEnd[0].length))) return [];
+  // ④ 单位只认百万
+  if (!/in\s+millions|\(millions\)/i.test(headWin)) return [];
+  // ① capex 行：标题之后第一个匹配（FCF 对账表在报表之后，不抢）
+  const row = CF_CAPEX_ROW_RE.exec(t.slice(stmt.index));
+  if (!row) return [];
+  const rowStart = stmt.index + row.index + row[0].length;
+  // 行内连续数值 token（括号=流出/$/逗号/小数点容忍），遇字母（下一行
+  // 标签）即停——"…(91,447) Purchases of marketable…" 不吃下一行
+  const run = /^(?:\s*\(?\$?\s?[\d.,]+\)?){1,6}/.exec(t.slice(rowStart, rowStart + 300));
+  if (!run) return [];
+  const nums = (run[0].match(/[\d.,]+/g) || []).map(s => Number(s.replace(/,/g, '')));
+  if (nums.length !== 2 && nums.length !== 4) return [];
+  // ③ 全年列=后两列；表头年份取与标题财年相等者
+  const years = (headWin.match(CF_YEAR_TOKEN_RE) || []).map(Number);
+  if (years.length < nums.length) return [];
+  const fyYears = years.slice(-2);
+  const fyVals = nums.slice(-2);
+  const idx = fyYears.indexOf(fy);
+  if (idx < 0) return [];
+  const v = fyVals[idx];
+  if (!(v > 0)) return [];
+  const value = v >= 1000 ? `$${Number((v / 1000).toFixed(3))} billion` : `$${v} million`;
+  return [{ metric: 'capital expenditures', value, gaapBasis: '' }];
 }
 
 /**

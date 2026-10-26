@@ -1,5 +1,5 @@
 {
-  "version": "3.14.0",
+  "version": "3.17.0",
   "corrections": [
     {
       "id": "corr-2026-007",
@@ -375,6 +375,15 @@
       "evidence": "2026-10-27 live 实证：全池 61 条指引逐条 diff，唯一变化即残废条目修正（其余 60 条零漂移）；新登记条目 settlement.isRange=true（修复前中间轮次登记的同 id 条目 isRange=false，已删除重登——同轮半成品非历史结算记录）；受控台账测试三条路径全通（句反推/持久化归一/到期门）。测试 11 项（live 逐字/精度回归四形态/零漂移/parseRange/归一/结算链端到端/已知边界/注入/透传/渲染披露/版本号）；8 轮反向验证全部精确失败",
       "lesson": "残废条目的「修好」判据是到期能结算，不是抽取层能抽出——期间/区间/指标族/持久化透传四环缺一环都不可结；每给辨别结果加一个指导出字段（ticker/fiscalYear/quarter→metric/gaapBasis→isRange），就要问一次「持久化 settlement 带不带、备案滑出窗口后还结不结」——透传字段逐个对账，不能只补当期报错的那一个",
       "severity": "high"
+    },
+    {
+      "id": "corr-2026-036",
+      "reportVersion": "v3.17",
+      "wrongClaim": "（沿用假设）现金流量表形态的全年列标记（Year/Twelve Months Ended）就是全年列——表头年份与标题财年相同就当月度值收，期间守卫只认列标记不认证备季度",
+      "rightClaim": "live 端到端实测抓到的误收：AMZN Q1-2026 备案（quarter ended March 31, 2026）的现金流量表是「Three Months Ended March 31, Twelve Months Ended March 31, 2025 2026 2025 2026」四列——Q1-Q3 备案的 Twelve Months Ended 是 TTM 列不是全年列，且 TTM 列年份（2026）与标题财年相同，只靠年份匹配会把 TTM 值（$93.093B/$151.003B）当月度值落进 (AMZN|FY|null|capital expenditures)，与 Q4 备案真全年值（$131.819B）撞 annual key 判歧义——把可结算指引变成跳过。AMZN Q2 备案更宽（3M/6M/TTM 六列）。表格式抽取加期间守卫 headline.quarter===4：Q4 备案的 TTM 列按定义等于全年列，Q1-Q3 一律拒收",
+      "evidence": "2026-10-27 live 实证（EDGAR 缓存先删再跑，v3.17 中间轮次）：annualActuals diff 出现计划外新增——AMZN 2026-04-29（Q1）抽出 capital expenditures=$93.093 billion（actualPeriod {quarter:1, fiscalYear:2025}，TTM'25 值）；实抓 amzn-20260331xex991.htm / amzn-20260630xex991.htm 原文确认 TTM 列形态；加 quarter===4 守卫后复跑，该计划外新增消失、四家 Q4 抽取值不变（GOOGL FY2025 $91.447B/AMD $974M/MRVL $354.1M/AMZN Q4 $131.819B）。测试钉住：AMZN Q1/Q2 live 逐字夹具进精度回归（零误收）",
+      "lesson": "「全年列标记」≠「全年列」——TTM 列的年份与标题财年相同，列标记+年份匹配双条件都挡不住它；期间类判据（全年/YTD/TTM）必须锚在备案季度上（quarter===4），不能只锚在列形态上。另：live 端到端的价值就在这——夹具全绿但真数据池里躺着夹具覆盖不到的形态（AMZN Q1 的 TTM 列），零漂移 diff 必须逐字段比对企业，计划外新增=误收嫌疑，先实抓原文再决定是特性还是缺陷",
+      "severity": "medium"
     }
   ]
 }

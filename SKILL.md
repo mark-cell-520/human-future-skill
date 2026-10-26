@@ -1,51 +1,55 @@
 ---
 name: human-future-v2
-title: "人类未来 · 文明推演引擎 v3.16.0"
-version: "3.16.0"
+title: "人类未来 · 文明推演引擎 v3.17.0"
+version: "3.17.0"
 description: |-
-  人类未来 v3.16.0 - GOOGL FY2026 capex 残废条目修复（已知边界推进：全年指引结算链第三环）——v3.14/v3.15 两轮白纸黑字的残废条目（「our 2026 CapEx investments are anticipated to be in the range of $175 to $185 billion」年份在名词前的全年形态三条年度模式都不命中，回落备案自身季度错记成 FY2025Q4、dueOn 2026-02-14 已过期；区间语法也不认 X-to-Y 形态，value 退化成点值 $175）本轮按 live 实证修复（2026-10-27 从 SEC EDGAR 实抓原文驱动）：① extractGuidance 新增年度期间形态 ANNUAL_YEAR_NOUN_RE（年份+指标名词+is/are+期望动词，lookbehind 挡季度前缀——"Q3 2026 revenue is expected"/"Q3 FY2026"/"third quarter 2026" 不得被抢成全年）；② 区间语法泛化 X-to-Y 美元区间（"in the range of $175 to $185 billion"，抽取侧 rangeM 与结算侧 parseRange 同构，首侧可选单位）；③ capex 指标族归一（settleMetricOf 与 normalizeMetric 两侧同修——指引名词 CapEx 与全年实际值族 capital expenditures 不归一时期间/区间修好了也配不上）；④ 同轮维护：ANNUAL_PERIOD_PATTERN 补季度前缀 lookbehind（"Guidance for Q2 FY 2027 ... Outlook" 锚词同句在年份后会抢成全年）。live 端到端：全池 61 条指引逐条 diff，唯一变化即残废条目修正为 FY2026 全年+区间（其余 60 条零漂移）；台账新登记 GOOGL FY2026 capex 全年区间指引（dueOn 2027-02-14），残废历史条目经句反推拿正确元数据、按到期门 pending（不硬结）；结算段幂等 0 新结算。已知边界（如实）：GOOGL capex 全年实际值在现金流量表（purchases of property and equipment，TTM 列），全年实际值形态族不收表格式陈述——FY2026 capex 指引到期时可能无对账依据（漏报比误报诚实，下轮候选）。测试 360→371 项；反向验证全部精确失败。历史：v3.15 全年实际值抽取+annual key 配对；v3.14 META CFO 评论式指引形态进库；v3.13 财报指引结算指标扩展；v3.12 算力基建承诺/规模主张（新辨别维度）；v3.11 用量/牵引度指标主张+引号切分修复；v3.10 一手信源桶接入+部署规模主张；v3.9 价格下调主张；v3.8 监管行动主张；v3.7 专家/机构判断主张；v3.6 成本/价格信号主张；v3.5.1 结算链路修复（维护）；v3.5 财报指引自动结算；v3.4 财报指引+SEC EDGAR；v3.3.1 survey-finding 精度修复（维护）；v3.3 并购/交易过程主张；v3.2.2/3.2.1 断链修复；v3.2 产能/供给约束主张；v3.1.1 口径错位精度修复；v3.1 接入 self-correction-ledger；v3.0.0c 商业段断链修复；v2.17 接入 GJOpen；v2.16 基准概率断链修复；v2.15 参考文本单列；v2.13 停止假推演。
+  人类未来 v3.17.0 - 表格式全年 capex 实际值抽取（已知边界推进：现金流量表进库，全年指引结算链第四环）——v3.16 白纸黑字的已知边界「GOOGL capex 全年实际值在现金流量表（purchases of property and equipment），全年实际值形态族不收表格式陈述——FY2026 capex 指引到期时可能无对账依据（下轮候选）」本轮按 live 实证推进（2026-10-27 从 SEC EDGAR 实抓四家 Q4 备案原文驱动）：① extractAnnualActuals 增补表格式形态——现金流量表标题锚（STATEMENTS OF CASH FLOWS）+ 全年列标记（Year/Twelve Months/Fiscal Year Ended，GOOGL Q2 的 "Year To Date" 与 META Q3 的 "Nine Months Ended" 天然拒绝）+ 仅 Q4 备案（AMZN Q1 live 实证：Q1-Q3 的 Twelve Months Ended 是 TTM 列且年份与标题财年相同，期间守卫 quarter===4，corr-2026-036）+ 列对齐（数据行数值个数驱动：4 列=2 季度+2 全年、2 列=纯全年；全年列=后两列，表头年份 token 匹配标题财年——AMD 表头年份序 2025 2024 2025 2024，财年 2025 命中第 3 列 $974M 不是末列 $636M，MRVL FY2026=Year Ended January 31, 2026 财年标签与日历年终年同数）+ 单位只认百万（千分位报表防错标度 1000 倍）+ ≥1000 折算 billion 与指引带同量纲；② 双来源去重：叙事口径优先——META Q4-2025 live 实证叙事 "Capital expenditures, including principal payments on finance leases, were ... $72.22 billion" 与报表行 "(69,691)" 口径不一致，两个不同值落同一 annual key 会判歧义跳过（把可结算指引变成跳过比漏报更糟）；③ 结算链端到端：真实抽取的全年 capex 值直通 annual key 配对（受控台账带内命中 + 残废季度形态条目季度 key 隔离不误结算）。live 端到端（EDGAR 缓存先删再跑）：pipeline exit 0；GOOGL FY2025 $91.447B/AMD FY2025 $974M/MRVL FY2026 $354.1M/AMZN FY2025 $131.819B 四家全年 capex 全部抽中并进报告产物（newsData.sec_filings[].annualActuals）；NVDA 发布不含现金流表如实漏报；GOOGL FY2026 capex 指引（dueOn 2027-02-14）按到期门保持 pending——不硬结；信号池/62 条 forecast 辨别/61 条指引/财季 actuals 逐条 diff 零漂移；结算段幂等 0 新结算/跳过 4（AMD 点值无容差×2 + MU 口径未限定歧义×2）/pending 41、ledger 69 条零变化；同代码复跑幂等。已知边界（如实）：FCF 对账表 TTM 列形态（GOOGL live 实证 5 列）仍不收；MU Q4 备案的资本开支行标签是「Investments in capital expenditures, net」（非 GAAP 对账表 5 列），行标签族只认 purchases of property and equipment——MU 无 capex 指引所以无结算需求；ORCL FY2027 全年营收句句内带 non-GAAP EPS，settleMetric 句级推导取错族（无容差不可结算无错误结局，下轮候选：指标族名词优先）。测试 371→381 项；6 轮反向验证全部精确失败（摘除表格式调用→组 1 四家+结算端到端/摘除 quarter===4→AMZN Q1 TTM 误收/摘除列数 2/4→Q4 五列误收/摘除表头年份匹配→AMD 抽错列+年份不符误收/摘除单位检查→千分位错标度/版本漂移→16）。登记 corr-2026-036（全年列标记≠全年列——TTM 列年份与标题财年相同，期间守卫必须锚备案季度；live 端到端的零漂移 diff 抓到的夹具覆盖不到的形态，medium）；登记簿 34→35 条。历史：v3.16 GOOGL FY2026 capex 残废条目修复；v3.15 全年实际值抽取+annual key 配对；v3.14 META CFO 评论式指引形态进库；v3.13 财报指引结算指标扩展；v3.12 算力基建承诺/规模主张（新辨别维度）；v3.11 用量/牵引度指标主张+引号切分修复；v3.10 一手信源桶接入+部署规模主张；v3.9 价格下调主张；v3.8 监管行动主张；v3.7 专家/机构判断主张；v3.6 成本/价格信号主张；v3.5.1 结算链路修复（维护）；v3.5 财报指引自动结算；v3.4 财报指引+SEC EDGAR；v3.3.1 survey-finding 精度修复（维护）；v3.3 并购/交易过程主张；v3.2.2/3.2.1 断链修复；v3.2 产能/供给约束主张；v3.1.1 口径错位精度修复；v3.1 接入 self-correction-ledger；v3.0.0c 商业段断链修复；v2.17 接入 GJOpen；v2.16 基准概率断链修复；v2.15 参考文本单列；v2.13 停止假推演。
 ---
 
-# 人类未来 · 文明推演引擎 v3.16.0
+# 人类未来 · 文明推演引擎 v3.17.0
 
 > 数据采集（RSS 真联网 + 可选正文增强 + 外部预测基准 GJOpen）→ 心虫 stateless 检查器 → 三年推演引擎。
 > 当前状态与实测数字见下一节，历史版本记录见 references/upgrade-history.md。
 
 ---
 
-## 当前状态（v3.16.0 实测）
+## 当前状态（v3.17.0 实测）
 
 以下数字全部来自 2026-10-27 的 `FETCH=1 FETCH_BODY=1 node scripts/run-pipeline.js` 实跑
 （EDGAR 缓存先删再跑——TTL 6h 内的旧缓存不含当期代码的抽取结果，v3.5.1/v3.15
-同款纪律；v3.16.0 轮：pipeline exit 0、GOOGL FY2026 capex 残废条目修复的 live
-端到端——live 实证（SEC EDGAR 0001652044-26-000012 实抓原文）：「To meet
-customer demand ..., our 2026 CapEx investments are anticipated to be in the
-range of $175 to $185 billion.」年份在名词前的全年形态三条旧年度模式都不命中，
-全文兜底匹配到文首的 "q42025" 错记成 FY2025Q4、dueOn 2026-02-14 已过期，区间
-语法不认 X-to-Y 使 value 退化成点值 $175。本轮四环同修：① 新年度期间形态
-ANNUAL_YEAR_NOUN_RE（年份+指标名词+is/are+期望动词，lookbehind 挡季度前缀——
-「Q3 2026 / Q3 FY2026 / third quarter 2026 + 指标 + is expected」不得被抢成
-全年）；② 区间语法泛化 X-to-Y 美元区间（抽取侧 rangeM 与结算侧 parseRange
-同构，首侧可选单位）；③ capex 指标族归一（settleMetricOf 与 normalizeMetric
-两侧同修——不归一则期间/区间修好了也配不上全年实际值族 capital expenditures）；
-④ 同轮维护：ANNUAL_PERIOD_PATTERN 补季度前缀 lookbehind（「Guidance for Q2
-FY 2027 ... Outlook」锚词同句在年份后会抢成全年）、guidanceStruct 补 isRange
-透传（v3.5.1「ticker 恒 null」同型断链：区间指引的持久化 settlement 从 v3.4
-起恒把区间值当点值存，备案滑出窗口后到期永远无法结算）、forecast 段渲染上限
-12→30 + 截断披露（v3.10/v3.11 同型纪律）。live 端到端：全池 61 条指引逐条
-diff，唯一变化即残废条目修正为 FY2026 全年 + 区间（其余 60 条零漂移，
-NVDA/AMD/MRVL/MU/AMZN/META/ORCL 期间与数值逐条不变）；台账新登记 GOOGL
-FY2026 capex 全年区间指引（dueOn 2027-02-14，settlement.isRange=true、
-metric=capital expenditures），残废历史条目（台账实录 id）经句反推拿正确元数据、
-按到期门 pending（不硬结）；结算段幂等 0 新结算/跳过 4（AMD 点值无容差×2 +
-MU 口径未限定歧义×2）/pending 40→41、ledger 68→69 条；商业辨别段 24 条
-（未动商业形态库）。已知边界（如实）：GOOGL capex 全年实际值在现金流量表
-（"Less: purchases of property and equipment"，TTM 列），全年实际值形态族
-不收表格式陈述——FY2026 capex 指引到期时若无 Q4 备案双值句/全年标记句，
-按 pending/无实际值跳过如实处理（下轮候选：表格式 capex 实际值抽取）；
-ORCL FY2027 全年营收句句内带 non-GAAP EPS，settleMetric 句级推导取错族
-（metric 与 value 错位）——该条无容差不可结算所以无错误结局，下轮候选：
-指标族名词优先；
+同款纪律；v3.17.0 轮：pipeline exit 0、表格式全年 capex 实际值抽取的 live
+端到端——v3.16 白纸黑字的已知边界「GOOGL capex 全年实际值在现金流量表
+（purchases of property and equipment），全年实际值形态族不收表格式陈述——
+FY2026 capex 指引到期时可能无对账依据（下轮候选）」本轮按 live 实证推进
+（SEC EDGAR 实抓四家 Q4 备案原文驱动）：extractAnnualActuals 增补表格式
+形态——现金流量表标题锚（STATEMENTS OF CASH FLOWS）+ 全年列标记
+（Year/Twelve Months/Fiscal Year Ended，GOOGL Q2 的「Year To Date」与
+META Q3 的「Nine Months Ended」天然拒绝）+ **仅 Q4 备案**（AMZN Q1 live
+实证：Q1-Q3 的 Twelve Months Ended 是 TTM 列且 TTM 列年份与标题财年相同，
+期间守卫 quarter===4——live 端到端实测抓到的误收，corr-2026-036）+ 列对齐
+（数据行数值个数驱动：4 列=2 季度+2 全年、2 列=纯全年，其它列数不解析；
+全年列=后两列，表头年份 token 匹配标题财年——AMD 表头年份序 2025 2024
+2025 2024，财年 2025 命中第 3 列 $974M 不是末列 $636M；MRVL FY2026=Year
+Ended January 31, 2026，财年标签与日历年终年同数）+ 单位只认百万（千分位
+报表防错标度 1000 倍）+ ≥1000 折算 billion 与指引带同量纲；双来源去重：
+叙事口径优先（META live 实证：叙事「Capital expenditures, including
+principal payments on finance leases, were ... $72.22 billion」与报表行
+「(69,691)」口径不一致——两个不同值落同一 annual key 会判歧义跳过，把可
+结算指引变成跳过比漏报更糟）。live 端到端：GOOGL FY2025 $91.447B/AMD
+FY2025 $974M/MRVL FY2026 $354.1M/AMZN FY2025 $131.819B 四家全年 capex
+全部抽中并进报告产物（newsData.sec_filings[].annualActuals）；NVDA 发布
+不含现金流表如实漏报；GOOGL FY2026 capex 指引（dueOn 2027-02-14）按到期门
+保持 pending——不硬结；信号池各桶条数/62 条 forecast 辨别/61 条指引/财季
+actuals 逐条 diff 零漂移；结算段幂等 0 新结算/跳过 4（AMD 点值无容差×2 +
+MU 口径未限定歧义×2）/pending 41、ledger 69 条零变化；同代码复跑幂等
+（商业辨别段 21 条是 RSS 池轮换后的稳定值——改前轮 22 条里 OpenAI News 的
+Uber 条目转出采集窗，与 EDGAR 抽取改动无关，复跑两轮 21 条逐条一致）。
+已知边界（如实）：FCF 对账表 TTM 列形态（GOOGL live 实证 5 列）仍不收；
+MU Q4 备案的资本开支行标签是「Investments in capital expenditures, net」
+（非 GAAP 对账表 5 列），行标签族只认 purchases of property and
+equipment——MU 无 capex 指引所以无结算需求；ORCL FY2027 全年营收句句内带
+non-GAAP EPS，settleMetric 句级推导取错族（metric 与 value 错位）——该条
+无容差不可结算所以无错误结局，下轮候选：指标族名词优先；
 （v3.15.0 轮：pipeline exit 0、300 条 live 信号、全年实际值抽取
 + annual key 配对的 live 端到端——四家在窗 Q4 备案的全年实际值全部抽中并
 进报告产物（newsData.sec_filings[].annualActuals）：NVDA Q4-FY2026 全年
@@ -295,11 +299,12 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   只有对比句式没有干净的 effective tax rate was X% 句）；**GOOGL FY2026
   capex 残废条目 v3.16 已修复**（年份在名词前的全年形态 ANNUAL_YEAR_NOUN_RE
   进库 + X-to-Y 区间语法 + capex 指标族归一，台账按 FY2026 全年区间指引
-  重登记，dueOn 2027-02-14）——但**全年 capex 实际值在现金流量表**
-  （live 实证：「Less: purchases of property and equipment (17,197) ...
-  (91,447)」TTM 列），全年实际值形态族（双值句/全年标记句）不收表格式
-  陈述：FY2026 capex 指引到期时若无 Q4 备案双值句/全年标记句，按
-  pending/无实际值跳过如实处理（表格式 capex 实际值抽取是下轮候选）；
+  重登记，dueOn 2027-02-14），**表格式全年 capex 实际值 v3.17 已抽取**
+  （现金流量表「Purchases of property and equipment」行：标题锚 + 全年列
+  标记 + 仅 Q4 备案 + 列对齐取标题财年列——GOOGL FY2025 $91.447B live
+  实证）——剩余库边界：FCF 对账表 TTM 列形态（5 列）不收；MU 的行标签族
+  是「Investments in capital expenditures, net」（非 GAAP 对账表）不在库
+  （MU 无 capex 指引，无结算需求）；
   **ORCL FY2027 全年营收指引 settleMetric 取错族**（live 实证：「Guidance
   for Full FY 2027 ... total revenue to be at least $90 billion, and
   non-GAAP EPS to be at $8.10」——句级推导被句内 EPS 带跑，metric 与
@@ -418,7 +423,7 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   不虚抬（厂商一手公告句式自身无归属词，等价名方确认或第三方报道交叉验证）；
   SEC 备案量化主张同轮进段（GOOGL 判 推理单薄/公开财报/公告(3)/推理 1/3、
   decisionRelevant——证据档首次被真实财报触发；公开财报/公告 1→5 条））/
-  自我修正登记簿 ✅（34 条修正：critical 4 / high 17 / medium 13（含 corr-2026-024/025 两条前轮手写条目未设 severity、按 medium 计；v3.9 起走模块 record() 默认 medium；v3.10 新增 corr-2026-027：一手信源桶从不进商业辨别候选池+扩池暴露的三个精度缺陷，high；v3.14 新增 corr-2026-032/033，v3.15 新增 corr-2026-034：营收抽值路径从落地起没过全年值守卫，AMD Q4-FY2025 live 实证全年营收混进财季 key；v3.16 新增 corr-2026-035：残废条目修复必须连到结算配对全链——GOOGL capex 修好抽取侧（期间/区间/指标族三环）时同轮发现 guidanceStruct 从 v3.4 起不漏 isRange，区间指引持久化 settlement 恒退化，备案滑出窗口后到期永远无法结算（v3.5.1「ticker 恒 null」/v3.13「metric 被丢弃」同型第三次），high）；v3.3.1 登记
+  自我修正登记簿 ✅（35 条修正：critical 4 / high 17 / medium 14（含 corr-2026-024/025 两条前轮手写条目未设 severity、按 medium 计；v3.9 起走模块 record() 默认 medium；v3.10 新增 corr-2026-027：一手信源桶从不进商业辨别候选池+扩池暴露的三个精度缺陷，high；v3.14 新增 corr-2026-032/033，v3.15 新增 corr-2026-034：营收抽值路径从落地起没过全年值守卫，AMD Q4-FY2025 live 实证全年营收混进财季 key；v3.16 新增 corr-2026-035：残废条目修复必须连到结算配对全链——GOOGL capex 修好抽取侧（期间/区间/指标族三环）时同轮发现 guidanceStruct 从 v3.4 起不漏 isRange，区间指引持久化 settlement 恒退化，备案滑出窗口后到期永远无法结算（v3.5.1「ticker 恒 null」/v3.13「metric 被丢弃」同型第三次），high）；v3.17 新增 corr-2026-036：全年列标记≠全年列——AMZN Q1 live 实证 Q1-Q3 备案的「Twelve Months Ended」是 TTM 列且 TTM 列年份与标题财年相同，只靠列标记+年份匹配会把 TTM 值当月度值落进 annual key 与 Q4 真全年值撞 key 判歧义；期间守卫必须锚备案季度（quarter===4）。live 端到端的零漂移 diff 抓到夹具覆盖不到的形态（AMZN Q1 的 TTM 列），medium）；v3.3.1 登记
   corr-2026-014（版本号漂移：projection meta 停 3.2.2/package.json 停 3.2.1，
   四处对齐+一致性断言）与 corr-2026-015（survey-finding 误报+三处播客夹具
   空转）；v3.3 登记
@@ -1018,7 +1023,7 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   严格过滤，漏掉数据里 2 条 critical（都是「整段推演作废」级的假能力审计），
   接入后会少报高危数（说 4 实际 6）。改为按等级表比较（critical > high >
   medium > low），critical 排最前。这是修 bug，不算升级——升级点是接入本身。
-- 边界（如实声明）：登记簿 34 条（v3.13 轮新增 corr-2026-030/031、v3.14 轮
+- 边界（如实声明）：登记簿 35 条（v3.13 轮新增 corr-2026-030/031、v3.14 轮
   新增 corr-2026-032/033、v3.15 轮新增 corr-2026-034、v3.16 轮新增
   corr-2026-035 后：
   critical 4 / high 16 / medium 13（含 corr-2026-024/025 两条前轮手写条目
@@ -1188,7 +1193,7 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   引擎不代劳——这是心虫铁律，不是能力缺失。
 
 **测试**
-- `npm test`：**371 项断言**（实测各 section 汇总；v3.4 的 230 + v3.5 新增 11 + v3.5.1 新增 9 + v3.6 新增 8 + v3.7 新增 9 + v3.8 新增 11 + v3.9 新增 8 + v3.10 新增 13 + v3.11 新增 15 + v3.12 新增 14 + v3.13 新增 13 + v3.14 新增 9 + v3.15 新增 10 + v3.16 新增 11：
+- `npm test`：**381 项断言**（实测各 section 汇总；v3.4 的 230 + v3.5 新增 11 + v3.5.1 新增 9 + v3.6 新增 8 + v3.7 新增 9 + v3.8 新增 11 + v3.9 新增 8 + v3.10 新增 13 + v3.11 新增 15 + v3.12 新增 14 + v3.13 新增 13 + v3.14 新增 9 + v3.15 新增 10 + v3.16 新增 11：
   2 项纯结算函数（settleGuidance 单位感知容差：相对/绝对/bps/百分点/区间/无容差
   跳过，含区分相对vs绝对的边界用例 / normalizeMetric+parseMetricValue 单位解析）+
   3 项实际值抽取（extractActuals 营收+毛利率+标题期间 / GAAP/非GAAP 不同值抽出
@@ -1580,6 +1585,27 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   回归）；摘除 guidanceStruct isRange 透传→1；摘除 cron 注入 v3.16 行→1；
   摘除渲染披露行+上限回 12→1；版本号漂移→13。每轮基线全绿、摘除后断言
   必生效、hash 校验还原到位、收尾基线全绿（371/0）。
+  v3.17 新增 10（4 项 extractAnnualActuals 表格式 live 逐字抽取（GOOGL Q4-2025
+  现金流表 FY2025 capex $91.447B——v3.16 边界推进 / AMD Q4-FY2025 $974M 列序
+  2025 2024 2025 2024 命中第 3 列不是末列 / MRVL Q4-FY2026 $354.1M 年终年 1/31
+  小数 / AMZN Q4-2025 $131.819B Twelve Months Ended 标签）
+  + 1 项精度回归九形态零误收（GOOGL Q2「Year To Date」/ META Q3「Nine Months
+  Ended」/ AMZN Q1 TTM 列 live 逐字——期间守卫 quarter===4，corr-2026-036 live
+  端到端实测抓到的误收 / AMZN Q2 六列 / Q4 五列防御形态 / FCF 对账表 5 列 /
+  AMZN 叙事提及 / 千分位单位 / 年份不在表头）
+  + 1 项列对齐双向精度（AMD 同表 fy=2024 → $636M，证明按表头年份寻列）
+  + 1 项双来源去重（META 叙事 $72.22B 含融资租赁本金优先于报表行 $69.691B）
+  + 1 项 settleEarningsGuidance 端到端（真实抽取值直通 annual key 带内命中 +
+  残废季度形态条目季度 key 隔离不误结算）
+  + 1 项 cron 注入源级（[v3.17] 表格式 capex 口径限定含期间守卫）
+  + 1 项版本号一致性（五处对齐 3.17.0））。
+  v3.17 六轮反向验证全部精确失败：摘除表格式调用→6（组 1 四家+去重+结算端到端）；
+  摘除 quarter===4 期间守卫→1（AMZN Q1 TTM 列误收——live 端到端抓到的缺陷，
+  corr-2026-036；第一轮摘除列数守卫报 0 失败=断言空转：AMZN Q2 六列被期间守卫
+  先挡，补 Q4 五列防御夹具后才精确失败）；摘除列数 2/4 检查→1（Q4 五列形态
+  误收）；摘除表头年份匹配→3（AMD 抽错列+年份不符误收）；摘除单位检查→1
+  （千分位错标度）；版本漂移→16。每轮基线全绿、摘除后断言必生效、hash 校验
+  还原到位、收尾基线全绿（381/0）。
   v3.13 三轮反向验证全部精确失败：摘除冒号营收形态调用点→1（MRVL 抽取
   断言）；摘除 settle() 证据落账两行→1（结算编排断言的 evidence 字段）；
   恢复旧夹具（MU 实际值挂 Q2 actualPeriod + 计数 6/4/2）→1（MU 落空
