@@ -1,9 +1,48 @@
 ---
 name: human-future-v2
-title: "人类未来 · 文明推演引擎 v3.9.0"
-version: "3.9.0"
+title: "人类未来 · 文明推演引擎 v3.10.0"
+version: "3.10.0"
 description: |-
-  人类未来技能 v3.9.0 — 商业主张辨别器新增「价格下调主张」形态（新辨别维度）：
+  人类未来技能 v3.10.0 — 商业主张辨别接入一手信源（SEC 备案 + 厂商一手
+  公告桶）+ 新辨别维度「部署规模主张」（新辨别维度）：
+  商业辨别的候选池自 v3.0.0 起只有 business/economy 两个媒体二手桶——两个
+  一手桶从来不进辨别：① sec_filings（SEC EDGAR 备案，v3.4 起采集）：
+  「公开财报/公告(3)」证据档自 v3.0.0c 起只为「文本里提到 filing/announced」
+  设计，从来没有真实财报能触发它；备案里的量化主张（"Google Cloud saw a
+  continued increase in customer demand as revenues increased 48% to $17.7
+  billion"、"intent to raise up to $50 billion"、"Closed 206 deals of at
+  least $1 million"）整条看不见；② frontier_models（厂商一手公告，12 个
+  源）：具名部署主张（"Uber is rolling out ChatGPT Work to more than
+  30,000 employees"）与调查研究（"survey of almost 11,000 US adults"）都在
+  这个桶里，而 adoption-claim 只认「趋势主体」（enterprises are adopting…），
+  具名主体的量化部署整个在库外。v3.10 两件事：① 候选池扩到四桶
+  （business 12 / sec_filings 8 / frontier_models 10 / economy 6，business
+  仍第一优先）；public-filing 证据档同轮扩展为认 SEC EDGAR 采集源（与
+  v3.8 政府机构一手文书标记同型，非该来源不虚抬）；② 新 kind
+  deployment-scale（部署规模主张）：部署/扩张动词 + 量化范围（rolling out
+  to 30,000 employees / expands to 26 new countries / deployed across
+  12,000 seats / launched its platform to 100,000 users），精度纪律
+  （v3.0.0c/v3.2/v3.3/v3.6/v3.7/v3.9 纪律：漏报比误报诚实、没有实证不扩
+  模式）：必须有量化范围（"brings ChatGPT Work to all employees" 无数量
+  不进库）、只认部署/扩张动词（合作公告/基础设施 scaling/产品发布/销售
+  数字都不是部署规模主张）。具名部署与趋势主张是两类证据：趋势靠调查/
+  汇总证伪，具名部署靠「当事方确认 + 席位数/覆盖面核实」证伪。专属证伪
+  路径（部署方否认/席位数覆盖面不符/部署暂停缩减回滚；厂商一手公告需
+  第三方确认才升级证据档）；类目 market_claims；报告与 cron 注入标签
+  「部署规模主张」。精度配套（全部 live 实证驱动）：① forward-looking
+  免责声明守卫——MU/CRWV 两家 8-K 的 "Forward-Looking Statements" 段是
+  法律 boilerplate（"customer demand" 清单名词短语误触发 demand 形态），
+  命中句自身含免责声明标记即跳过；② ma 动词形态收紧——"What happens when
+  a deal falls through?" 类泛指交易假设句不是主张（"the deal fell
+  through" 仍命中）；③ has-sample 名词组补 employees/seats/staff/
+  countries/advertisers/deals——部署规模的样本就是席位数与覆盖面。
+  live 端到端（300 条池）：商业辨别段 10→20 条，byKind 新增
+  deployment-scale:2——Uber 条判 证据不足/无出处(1)/推理 1/3、不虚抬
+  （厂商一手公告句式自身无归属词，等价名方确认或第三方报道交叉验证）；
+  GOOGL 备案条判 推理单薄/公开财报/公告(3)/推理 1/3、decisionRelevant
+  （一手备案量化主张，证据档首次被真实财报触发）；公开财报/公告证据档
+  1→5 条；hf-cron-fetch.sh 注入段 agent 可见「类型: 部署规模主张」。
+  测试 286→299 项；8 轮反向验证全部精确失败。历史：v3.9 — 商业主张辨别器新增「价格下调主张」形态（新辨别维度）：
   live 实证 LWiAI #343 简报内句「Anthropic launches Claude Fable 5.1 and
   says it's up to 45 percent cheaper for agentic work」（2026-09-07，
   business 桶）——扩容前 18 种形态全部不命中、整条不进辨别。v3.6 的
@@ -392,10 +431,23 @@ poll 分支没有触发机会；v3.7 放行 Apollo economist 条目后，round 6
 
 ---
 
-## 当前状态（v3.9.0 实测）
+## 当前状态（v3.10.0 实测）
 
 以下数字全部来自 2026-10-26 的 `FETCH=1 FETCH_BODY=1 node scripts/run-pipeline.js` 实跑
-（v3.9.0 轮：pipeline exit 0、321 条 live 信号、商业辨别段 9→10 条
+（v3.10.0 轮：pipeline exit 0、300 条 live 信号（business 48 + economy 46 +
+frontier_models 142 + sec_filings 42 + tech 22 + humanities 12）、商业辨别段 10→20 条
+含新维度部署规模 2 条（byKind 新增 deployment-scale:2——OpenAI News「Uber is
+rolling out ChatGPT Work to more than 30,000 employees」与「ChatGPT Ads expands
+to 26 new countries as over 100,000 advertisers have used the platform」，均判
+证据不足/无出处(1)/推理 1/3、不虚抬——厂商一手公告句式自身无归属词，等价名方
+确认或第三方报道交叉验证）与 SEC 备案量化主张 4 条（GOOGL「Google Cloud saw a
+continued increase in customer demand as revenues increased 48% to $17.7 billion」
+判 推理单薄/公开财报/公告(3)/推理 1/3、decisionRelevant——一手备案量化主张，
+证据档首次被真实财报触发；ORCL funding $50B 与 PLTR 成交数据判 factual/
+公开财报/公告(3)；公开财报/公告证据档 1→5 条；MU/CRWV forward-looking 免责声明
+boilerplate 被守卫挡住不进辨别）；hf-cron-fetch.sh 注入段 agent 可见
+「类型: 部署规模主张」；
+v3.9.0 轮：pipeline exit 0、321 条 live 信号、商业辨别段 9→10 条
 含新维度价格下调 1 条（byKind 新增 price-cut:1——LWiAI #343 简报内句
 「Anthropic launches Claude Fable 5.1 and says it's up to 45 percent cheaper
 for agentic work」判 证据不足/无出处(1)/推理 1/3、不虚抬——简报转述的厂商
@@ -496,6 +548,9 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
 **商业采集层（v3.0.0 新增）**
 - business 域 4 源：TechCrunch AI / The Information / Last Week in AI / ProductHunt
   （实测 12 个候选后选定；Crunchbase/CIO 403、Import AI 连接失败、HN 仅 1 条且非 AI 分类，明确不可用不重复试）
+- [v3.10] 商业辨别候选池四桶：business 12 / sec_filings 8 / frontier_models 10 /
+  economy 6（business 第一优先）。v3.10 前只有 business/economy 两个媒体二手桶，
+  SEC 备案与厂商一手公告里的量化主张从不进辨别（见「商业主张辨别」层 v3.10 段）
 
 **外部预测基准层（v2.17 新增）**
 - 来源：Good Judgment Open（gjopen.com），专业预测平台；`/questions?q=<词>` 公开可抓
@@ -560,8 +615,14 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   推理 0/3、不虚抬（官员个人行动经简报转述不借名字抬级））/
   v3.9 新增价格下调形态后含 LWiAI #343 简报内句一条——扩容前 18 种形态全部
   不命中、整条不进辨别；判 证据不足/无出处(1)/推理 1/3、不虚抬（简报转述的
-  厂商自述降价，等价目表或第三方价格跟踪交叉验证））/
-  自我修正登记簿 ✅（25 条修正：critical 4 / high 12 / medium 9（含 corr-2026-024/025 两条前轮手写条目未设 severity、按 medium 计；v3.9 起走模块 record() 默认 medium）；v3.3.1 登记
+  厂商自述降价，等价目表或第三方价格跟踪交叉验证）；
+  v3.10 候选池接入一手信源桶（SEC 备案 + 厂商一手公告，四桶）并新增部署规模
+  形态后含 Uber 30,000 employees 与 ChatGPT Ads 26 countries 两条——扩容前
+  19 种形态全部不命中、整条不进辨别；均判 证据不足/无出处(1)/推理 1/3、
+  不虚抬（厂商一手公告句式自身无归属词，等价名方确认或第三方报道交叉验证）；
+  SEC 备案量化主张同轮进段（GOOGL 判 推理单薄/公开财报/公告(3)/推理 1/3、
+  decisionRelevant——证据档首次被真实财报触发；公开财报/公告 1→5 条））/
+  自我修正登记簿 ✅（26 条修正：critical 4 / high 13 / medium 9（含 corr-2026-024/025 两条前轮手写条目未设 severity、按 medium 计；v3.9 起走模块 record() 默认 medium；v3.10 新增 corr-2026-027：一手信源桶从不进商业辨别候选池+扩池暴露的三个精度缺陷，high）；v3.3.1 登记
   corr-2026-014（版本号漂移：projection meta 停 3.2.2/package.json 停 3.2.1，
   四处对齐+一致性断言）与 corr-2026-015（survey-finding 误报+三处播客夹具
   空转）；v3.3 登记
@@ -628,6 +689,9 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   产能/供给约束后真实条数为 14（逐条列出见 commercial-discriminator.js）。
   [v3.3 再纠错] v3.3 新增并购/交易过程（ma-claim）后真实条数为 15；ma-claim
   注释里「扩容前 14 种全部不命中」的 14 指扩容前形态数，不是当时文档口径。
+  [v3.10 再纠错] v3.10 新增部署规模（deployment-scale）后真实条数为 20
+  （v3.2→14 / v3.3→15 / v3.6→16 / v3.7→17 / v3.8→18 / v3.9→19 / v3.10→20，
+  计数断言每轮跟代码走，v3.2 计数纠错同型纪律）。
 - [v3.0.0c] 端到端断链修复：v3.0.0 起引擎产出 commercialDiscrimination、
   formatReport 渲染「商业主张辨别」段，但 cron 注入脚本从未读取该字段——
   报告文件里躺着、agent 完全看不到。这是 v2.9/v2.13/v2.17 之后第四次同型断链。
@@ -913,6 +977,76 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   等有 live 实证再议）、costs 名词族（TCO/运营成本，有意排除）、
   "price war" 类竞争定价形态——等有 live 实证再扩。
 
+**[v3.10] 部署规模主张（deployment-scale，新辨别维度）+ 商业辨别接入一手信源**
+- 定位（候选池断链）：商业辨别的候选池自 v3.0.0 起只有 business/economy 两个
+  媒体二手桶——两个一手桶从来不进辨别。① sec_filings（SEC EDGAR 备案，
+  v3.4 起采集）：「公开财报/公告(3)」证据档自 v3.0.0c 起只为「文本里提到
+  filing/announced」设计，从来没有真实财报能触发它；备案里的量化主张
+  （"Google Cloud saw a continued increase in customer demand as revenues
+  increased 48% to $17.7 billion"、"intent to raise up to $50 billion"、
+  "Closed 206 deals of at least $1 million"）整条看不见。② frontier_models
+  （厂商一手公告，12 个源）：具名部署主张（"Uber is rolling out ChatGPT
+  Work to more than 30,000 employees"）与调查研究（"survey of almost
+  11,000 US adults"，Anthropic 员工 vs 公众预期调查）都在这个桶里。一手
+  信源是商业主张证据链的最上游，只辨媒体转述等于把最高质量的证据档晾着。
+  同时 adoption-claim 只认「趋势主体」（enterprises are adopting…），
+  **具名主体的量化部署**——厂商一手公告与案例研究里最高频的采用证据形态
+  ——整个在库外。2026-10-26 轮 300 条 live 实测：扩容前 19 种形态对上述
+  两句全部不命中。
+- 候选池扩展（v3.10）：business 12 / sec_filings 8 / frontier_models 10 /
+  economy 6，business 仍第一优先（v3.0.0 的优先纪律保留，断言钉住同池时
+  business 排前）。live 实测：形态门在 sec_filings 42 条里命中 6 条
+  （4 条真主张 + 2 条 forward-looking 免责声明 boilerplate，已加守卫）、
+  frontier_models 142 条里命中 7 条（6 条真主张 + 1 条交易机制假设句，
+  ma 动词形态已收紧）。结果与渲染上限同步 16→20 / 12→20 / cron 10→16
+  （辨别条数变多后切掉尾部等于「辨别了但看不见」）。
+- 新维度形态族（deployment-scale，部署规模主张）：部署/扩张动词
+  （rolling out / rolls out / rolled out / deploy(s|ing|ed) / bringing /
+  brings / brought / expands to / expanding to / launch(e[sd]|ing) for-to）
+  + 量化范围（N employees / seats / staff / workers / users / advertisers /
+  customers / countries / companies / developers / businesses /
+  enterprises / organizations / banks / hospitals / retailers），容忍数量
+  副词（more than / over / up to）与一个窄形容词（new / additional /
+  waitlisted…）。
+- 精度设计（v3.0.0c/v3.2/v3.3/v3.6/v3.7/v3.9 教训：漏报比误报诚实、没有
+  实证不扩模式）：① 必须有量化范围——无数量的部署谈话（"brings ChatGPT
+  Work to all employees"）按 v3.6/v3.9 同型纪律（无金额的价格变动句不是
+  可证伪主张）不进库；② 只认部署/扩张动词——合作公告（partner /
+  collaborate）、自身基础设施 scaling（"scaling storage to serve 1 billion
+  users" 是自身容量不是客户部署）、产品发布、销售数字（"20,000 sell"）
+  都不是部署规模主张；③ 动词与数量之间不容任词间隔（[^.!?]{0,40}，
+  v3.6 宽窗正则误命中 2 句的教训）。全池实测精确命中 2 条（即 Uber 与
+  ChatGPT Ads 两条），13 句精度回归 0 误报。
+- 判别结果（live 实测）：两条都判 证据不足 / 无出处(1) / 推理 1/3
+  （30,000 employees 与 100,000 advertisers 命中 has-sample——v3.10 名词组
+  补 employees/seats/staff/countries/advertisers/deals，无对照无反例）、
+  不虚抬为 ★决策相关——厂商一手公告句式自身无归属词（无 "we/our"），
+  等价名方确认或第三方报道交叉验证。证伪条件走 deployment-scale 专属
+  路径（部署方否认 / 席位数覆盖国家数与主张值不符 / 部署暂停缩减回滚；
+  厂商一手公告需第三方或当事方确认才能升级证据档）。类目归 market_claims。
+- 证据档同轮扩展（v3.10）：public-filing 增加 SEC EDGAR 采集源标记
+  （claim.source === 'SEC EDGAR' 即归公开财报/公告(3)，与 v3.8 政府机构
+  一手文书标记同型；非该来源不虚抬——同句 source=The Information 仍判
+  无出处(1)，有断言钉住）。live 实测公开财报/公告证据档 1→5 条。
+- 同轮精度配套（全部 live 实证驱动）：① forward-looking 免责声明守卫——
+  MU/CRWV 两家 8-K 的「Forward-Looking Statements」段是法律 boilerplate
+  （"These statements include, but are not limited to, ... customer
+  demand" 的清单名词短语误触发 demand 形态），命中句自身含免责声明标记
+  （forward-looking statements / these statements include / statements
+  related to）即跳过，不碰窗口内其它句子；② ma 动词形态收紧——"What
+  happens when a deal falls through?"（Anthropic 研究博文，交易机制假设
+  句）的 "a deal" 泛指不是可证伪的交易主张，交易名词前无冠词
+  （"talks collapsed"）或特定限定（"the deal fell through"）仍命中。
+- 端到端：引擎候选门（isClaimForm 用同一个模式库，四桶）→
+  discriminateCommercial → formatReport KIND_CN「部署规模主张」→ cron
+  注入第 6 段同标签。live 实测商业辨别段 10→20 条，byKind 新增
+  deployment-scale:2；该轮 byKind 全量 expert-judgment:1 / adoption:4 /
+  cost-signal:1 / capacity:1 / ma:2 / regulatory-action:2 / funding:3 /
+  price-cut:1 / demand:2 / deployment-scale:2 / competitive:1。
+- 仍在库外的部署句式：无量化范围的部署谈话（"brings X to all
+  employees"，已知边界漏报）、合作/协同公告、eyes+测试计划、政府资助
+  授予（"NIST Awards $1.7M"）——等有 live 实证再扩。
+
 **自我修正登记簿层（v3.1 接入的 0 调用模块）**
 - 定位：这是接入，不是新写。self-correction-ledger.js 自 v2.4 存在，
   `human-future/data/self-corrections.json` 有 25 条真实修正（绕月≠登月、
@@ -933,9 +1067,11 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   严格过滤，漏掉数据里 2 条 critical（都是「整段推演作废」级的假能力审计），
   接入后会少报高危数（说 4 实际 6）。改为按等级表比较（critical > high >
   medium > low），critical 排最前。这是修 bug，不算升级——升级点是接入本身。
-- 边界（如实声明）：登记簿 25 条（v3.9 轮新增 corr-2026-026 后：critical 4 /
-  high 12 / medium 9——含 corr-2026-024/025 两条前轮手写条目未设 severity、
-  按 medium 计；
+- 边界（如实声明）：登记簿 26 条（v3.10 轮新增 corr-2026-027 后：critical 4 /
+  high 13 / medium 9——含 corr-2026-024/025 两条前轮手写条目未设 severity、
+  按 medium 计；corr-2026-027 记的是「候选池桶白名单是另一种断链」：SEC 备案与
+  厂商一手公告采集了三个版本，商业辨别器的门口却写着「只认 business/economy」，
+  「公开财报/公告(3)」证据档从来没有真实财报能触发；
   v3.2.2 轮 e2e 实跑的报告快照在登记前，显示 10 条），样本随每次真实修正
   自然增长，引擎不代笔登记；本段不生成「所以本期该怎么做」的建议，
   只呈现「曾经错在哪」。
@@ -1019,6 +1155,12 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   cheaper for agentic work"（价格下调主张）已进模式库（price-cut，价格
   名词+下调谓语+幅度/下调动词+价格名词+by-to+幅度/幅度+比较级三族；名词族
   只认 prices/pricing 不认 costs，必须有幅度）；
+  v3.10 起 "Uber is rolling out ChatGPT Work to more than 30,000 employees"
+  与 "ChatGPT Ads expands to 26 new countries as over 100,000 advertisers
+  have used the platform"（部署规模主张）已进模式库（deployment-scale，
+  部署/扩张动词+量化范围；必须有量化范围，只认部署动词不认合作/scaling/
+  产品发布/销售数字），且候选池同轮接入一手信源桶（sec_filings +
+  frontier_models，v3.10 前只有 business/economy 两个媒体二手桶）；
   仍在库外的有 "Instacart Shares Rally 10%"（市场反应——可核验的市场价格
   事实，非待辨别主张）、ProductHunt 产品发布（产品公告非市场主张）、
   "Late fees for delayed GPU deliveries exceed $2M"（名词后接长修饰语，
@@ -1028,7 +1170,11 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   漏报如实记录）、「SEC's new disclosure rules」类所有格形态、州层立法
   主体（california 等）（均无 live 实证不进库）、无幅度降价谈论
   （"Opus 5.5 with lower prices"——v3.9 按 v3.6 同型纪律留作已知边界
-  漏报，等有 live 实证再议）。
+  漏报，等有 live 实证再议）、无量化范围的部署谈话（"brings ChatGPT Work
+  to all employees"——v3.10 按同型纪律留作已知边界漏报）、合作/协同公告
+  （"OpenAI and Poland's NASK partner to advance AI safety"）、eyes+测试
+  计划、政府资助授予（"NIST Awards More Than $1.7 Million"）——均等有
+  live 实证再议。
   漏掉比把 Fed 公告当商业主张诚实，但覆盖率是真实缺口——扩模式库须逐条配测试。
 - 站点导航/页脚 boilerplate：v3.0.0c 轮起漏网（EconBrowser 导航文本因句内含
   "analysis of" 命中调查研究形态），[v3.2 复测] 同型漏网仍在（EconBrowser 导航
@@ -1045,7 +1191,7 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   引擎不代劳——这是心虫铁律，不是能力缺失。
 
 **测试**
-- `npm test`：**286 项断言**（实测各 section 汇总；v3.4 的 230 + v3.5 新增 11 + v3.5.1 新增 9 + v3.6 新增 8 + v3.7 新增 9 + v3.8 新增 11 + v3.9 新增 8：
+- `npm test`：**299 项断言**（实测各 section 汇总；v3.4 的 230 + v3.5 新增 11 + v3.5.1 新增 9 + v3.6 新增 8 + v3.7 新增 9 + v3.8 新增 11 + v3.9 新增 8 + v3.10 新增 13：
   2 项纯结算函数（settleGuidance 单位感知容差：相对/绝对/bps/百分点/区间/无容差
   跳过，含区分相对vs绝对的边界用例 / normalizeMetric+parseMetricValue 单位解析）+
   3 项实际值抽取（extractActuals 营收+毛利率+标题期间 / GAAP/非GAAP 不同值抽出
@@ -1190,6 +1336,42 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   （名词族加 costs）→1（「Operating costs fell 40%」误命中）；放宽精度③
   （Form C 去比较级后置约束）→1（「cheaper to manufacture」误命中）。每轮
   基线全绿、摘除后断言必生效、备份还原到位（filecmp 校验）、收尾基线全绿。
+  v3.10 新增 13（1 项 live 实证命中（OpenAI News「Uber is rolling out
+  ChatGPT Work to more than 30,000 employees」→ kind=deployment-scale，
+  判 证据不足/无出处(1)/推理 1/3、不虚抬——厂商一手公告句式自身无归属词）
+  + 1 项 live 实证命中（「ChatGPT Ads expands to 26 new countries as over
+  100,000 advertisers have used the platform」→ 同 kind，100,000 advertisers
+  与 26 countries 双重量化命中 has-sample）
+  + 1 项专属证伪条件与类目映射（部署方否认/席位数覆盖面不符/暂停缩减回滚；
+  类目映射源级断言——兜底类目同为 market_claims，行为断言抓不到摘除）
+  + 1 项形态族召回六形（rolling out to 30,000 employees / expands to 26
+  new countries / deployed across 12,000 seats / bringing to 500 enterprise
+  customers / launched to 100,000 users / expand to 15 countries）
+  + 1 项精度回归 12 句（无数量部署谈话/合作公告/基础设施 scaling/销售数字/
+  政府资助/测试计划/产品清单/其它形态库句式全部不命中）
+  + 1 项精度回归 ma 收紧（泛指交易假设句不命中；the deal fell through/
+  talks collapsed/doomed deal/exploring a sale 仍命中）
+  + 1 项引擎级一手信源接入（GOOGL 备案量化主张与 Uber 一手部署主张进辨别，
+  前者证据档=公开财报/公告(3)；MU/CRWV 免责声明与 Project Swap 假设句被挡）
+  + 1 项引擎端到端（候选门放行 + formatReport 渲染「类型: 部署规模主张」行
+  与证伪条件——只认渲染出的标签行）
+  + 1 项引擎端到端 SEC 备案（「类型: 需求主张 | 来源: SEC EDGAR」+
+  「证据: 公开财报/公告(3)」+「[推理单薄]」）
+  + 1 项 cron 注入源级（读 ~/.hermes/scripts/hf-cron-fetch.sh 验
+  deployment-scale 中文标签）
+  + 1 项证据档不虚抬（同句 source=The Information 不升 public-filing，
+  防来源字段被滥用）
+  + 1 项精度门未破（Fed 公告/播客/无数量部署谈话/合作公告/免责声明/
+  泛指交易假设句/官员言论仍不进辨别——新桶是重点盯守对象）
+  + 1 项版本号一致性（VERSION/package.json/banner/projection meta/
+  run-pipeline meta 五处对齐 3.10.0））。
+  v3.10 八轮反向验证全部精确失败：摘除模式（含注释）→6 条（live 实证×2/
+  证伪条件/召回/精度/端到端 + v3.3 计数断言）；摘除证伪条件→1；摘除类目
+  映射→1（源级）；摘除报告 KIND_CN→1；摘除注入 KIND_CN→1；摘除候选池扩桶
+  （PICK_BUCKETS 改回 business/economy）→2（两条一手信源端到端断言）；
+  摘除免责声明守卫→1（MU/CRWV boilerplate 进辨别）；摘除 ma lookbehind→1
+  （Project Swap 假设句进辨别）。每轮基线全绿、摘除后断言必生效、备份
+  还原到位（filecmp 校验）、收尾基线全绿。
   同轮维护（不单独涨号）：6 处历史版本断言硬编码当前版本号（v3.4/v3.5/
   v3.5.1/v3.6/v3.7/v3.8 各段），涨号时同步更新——上轮把 v3.4 段断言名称
   留在「（3.7.0）」而代码已改 3.8.0，名称腐烂两个版本，本轮连名称一起
@@ -1324,7 +1506,9 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   读成「公司没做到」；只结有容差/区间且实际值唯一的指引）** /
   **商业主张辨别（v3.0.0c 补入，第 6 段；KIND_CN 标签随形态库扩充：
   v3.2 产能/供给约束、v3.3 并购/交易过程、v3.6 成本/价格信号、v3.7 专家/机构
-  判断、v3.8 监管行动、v3.9 价格下调，注入与报告同标签）** /
+  判断、v3.8 监管行动、v3.9 价格下调、v3.10 部署规模，注入与报告同标签；
+  v3.10 起渲染上限 12→20 / cron 10→16——候选池扩到四桶后辨别条数变多，
+  切掉尾部等于「辨别了但看不见」）** /
   **口径错位检测（v3.1.1 补入，第 6.5 段，含触发句与口径限定——此前引擎产出+
   报告渲染都有，注入脚本从未读，第五次同型断链）** /
   **外部预测基准（v2.17 新增，第 7 段）** /

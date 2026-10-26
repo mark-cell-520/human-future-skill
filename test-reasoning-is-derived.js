@@ -1650,24 +1650,36 @@ c300('合规需求句里的 independently verified 不被误判为证据来源',
 })(), '内容词不得当证据来源，独立验证必须与出处标记共现');
 
 // ── 引擎集成 ──
-c300('buildCommercialDiscrimination 优先 business 域', (() => {
+// [v3.10] 候选池从 business/economy 两桶扩到四桶（+ sec_filings +
+// frontier_models 一手信源桶）——本断言原判据「frontier_models 应抽不到」
+// 是 v3.0.0 的旧作用域决策（技术域不当商业主张源），v3.10 以 live 实证
+// 推翻：厂商一手公告（OpenAI News 等）是商业主张证据链最上游，
+// 具名部署主张只在那个桶里。保留的纪律是「business 第一优先」。
+c300('buildCommercialDiscrimination 候选池与 business 优先序', (() => {
   const { ProjectionEngine } = require('./scripts/project-future.js');
-  const mk = (source, bucket) => {
+  const mk = (items) => {
     const inst = new ProjectionEngine({});
-    inst.signals = { items: [{
-      title: source, body: 'We plan to raise $50M next quarter according to a company announcement.',
-      description: '', source, bucket,
-      pubDate: 'Tue, 13 Oct 2026 00:44:16 GMT',
-      domains: ['capital_flow'], link: 'https://x.com/a',
-    }] };
+    inst.signals = { items };
     return inst;
   };
-  // 只喂 business 域：应能抽出
-  const rb = mk('TechCrunch AI', 'business').buildCommercialDiscrimination();
-  // 只喂 frontier_models 域：应抽不到（技术域不是商业主张源）
-  const rf = mk('OpenAI News', 'frontier_models').buildCommercialDiscrimination();
-  return rb.available === true && rf.available === false;
-})(), 'business 域应抽出主张，frontier_models 域应跳过');
+  const item = (source, bucket) => ({
+    title: source, body: 'We plan to raise $50M next quarter according to a company announcement.',
+    description: '', source, bucket,
+    pubDate: 'Tue, 13 Oct 2026 00:44:16 GMT',
+    domains: ['capital_flow'], link: 'https://x.com/a',
+  });
+  const bizItem = item('TechCrunch AI', 'business');
+  const fmItem = item('OpenAI News', 'frontier_models');
+  // business 与 frontier_models（厂商一手公告）都应能抽出主张
+  const rb = mk([bizItem]).buildCommercialDiscrimination();
+  const rf = mk([fmItem]).buildCommercialDiscrimination();
+  // 同池时 business 第一优先（候选序 business → sec_filings →
+  // frontier_models → economy）
+  const both = mk([fmItem, bizItem]).buildCommercialDiscrimination();
+  return rb.available === true && rf.available === true
+    && both.results[0].source === 'TechCrunch AI'
+    && both.results[1].source === 'OpenAI News';
+})(), 'business 与厂商一手公告桶都应抽出主张，同池时 business 优先');
 
 (async () => {
   const results = await Promise.all(v300.map(c => Promise.resolve(c.ok)));
@@ -3811,16 +3823,18 @@ c33('精度门未破：非主张文本仍被挡在辨别外', (() => {
 // 维护级断言：模式计数文档口径（v3.2 刚纠错过「14 种」文档计数错误）。
 // [v3.6] 扩容成本/价格信号后真实条数为 16；[v3.7] 扩容专家/机构判断后
 // 真实条数为 17；[v3.8] 扩容监管行动后真实条数为 18；[v3.9] 扩容价格
-// 下调后真实条数为 19，计数跟着代码走（v3.2 同型纪律）。
-c33('模式计数口径：19 种与文档一致', (() => {
+// 下调后真实条数为 19；[v3.10] 扩容部署规模后真实条数为 20，计数跟着
+// 代码走（v3.2 同型纪律）。
+c33('模式计数口径：20 种与文档一致', (() => {
   const { COMMERCIAL_CLAIM_PATTERNS } = require('./human-future/scripts/commercial-discriminator.js');
   const pf = require('fs').readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return COMMERCIAL_CLAIM_PATTERNS.length === 19
-    && /共 19 种模式/.test(pf)
+  return COMMERCIAL_CLAIM_PATTERNS.length === 20
+    && /共 20 种模式/.test(pf)
     && COMMERCIAL_CLAIM_PATTERNS.some(p => p.id === 'expert-judgment')
     && COMMERCIAL_CLAIM_PATTERNS.some(p => p.id === 'regulatory-action')
-    && COMMERCIAL_CLAIM_PATTERNS.some(p => p.id === 'price-cut');
-})(), '模式库真实条数必须与文档写的「19 种」一致（防文档计数腐烂）');
+    && COMMERCIAL_CLAIM_PATTERNS.some(p => p.id === 'price-cut')
+    && COMMERCIAL_CLAIM_PATTERNS.some(p => p.id === 'deployment-scale');
+})(), '模式库真实条数必须与文档写的「20 种」一致（防文档计数腐烂）');
 
 // ── v3.3 汇总 ──
 (async () => {
@@ -4214,11 +4228,11 @@ c34('cron 注入脚本渲染财报指引（VERDICT_CN/汇总/结构行）', (() 
 
 // ── 组 4：版本号（corr-2026-014 同型：banner 腐烂四个补丁轮）─────
 // [v3.6] 版本推进到 3.6.0（新辨别维度：成本/价格信号），本断言跟着当前版本走。
-c34('版本号一致性：banner 与 VERSION 对齐（3.9.0）', (() => {
+c34('版本号一致性：banner 与 VERSION 对齐（3.10.0）', (() => {
   const fs2 = require('fs');
   const version = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return version === '3.9.0' && rp.includes('文明推演引擎 v3.9.0');
+  return version === '3.10.0' && rp.includes('文明推演引擎 v3.10.0');
 })(), 'run-pipeline banner 必须与 VERSION 一致（v3.1 修过 banner/meta 同型后又腐烂）');
 
 // ── v3.4 汇总 ──
@@ -4412,15 +4426,15 @@ c35('cron 注入脚本渲染财报指引结算段', (() => {
 
 // ── 组 6：版本号一致性（corr-2026-014 同型，四处对齐）──────────
 // [v3.6] 推进到 3.6.0（新辨别维度），断言跟当前版本走。
-c35('版本号一致性：VERSION/package.json/projection meta/banner 对齐 3.9.0', (() => {
+c35('版本号一致性：VERSION/package.json/projection meta/banner 对齐 3.10.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.9.0'
-    && /3\.9\.0/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.9.0');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.9.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.10.0'
+    && /3\.10\.0/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.10.0');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.10.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.5 汇总 ──
 (async () => {
@@ -4638,15 +4652,15 @@ c351('结算证据来源是提供实际值的备案（actualPeriod 匹配）', (
 
 // ── 组 4：版本号一致性（corr-2026-014 同型）────────────────────
 // [v3.6] 推进到 3.6.0（新辨别维度：成本/价格信号）。
-c351('版本号一致性：VERSION/package.json/banner 对齐 3.9.0', (() => {
+c351('版本号一致性：VERSION/package.json/banner 对齐 3.10.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.9.0'
-    && /3\.9\.0/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.9.0');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.9.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.10.0'
+    && /3\.10\.0/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.10.0');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.10.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.5.1 汇总 ──
 (async () => {
@@ -4841,15 +4855,15 @@ c36('精度门未破：非主张文本仍被挡在辨别外', (() => {
 })(), 'Fed 公告与播客不得因 cost-signal 新模式进入辨别');
 
 // ── 组 5：版本号一致性（corr-2026-014 同型）────────────────────
-c36('版本号一致性：VERSION/package.json/banner 对齐 3.9.0', (() => {
+c36('版本号一致性：VERSION/package.json/banner 对齐 3.10.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.9.0'
-    && /3\.9\.0/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.9.0');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.9.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.10.0'
+    && /3\.10\.0/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.10.0');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.10.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.6 汇总 ──
 (async () => {
@@ -5085,15 +5099,15 @@ c37('精度门未破：非主张文本仍被挡在辨别外', (() => {
 })(), 'Fed 公告与播客不得因 expert-judgment 新模式进入辨别');
 
 // ── 组 5：版本号一致性（corr-2026-014 同型）────────────────────
-c37('版本号一致性：VERSION/package.json/banner 对齐 3.9.0', (() => {
+c37('版本号一致性：VERSION/package.json/banner 对齐 3.10.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.9.0'
-    && /3\.9\.0/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.9.0');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.9.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.10.0'
+    && /3\.10\.0/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.10.0');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.10.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.7 汇总 ──
 (async () => {
@@ -5384,15 +5398,15 @@ c38('精度门未破：非主张文本仍被挡在辨别外', (() => {
 })(), 'Fed 公告/播客/官员言论不得因 regulatory-action 新模式进入辨别');
 
 // ── 组 5：版本号一致性（corr-2026-014 同型）────────────────────
-c38('版本号一致性：VERSION/package.json/banner 对齐 3.9.0', (() => {
+c38('版本号一致性：VERSION/package.json/banner 对齐 3.10.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.9.0'
-    && /3\.9\.0/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.9.0');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.9.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.10.0'
+    && /3\.10\.0/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.10.0');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.10.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.8 汇总 ──
 (async () => {
@@ -5613,18 +5627,18 @@ c39('精度门未破：非主张文本与无幅度价格谈论仍被挡在辨别
 })(), 'Fed 公告/播客/无幅度降价谈论/TCO 效率句/官员言论不得因 price-cut 新模式进入辨别');
 
 // ── 组 5：版本号一致性（corr-2026-014 同型）────────────────────
-c39('版本号一致性：五处对齐 3.9.0', (() => {
+c39('版本号一致性：五处对齐 3.10.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs2.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.9.0'
-    && pkg.version === '3.9.0'
-    && rp.includes('文明推演引擎 v3.9.0')      // banner
-    && /version: '3\.9\.0'/.test(pf)          // projection meta
-    && /version: '3\.9\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.9.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.10.0'
+    && pkg.version === '3.10.0'
+    && rp.includes('文明推演引擎 v3.10.0')      // banner
+    && /version: '3\.10\.0'/.test(pf)          // projection meta
+    && /version: '3\.10\.0'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.10.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.9 汇总 ──
 (async () => {
@@ -5641,5 +5655,378 @@ c39('版本号一致性：五处对齐 3.9.0', (() => {
     process.exitCode = 1;
   } else {
     console.log('结论：价格下调主张已进模式库（live 实证 1 条命中），报告与 cron 注入渲染中文标签，精度回归通过。');
+  }
+})();
+
+// ════════════════════════════════════════════════════════════════
+// v3.10 新增断言：商业主张辨别接入一手信源（SEC 备案 + 厂商一手公告桶）
+// + 新辨别维度「部署规模主张」（deployment-scale）
+//
+// 背景（2026-10-26 轮 live 实证，300 条池）：商业辨别的候选池自 v3.0.0
+// 起只有 business/economy 两个媒体二手桶——两个一手桶从来不进辨别：
+//   ① sec_filings（SEC EDGAR 备案，v3.4 起采集）：「公开财报/公告(3)」
+//      证据档自 v3.0.0c 起只为「文本里提到 filing/announced」设计，
+//      从来没有真实财报能触发它；备案里的量化主张（"Google Cloud saw
+//      a continued increase in customer demand as revenues increased
+//      48% to $17.7 billion"、"intent to raise up to $50 billion"、
+//      "Closed 206 deals of at least $1 million"）整条看不见；
+//   ② frontier_models（厂商一手公告，12 个源）：具名部署主张
+//      （"Uber is rolling out ChatGPT Work to more than 30,000
+//      employees"）与调查研究（"survey of almost 11,000 US adults"）
+//      都在这个桶里。adoption-claim 只认「趋势主体」（enterprises are
+//      adopting…），具名主体的量化部署整个在库外。
+// v3.10 两件事：① 候选池扩到四桶（business 12 / sec_filings 8 /
+// frontier_models 10 / economy 6）；② 新 kind deployment-scale。
+//
+// 精度配套（全部 live 实证驱动，没有实证不扩）：
+//  ① forward-looking 免责声明守卫——MU/CRWV 两家 8-K 的 "Forward-Looking
+//     Statements" 段是法律 boilerplate（"customer demand" 清单名词
+//     短语误触发 demand 形态），命中句自身含免责声明标记即跳过；
+//  ② ma 动词形态收紧——"What happens when a deal falls through?" 类
+//     泛指交易假设句不是主张（"the deal fell through" 仍命中）；
+//  ③ has-sample 名词组补 employees/seats/staff/countries/advertisers/
+//     deals——部署规模的样本就是席位数与覆盖面；
+//  ④ public-filing 证据档认 SEC EDGAR 采集源（与 v3.8 政府机构一手
+//     文书标记同型），非该来源不虚抬。
+//
+// 本节断言分七组：① live 实证两条命中；② 证伪条件与类目（源级）；
+// ③ 形态族召回；④ 精度回归（新维度 + ma 收紧）；⑤ 引擎级一手信源
+// 接入（含守卫与收紧生效）；⑥ 端到端（报告渲染 + cron 注入 + 精度门
+// 未破 + 证据档不虚抬）；⑦ 版本号一致性。
+// ════════════════════════════════════════════════════════════════
+const v310 = [];
+function c310(name, ok, detail) { v310.push({ name, ok, detail }); }
+
+// ── 组 1：live 实证句式命中（OpenAI News 两条，2026-10-21/22）──
+// 1. Uber 部署句（live 池真实条目；厂商一手公告句式自身无归属词，按
+//    无出处(1)/weak-evidence 判，不因数字具体虚抬；推理 1/3——
+//    30,000 employees 命中 has-sample（v3.10 名词组扩展），无对照无反例）。
+c310('live 实证：Uber 具名部署句命中部署规模形态', (() => {
+  const { discriminateCommercial } = require('./human-future/scripts/commercial-discriminator.js');
+  const r = discriminateCommercial({
+    text: 'Uber is rolling out ChatGPT Work to more than 30,000 employees, helping teams research, analyze data, create presentations, and complete complex workflows.',
+    claimSentence: 'Uber is rolling out ChatGPT Work to more than 30,000 employees',
+    source: 'OpenAI News',
+    date: 'Thu, 22 Oct 2026 00:00:00 GMT',
+    url: 'https://openai.com/index/uber-chatgpt-work',
+  });
+  return r.kind === 'deployment-scale'
+    && r.kinds.length === 1 && r.kinds[0] === 'deployment-scale'  // 不串台到 adoption
+    && r.verdict === 'weak-evidence'       // 无出处(1)：一手公告句式自身无归属词
+    && r.evidence.weight === 1
+    && r.reasoning.score === 1             // has-sample（30,000 employees）
+    && r.reasoning.met.includes('has-sample')
+    && r.decisionRelevant === false        // 不虚抬：等价名方确认或第三方报道交叉验证
+    && r.falsifiability.problems.length === 0;  // 有数字，no-quantity 不触发
+})(), '「Uber is rolling out ChatGPT Work to more than 30,000 employees」必须命中部署规模形态并按一手公告证据判别');
+
+// 2. ChatGPT Ads 扩张句（live 池真实条目；100,000 advertisers 与 26
+//    countries 双重量化，has-sample 命中）。
+c310('live 实证：ChatGPT Ads 扩张句命中部署规模形态', (() => {
+  const { discriminateCommercial } = require('./human-future/scripts/commercial-discriminator.js');
+  const r = discriminateCommercial({
+    text: 'ChatGPT Ads expands to 26 new countries as over 100,000 advertisers have used the platform. From local businesses to global brands, more advertisers can now reach people as they explore, compare and decide what to buy in ChatGPT.',
+    claimSentence: 'ChatGPT Ads expands to 26 new countries as over 100,000 advertisers have used the platform',
+    source: 'OpenAI News',
+    date: 'Wed, 21 Oct 2026 13:00:00 GMT',
+  });
+  return r.kind === 'deployment-scale'
+    && r.verdict === 'weak-evidence'
+    && r.evidence.weight === 1
+    && r.reasoning.met.includes('has-sample')   // 100,000 advertisers / 26 countries
+    && r.decisionRelevant === false;
+})(), '「ChatGPT Ads expands to 26 new countries as over 100,000 advertisers」必须命中部署规模形态');
+
+// ── 组 2：证伪条件与类目（源级断言——兜底类目同 market_claims，行为
+//    断言抓不到摘除，v3.6/v3.7/v3.8/v3.9 同型教训）──
+c310('deployment-scale 形态有专属证伪条件与类目映射', (() => {
+  const { discriminateCommercial } = require('./human-future/scripts/commercial-discriminator.js');
+  const r = discriminateCommercial({
+    text: 'The bank deployed the assistant across 12,000 seats in three months.',
+    source: 'The Information',
+  });
+  const src = require('fs').readFileSync(require('path').join(__dirname,
+    'human-future/scripts/commercial-discriminator.js'), 'utf-8');
+  return r.kind === 'deployment-scale'
+    && r.category === 'market_claims'
+    && /部署方否认|席位数|覆盖国家数|暂停/.test(r.falsification)
+    && r.falsification !== '无明确证伪路径——这本身就是问题'
+    && /'deployment-scale': 'market_claims'/.test(src);   // 源级：映射行必须显式存在
+})(), '部署规模主张必须带「部署方否认/席位数覆盖面不符/暂停缩减回滚」证伪路径，归市场主张域');
+
+// ── 组 3：形态族召回（部署动词 + 量化范围）──
+c310('形态族召回：部署动词+量化范围六形', (() => {
+  const { COMMERCIAL_CLAIM_PATTERNS } = require('./human-future/scripts/commercial-discriminator.js');
+  const p = COMMERCIAL_CLAIM_PATTERNS.find(x => x.id === 'deployment-scale');
+  if (!p) return false;
+  return [
+    // live 实证两条
+    'Uber is rolling out ChatGPT Work to more than 30,000 employees, helping teams research',
+    'ChatGPT Ads expands to 26 new countries as over 100,000 advertisers have used the platform',
+    // deployed across + 席位
+    'The bank deployed the assistant across 12,000 seats in three months',
+    // bringing + 客户数
+    'Vendor is bringing its copilot to 500 enterprise customers this quarter',
+    // launched + 用户数（waitlisted 形容词）
+    'The startup launched its agent platform to 100,000 waitlisted users',
+    // expand to + 国家数
+    'It plans to expand to 15 additional countries next year',
+  ].every(s => p.re.test(s));
+})(), 'rolling out to 30,000 employees / expands to 26 new countries / deployed across 12,000 seats / bringing to 500 enterprise customers / launched to 100,000 users / expand to 15 countries 都要命中');
+
+// ── 组 4：精度回归 ──
+// 4a. deployment-scale 不误命中：无数量部署谈话/合作公告/基础设施
+//     scaling/产品发布/销售数字/其它形态库句式（含 live 池原句）。
+c310('精度回归：无数量部署谈话与合作公告不误命中部署规模', (() => {
+  const { COMMERCIAL_CLAIM_PATTERNS } = require('./human-future/scripts/commercial-discriminator.js');
+  const p = COMMERCIAL_CLAIM_PATTERNS.find(x => x.id === 'deployment-scale');
+  if (!p) return false;
+  return [
+    // 无量化范围的部署谈话（已知边界，按 v3.6/v3.9 同型纪律不进库）
+    'Uber brings ChatGPT Work to all employees with OpenAI',
+    // 合作/协同公告（live 池原句）
+    'OpenAI and Poland\u2019s NASK are partnering on AI safety, security, and technical research',
+    'Google DeepMind and Singapore Government collaborate to build fine-tuned AI model for scam detection',
+    // 自身基础设施 scaling 不是客户部署（live 池原句）
+    'Rapidly scaling online storage to serve over 1 billion ChatGPT users (Part II)',
+    // 销售数字（live 池原句）
+    'Nvidia CEO plays with adorable Microduck robots, 20,000 sell',
+    // 政府资助（live 池原句）
+    'NIST Awards More Than $1.7 Million to Support Cybersecurity Workforce Development Across 8 States',
+    // 测试计划（live 池原句）
+    'Uber rival inDrive eyes 2027 robotaxi tests in Central Asia with Pony AI and Nvidia',
+    // 产品清单/发布（live 池原句）
+    '19 robotics companies to watch',
+    'Introducing Kimi K3.1 Pro',
+    'OpenAI models are coming to Google Cloud',
+    // 其它形态库句式不串台（live 池原句）
+    'Google Cloud saw a continued increase in customer demand as revenues increased 48% to $17.7 billion',
+    'Mistral and Reflection AI launch open-weight models to rival China',
+    'General availability of the instances is coming next month, with planned expansion of availability to Europe',
+  ].every(s => !p.re.test(s));
+})(), '无数量部署谈话、合作公告、基础设施 scaling、销售数字、产品发布及其它形态库句式都不得命中部署规模');
+
+// 4b. ma 动词形态收紧：泛指交易假设句不是主张，特定交易仍命中。
+c310('精度回归：泛指交易假设句不命中 ma，特定交易仍命中', (() => {
+  const { COMMERCIAL_CLAIM_PATTERNS } = require('./human-future/scripts/commercial-discriminator.js');
+  const p = COMMERCIAL_CLAIM_PATTERNS.find(x => x.id === 'ma-claim');
+  if (!p) return false;
+  return !p.re.test('What happens when a deal falls through? As agents are increasingly sent into real markets')
+    && !p.re.test('When a merger collapses, both parties lose their deposit.')
+    && p.re.test('The deal fell through after the regulator blocked it')
+    && p.re.test('Merger talks collapsed on Monday amid the leak.')
+    && p.re.test('Negotiations stalled for weeks before the announcement.')
+    && p.re.test('Ramp Investors Went Nuclear Against Airwallex After Doomed Deal')
+    && p.re.test('Instacart Is Exploring a Sale');
+})(), '「a deal falls through」类泛指交易句不得命中；「the deal fell through」「talks collapsed」等特定交易仍命中');
+
+// ── 组 5：引擎级一手信源接入 ──
+// GOOGL 备案量化主张进辨别且证据档=公开财报/公告(3)；MU/CRWV 免责声明
+// boilerplate 被守卫挡住；Uber 一手部署主张进辨别；Project Swap 交易
+// 假设句被 ma 收紧挡住。一条引擎调用全覆盖。
+c310('引擎级：SEC 备案与厂商一手公告进辨别，boilerplate 与假设句被挡', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const items = [
+    { title: 'Alphabet Inc. (GOOGL) 8-K 业绩发布 · 2026-02-04',
+      description: '\u2022 Google Cloud saw a continued increase in customer demand as revenues increased 48% to $17.7 billion, led by an increase in Google Cloud Platform (GCP) across enterprise AI Infrastructure and enterprise AI Solutions, as well as core GCP products.',
+      body: '', source: 'SEC EDGAR', bucket: 'sec_filings',
+      pubDate: '2026-02-04', domains: ['market_claims'],
+      link: 'https://www.sec.gov/Archives/edgar/data/1326801/a', origin: 'live' },
+    { title: 'MICRON TECHNOLOGY INC (MU) 8-K 业绩发布 · 2026-09-30',
+      description: '3 Forward-Looking Statements This press release contains forward-looking statements regarding our industry, our strategic position, our customers, including customer demand, our investments and the goals for such investments, our business opportunity, our products and technology, and our financial and operating performance, including our guidance for the first quarter.',
+      body: '', source: 'SEC EDGAR', bucket: 'sec_filings',
+      pubDate: '2026-09-30', domains: ['market_claims'],
+      link: 'https://www.sec.gov/Archives/edgar/data/b', origin: 'live' },
+    { title: 'CoreWeave, Inc. (CRWV) 8-K 业绩发布 · 2026-08-11',
+      description: 'These statements include, but are not limited to, statements related to our business; our strategy; our capital structure; our future growth; our technology; our operating leverage; customer demand; changes in enterprise adoption; and other estimated amounts included in our revenue backlog figure.',
+      body: '', source: 'SEC EDGAR', bucket: 'sec_filings',
+      pubDate: '2026-08-11', domains: ['market_claims'],
+      link: 'https://www.sec.gov/Archives/edgar/data/c', origin: 'live' },
+    { title: 'Uber brings ChatGPT Work to all employees with OpenAI',
+      description: 'Uber is rolling out ChatGPT Work to more than 30,000 employees, helping teams research, analyze data, create presentations, and complete complex workflows.',
+      body: '', source: 'OpenAI News', bucket: 'frontier_models',
+      pubDate: 'Thu, 22 Oct 2026 00:00:00 GMT', domains: ['frontier_models'],
+      link: 'https://openai.com/index/uber-chatgpt-work', origin: 'live' },
+    { title: 'Project Swap',
+      description: 'What happens when a deal falls through? As agents are increasingly sent into real markets, these questions take on greater urgency. So this summer, we built a small, controlled market to study these questions: a barter economy with 201 Anthropic employees and their Claude-powered agents.',
+      body: '', source: 'Anthropic News (sitemap)', bucket: 'frontier_models',
+      pubDate: 'Thu, 24 Sep 2026 00:00:00 GMT', domains: ['frontier_models'],
+      link: 'https://anthropic.com/research/project-swap', origin: 'live' },
+  ];
+  const inst = new ProjectionEngine({});
+  inst.signals = { totalItems: items.length, domains: [], undomained: 0, dateRange: null, items };
+  const cd = inst.buildCommercialDiscrimination();
+  if (!cd.available) return false;
+  const googl = cd.results.find(r => /Google Cloud/.test(r.claimSentence || r.text));
+  const uber = cd.results.find(r => /rolling out ChatGPT Work/.test(r.claimSentence || r.text));
+  return cd.audited === 2                       // 只有 GOOGL 与 Uber 两条进池
+    && !!googl && googl.kind === 'demand'
+    && googl.evidence.id === 'public-filing' && googl.evidence.weight === 3  // 证据档首次被真实财报触发
+    && googl.verdict === 'thin-reasoning'
+    && googl.decisionRelevant === true
+    && !!uber && uber.kind === 'deployment-scale'
+    && uber.evidence.weight === 1 && uber.verdict === 'weak-evidence';
+})(), 'GOOGL 备案量化主张与 Uber 一手部署主张必须进辨别（前者证据档=公开财报/公告(3)）；MU/CRWV 免责声明与 Project Swap 假设句必须被挡');
+
+// ── 组 6：端到端 ──
+// 6a. 引擎候选门放行 Uber 条目，formatReport 渲染部署规模标签。
+c310('端到端：Uber 一手部署主张进商业辨别段并渲染', (() => {
+  const { ProjectionEngine, formatReport } = require('./scripts/project-future.js');
+  const item = {
+    title: 'Uber brings ChatGPT Work to all employees with OpenAI',
+    description: 'Uber is rolling out ChatGPT Work to more than 30,000 employees, helping teams research, analyze data, create presentations, and complete complex workflows.',
+    body: '', source: 'OpenAI News', bucket: 'frontier_models',
+    pubDate: 'Thu, 22 Oct 2026 00:00:00 GMT', domains: ['frontier_models'],
+    link: 'https://openai.com/index/uber-chatgpt-work', origin: 'live' };
+  const inst = new ProjectionEngine({});
+  inst.signals = { totalItems: 1, domains: [], undomained: 0, dateRange: null, items: [item] };
+  const cd = inst.buildCommercialDiscrimination();
+  const md = formatReport(new ProjectionEngine({ newsData: { frontier_models: { news: [item] } } }).generate());
+  const seg = md.split('## 商业主张辨别')[1] || '';
+  return cd.available === true && cd.audited === 1
+    && cd.results[0].kind === 'deployment-scale'
+    && cd.results[0].verdict === 'weak-evidence'
+    && cd.results[0].claimSentence.includes('30,000 employees')
+    // 只认渲染出来的「类型:」行（note 文本同字符串会喂饱泛匹配，v3.2 教训）
+    && seg.includes('类型: 部署规模主张 | 来源: OpenAI News')
+    && seg.includes('[证据不足]')
+    && seg.includes('证伪条件:');
+})(), 'Uber 条目必须进商业辨别段，报告渲染部署规模主张标签与证伪条件');
+
+// 6b. SEC 备案条目端到端：渲染需求主张 + 公开财报/公告(3) 证据档。
+c310('端到端：SEC 备案量化主张进辨别并渲染公开财报证据档', (() => {
+  const { ProjectionEngine, formatReport } = require('./scripts/project-future.js');
+  const item = {
+    title: 'Alphabet Inc. (GOOGL) 8-K 业绩发布 · 2026-02-04',
+    description: '\u2022 Google Cloud saw a continued increase in customer demand as revenues increased 48% to $17.7 billion, led by an increase in Google Cloud Platform (GCP) across enterprise AI Infrastructure and enterprise AI Solutions, as well as core GCP products.',
+    body: '', source: 'SEC EDGAR', bucket: 'sec_filings',
+    pubDate: '2026-02-04', domains: ['market_claims'],
+    link: 'https://www.sec.gov/Archives/edgar/data/1326801/a', origin: 'live' };
+  const inst = new ProjectionEngine({});
+  inst.signals = { totalItems: 1, domains: [], undomained: 0, dateRange: null, items: [item] };
+  const cd = inst.buildCommercialDiscrimination();
+  const md = formatReport(new ProjectionEngine({ newsData: { sec_filings: { news: [item] } } }).generate());
+  const seg = md.split('## 商业主张辨别')[1] || '';
+  return cd.available === true && cd.audited === 1
+    && cd.results[0].kind === 'demand'
+    && cd.results[0].evidence.id === 'public-filing'
+    && seg.includes('类型: 需求主张 | 来源: SEC EDGAR')
+    && seg.includes('证据: 公开财报/公告(3)')
+    && seg.includes('[推理单薄]');
+})(), 'SEC 备案条目必须进商业辨别段，报告渲染需求主张与公开财报/公告(3)证据档');
+
+// 6c. cron 注入脚本 KIND_CN 认识 deployment-scale（端到端最后一环）。
+c310('cron 注入脚本渲染部署规模主张标签', (() => {
+  const p = require('path').join(require('os').homedir(), '.hermes/scripts/hf-cron-fetch.sh');
+  if (!require('fs').existsSync(p)) return false;
+  const src = require('fs').readFileSync(p, 'utf-8');
+  return /'deployment-scale': '部署规模主张'/.test(src);
+})(), '注入脚本 KIND_CN 必须含 deployment-scale，否则 agent 看到英文 kind');
+
+// 6d. 证据档不虚抬：同一句 source 不是 SEC EDGAR 不得升 public-filing。
+c310('证据档不虚抬：非 SEC EDGAR 来源不升公开财报档', (() => {
+  const { discriminateCommercial } = require('./human-future/scripts/commercial-discriminator.js');
+  const r = discriminateCommercial({
+    text: 'Google Cloud saw a continued increase in customer demand as revenues increased 48% to $17.7 billion',
+    source: 'The Information',
+  });
+  return r.kind === 'demand'
+    && r.evidence.id === 'no-source' && r.evidence.weight === 1
+    && r.verdict === 'weak-evidence'
+    && r.decisionRelevant === false;
+})(), '同一主张句只有 source=SEC EDGAR 才归公开财报/公告(3)，媒体转述不借来源虚抬');
+
+// 6e. 精度门没被扩桶打穿：Fed 公告/播客/无数量部署谈话/合作公告/
+//     免责声明/泛指交易假设句/TCO 效率句仍不进辨别（新桶是重点盯守
+//     对象——boilerplate 与研究文本都集中在这里）。
+c310('精度门未破：扩桶后非主张文本仍被挡在辨别外', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const noise = [
+    { title: 'Minutes of the Federal Open Market Committee',
+      description: 'Participants noted that financial market conditions had eased.',
+      body: '', source: 'Federal Reserve (Monetary)', bucket: 'economy',
+      pubDate: 'Tue, 13 Oct 2026 00:44:16 GMT', domains: ['economy_labor'],
+      link: 'https://federalreserve.gov/a', origin: 'live' },
+    { title: 'LWiAI Podcast #252 - GPT 5.6, Grok 4.5, Nemotron-Labs-Diffusion, AI 2040',
+      description: "GPT-5.6 and Grok 4.5, Meta's Muse Spark 1.1, regulatory developments in AI and data centers, interpretability research from Anthropic, and the future of AI policy with AI 2040",
+      body: '', source: 'Last Week in AI', bucket: 'business',
+      pubDate: 'Tue, 13 Oct 2026 00:44:16 GMT', domains: ['capital_flow'],
+      link: 'https://lastweekin.ai/b', origin: 'live' },
+    { title: 'LWiAI Podcast #258 - Opus 5.5, Sol and Luna, Muse, DeepSeek-V4.1-Flash, Xi',
+      description: 'Anthropic releases Opus 5.5 with lower prices and Fable-level performance, OpenAI launches GPT-6 Sol and Luna, boasting lower cost and fewer mistakes',
+      body: '', source: 'Last Week in AI', bucket: 'business',
+      pubDate: 'Tue, 13 Oct 2026 00:44:16 GMT', domains: ['market_claims'],
+      link: 'https://lastweekin.ai/c', origin: 'live' },
+    // 新桶噪音：厂商一手公告的无模式条目不进
+    { title: 'Introducing Kimi K3.1 Pro',
+      description: 'Kimi K3.1 Pro landed on the Kimi API today - it\u2019s not yet open weights, but Moonshot promise "Full model weights will be released".',
+      body: '', source: 'Moonshot AI', bucket: 'frontier_models',
+      pubDate: 'Tue, 13 Oct 2026 00:44:16 GMT', domains: ['frontier_models'],
+      link: 'https://moonshot.ai/d', origin: 'live' },
+    // 新桶噪音：合作公告（无量化范围）不进
+    { title: 'OpenAI and Poland\u2019s NASK partner to advance AI safety and security',
+      description: 'OpenAI and Poland\u2019s NASK are partnering on AI safety, security, and technical research to strengthen safeguards and support a more resilient digital ecosystem.',
+      body: '', source: 'OpenAI News', bucket: 'frontier_models',
+      pubDate: 'Fri, 23 Oct 2026 00:00:00 GMT', domains: ['frontier_models'],
+      link: 'https://openai.com/e', origin: 'live' },
+    // 新桶噪音：自身基础设施 scaling 不是客户部署
+    { title: 'Rapidly scaling online storage to serve over 1 billion ChatGPT users (Part II)',
+      description: 'How OpenAI scaled its storage layer to serve over 1 billion ChatGPT users.',
+      body: '', source: 'OpenAI News', bucket: 'frontier_models',
+      pubDate: 'Fri, 23 Oct 2026 17:00:00 GMT', domains: ['frontier_models'],
+      link: 'https://openai.com/f', origin: 'live' },
+    // 新桶噪音：SEC 备案 forward-looking 免责声明 boilerplate 不进
+    { title: 'MICRON TECHNOLOGY INC (MU) 8-K 业绩发布 · 2026-09-30',
+      description: '3 Forward-Looking Statements This press release contains forward-looking statements regarding our industry, our strategic position, our customers, including customer demand, our investments and the goals for such investments, our business opportunity, our products and technology, and our financial and operating performance, including our guidance for the first quarter.',
+      body: '', source: 'SEC EDGAR', bucket: 'sec_filings',
+      pubDate: '2026-09-30', domains: ['market_claims'],
+      link: 'https://www.sec.gov/g', origin: 'live' },
+    // 新桶噪音：泛指交易假设句不进（ma 收紧）
+    { title: 'Project Swap',
+      description: 'What happens when a deal falls through? As agents are increasingly sent into real markets, these questions take on greater urgency. So this summer, we built a small, controlled market to study these questions: a barter economy with 201 Anthropic employees and their Claude-powered agents.',
+      body: '', source: 'Anthropic News (sitemap)', bucket: 'frontier_models',
+      pubDate: 'Thu, 24 Sep 2026 00:00:00 GMT', domains: ['frontier_models'],
+      link: 'https://anthropic.com/h', origin: 'live' },
+    { title: 'Trump says tariffs will raise revenue for the government',
+      description: 'The president commented on trade policy during a rally speech.',
+      body: '', source: 'TechCrunch AI', bucket: 'business',
+      pubDate: 'Tue, 13 Oct 2026 00:44:16 GMT', domains: ['market_claims'],
+      link: 'https://techcrunch.com/i', origin: 'live' },
+  ];
+  const inst = new ProjectionEngine({});
+  inst.signals = { totalItems: noise.length, domains: [], undomained: 0, dateRange: null, items: noise };
+  const r = inst.buildCommercialDiscrimination();
+  return r.available === false && /未抽到命中商业主张形态/.test(r.reason || '');
+})(), 'Fed 公告/播客/无数量部署谈话/合作公告/免责声明/泛指交易假设句/官员言论不得因扩池与新模式进入辨别');
+
+// ── 组 7：版本号一致性（corr-2026-014 同型）────────────────────
+c310('版本号一致性：五处对齐 3.10.0', (() => {
+  const fs2 = require('fs');
+  const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
+  const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
+  const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
+  const pf = fs2.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
+  return VERSION === '3.10.0'
+    && pkg.version === '3.10.0'
+    && rp.includes('文明推演引擎 v3.10.0')      // banner
+    && /version: '3\.10\.0'/.test(pf)          // projection meta
+    && /version: '3\.10\.0'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.10.0，防 corr-2026-014 版本漂移复发');
+
+// ── v3.10 汇总 ──
+(async () => {
+  const results = await Promise.all(v310.map(c => Promise.resolve(c.ok)));
+  let f = 0;
+  v310.forEach((c, i) => {
+    const ok = results[i];
+    if (!ok) f++;
+    console.log(`${ok ? '\u2713' : '\u2717'} ${c.name}${ok ? '' : '  —— ' + c.detail}`);
+  });
+  console.log(`\nv3.10: ${v310.length - f} 通过, ${f} 失败, 共 ${v310.length} 个`);
+  if (f > 0) {
+    console.log('结论：一手信源接入或部署规模维度不完整（命中/证伪/召回/精度/接入/端到端/版本有缺）。');
+    process.exitCode = 1;
+  } else {
+    console.log('结论：商业辨别已接入 SEC 备案与厂商一手公告桶，部署规模主张进模式库（live 实证 2 条命中），boilerplate 守卫与 ma 收紧生效，报告与 cron 注入渲染中文标签。');
   }
 })();

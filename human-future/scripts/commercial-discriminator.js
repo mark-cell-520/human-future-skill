@@ -62,6 +62,35 @@ const COMMERCIAL_CLAIM_PATTERNS = [
     kind: 'adoption', label: '调查研究主张' },
   { id: 'finding-with-number', re: /\b\d+(?:\.\d+)?\s*%\s*(?:of\s+)?(enterprises?|companies|firms?|respondents?|users?|developers?|businesses?)/i,
     kind: 'adoption', label: '量化采用数据' },
+  // [v3.10] 部署规模主张（deployment-scale，新辨别维度）：
+  // adoption-claim 只认「趋势主体」（enterprises/companies are adopting…），
+  // 而**具名主体的量化部署**——厂商一手公告与案例研究里最高频的采用证据
+  // 形态——整个在库外。live 实证（2026-10-26 轮 300 条，此前商业辨别候选池
+  // 只扫 business/economy 两个媒体二手桶，厂商一手公告桶 frontier_models
+  // 从未进池，v3.10 同轮补上）：「Uber is rolling out ChatGPT Work to more
+  // than 30,000 employees」（OpenAI News，2026-10-22）与「ChatGPT Ads
+  // expands to 26 new countries as over 100,000 advertisers have used the
+  // platform」（OpenAI News，2026-10-21）——扩容前 19 种形态全部不命中。
+  // 具名部署与趋势主张是两类证据：趋势靠调查/汇总证伪（样本是否支持），
+  // 具名部署靠「当事方确认 + 席位数/覆盖面核实」证伪（部署暂停、缩减、
+  // 当事方否认都是可观测事件），证伪路径与推理判据都不同。
+  // 精度设计（v3.0.0c/v3.2/v3.3/v3.6/v3.7/v3.9 教训：漏报比误报诚实、
+  // 没有实证不扩模式）：
+  //   ① 必须有量化范围（N employees/countries/users…）——无数量的部署
+  //      谈话（"brings ChatGPT Work to all employees"）按 v3.6/v3.9 同型
+  //      纪律（无金额的价格变动句不是可证伪主张）不进库；
+  //   ② 只认部署/扩张动词（rolling out/deployed/brings/expands to/
+  //      launching for-to）——合作公告（partner/collaborate）、基础设施
+  //      scaling（"scaling storage to serve 1 billion users" 是自身容量
+  //      不是客户部署）、产品发布、销售数字（"20,000 sell"）都不是部署
+  //      规模主张；
+  //   ③ 容忍数量副词（more than/over/up to）与窄形容词（new/additional/
+  //      total），不容任词间隔（v3.6 宽窗正则误命中 2 句的教训）。
+  // live 全池实测（扩桶后 300 条）：精确命中 2 条（即上述两条），精度
+  // 回归 0 误报。
+  { id: 'deployment-scale',
+    re: /(?:\b(?:rolling\s+out|rolls\s+out|rolled\s+out|deploy(?:s|ing|ed)?|bringing|brings|brought|expands?\s+to|expanding\s+to|launch(?:e[sd]|ing)?\s+(?:\w+\s+){0,3}(?:for|to))\s+(?:[^.!?]{0,40}?\s)?(?:nearly|almost|about|approximately|around|roughly|over|more\s+than|up\s+to|some\s+)?[\d,]+\s+(?:[\w-]+\s+)?(?:employees?|seats?|staff|workers?|users?|advertisers?|customers?|countries|companies|developers?|businesses?|enterprises?|organizations?|banks?|hospitals?|retailers?)\b)/i,
+    kind: 'deployment-scale', label: '部署规模主张' },
   { id: 'market-demand-claim', re: /(market|demand|enterprises?|customers?|buyers?)\s+(want|needs?|demands?|is looking for|are looking for|requires?|is demanding)/i,
     kind: 'demand', label: '需求主张' },
   { id: 'replacement-claim', re: /(will|to|could|would)\s+(replace|displace|kill|obsolete|eliminate|disrupt|undercut)\s+(saas|software|services?|jobs?|workers?|vendors?|incumbents?|subscriptions?)/i,
@@ -178,8 +207,14 @@ const COMMERCIAL_CLAIM_PATTERNS = [
   //     （无交易对象的谈判不是可证伪主张，等有 live 实证再扩）、
   //     "exploring options"（战略措辞非交易主张）、"eyes + 非交易名词"
   //     （inDrive "eyes 2027 robotaxi tests" 是测试计划不是收购）。
+  // ④ [v3.10] 动词形态（deal falls through/collapses/stalls…）只认特定
+  //     交易——live 实证（frontier_models 桶进池后）：Anthropic 研究博文
+  //     「What happens when a deal falls through?」是交易机制假设句，
+  //     "a deal" 泛指不是可证伪的交易主张。修法：交易名词前无冠词
+  //     （"talks collapsed"）或特定限定（the/this/its deal）仍命中，
+  //     "a/an" 泛指不命中（"the deal fell through" 仍命中）。
   { id: 'ma-claim',
-    re: /(?:\b(?:exploring|considering|weighing|pursuing)\s+(?:a|an|the|potential|possible)?\s*(?:sale|takeover|merger|acquisition|buyout|deal)\b|\b(?:in|enters?|entered|holding|holds?|resumed?)\s+(?:advanced\s+|early\s+|preliminary\s+|serious\s+|exclusive\s+)?talks?\s+to\s+(?:acquire|buy|sell|purchase|take\s+over|be\s+(?:acquired|bought|sold))\b|\btalks?\s+to\s+(?:acquire|buy|sell|purchase|take\s+over|be\s+(?:acquired|bought|sold))\b|\b(?:doomed|collapsed|failed|faltering|stalled|dead)\s+(?:deal|talks?|merger|acquisition|takeover)\b|\b(?:deal|talks?|merger|acquisition|takeover|negotiations?)\s+(?:collapses?|collapsed|falls?\s+through|fell\s+through|falls?\s+apart|fell\s+apart|stalls?|stalled|died|dies)\b)/i,
+    re: /(?:\b(?:exploring|considering|weighing|pursuing)\s+(?:a|an|the|potential|possible)?\s*(?:sale|takeover|merger|acquisition|buyout|deal)\b|\b(?:in|enters?|entered|holding|holds?|resumed?)\s+(?:advanced\s+|early\s+|preliminary\s+|serious\s+|exclusive\s+)?talks?\s+to\s+(?:acquire|buy|sell|purchase|take\s+over|be\s+(?:acquired|bought|sold))\b|\btalks?\s+to\s+(?:acquire|buy|sell|purchase|take\s+over|be\s+(?:acquired|bought|sold))\b|\b(?:doomed|collapsed|failed|faltering|stalled|dead)\s+(?:deal|talks?|merger|acquisition|takeover)\b|(?<!\ba\s)(?<!\ban\s)\b(?:deal|talks?|merger|acquisition|takeover|negotiations?)\s+(?:collapses?|collapsed|falls?\s+through|fell\s+through|falls?\s+apart|fell\s+apart|stalls?|stalled|died|dies)\b)/i,
     kind: 'ma', label: '并购/交易过程主张' },
   // ── 竞品类 ──
   // [v3.0.0c] 目标名词库补人类专家群：实测今日池子里
@@ -306,7 +341,15 @@ const UNFALSIFIABLE_COMMERCIAL_PATTERNS = [
       // roundup 借官员名字抬级）；Fed/ECB 的货币政策公告不适用（主体不含
       // Fed/ECB，且其动词 said 不在标记动词表——"The Fed chair said" 仍是
       // 无出处档，v3.0.0c 的独立验证判据教训不回归）。
-    test: (t) => /(earnings|quarterly results|filing|10-[kq]|sec filing|annual report|press release|announced|announcement|statement|disclosed|confirmation|confirmed|federal register|proposed rule|final rule|(?:treasury|securities and exchange commission|\bsec\b|federal trade commission|\bftc\b|department of justice|\bdoj\b|white house|european commission|\beu\b|commerce department|state department|\bofac\b|regulators?|government|administration|\bbeijing\b)\s+(?:department\s+)?(?:proposes?|proposed|proposing|announces?|announced|issues?|issued|issuing|imposes?|imposed|signs?|signed|enacts?|enacted|passes?|passed|finaliz\w+|finalis\w+|adopts?|adopted|approves?|approved|widen(?:s|ed)?|expand(?:s|ed)?|tighten(?:s|ed)?|loosen(?:s|ed)?|relax(?:es|ed|ing)?|eases?|eased|bans?|banned|blocked?|blocks?|struck\s+down|overturn\w+|rescind\w+|vetoes?|vetoed|lifts?|lifted|unveils?|unveiled|publishes?|published|releases?|released|said|says))/i.test(t) },
+    test: (t, claim) => /(earnings|quarterly results|filing|10-[kq]|sec filing|annual report|press release|announced|announcement|statement|disclosed|confirmation|confirmed|federal register|proposed rule|final rule|(?:treasury|securities and exchange commission|\bsec\b|federal trade commission|\bftc\b|department of justice|\bdoj\b|white house|european commission|\beu\b|commerce department|state department|\bofac\b|regulators?|government|administration|\bbeijing\b)\s+(?:department\s+)?(?:proposes?|proposed|proposing|announces?|announced|issues?|issued|issuing|imposes?|imposed|signs?|signed|enacts?|enacted|passes?|passed|finaliz\w+|finalis\w+|adopts?|adopted|approves?|approved|widen(?:s|ed)?|expand(?:s|ed)?|tighten(?:s|ed)?|loosen(?:s|ed)?|relax(?:es|ed|ing)?|eases?|eased|bans?|banned|blocked?|blocks?|struck\s+down|overturn\w+|rescind\w+|vetoes?|vetoed|lifts?|lifted|unveils?|unveiled|publishes?|published|releases?|released|said|says))/i.test(t)
+      // [v3.10] claim.source === 'SEC EDGAR' 也归本档：v3.10 起 SEC 备案
+      // 桶进商业辨别候选池，备案里的句子（"Google Cloud saw a continued
+      // increase in customer demand as revenues increased 48% to $17.7
+      // billion"）自身往往不含 filing/earnings 出处词，不认来源则每条
+      // 备案主张都掉到「无出处(1)」——而公开财报档（v3.0.0c「according
+      // to a company announcement 归公开财报档」同型）正是该形态能拿到
+      // 的最强证据档。只认 SEC EDGAR 采集源，不认其它来源字段。
+      || (claim && claim.source === 'SEC EDGAR') },
   { id: 'vendor-selfreport', label: '厂商自述', weight: 2,
     test: (t) => /(we|our|the company)\s+(expect|believe|estimate|project|anticipate|aim|plan|target)/i.test(t) },
   { id: 'media-report', label: '媒体报道', weight: 2,
@@ -318,7 +361,11 @@ const UNFALSIFIABLE_COMMERCIAL_PATTERNS = [
 /** 推理有效性：商业主张的三要素 */
 const REASONING_CHECKS = [
   { id: 'has-sample', label: '给出样本（多少家/多少用户/多少钱）',
-    test: (t) => /(\d+\s*(?:companies|enterprises|firms|customers|users|developers|respondents|percent|%|million|billion)|\$[\d.]+|n\s*=\s*\d+)/i.test(t) },
+    // [v3.10] 名词组补 employees/seats/staff/countries/advertisers/deals：
+    // 具名部署规模主张的样本就是席位数与覆盖面（"30,000 employees"/
+    // "26 new countries"/"100,000 advertisers"/"206 deals"），不补则
+    // 部署规模主张的推理分恒为 0（有数字却判不出样本）。
+    test: (t) => /(\d+\s*(?:companies|enterprises|firms|customers|users|developers|respondents|employees|seats|staff|countries|advertisers|deals|percent|%|million|billion)|\$[\d.]+|n\s*=\s*\d+)/i.test(t) },
   { id: 'has-comparison', label: '给出对照（和谁比/和什么时候比）',
     test: (t) => /(compared to|versus|vs\.?|up from|down from|year[\s-]over[\s-]year|yoy|qoq|against|relative to|than (?:last|previous))/i.test(t) },
   { id: 'has-counterexample', label: '承认反例（什么情况下不成立）',
@@ -369,7 +416,8 @@ function discriminateCommercial(claim, opts = {}) {
   // 3. 证据等级
   let evidence = EVIDENCE_TIERS[EVIDENCE_TIERS.length - 1];
   for (const t of EVIDENCE_TIERS) {
-    try { if (t.test(text)) { evidence = t; break; } } catch (_) { /* 同上 */ }
+    // [v3.10] 传 claim：public-filing 档要认 SEC EDGAR 采集源（见该档注释）。
+    try { if (t.test(text, claim)) { evidence = t; break; } } catch (_) { /* 同上 */ }
   }
 
   // 4. 推理有效性
@@ -465,6 +513,11 @@ function buildFalsification(patterns, text) {
     // 「评论期后正式文本显著收窄」。Treasury 2026-10-22 提案的评论期
     // 2026-12-07 截止，最终规则即结算点。
     'regulatory-action': '观察到最终规则或立法的范围与主张情形不符（未涵盖主张的部门或交易类型）、规则未生效即被 rescind/struck down/无限期推迟，或评论期后的正式文本显著收窄',
+    // [v3.10] 部署规模主张的证伪路径：具名部署主张最常见的裂缝是
+    // 「当事方否认或缩减」「席位数/覆盖面与主张值不符」「部署暂停或
+    // 回滚」。厂商一手公告无第三方确认时按厂商自述档对待，不因数字
+    // 具体而虚抬证据等级。
+    'deployment-scale': '观察到部署方否认该部署、席位数/覆盖国家数与主张值不符，或该部署在主张时点后被暂停/缩减/回滚；厂商一手公告需第三方或当事方确认才能升级证据档',
     'unclassified': '无明确证伪路径——这本身就是问题',
   };
   return FALSIFICATION_BY_KIND[kind] || FALSIFICATION_BY_KIND.unclassified;
@@ -485,6 +538,9 @@ function inferCommercialCategory(text, patterns) {
       'expert-judgment': 'market_claims',
       // [v3.8] 监管行动是合规需求域最具体的 instantiation，归合规需求域
       'regulatory-action': 'compliance_demand',
+      // [v3.10] 具名部署是客户采用域最具体的 instantiation（与 adoption
+      // 同域，兜底类目同为 market_claims——行为断言抓不到摘除，测试走源级）
+      'deployment-scale': 'market_claims',
       // [v3.3] 交易过程是资本事件，归资本与商业模式域
       ma: 'capital_flow',
       funding: 'capital_flow', valuation: 'capital_flow', 'capital-signal': 'capital_flow',

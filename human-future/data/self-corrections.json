@@ -286,6 +286,16 @@
       "lesson": "涨号轮的收尾清单必须包含「全量 grep 旧版本号与旧计数」——范围是 package.json description、SKILL.md frontmatter、全部历史版本断言的代码与名称、注释里的形态条数；只改 VERSION/banner/meta 五处不够，文档与断言名是同样的腐烂面。另外 package.json 的 description 是给人看的第一入口，它的计数和 frontmatter 不一致时，以 npm test 实测值为准。",
       "severity": "medium",
       "recordedAt": "2026-10-25T22:52:48.117Z"
+    },
+    {
+      "id": "corr-2026-027",
+      "reportVersion": "v3.10.0",
+      "wrongClaim": "商业主张辨别的候选池只要覆盖 business/economy 两个媒体桶就够了——SEC 备案（v3.4 起采集）与厂商一手公告（frontier_models，12 个源）里的主张「以后需要时再说」，证据档「公开财报/公告(3)》采不到对应的句子也不算断链",
+      "rightClaim": "一手信源是商业主张证据链的最上游，候选池漏掉两个一手桶等于把最高质量的证据档晾着：① 「公开财报/公告(3)」证据档自 v3.0.0c 起只为「文本里提到 filing/announced」设计，从来没有真实财报能触发它——备案里的量化主张（\"Google Cloud saw a continued increase in customer demand as revenues increased 48% to $17.7 billion\"、\"intent to raise up to $50 billion\"、\"Closed 206 deals of at least $1 million\"）整条看不见；② 厂商一手公告里的具名部署主张（\"Uber is rolling out ChatGPT Work to more than 30,000 employees\"）与调查研究（\"survey of almost 11,000 US adults\"）也从不进辨别，而 adoption-claim 只认「趋势主体」，「具名主体的量化部署」这个最高频的采用证据形态整个在库外。同轮实证的三个精度缺陷也都是扩池才暴露的：demand 形态在 forward-looking 免责声明 boilerplate 的 \"customer demand\" 清单名词短语上误触发（MU/CRWV 两家 8-K）、ma 动词形态把研究博文的泛指交易假设句 \"a deal falls through\" 当成交易主张、has-sample 名词组没有 employees/countries/advertisers/deals 导致部署规模主张有数字却判不出样本。",
+      "evidence": "v3.10 轮 300 条 live 实测：扩池前 sec_filings 42 条与 frontier_models 142 条从不进商业辨别候选（候选池硬编码 business/economy）；扩池后形态门在 sec_filings 命中 6 条（4 真 + 2 boilerplate）、frontier_models 命中 7 条（6 真 + 1 假设句）；端到端商业辨别段 10→20 条，公开财报/公告证据档 1→5 条，byKind 新增 deployment-scale:2；npm test 299 项 0 失败。",
+      "lesson": "断链审计不能只查「产出了但注入脚本没读」，还要查「采集了但辨别器从不看」——候选池的桶白名单是另一种断链：数据在 live 池里躺着、辨别器门口写着「只认这两个桶」。每次给辨别器加新证据档或新形态，都要问一句「该形态的 live 实证从哪个桶进来」；桶白名单与证据档标记（public-filing 认 SEC EDGAR 来源）必须同轮匹配，否则新档永远空转。另：扩池会一次性暴露多个沉睡的精度缺陷（boilerplate 误触发/泛指句/样本名词组），扩池轮的精度回归必须拿新桶的全部命中逐条复核，不能只测新形态本身。",
+      "severity": "high",
+      "recordedAt": "2026-10-26T01:01:51.325Z"
     }
   ]
 }

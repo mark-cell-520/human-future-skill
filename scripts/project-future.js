@@ -340,7 +340,7 @@ class ProjectionEngine {
     }
     const report = {
       meta: {
-        version: '3.9.0',
+        version: '3.10.0',
         heartflowVersion: this.analysis.engineVersion,
         timestamp: this.timestamp,
         modulesLoaded: this.analysis.modulesLoaded,
@@ -1839,8 +1839,27 @@ class ProjectionEngine {
     // 反而排不进来。
     //
     // 修法：先取 business 全部候选，再用 economy 补足到上限。
-    const PICK_BUSINESS_FIRST = ['business', 'economy'];
-    const byBucket = { business: [], economy: [] };
+    //
+    // [v3.10] 一手信源桶接入（sec_filings + frontier_models）：
+    // 此前的候选池只有 business/economy 两个媒体二手桶——两个一手桶从来
+    // 不进商业辨别：① sec_filings（SEC EDGAR 备案，v3.4 起采集）：「公开
+    // 财报/公告(3)」证据档自 v3.0.0c 起只为「文本里提到 filing/announced」
+    // 设计，从来没有真实财报能触发它；备案里的量化主张（"Google Cloud saw
+    // a continued increase in customer demand as revenues increased 48% to
+    // $17.7 billion"、"intent to raise up to $50 billion"、"Closed 206
+    // deals of at least $1 million"）整条看不见；② frontier_models（厂商
+    // 一手公告，12 个源）：具名部署主张（"Uber is rolling out ChatGPT Work
+    // to more than 30,000 employees"）与调查研究（"survey of almost 11,000
+    // US adults"）都在这个桶里。一手信源是商业主张辨别证据链的最上游，
+    // 只辨媒体转述等于把最高质量的证据档晾着。
+    // live 实测（2026-10-26 轮 300 条）：形态门在 sec_filings 42 条里命中
+    // 6 条（4 条真主张 + 2 条 forward-looking 免责声明 boilerplate，已加
+    // 守卫）、frontier_models 142 条里命中 7 条（6 条真主张 + 1 条交易
+    // 机制假设句，ma 动词形态已收紧）。容量：business 12 / sec_filings 8 /
+    // frontier_models 10 / economy 6——business 仍是第一优先。
+    const PICK_BUCKETS = ['business', 'sec_filings', 'frontier_models', 'economy'];
+    const BUCKET_CAP = { business: 12, sec_filings: 8, frontier_models: 10, economy: 6 };
+    const byBucket = { business: [], sec_filings: [], frontier_models: [], economy: [] };
     // [v3.0.0c] 精度门：候选题句必须命中商业主张形态。
     //
     // 实测依据（2026-10-24 轮，修复前）：旧触发器是「句子含 $ / % / market /
@@ -1852,10 +1871,10 @@ class ProjectionEngine {
     // 还因 2/3 推理分被判成★决策相关）、ConnectWise 安全新闻全部混入。
     // 它们根本不是商业主张，辨别它们产出的是噪音。
     //
-    // 门直接用辨别器自己的 COMMERCIAL_CLAIM_PATTERNS（19 种主张形态，
+    // 门直接用辨别器自己的 COMMERCIAL_CLAIM_PATTERNS（20 种主张形态，
     // v3.2 起含产能/供给约束；v3.3 起含并购/交易过程；v3.6 起含成本/
     // 价格信号；v3.7 起含专家/机构判断；v3.8 起含监管行动；v3.9 起含
-    // 价格下调；v3.2 计数纠错：
+    // 价格下调；v3.10 起含部署规模；v3.2 计数纠错：
     // v3.0.0c-v3.1.1 文档写「14 种」而实际只有 13 种——与 v3.1 修正的
     // 「17 个源」同型文档计数错误，按代码实测改正），
     // 不新造判据；标题也参与判定——无摘要条目的主张就在标题里
@@ -1866,8 +1885,18 @@ class ProjectionEngine {
     // boilerplate 仍不在库）。
     const isClaimForm = (t) => COMMERCIAL_CLAIM_PATTERNS
       .some(p => { try { return p.re.test(t); } catch (_) { return false; } });
+    // [v3.10] forward-looking 免责声明守卫。live 实证（2026-10-26 轮，SEC
+    // 备案桶进池后）：MU/CRWV 两家 8-K 的「Forward-Looking Statements」段
+    // 是法律 boilerplate——"These statements include, but are not limited
+    // to, statements related to ... customer demand; ..." 里的 "customer
+    // demand" 是清单名词短语不是主张，demand 形态在这种句上误触发。守卫
+    // 只认命中句自身含免责声明标记（三个 live 实证标记：forward-looking
+    // statements / these statements include / statements related to），
+    // 不碰窗口内其它句子——真主张句不含这些标记（GOOGL/ORCL/PLTR 的量化
+    // 主张句照常进池）。没有实证不扩标记集（v3.0.0c 同型纪律）。
+    const DISCLAIMER_RE = /forward[-\s]?looking statements?|these statements include|statements? related to/i;
     for (const it of this.signals.items) {
-      if (!PICK_BUSINESS_FIRST.includes(it.bucket)) continue;
+      if (!PICK_BUCKETS.includes(it.bucket)) continue;
       // 送命中句 + 后 2 句上下文（与 forecast 一致）：证据词常在后续句里
       const norm = `${it.title || ''} ${it.body || ''} ${it.description || ''}`
         .replace(/[\u2018\u2019\u201A\u201B\u2032]/g, "'")
@@ -1879,6 +1908,7 @@ class ProjectionEngine {
         return isClaimForm(s) || isClaimForm(it.title || '');
       });
       if (idx < 0) continue;
+      if (DISCLAIMER_RE.test(sents[idx])) continue;
       byBucket[it.bucket].push({
         text: sents.slice(idx, idx + 3).join(' ').trim().slice(0, 600),
         claimSentence: sents[idx].trim(),
@@ -1888,13 +1918,14 @@ class ProjectionEngine {
         category: (it.domains || [])[0] || 'market_claims',
       });
     }
-    // business 优先取满，economy 补足
-    const candidates = [...byBucket.business.slice(0, 16), ...byBucket.economy.slice(0, 8)];
+    // business 优先取满，sec_filings/frontier_models 一手信源次之，
+    // economy 宏观补充最后
+    const candidates = PICK_BUCKETS.flatMap(b => byBucket[b].slice(0, BUCKET_CAP[b]));
     if (candidates.length === 0) {
       return {
         available: false,
         reason: `本期 ${this.signals.items.length} 条 live 信号中（商业域 business/economy）未抽到命中商业主张形态的条目`,
-        note: '只辨别命中商业主张形态（采用/需求/替代/规模/成本价格/价格下调/产能供给/并购交易/专家判断/监管行动/融资/估值/竞品/合规/信任共 19 种模式）的条目；'
+        note: '只辨别命中商业主张形态（采用/部署规模/需求/替代/市场规模/成本价格/价格下调/产能供给/并购交易/专家判断/监管行动/融资/估值/竞品/合规/信任共 20 种模式）的条目；'
           + 'v3.0.0c 起候选题句必须命中模式库，Fed 公告/播客/促销页脚等非主张文本不再进入辨别。',
       };
     }
@@ -1924,11 +1955,15 @@ class ProjectionEngine {
         unfalsifiableCount: byVerdict.unfalsifiable || 0,
         wellFormedCount: byVerdict['well-formed'] || 0,
       },
-      results: results.slice(0, 16),
+      // [v3.10] 16→20：候选池扩到四桶后单轮辨别条数增至 20 上下，切到 16
+      // 会把一手信源的新主张（部署规模/备案量化句）切掉——段内渲染必须覆盖
+      // 实际辨别结果，否则「辨别了但看不见」。
+      results: results.slice(0, 20),
       note: '本段只辨别商业主张的表述与证据质量（可证伪性/证据等级/推理有效性/证伪条件），'
         + '不判断主张内容真假，也不生成「心虫应该怎么做」的商业建议。'
-        + 'v3.0.0c 起候选题句必须命中商业主张形态库（19 种模式，v3.2 新增产能/供给约束，'
-        + 'v3.3 新增并购/交易过程，v3.6 新增成本/价格信号，v3.7 新增专家/机构判断，v3.8 新增监管行动，v3.9 新增价格下调），非主张文本（公告/播客/促销页脚）不进辨别。'
+        + 'v3.0.0c 起候选题句必须命中商业主张形态库（20 种模式，v3.2 新增产能/供给约束，'
+        + 'v3.3 新增并购/交易过程，v3.6 新增成本/价格信号，v3.7 新增专家/机构判断，v3.8 新增监管行动，v3.9 新增价格下调，v3.10 新增部署规模），非主张文本（公告/播客/促销页脚/免责声明）不进辨别。'
+        + 'v3.10 起候选池含一手信源桶（SEC 备案 + 厂商一手公告）。'
         + '证据等级：独立验证(4) > 第三方调查/公开财报(3) > 厂商自述/媒体报道(2) > 无出处(1)。',
     };
   }
@@ -2544,7 +2579,7 @@ function formatReport(report) {
     lines.push(`> ${(cdsc && cdsc.note) || ''}`);
   } else {
     const s = cdsc.summary;
-    lines.push(`本期从商业域（融资/竞品/宏观）抽到 ${cdsc.audited} 条命中商业主张形态的条目，逐条辨别：`);
+    lines.push(`本期从商业域与一手信源桶（business/economy 媒体二手 + SEC 备案/厂商一手公告）抽到 ${cdsc.audited} 条命中商业主张形态的条目，逐条辨别：`);
     lines.push(`  决策相关 ${s.decisionRelevantCount} 条 | 有出处事实 ${s.factualCount} 条`
       + ` | 结构完整 ${s.wellFormedCount} 条 | 不可证伪 ${s.unfalsifiableCount} 条`);
     const ev = Object.entries(s.byEvidence).map(([k, v]) => `${k} ${v}`).join(' | ');
@@ -2582,8 +2617,15 @@ function formatReport(report) {
       // Other Countries」与 LWiAI #251 简报内句「Trump lifts restrictions
       // on Anthropic」）
       'regulatory-action': '监管行动',
+      // [v3.10] 部署规模主张（live 实证：OpenAI News「Uber is rolling out
+      // ChatGPT Work to more than 30,000 employees」与「ChatGPT Ads
+      // expands to 26 new countries as over 100,000 advertisers have used
+      // the platform」——厂商一手公告里最高频的量化采用证据形态）
+      'deployment-scale': '部署规模主张',
     };
-    for (const r of cdsc.results.slice(0, 12)) {
+    // [v3.10] 12→20：与 buildCommercialDiscrimination 的 results.slice(0, 20)
+    // 对齐——扩池后辨别条数变多，渲染上限不跟着涨会把一手信源主张切掉。
+    for (const r of cdsc.results.slice(0, 20)) {
       const rel = r.decisionRelevant ? '★决策相关' : '  ';
       lines.push(`${rel} [${VERDICT_CN[r.verdict] || r.verdict}] ${(r.claimSentence || r.text).slice(0, 105)}`);
       lines.push(`    类型: ${KIND_CN[r.kind] || r.kind} | 来源: ${r.source}`
