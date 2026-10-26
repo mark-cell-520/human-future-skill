@@ -1,10 +1,50 @@
 ---
 name: human-future-v2
-title: "人类未来 · 文明推演引擎 v3.10.0"
-version: "3.10.0"
+title: "人类未来 · 文明推演引擎 v3.11.0"
+version: "3.11.0"
 description: |-
-  人类未来技能 v3.10.0 — 商业主张辨别接入一手信源（SEC 备案 + 厂商一手
-  公告桶）+ 新辨别维度「部署规模主张」（新辨别维度）：
+  人类未来技能 v3.11.0 — 商业主张辨别器新增「用量/牵引度指标主张」形态
+  （新辨别维度）+ 同型切分修复（引号嵌套不断句）：
+  live 实证（2026-10-26 轮 300 条池，sec_filings 桶）：「Microsoft 365
+  Copilot reached over 30 million paid seats」（MSFT 2026-07-29 备案）、
+  「the Gemini App has 950 million monthly active users」「Gemini models
+  now process 22 billion API tokens per minute」（GOOGL 2026-07-22 备案）、
+  「grown to over 750 million monthly active users」（GOOGL 2026-02-04
+  备案）——扩容前 20 种形态全部不命中。adoption-claim 只认「趋势主体」
+  （enterprises are adopting…）、deployment-scale 只认「部署事件+量化
+  范围」（rolling out to 30,000 employees），而**产品用量状态**（厂商
+  在 SEC 备案里自报的席位数/月活/token 吞吐）整条在库外——它是客户采用
+  域最硬的第一方证据，且有天然结算结构：下一期备案同指标是新值，可对账。
+  新 kind usage-metric：用量状态动词（has/have/reached/grown to/
+  process…）+ 量化值 + 用量指标名词（(monthly|weekly|daily) active
+  users / paid seats / (api) tokens per minute / api calls）。精度纪律
+  （v3.0.0c/v3.2/v3.3/v3.6/v3.7/v3.9/v3.10：漏报比误报诚实、没有实证
+  不扩模式）：① 必须「量化值+用量指标名词」两件套；② 指标名词族不认
+  subscribers——GOOGL「paid subscriptions has now reached 350 million」
+  （YouTube/Google One 驱动）是订阅总量不是 AI 用量，FLI「50,000+
+  subscribers」是邮件列表 boilerplate，Suno「2 million paying
+  subscribers」是音乐服务；③ 必须有用量状态动词——「API supports
+  128k tokens per minute」是速率上限不是用量，基础设施 scaling（serve
+  1 billion users）同型不收；④ 只认「数值在前」语序——名词在前语序
+  （"monthly active users reached 950 million"）会放行 "apps with
+  monthly active users exceeding 100,000" 类抽样条件误报，留作已知
+  边界。专属证伪路径（下一期同口径自报值低于主张值/第三方用量估算
+  不符/口径变化）；类目 market_claims；报告与 cron 注入标签
+  「用量/牵引度指标主张」。同轮同型修复（配套）：句末标点后容忍一个
+  收尾引号再切句——SEC 备案正文把多条引言拼成一段时
+  `transformation." "We delivered…` 的句点在引号内，旧切分不断句，
+  含用量句的整段被拼成 443 字超出 400 字候选窗，MSFT 条整条不进辨别
+  （live 实证；forecast 路径同型两处同步修，实测 forecast 结果零变化）。
+  live 端到端：商业辨别段 20→23 条，byKind 新增 usage-metric:2——MSFT
+  条判 结构完整/公开财报/公告(3)/推理 2/3、decisionRelevant；GOOGL 条
+  判 推理单薄/公开财报/公告(3)/推理 1/3、decisionRelevant（一手备案
+  量化主张，证据档首次由用量指标触发）；渲染/注入上限同步 20→25 /
+  16→25 并加截断披露（audited 23 > 旧上限 20，不静默切尾）。测试
+  299→314 项；8 轮反向验证全部精确失败（摘除模式→10/摘除证伪条件→1/
+  摘除类目映射→1 源级/摘除报告 KIND_CN→1/摘除注入 KIND_CN→1/恢复旧
+  切分→2/名词族加 subscribers→1/动词族加 supports→2）。历史：v3.10
+  — 商业主张辨别接入一手信源（SEC 备案 + 厂商一手公告桶）+ 新辨别
+  维度「部署规模主张」（新辨别维度）：
   商业辨别的候选池自 v3.0.0 起只有 business/economy 两个媒体二手桶——两个
   一手桶从来不进辨别：① sec_filings（SEC EDGAR 备案，v3.4 起采集）：
   「公开财报/公告(3)」证据档自 v3.0.0c 起只为「文本里提到 filing/announced」
@@ -431,10 +471,24 @@ poll 分支没有触发机会；v3.7 放行 Apollo economist 条目后，round 6
 
 ---
 
-## 当前状态（v3.10.0 实测）
+## 当前状态（v3.11.0 实测）
 
 以下数字全部来自 2026-10-26 的 `FETCH=1 FETCH_BODY=1 node scripts/run-pipeline.js` 实跑
-（v3.10.0 轮：pipeline exit 0、300 条 live 信号（business 48 + economy 46 +
+（v3.11.0 轮：pipeline exit 0、300 条 live 信号（business 48 + economy 46 +
+frontier_models 142 + sec_filings 42 + tech 22 + humanities 12）、商业辨别段 20→23 条
+含新维度用量/牵引度指标 2 条（byKind 新增 usage-metric:2——MSFT 备案
+「Microsoft 365 Copilot reached over 30 million paid seats」判 结构完整/
+公开财报/公告(3)/推理 2/3、decisionRelevant（has-sample+has-comparison，
+对照来自命中句后 2 句上下文的 "up 27% year-over-year"）；GOOGL 备案
+「Gemini models now process 22 billion API tokens per minute and the
+Gemini App has 950 million monthly active users」判 推理单薄/公开财报/
+公告(3)/推理 1/3、decisionRelevant——厂商在 SEC 备案里自报的席位数/月活/
+token 吞吐首次进商业辨别，下一期备案同指标可对账；公开财报/公告证据档
+5→8 条；GOOGL「paid subscriptions has now reached 350 million」
+（YouTube/Google One 驱动）与 FLI/Suno subscribers 句被精度纪律挡在库外；
+hf-cron-fetch.sh 注入段 agent 可见「类型: 用量/牵引度指标主张」；渲染/
+注入上限同步 20→25/16→25，audited 23 未触顶、截断披露行就位）；
+v3.10.0 轮：pipeline exit 0、300 条 live 信号（business 48 + economy 46 +
 frontier_models 142 + sec_filings 42 + tech 22 + humanities 12）、商业辨别段 10→20 条
 含新维度部署规模 2 条（byKind 新增 deployment-scale:2——OpenAI News「Uber is
 rolling out ChatGPT Work to more than 30,000 employees」与「ChatGPT Ads expands
@@ -692,6 +746,8 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   [v3.10 再纠错] v3.10 新增部署规模（deployment-scale）后真实条数为 20
   （v3.2→14 / v3.3→15 / v3.6→16 / v3.7→17 / v3.8→18 / v3.9→19 / v3.10→20，
   计数断言每轮跟代码走，v3.2 计数纠错同型纪律）。
+  [v3.11 再纠错] v3.11 新增用量/牵引度指标（usage-metric）后真实条数为 21
+  （v3.10→20 / v3.11→21，计数断言同轮同步）。
 - [v3.0.0c] 端到端断链修复：v3.0.0 起引擎产出 commercialDiscrimination、
   formatReport 渲染「商业主张辨别」段，但 cron 注入脚本从未读取该字段——
   报告文件里躺着、agent 完全看不到。这是 v2.9/v2.13/v2.17 之后第四次同型断链。
@@ -1047,6 +1103,79 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   employees"，已知边界漏报）、合作/协同公告、eyes+测试计划、政府资助
   授予（"NIST Awards $1.7M"）——等有 live 实证再扩。
 
+**[v3.11] 用量/牵引度指标主张（usage-metric，新辨别维度）+ 引号切分修复**
+- 定位：采用证据的第三形态缺口。adoption-claim 只认「趋势主体」
+  （enterprises are adopting…）、deployment-scale 只认「部署事件+量化
+  范围」（rolling out to 30,000 employees）——而**产品用量状态**
+  （"Microsoft 365 Copilot reached over 30 million paid seats"、
+  "the Gemini App has 950 million monthly active users"、"Gemini models
+  now process 22 billion API tokens per minute"）整条在库外。live 实证
+  （2026-10-26 轮 300 条池，sec_filings 桶，v3.10 扩池后进池）：扩容前
+  20 种形态对上述四句全部不命中。用量指标是客户采用域最硬的第一方
+  证据——厂商在 SEC 备案里自报的席位数/月活/token 吞吐，且有天然结算
+  结构：下一期备案的同指标是新值，可对账。三类采用证据分工：趋势主张
+  靠调查/汇总证伪，具名部署靠「当事方确认+席位数核实」证伪，用量状态
+  靠「下一期自报值+第三方估算+口径变化」证伪。
+- 形态族：用量状态动词（has/have/had/reached/grown to/exceeds/
+  surpasses/tops/process…/stands at，容忍 now 前缀）+ 量化值
+  （N million/billion/thousand…，容忍数量副词与 to）+ 用量指标名词
+  （(monthly|weekly|daily) active users / paid seats / (api) tokens
+  per minute/second/hour/day / api calls）。
+- 精度设计（v3.0.0c/v3.2/v3.3/v3.6/v3.7/v3.9/v3.10 教训：漏报比误报
+  诚实、没有实证不扩模式）：① 必须「量化值+用量指标名词」两件套——
+  单独的 active users/tokens 不是主张（"how to grow monthly active
+  users" 是指南文本）；② 指标名词族不认 subscribers——live 实证
+  "the number of paid subscriptions has now reached 350 million, with
+  YouTube and Google One being the key drivers"（GOOGL 2026-04-29
+  备案）是订阅总量不是 AI 产品用量，LWiAI/FLI 站点 "over 50,000+
+  subscribers" 是邮件列表 boilerplate，Suno "2 million paying
+  subscribers" 是音乐服务（与 v3.9 名词族只认 prices 不认 costs 同型）；
+  ③ 必须有用量状态动词——"our API supports 128k tokens per minute"
+  是速率上限不是用量（supports/allows/offers 不是用量动词），v3.10
+  已决议的基础设施 scaling（"scaling storage to serve 1 billion
+  users" 是自身容量）同型不收；④ 只认「数值在前」语序（live 实证四句
+  全部如此）——名词在前语序（"monthly active users reached 950
+  million"）会放行 "apps with monthly active users exceeding
+  100,000" 类调查样本准入条件误报，留作已知边界。live 全池实测
+  （300 条）：精确命中 4 条（MSFT Copilot 30M paid seats、GOOGL
+  Gemini 950M/750M MAU、GOOGL 22B/10B tokens per minute），10 句精度
+  回归 0 误报。
+- 判别结果（live 实测）：MSFT 条判 结构完整 / 公开财报/公告(3) /
+  推理 2/3、decisionRelevant（has-sample+has-comparison，对照来自
+  命中句后 2 句上下文的 "up 27% year-over-year"——引擎既定语义：
+  主张文本=命中句+后 2 句）；GOOGL 条判 推理单薄 / 公开财报/公告(3) /
+  推理 1/3、decisionRelevant。两条都不虚抬为无前提的一手事实：证伪
+  路径明确（下一期备案同口径自报值/第三方用量估算/口径变化）。
+- 同轮同型修复（配套，无新维度）：句末标点后容忍一个收尾引号再切句。
+  SEC 备案正文把多条引言拼成一段时，`transformation." "We delivered…`
+  的句点在引号内，旧切分 `(?<=[.!?。！？])\s+` 不断句——含用量主张的
+  整段被拼成 443 字长句、超出 400 字候选窗，MSFT 条整条不进辨别
+  （live 实证）。两处切分点（forecast 候选路径 + 商业候选路径）同步
+  修，V8 支持变量长 lookbehind。实测 forecast 辨别结果零变化
+  （41 条逐条签名比对一致），商业辨别 20→23 条（+2 usage-metric、
+  +1 被救回的 DELL 融资真主张）。
+- 同轮维护（不单独涨号）：渲染/注入上限 20→25 / 16→25 并加截断披露
+  （audited 23 > 旧上限 20，切掉尾部=「辨别了但看见不全」，超出时
+  明确写「另有 N 条未显示」不静默切尾）；available:false 路径的桶
+  描述从「business/economy」更正为四桶（v3.10 扩池后的文档腐烂）；
+  package.json description 把 v3.9 内容挂在 v3.10.0 版本号下
+  （corr-2026-026 同型），按实测重写。
+- 端到端：引擎候选门（isClaimForm 用同一个模式库，四桶）→
+  discriminateCommercial → formatReport KIND_CN「用量/牵引度指标主张」
+  → cron 注入第 6 段同标签。live 实测商业辨别段 20→23 条，byKind
+  新增 usage-metric:2；该轮 byKind 全量 expert-judgment:1 /
+  adoption:4 / cost-signal:1 / capacity:1 / ma:2 / regulatory-action:2
+  / funding:4 / price-cut:1 / usage-metric:2 / demand:2 /
+  deployment-scale:2 / competitive:1。
+- 仍在库外的用量句式：名词在前语序（"monthly active users reached
+  950 million"，已知边界——与抽样条件句共用正则会误报，等 live
+  实证再议）、增长率形态（"40% quarter on quarter growth in paid
+  monthly active users"——GOOGL 2026-04-29 备案该句在采集正文里被
+  截断，且增长率主张的证伪结构与水平值不同，等完整实证再扩）、
+  subscribers 族（有意排除）、GOOGL 2026-02-04 备案的 750M MAU 句
+  （用量句距首个命中句超过 2 句、不在 claim 文本窗内，已知边界漏报，
+  测试钉住）、无量化用量的名词短语——等有 live 实证再扩。
+
 **自我修正登记簿层（v3.1 接入的 0 调用模块）**
 - 定位：这是接入，不是新写。self-correction-ledger.js 自 v2.4 存在，
   `human-future/data/self-corrections.json` 有 25 条真实修正（绕月≠登月、
@@ -1067,11 +1196,16 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   严格过滤，漏掉数据里 2 条 critical（都是「整段推演作废」级的假能力审计），
   接入后会少报高危数（说 4 实际 6）。改为按等级表比较（critical > high >
   medium > low），critical 排最前。这是修 bug，不算升级——升级点是接入本身。
-- 边界（如实声明）：登记簿 26 条（v3.10 轮新增 corr-2026-027 后：critical 4 /
-  high 13 / medium 9——含 corr-2026-024/025 两条前轮手写条目未设 severity、
+- 边界（如实声明）：登记簿 27 条（v3.11 轮新增 corr-2026-028 后：critical 4 /
+  high 14 / medium 9——含 corr-2026-024/025 两条前轮手写条目未设 severity、
   按 medium 计；corr-2026-027 记的是「候选池桶白名单是另一种断链」：SEC 备案与
   厂商一手公告采集了三个版本，商业辨别器的门口却写着「只认 business/economy」，
-  「公开财报/公告(3)」证据档从来没有真实财报能触发；
+  「公开财报/公告(3)」证据档从来没有真实财报能触发；corr-2026-028 记的是
+  「扩池轮的全池测量只测当轮新形态」：v3.10 把一手桶接进候选池时只问了
+  「deployment-scale 命中几条」，没问「还有哪些形态在这两个桶里 MISS」——
+  usage-metric（SEC 备案自报席位数/月活/token 吞吐）是同一轮扩池的受益者
+  却又漏了一个版本，扩池轮的测量必须输出新桶全部命中按 kind 分布 + 未命中
+  条目过堂；
   v3.2.2 轮 e2e 实跑的报告快照在登记前，显示 10 条），样本随每次真实修正
   自然增长，引擎不代笔登记；本段不生成「所以本期该怎么做」的建议，
   只呈现「曾经错在哪」。
@@ -1161,6 +1295,11 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   部署/扩张动词+量化范围；必须有量化范围，只认部署动词不认合作/scaling/
   产品发布/销售数字），且候选池同轮接入一手信源桶（sec_filings +
   frontier_models，v3.10 前只有 business/economy 两个媒体二手桶）；
+  v3.11 起 "Microsoft 365 Copilot reached over 30 million paid seats" 与
+  "the Gemini App has 950 million monthly active users"（用量/牵引度
+  指标主张）已进模式库（usage-metric，用量状态动词+量化值+用量指标
+  名词；必须有量化值+指标名词两件套，subscribers 族与速率上限句有意
+  排除，只认数值在前语序）；
   仍在库外的有 "Instacart Shares Rally 10%"（市场反应——可核验的市场价格
   事实，非待辨别主张）、ProductHunt 产品发布（产品公告非市场主张）、
   "Late fees for delayed GPU deliveries exceed $2M"（名词后接长修饰语，
@@ -1175,6 +1314,16 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   （"OpenAI and Poland's NASK partner to advance AI safety"）、eyes+测试
   计划、政府资助授予（"NIST Awards More Than $1.7 Million"）——均等有
   live 实证再议。
+  [v3.11 起仍在库外的用量句式] 名词在前语序（"monthly active users
+  reached 950 million"——与 "apps with monthly active users exceeding
+  100,000" 类抽样条件句共用正体会误报，按「漏报比误报诚实」留边界）、
+  增长率形态（"40% quarter on quarter growth in paid monthly active
+  users"——GOOGL 2026-04-29 备案该句在采集正文里被截断，且增长率主张
+  的证伪结构与水平值不同）、subscribers 族（有意排除：GOOGL 订阅总量/
+  FLI 邮件列表/Suno 音乐服务均非 AI 产品用量）、GOOGL 2026-02-04 备案的
+  750M MAU 句（用量句距首个命中句超过 2 句、不在 claim 文本窗内——引擎
+  既定语义的漏报，测试钉住）、无量化用量的名词短语——均等有 live 实证
+  再议。
   漏掉比把 Fed 公告当商业主张诚实，但覆盖率是真实缺口——扩模式库须逐条配测试。
 - 站点导航/页脚 boilerplate：v3.0.0c 轮起漏网（EconBrowser 导航文本因句内含
   "analysis of" 命中调查研究形态），[v3.2 复测] 同型漏网仍在（EconBrowser 导航
@@ -1191,7 +1340,7 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   引擎不代劳——这是心虫铁律，不是能力缺失。
 
 **测试**
-- `npm test`：**299 项断言**（实测各 section 汇总；v3.4 的 230 + v3.5 新增 11 + v3.5.1 新增 9 + v3.6 新增 8 + v3.7 新增 9 + v3.8 新增 11 + v3.9 新增 8 + v3.10 新增 13：
+- `npm test`：**314 项断言**（实测各 section 汇总；v3.4 的 230 + v3.5 新增 11 + v3.5.1 新增 9 + v3.6 新增 8 + v3.7 新增 9 + v3.8 新增 11 + v3.9 新增 8 + v3.10 新增 13 + v3.11 新增 15：
   2 项纯结算函数（settleGuidance 单位感知容差：相对/绝对/bps/百分点/区间/无容差
   跳过，含区分相对vs绝对的边界用例 / normalizeMetric+parseMetricValue 单位解析）+
   3 项实际值抽取（extractActuals 营收+毛利率+标题期间 / GAAP/非GAAP 不同值抽出
@@ -1377,6 +1526,51 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   留在「（3.7.0）」而代码已改 3.8.0，名称腐烂两个版本，本轮连名称一起
   改正；package.json description 把 v3.8 测试数写成 276（实为 267+11=278，
   SKILL.md frontmatter 一直是 278），本轮按实测改正。
+  v3.11 新增 15（1 项 live 实证命中（MSFT 备案「Microsoft 365 Copilot
+  reached over 30 million paid seats」→ kind=usage-metric，判 推理单薄/
+  公开财报/公告(3)/推理 1/3、decisionRelevant——SEC EDGAR 采集源归公开
+  财报档，v3.10 证据档扩展同型）+ 1 项 live 实证命中（GOOGL 备案
+  「Gemini models now process 22 billion API tokens per minute and the
+  Gemini App has 950 million monthly active users」→ 同 kind，同判）+
+  1 项 live 实证命中（GOOGL 2026-02-04 备案「grown to over 750 million
+  monthly active users」→ 同 kind，grown to 动词形态）+ 1 项专属证伪
+  条件与类目映射（下一期同口径自报值/第三方用量估算/口径变化；类目映射
+  源级断言——兜底类目同为 market_claims，行为断言抓不到摘除）+ 1 项形态
+  族召回八形（reached over N paid seats / has N monthly active users /
+  grown to over N monthly active users / now process N API tokens per
+  minute / process over N tokens per minute / exceeds N daily active
+  users / stands at N weekly active users / processes N api calls per
+  day）+ 1 项精度回归 10 句（GOOGL 订阅总量/FLI 邮件列表/Suno 音乐服务
+  subscribers 族、速率上限 supports 128k tokens per minute、基础设施
+  scaling serve 1 billion users、指南文本、营收邻居句、无量化句、调查
+  准入条件句全部不命中）+ 1 项不串台（Uber 部署原句 kind 保持
+  deployment-scale，kinds 不含 usage-metric）+ 1 项引擎级两条备案用量
+  主张进辨别（byKind usage-metric:2；MSFT 条因后 2 句上下文含 "up 27%
+  year-over-year" 判 结构完整/推理 2/3，GOOGL 条 推理单薄/推理 1/3）+
+  1 项切分修复（源级：project-future.js 两处切分含收尾引号容忍
+  lookbehind；行为级：MSFT 条目 claimSentence 是用量句本身 ≤400 字、
+  不含拼接进来的 Amy Hood 引语）+ 1 项已知边界如实（用量句距首个命中句
+  超过 2 句不进辨别——claim 文本窗是引擎既定语义）+ 1 项端到端渲染
+  （formatReport 渲染「类型: 用量/牵引度指标主张 | 来源: SEC EDGAR」+
+  「证据: 公开财报/公告(3)」+ 证伪条件行——只认渲染出的标签行）+
+  1 项 cron 注入源级（读 ~/.hermes/scripts/hf-cron-fetch.sh 验
+  usage-metric 中文标签 + slice(0,25) + 截断披露行）+ 1 项精度门未破
+  （Fed 公告/播客/订阅总量/速率上限/无数量部署谈话/合作公告不进辨别）+
+  1 项版本号一致性（VERSION/package.json/banner/projection meta/
+  run-pipeline meta 五处对齐 3.11.0））。模式库计数 20→21（v3.3 的计数
+  断言同步更新，v3.2 计数纠错同型纪律）。
+  v3.11 八轮反向验证全部精确失败：摘除模式（含注释）→10 条（v3.11 九条
+  + v3.3 计数断言）；摘除证伪条件→1；摘除类目映射→1（源级）；摘除报告
+  KIND_CN→1；摘除注入 KIND_CN→1；恢复旧切分正则（两处）→2（源级+行为
+  级）；名词族加 subscribers→1（GOOGL 订阅总量句误命中）；动词族加
+  supports/allows/offers→2（速率上限句误命中+精度门）。每轮基线全绿、
+  摘除后断言必生效、备份还原到位（filecmp 校验）、收尾基线全绿。
+  同轮实测教训（已修）：① 摘除模式时 v3.11 测试段曾因 find(...) 返回
+  undefined 与 cd.results.filter 抛 TypeError 整段崩溃（反向验证报
+  「no summary line」而非精确失败）——模式摘除类测试必须先防护再断言；
+  ② 切分修复测试第一版把两个正则硬编码在测试里，摘除代码修复照样过
+  （断言空转）——改为源级（读代码数 lookbehind 出现次数）+ 行为级
+  （引擎 claimSentence 是用量句本身）双层钉住后才精确失败。
   历史：v3.4 的 230 + v3.4 新增 16：
   5 项采集器抽取（NVDA/AMZN/AMD/MRVL/MU 五种 live 句式命中 / 4 类精度回归 0 误报 /
   期间就近+同比排除+Oracle 两种期间形态 / 小数不截断+句点不冲段 / 词边界）+
@@ -1506,9 +1700,12 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   读成「公司没做到」；只结有容差/区间且实际值唯一的指引）** /
   **商业主张辨别（v3.0.0c 补入，第 6 段；KIND_CN 标签随形态库扩充：
   v3.2 产能/供给约束、v3.3 并购/交易过程、v3.6 成本/价格信号、v3.7 专家/机构
-  判断、v3.8 监管行动、v3.9 价格下调、v3.10 部署规模，注入与报告同标签；
+  判断、v3.8 监管行动、v3.9 价格下调、v3.10 部署规模、v3.11 用量/牵引度
+  指标，注入与报告同标签；
   v3.10 起渲染上限 12→20 / cron 10→16——候选池扩到四桶后辨别条数变多，
-  切掉尾部等于「辨别了但看不见」）** /
+  切掉尾部等于「辨别了但看不见」；[v3.11] 20→25 / 16→25 并加截断披露
+  （usage-metric 新维度+切分修复后 audited 23 超旧上限，超出时明确写
+  「另有 N 条未显示」））** /
   **口径错位检测（v3.1.1 补入，第 6.5 段，含触发句与口径限定——此前引擎产出+
   报告渲染都有，注入脚本从未读，第五次同型断链）** /
   **外部预测基准（v2.17 新增，第 7 段）** /

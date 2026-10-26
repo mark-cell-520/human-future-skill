@@ -340,7 +340,7 @@ class ProjectionEngine {
     }
     const report = {
       meta: {
-        version: '3.10.0',
+        version: '3.11.0',
         heartflowVersion: this.analysis.engineVersion,
         timestamp: this.timestamp,
         modulesLoaded: this.analysis.modulesLoaded,
@@ -1475,7 +1475,12 @@ class ProjectionEngine {
       // 归一化后正则只需写直引号一种形态。
       const norm = text.replace(/[\u2018\u2019\u201A\u201B\u2032]/g, "'")
         .replace(/[\u201C\u201D\u201E\u201F\u2033]/g, '"');
-      const sents = norm.split(/(?<=[.!?。！？])\s+/);
+      // [v3.11] 句末标点后容忍一个收尾引号再切句：SEC 备案正文把多条引言
+      // 拼成一段时，`transformation." "We delivered…` 的句点在引号内，旧
+      // 切分不断句——含用量主张的整段被拼成 443 字长句、超出 400 字
+      // 候选窗，MSFT「Copilot reached over 30 million paid seats」整条
+      // 不进辨别（live 实证 2026-10-26 轮）。V8 支持变量长 lookbehind。
+      const sents = norm.split(/(?<=[.!?。！？]["'」』]?)\s+/);
       // 找第一个同时满足「有前瞻结构」且「不是定价/设计说明」的句子
       // [v3.4] 结构化指引已收录的句子不再重复进（同一句两条 claim
       // 会在台账里同源同时点撞 id，被误判「已登记」而互相挤出）
@@ -1901,7 +1906,12 @@ class ProjectionEngine {
       const norm = `${it.title || ''} ${it.body || ''} ${it.description || ''}`
         .replace(/[\u2018\u2019\u201A\u201B\u2032]/g, "'")
         .replace(/[\u201C\u201D\u201E\u201F\u2033]/g, '"');
-      const sents = norm.split(/(?<=[.!?。！？])\s+/);
+      // [v3.11] 句末标点后容忍一个收尾引号再切句：SEC 备案正文把多条引言
+      // 拼成一段时，`transformation." "We delivered…` 的句点在引号内，旧
+      // 切分不断句——含用量主张的整段被拼成 443 字长句、超出 400 字
+      // 候选窗，MSFT「Copilot reached over 30 million paid seats」整条
+      // 不进辨别（live 实证 2026-10-26 轮）。V8 支持变量长 lookbehind。
+      const sents = norm.split(/(?<=[.!?。！？]["'」』]?)\s+/);
       // 找第一句命中商业主张形态的（句自身或条目标题命中即算）
       const idx = sents.findIndex(s => {
         if (s.length < 25 || s.length > 400) return false;
@@ -1924,8 +1934,8 @@ class ProjectionEngine {
     if (candidates.length === 0) {
       return {
         available: false,
-        reason: `本期 ${this.signals.items.length} 条 live 信号中（商业域 business/economy）未抽到命中商业主张形态的条目`,
-        note: '只辨别命中商业主张形态（采用/部署规模/需求/替代/市场规模/成本价格/价格下调/产能供给/并购交易/专家判断/监管行动/融资/估值/竞品/合规/信任共 20 种模式）的条目；'
+        reason: `本期 ${this.signals.items.length} 条 live 信号中（商业辨别候选池 business/sec_filings/frontier_models/economy 四桶）未抽到命中商业主张形态的条目`,
+        note: '只辨别命中商业主张形态（采用/部署规模/用量指标/需求/替代/市场规模/成本价格/价格下调/产能供给/并购交易/专家判断/监管行动/融资/估值/竞品/合规/信任共 21 种模式）的条目；'
           + 'v3.0.0c 起候选题句必须命中模式库，Fed 公告/播客/促销页脚等非主张文本不再进入辨别。',
       };
     }
@@ -1958,11 +1968,14 @@ class ProjectionEngine {
       // [v3.10] 16→20：候选池扩到四桶后单轮辨别条数增至 20 上下，切到 16
       // 会把一手信源的新主张（部署规模/备案量化句）切掉——段内渲染必须覆盖
       // 实际辨别结果，否则「辨别了但看不见」。
-      results: results.slice(0, 20),
+      // [v3.11] 20→25：usage-metric 新维度 + 引号切分修复后单轮辨别 23 条
+      // （live 实测），20 会把尾部的部署规模与 PLTR 融资主张切掉。formatReport
+      // 与 cron 注入的上限同步 25，超出时两处都披露未显示条数。
+      results: results.slice(0, 25),
       note: '本段只辨别商业主张的表述与证据质量（可证伪性/证据等级/推理有效性/证伪条件），'
         + '不判断主张内容真假，也不生成「心虫应该怎么做」的商业建议。'
-        + 'v3.0.0c 起候选题句必须命中商业主张形态库（20 种模式，v3.2 新增产能/供给约束，'
-        + 'v3.3 新增并购/交易过程，v3.6 新增成本/价格信号，v3.7 新增专家/机构判断，v3.8 新增监管行动，v3.9 新增价格下调，v3.10 新增部署规模），非主张文本（公告/播客/促销页脚/免责声明）不进辨别。'
+        + 'v3.0.0c 起候选题句必须命中商业主张形态库（21 种模式，v3.2 新增产能/供给约束，'
+        + 'v3.3 新增并购/交易过程，v3.6 新增成本/价格信号，v3.7 新增专家/机构判断，v3.8 新增监管行动，v3.9 新增价格下调，v3.10 新增部署规模，v3.11 新增用量/牵引度指标），非主张文本（公告/播客/促销页脚/免责声明）不进辨别。'
         + 'v3.10 起候选池含一手信源桶（SEC 备案 + 厂商一手公告）。'
         + '证据等级：独立验证(4) > 第三方调查/公开财报(3) > 厂商自述/媒体报道(2) > 无出处(1)。',
     };
@@ -2622,10 +2635,19 @@ function formatReport(report) {
       // expands to 26 new countries as over 100,000 advertisers have used
       // the platform」——厂商一手公告里最高频的量化采用证据形态）
       'deployment-scale': '部署规模主张',
+      // [v3.11] 用量/牵引度指标主张（live 实证：SEC 备案「Microsoft 365
+      // Copilot reached over 30 million paid seats」与「the Gemini App
+      // has 950 million monthly active users」「Gemini models now process
+      // 22 billion API tokens per minute」——厂商自报席位数/月活/token
+      // 吞吐，下一期备案同指标可对账）
+      'usage-metric': '用量/牵引度指标主张',
     };
     // [v3.10] 12→20：与 buildCommercialDiscrimination 的 results.slice(0, 20)
     // 对齐——扩池后辨别条数变多，渲染上限不跟着涨会把一手信源主张切掉。
-    for (const r of cdsc.results.slice(0, 20)) {
+    // [v3.11] 20→25：usage-metric 新维度 + 引号切分修复后单轮辨别 23 条
+    // （live 实测），20 会把尾部的部署规模与 PLTR 融资主张切掉。超出上限
+    // 时明确披露「还有 N 条未显示」，不静默切尾（切掉=辨别了但看不见）。
+    for (const r of cdsc.results.slice(0, 25)) {
       const rel = r.decisionRelevant ? '★决策相关' : '  ';
       lines.push(`${rel} [${VERDICT_CN[r.verdict] || r.verdict}] ${(r.claimSentence || r.text).slice(0, 105)}`);
       lines.push(`    类型: ${KIND_CN[r.kind] || r.kind} | 来源: ${r.source}`
@@ -2638,6 +2660,9 @@ function formatReport(report) {
         lines.push(`    不可证伪: ${r.falsifiability.problems.map(p => p.label).join('；')}`);
       }
       lines.push(`    证伪条件: ${r.falsification}`);
+    }
+    if (cdsc.results.length > 25) {
+      lines.push(`> 另有 ${cdsc.results.length - 25} 条辨别结果超出渲染上限未显示（不静默切尾）`);
     }
     lines.push('');
     lines.push(`> ${cdsc.note}`);

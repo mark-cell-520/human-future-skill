@@ -3823,18 +3823,19 @@ c33('精度门未破：非主张文本仍被挡在辨别外', (() => {
 // 维护级断言：模式计数文档口径（v3.2 刚纠错过「14 种」文档计数错误）。
 // [v3.6] 扩容成本/价格信号后真实条数为 16；[v3.7] 扩容专家/机构判断后
 // 真实条数为 17；[v3.8] 扩容监管行动后真实条数为 18；[v3.9] 扩容价格
-// 下调后真实条数为 19；[v3.10] 扩容部署规模后真实条数为 20，计数跟着
-// 代码走（v3.2 同型纪律）。
-c33('模式计数口径：20 种与文档一致', (() => {
+// 下调后真实条数为 19；[v3.10] 扩容部署规模后真实条数为 20；[v3.11]
+// 扩容用量/牵引度指标后真实条数为 21，计数跟着代码走（v3.2 同型纪律）。
+c33('模式计数口径：21 种与文档一致', (() => {
   const { COMMERCIAL_CLAIM_PATTERNS } = require('./human-future/scripts/commercial-discriminator.js');
   const pf = require('fs').readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return COMMERCIAL_CLAIM_PATTERNS.length === 20
-    && /共 20 种模式/.test(pf)
+  return COMMERCIAL_CLAIM_PATTERNS.length === 21
+    && /共 21 种模式/.test(pf)
     && COMMERCIAL_CLAIM_PATTERNS.some(p => p.id === 'expert-judgment')
     && COMMERCIAL_CLAIM_PATTERNS.some(p => p.id === 'regulatory-action')
     && COMMERCIAL_CLAIM_PATTERNS.some(p => p.id === 'price-cut')
-    && COMMERCIAL_CLAIM_PATTERNS.some(p => p.id === 'deployment-scale');
-})(), '模式库真实条数必须与文档写的「20 种」一致（防文档计数腐烂）');
+    && COMMERCIAL_CLAIM_PATTERNS.some(p => p.id === 'deployment-scale')
+    && COMMERCIAL_CLAIM_PATTERNS.some(p => p.id === 'usage-metric');
+})(), '模式库真实条数必须与文档写的「21 种」一致（防文档计数腐烂）');
 
 // ── v3.3 汇总 ──
 (async () => {
@@ -4228,11 +4229,11 @@ c34('cron 注入脚本渲染财报指引（VERDICT_CN/汇总/结构行）', (() 
 
 // ── 组 4：版本号（corr-2026-014 同型：banner 腐烂四个补丁轮）─────
 // [v3.6] 版本推进到 3.6.0（新辨别维度：成本/价格信号），本断言跟着当前版本走。
-c34('版本号一致性：banner 与 VERSION 对齐（3.10.0）', (() => {
+c34('版本号一致性：banner 与 VERSION 对齐（3.11.0）', (() => {
   const fs2 = require('fs');
   const version = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return version === '3.10.0' && rp.includes('文明推演引擎 v3.10.0');
+  return version === '3.11.0' && rp.includes('文明推演引擎 v3.11.0');
 })(), 'run-pipeline banner 必须与 VERSION 一致（v3.1 修过 banner/meta 同型后又腐烂）');
 
 // ── v3.4 汇总 ──
@@ -4426,15 +4427,15 @@ c35('cron 注入脚本渲染财报指引结算段', (() => {
 
 // ── 组 6：版本号一致性（corr-2026-014 同型，四处对齐）──────────
 // [v3.6] 推进到 3.6.0（新辨别维度），断言跟当前版本走。
-c35('版本号一致性：VERSION/package.json/projection meta/banner 对齐 3.10.0', (() => {
+c35('版本号一致性：VERSION/package.json/projection meta/banner 对齐 3.11.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.10.0'
-    && /3\.10\.0/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.10.0');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.10.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.11.0'
+    && /3\.11\.0/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.11.0');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.11.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.5 汇总 ──
 (async () => {
@@ -4652,15 +4653,15 @@ c351('结算证据来源是提供实际值的备案（actualPeriod 匹配）', (
 
 // ── 组 4：版本号一致性（corr-2026-014 同型）────────────────────
 // [v3.6] 推进到 3.6.0（新辨别维度：成本/价格信号）。
-c351('版本号一致性：VERSION/package.json/banner 对齐 3.10.0', (() => {
+c351('版本号一致性：VERSION/package.json/banner 对齐 3.11.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.10.0'
-    && /3\.10\.0/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.10.0');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.10.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.11.0'
+    && /3\.11\.0/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.11.0');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.11.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.5.1 汇总 ──
 (async () => {
@@ -4855,15 +4856,15 @@ c36('精度门未破：非主张文本仍被挡在辨别外', (() => {
 })(), 'Fed 公告与播客不得因 cost-signal 新模式进入辨别');
 
 // ── 组 5：版本号一致性（corr-2026-014 同型）────────────────────
-c36('版本号一致性：VERSION/package.json/banner 对齐 3.10.0', (() => {
+c36('版本号一致性：VERSION/package.json/banner 对齐 3.11.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.10.0'
-    && /3\.10\.0/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.10.0');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.10.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.11.0'
+    && /3\.11\.0/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.11.0');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.11.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.6 汇总 ──
 (async () => {
@@ -5099,15 +5100,15 @@ c37('精度门未破：非主张文本仍被挡在辨别外', (() => {
 })(), 'Fed 公告与播客不得因 expert-judgment 新模式进入辨别');
 
 // ── 组 5：版本号一致性（corr-2026-014 同型）────────────────────
-c37('版本号一致性：VERSION/package.json/banner 对齐 3.10.0', (() => {
+c37('版本号一致性：VERSION/package.json/banner 对齐 3.11.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.10.0'
-    && /3\.10\.0/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.10.0');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.10.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.11.0'
+    && /3\.11\.0/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.11.0');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.11.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.7 汇总 ──
 (async () => {
@@ -5398,15 +5399,15 @@ c38('精度门未破：非主张文本仍被挡在辨别外', (() => {
 })(), 'Fed 公告/播客/官员言论不得因 regulatory-action 新模式进入辨别');
 
 // ── 组 5：版本号一致性（corr-2026-014 同型）────────────────────
-c38('版本号一致性：VERSION/package.json/banner 对齐 3.10.0', (() => {
+c38('版本号一致性：VERSION/package.json/banner 对齐 3.11.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.10.0'
-    && /3\.10\.0/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.10.0');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.10.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.11.0'
+    && /3\.11\.0/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.11.0');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.11.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.8 汇总 ──
 (async () => {
@@ -5627,18 +5628,18 @@ c39('精度门未破：非主张文本与无幅度价格谈论仍被挡在辨别
 })(), 'Fed 公告/播客/无幅度降价谈论/TCO 效率句/官员言论不得因 price-cut 新模式进入辨别');
 
 // ── 组 5：版本号一致性（corr-2026-014 同型）────────────────────
-c39('版本号一致性：五处对齐 3.10.0', (() => {
+c39('版本号一致性：五处对齐 3.11.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs2.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.10.0'
-    && pkg.version === '3.10.0'
-    && rp.includes('文明推演引擎 v3.10.0')      // banner
-    && /version: '3\.10\.0'/.test(pf)          // projection meta
-    && /version: '3\.10\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.10.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.11.0'
+    && pkg.version === '3.11.0'
+    && rp.includes('文明推演引擎 v3.11.0')      // banner
+    && /version: '3\.11\.0'/.test(pf)          // projection meta
+    && /version: '3\.11\.0'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.11.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.9 汇总 ──
 (async () => {
@@ -6000,18 +6001,18 @@ c310('精度门未破：扩桶后非主张文本仍被挡在辨别外', (() => {
 })(), 'Fed 公告/播客/无数量部署谈话/合作公告/免责声明/泛指交易假设句/官员言论不得因扩池与新模式进入辨别');
 
 // ── 组 7：版本号一致性（corr-2026-014 同型）────────────────────
-c310('版本号一致性：五处对齐 3.10.0', (() => {
+c310('版本号一致性：五处对齐 3.11.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs2.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.10.0'
-    && pkg.version === '3.10.0'
-    && rp.includes('文明推演引擎 v3.10.0')      // banner
-    && /version: '3\.10\.0'/.test(pf)          // projection meta
-    && /version: '3\.10\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.10.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.11.0'
+    && pkg.version === '3.11.0'
+    && rp.includes('文明推演引擎 v3.11.0')      // banner
+    && /version: '3\.11\.0'/.test(pf)          // projection meta
+    && /version: '3\.11\.0'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.11.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.10 汇总 ──
 (async () => {
@@ -6028,5 +6029,348 @@ c310('版本号一致性：五处对齐 3.10.0', (() => {
     process.exitCode = 1;
   } else {
     console.log('结论：商业辨别已接入 SEC 备案与厂商一手公告桶，部署规模主张进模式库（live 实证 2 条命中），boilerplate 守卫与 ma 收紧生效，报告与 cron 注入渲染中文标签。');
+  }
+})();
+
+// ════════════════════════════════════════════════════════════════
+// v3.11 新增断言：商业主张辨别器新增「用量/牵引度指标主张」形态
+// （usage-metric，新辨别维度）+ 同型切分修复（引号嵌套不断句）
+//
+// 背景（2026-10-26 轮 live 实证，300 条池，sec_filings 桶）：
+// adoption-claim 只认「趋势主体」（enterprises are adopting…）、
+// deployment-scale 只认「部署事件+量化范围」（rolling out to 30,000
+// employees）——而**产品用量状态**整条在库外。live 实证四条（扩容前
+// 20 种形态全部不命中）：
+//   ① MSFT 2026-07-29 备案：「Microsoft 365 Copilot reached over
+//      30 million paid seats」；
+//   ② GOOGL 2026-07-22 备案：「the Gemini App has 950 million
+//      monthly active users」「Gemini models now process 22 billion
+//      API tokens per minute」；
+//   ③ GOOGL 2026-02-04 备案：「grown to over 750 million monthly
+//      active users」「now process over 10 billion tokens per
+//      minute」。
+// 用量指标是客户采用域最硬的第一方证据（SEC 备案自报席位数/月活/
+// token 吞吐），且有天然结算结构：下一期备案同指标是新值，可对账。
+//
+// 同轮同型修复（配套，无新维度）：句末标点后容忍一个收尾引号再切句。
+// SEC 备案正文把多条引言拼成一段时，`transformation." "We delivered…`
+// 的句点在引号内，旧切分 `(?<=[.!?。！？])\s+` 不断句——含用量主张的
+// 整段被拼成 443 字长句、超出 400 字候选窗，MSFT 那条整条不进辨别
+// （live 实证）。forecast 路径同型两处都已修（本测试钉住 forecast
+// 结果零变化）。
+//
+// 精度设计（v3.0.0c/v3.2/v3.3/v3.6/v3.7/v3.9/v3.10 纪律：漏报比误报
+// 诚实、没有实证不扩模式）：
+//   ① 必须「量化值+用量指标名词」两件套；
+//   ② 指标名词族不认 subscribers——GOOGL「paid subscriptions has now
+//      reached 350 million」（YouTube/Google One 驱动）是订阅总量不是
+//      AI 用量，FLI「50,000+ subscribers」是邮件列表 boilerplate，
+//      Suno「2 million paying subscribers」是音乐服务；
+//   ③ 必须有用量状态动词——「API supports 128k tokens per minute」是
+//      速率上限不是用量；基础设施 scaling（serve 1 billion users）
+//      同型不收；
+//   ④ 动词与量化值之间只容忍 to + 数量副词（v3.6 宽窗教训）。
+//
+// 本节断言分七组：① live 实证三条命中；② 证伪条件与类目（源级）；
+// ③ 形态族召回；④ 精度回归（subscribers 族/速率上限/scaling/指南
+// 文本/不串台）；⑤ 引擎级端到端（含切分修复与已知边界）；⑥ cron
+// 注入源级 + 精度门未破；⑦ 版本号一致性。
+// ════════════════════════════════════════════════════════════════
+const v3111 = [];
+function c3111(name, ok, detail) { v3111.push({ name, ok, detail }); }
+
+// ── 组 1：live 实证句式命中（SEC 备案三条，2026-07-29/07-22/02-04）──
+// 1. MSFT Copilot 席位数句（live 池真实条目；SEC EDGAR 采集源 → 公开
+//    财报/公告(3)，v3.10 证据档扩展同型；推理 1/3——30 million paid
+//    seats 命中 has-sample，单句无对照无反例）。decisionRelevant=true：
+//    一手备案量化主张，证据档够格。
+c3111('live 实证：MSFT Copilot 席位数句命中用量指标形态', (() => {
+  const { discriminateCommercial } = require('./human-future/scripts/commercial-discriminator.js');
+  const r = discriminateCommercial({
+    text: 'This year, Azure revenue surpassed $100 billion for the first time, and Microsoft 365 Copilot reached over 30 million paid seats, reflecting the confidence customers are placing in us to power their AI transformation.',
+    claimSentence: 'This year, Azure revenue surpassed $100 billion for the first time, and Microsoft 365 Copilot reached over 30 million paid seats, reflecting the confidence customers are placing in us to power their AI transformation.',
+    source: 'SEC EDGAR',
+    date: '2026-07-29',
+  });
+  return r.kind === 'usage-metric'
+    && r.kinds.length === 1 && r.kinds[0] === 'usage-metric'  // 不串台到 funding/demand
+    && r.verdict === 'thin-reasoning'       // 公开财报(3)+推理 1/3
+    && r.evidence.weight === 3 && r.evidence.label === '公开财报/公告'
+    && r.reasoning.score === 1
+    && r.reasoning.met.includes('has-sample')
+    && r.decisionRelevant === true          // 一手备案量化主张
+    && r.falsifiability.problems.length === 0;  // 有数字，no-quantity 不触发
+})(), '「Copilot reached over 30 million paid seats」必须命中用量指标形态并按公开财报(3)/推理 1/3 判，不虚抬');
+
+// 2. GOOGL Gemini 月活 + token 吞吐句（同一条备案两个指标）。
+c3111('live 实证：GOOGL Gemini 月活与 token 吞吐句命中用量指标形态', (() => {
+  const { discriminateCommercial } = require('./human-future/scripts/commercial-discriminator.js');
+  const r = discriminateCommercial({
+    text: 'Gemini models now process 22 billion API tokens per minute and the Gemini App has 950 million monthly active users.',
+    claimSentence: 'Gemini models now process 22 billion API tokens per minute and the Gemini App has 950 million monthly active users.',
+    source: 'SEC EDGAR',
+    date: '2026-07-22',
+  });
+  return r.kind === 'usage-metric'
+    && r.kinds.length === 1
+    && r.verdict === 'thin-reasoning'
+    && r.evidence.weight === 3
+    && r.reasoning.score === 1             // has-sample（950 million / 22 billion）
+    && r.decisionRelevant === true;
+})(), '「Gemini App has 950 million monthly active users」必须命中用量指标形态（SEC EDGAR 来源归公开财报档）');
+
+// 3. GOOGL 上一期月活句（grown to 形态 + tokens per minute 无 API 前缀）。
+//    单元级命中；引擎级该条因用量句不在「命中句+后 2 句」窗内不进辨别
+//    （已知边界，组 5 第 11 条钉住）。
+c3111('live 实证：GOOGL 上一期月活句（grown to 形态）命中', (() => {
+  const { discriminateCommercial } = require('./human-future/scripts/commercial-discriminator.js');
+  const r = discriminateCommercial({
+    text: 'Our first party models, like Gemini, now process over 10 billion tokens per minute via direct API use by our customers, and the Gemini App has grown to over 750 million monthly active users.',
+    claimSentence: 'Our first party models, like Gemini, now process over 10 billion tokens per minute via direct API use by our customers, and the Gemini App has grown to over 750 million monthly active users.',
+    source: 'SEC EDGAR',
+    date: '2026-02-04',
+  });
+  return r.kind === 'usage-metric'
+    && r.verdict === 'thin-reasoning'
+    && r.evidence.weight === 3
+    && r.reasoning.met.includes('has-sample');
+})(), '「grown to over 750 million monthly active users」必须命中用量指标形态（grown to 动词形态）');
+
+// ── 组 2：专属证伪条件与类目映射 ──
+// 4. 证伪条件走 usage-metric 专属路径（与兜底「无明确证伪路径」不同值，
+//    可行为断言）：下一期同口径自报值 / 第三方用量估算 / 口径变化。
+c3111('usage-metric 有专属证伪条件（下一期自报值/第三方估算/口径变化）', (() => {
+  const { discriminateCommercial } = require('./human-future/scripts/commercial-discriminator.js');
+  const r = discriminateCommercial({
+    text: 'Microsoft 365 Copilot reached over 30 million paid seats.',
+    source: 'SEC EDGAR',
+  });
+  return /下一期备案或公告的同口径自报值/.test(r.falsification)
+    && /第三方用量估算/.test(r.falsification)
+    && /口径发生变化/.test(r.falsification)
+    && r.falsification !== '无明确证伪路径——这本身就是问题';
+})(), '证伪条件必须走 usage-metric 专属路径（用量主张的裂缝是后续自报值/第三方估算/口径变化）');
+
+// 5. 类目映射源级断言：兜底类目同为 market_claims，行为断言抓不到摘除
+//    （v3.6/v3.7/v3.8/v3.9/v3.10 同型教训）。
+c3111('usage-metric 类目映射为 market_claims（源级）', (() => {
+  const fs311 = require('fs');
+  const src = fs311.readFileSync(require('path').join(__dirname, 'human-future/scripts/commercial-discriminator.js'), 'utf-8');
+  return /'usage-metric':\s*'market_claims'/.test(src);
+})(), 'inferCommercialCategory 必须含 usage-metric → market_claims 映射行（兜底同域，只能源级断言）');
+
+// ── 组 3：形态族召回（动词族 × 指标名词族，八形）──
+c3111('形态族召回：八种用量指标句式全部命中', (() => {
+  const { COMMERCIAL_CLAIM_PATTERNS } = require('./human-future/scripts/commercial-discriminator.js');
+  const p = COMMERCIAL_CLAIM_PATTERNS.find(x => x.id === 'usage-metric');
+  if (!p) return false;   // 模式被摘除时精确失败，不抛 TypeError（v3.11 反向验证实测教训）
+  const forms = [
+    'Microsoft 365 Copilot reached over 30 million paid seats.',                                   // reached over N paid seats
+    'The Gemini App has 950 million monthly active users.',                                        // has N monthly active users
+    'The Gemini App has grown to over 750 million monthly active users.',                          // grown to over N monthly active users
+    'Gemini models now process 22 billion API tokens per minute.',                                 // now process N API tokens per minute
+    'Our first party models now process over 10 billion tokens per minute via direct API use.',    // process over N tokens per minute（无 API 前缀）
+    'The platform now exceeds 2 million daily active users after the relaunch.',                   // exceeds N daily active users
+    'The platform stands at 500 million weekly active users across all surfaces.',                          // stands at N weekly active users
+    'The API now processes 300 million api calls per day from enterprise customers.',                // N api calls per day
+  ];
+  return forms.every(f => p.re.test(f));
+})(), 'reached/has/grown to/process/exceeds/stands at × paid seats/monthly active users/tokens per minute/api calls 八形必须全命中');
+
+// ── 组 4：精度回归（subscribers 族 / 速率上限 / scaling / 指南文本 / 不串台）──
+// 6. 十句精度回归：全部不命中。前三句是 live 实证原句（GOOGL 订阅总量、
+//    FLI 邮件列表、Suno 音乐服务），其余为同型边界句。
+c3111('精度回归：subscribers 族/速率上限/scaling/指南文本等十句不命中', (() => {
+  const { COMMERCIAL_CLAIM_PATTERNS } = require('./human-future/scripts/commercial-discriminator.js');
+  const p = COMMERCIAL_CLAIM_PATTERNS.find(x => x.id === 'usage-metric');
+  if (!p) return false;   // 模式被摘除时精确失败，不抛 TypeError（v3.11 反向验证实测教训）
+  const negatives = [
+    'Overall the number of paid subscriptions has now reached 350 million, with YouTube and Google One being the key drivers.',  // live：GOOGL 订阅总量（非 AI 用量）
+    "the world's most trusted regular AI Act publication with over 50,000+ subscribers",                                     // live：FLI 邮件列表 boilerplate
+    "Suno's CEO said in February that the service had 2 million paying subscribers and that more than 100 million people had used it.",  // live：音乐服务订阅
+    'Our API supports up to 128k tokens per minute on the standard tier.',                                                   // 速率上限不是用量
+    'Rapidly scaling online storage to serve over 1 billion ChatGPT users (Part II)',                                        // live：基础设施 scaling（v3.10 已决议）
+    'How to grow monthly active users for your consumer app',                                                               // 指南文本（无量化值）
+    'This year, Azure revenue surpassed $100 billion for the first time.',                                                   // 同句邻居：营收不是用量指标
+    'Virtual care visits have nearly tripled year-over-year, with a majority of those visits now via Health AI.',             // live：无量化指标名词
+    'We surveyed apps with more than 100,000 monthly active users.',                                                         // 调查样本准入条件不是主张
+    'The Gemini App is our most popular product ever.',                                                                      // 无量化值
+  ];
+  return negatives.every(f => !p.re.test(f));
+})(), 'subscribers 族（GOOGL/FLI/Suno live 原句）、速率上限、基础设施 scaling、指南文本、营收邻居句、无量化句全部不得命中');
+
+// 7. 不串台：deployment-scale 的 live 原句不得因新形态改判 kind
+//    （一类证据一个 kind；kinds 不含 usage-metric）。
+c3111('不串台：Uber 部署句的 kind 保持 deployment-scale', (() => {
+  const { discriminateCommercial } = require('./human-future/scripts/commercial-discriminator.js');
+  const r = discriminateCommercial({
+    text: 'Uber is rolling out ChatGPT Work to more than 30,000 employees, helping teams research, analyze data, create presentations, and complete complex workflows.',
+    claimSentence: 'Uber is rolling out ChatGPT Work to more than 30,000 employees',
+    source: 'OpenAI News',
+  });
+  return r.kind === 'deployment-scale'
+    && !r.kinds.includes('usage-metric')
+    && r.kinds.length === 1;
+})(), '部署规模原句不得被用量指标形态吞掉（两类证据边界清晰）');
+
+// ── 组 5：引擎级端到端（候选门 + 切分修复 + 已知边界 + 报告渲染）──
+// 8. 引擎级：MSFT 与 GOOGL 两条 live 结构条目进辨别，byKind
+//    usage-metric:2；MSFT 条因后 2 句上下文含 "up 27% year-over-year"
+//    判 well-formed（has-sample+has-comparison，引擎既定语义：主张文本
+//    = 命中句+后 2 句），GOOGL 条 thin-reasoning。
+c3111('引擎级：两条 SEC 备案用量主张进辨别（byKind usage-metric:2）', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const items = [
+    { title: 'MICROSOFT CORP (MSFT) 8-K 业绩发布 · 2026-07-29',
+      body: 'Satya Nadella, chairman and chief executive officer of Microsoft. "This year, Azure revenue surpassed $100 billion for the first time, and Microsoft 365 Copilot reached over 30 million paid seats, reflecting the confidence customers are placing in us to power their AI transformation." "We delivered a strong quarter to close out the fiscal year, highlighted by Microsoft Cloud revenue of $59.3 billion, up 27% year-over-year," said Amy Hood, executive vice president and chief financial officer of Microsoft. The following table adjusts for the impact from investments in OpenAI.',
+      description: '', source: 'SEC EDGAR', bucket: 'sec_filings',
+      pubDate: 'Wed, 29 Jul 2026 00:00:00 GMT', link: 'https://www.sec.gov/x', origin: 'live' },
+    { title: 'Alphabet Inc. (GOOGL) 8-K 业绩发布 · 2026-07-22',
+      body: 'We have exciting momentum across the board. Our popular AI features are driving Search query growth. Gemini models now process 22 billion API tokens per minute and the Gemini App has 950 million monthly active users. We are seeing strong demand for our security solutions, and our new Gemini 3.5 Flash Cyber delivers highly cost-efficient performance.',
+      description: '', source: 'SEC EDGAR', bucket: 'sec_filings',
+      pubDate: 'Wed, 22 Jul 2026 00:00:00 GMT', link: 'https://www.sec.gov/y', origin: 'live' },
+  ];
+  const inst = new ProjectionEngine({});
+  inst.signals = { totalItems: items.length, domains: [], undomained: 0, dateRange: null, items };
+  const cd = inst.buildCommercialDiscrimination();
+  if (!cd.available || !cd.results) return false;   // 模式被摘除时无 candidates，精确失败不抛 TypeError
+  const um = cd.results.filter(r => r.kind === 'usage-metric');
+  const msft = um.find(r => /Copilot/.test(r.claimSentence));
+  const googl = um.find(r => /Gemini App/.test(r.claimSentence));
+  return cd.available === true && cd.audited === 2
+    && um.length === 2
+    && msft && msft.verdict === 'well-formed'      // has-sample + has-comparison（后 2 句上下文）
+    && msft.evidence.weight === 3 && msft.reasoning.score === 2
+    && msft.decisionRelevant === true
+    && googl && googl.verdict === 'thin-reasoning'
+    && googl.evidence.weight === 3 && googl.reasoning.score === 1
+    && googl.decisionRelevant === true;
+})(), 'MSFT/GOOGL 备案用量主张必须进辨别并归公开财报(3)——一手信源自报用量首次进商业辨别段');
+
+// 9. 引号切分修复（同轮配套）：两层钉住——① 源级：project-future.js 两处
+//    切分都含收尾引号容忍 lookbehind（旧正则 `(?<=[.!?。！？])\s+` 在
+//    `transformation." "We delivered…` 处不断句）；② 行为级：引擎选出
+//    的 claimSentence 就是用量句本身（≤400 字、含 paid seats、不含被
+//    拼接进来的 Amy Hood 引语）。摘除修复（任一处恢复旧正则）→ 两层
+//    各失败（反向验证第 6 轮：2 条）。
+c3111('切分修复：句末标点后的收尾引号不再阻断切句（源级+行为级）', (() => {
+  const fs311 = require('fs');
+  const pf = fs311.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
+  const srcOk = (pf.match(/\(\?<=\[\.!\?。！？\]\["'」』\]\?\)/g) || []).length === 2;
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const item = {
+    title: 'MICROSOFT CORP (MSFT) 8-K 业绩发布 · 2026-07-29',
+    body: 'Satya Nadella, chairman and chief executive officer of Microsoft. "This year, Azure revenue surpassed $100 billion for the first time, and Microsoft 365 Copilot reached over 30 million paid seats, reflecting the confidence customers are placing in us to power their AI transformation." "We delivered a strong quarter to close out the fiscal year, highlighted by Microsoft Cloud revenue of $59.3 billion, up 27% year-over-year," said Amy Hood, executive vice president and chief financial officer of Microsoft.',
+    description: '', source: 'SEC EDGAR', bucket: 'sec_filings',
+    pubDate: 'Wed, 29 Jul 2026 00:00:00 GMT', link: 'https://www.sec.gov/x', origin: 'live' };
+  const inst = new ProjectionEngine({});
+  inst.signals = { totalItems: 1, domains: [], undomained: 0, dateRange: null, items: [item] };
+  const cd = inst.buildCommercialDiscrimination();
+  const msft = (cd.results || []).find(r => /paid seats/.test(r.claimSentence || ''));
+  return srcOk
+    && !!msft                                   // 用量句进窗（旧切分下 443 字超 400 窗整条不进）
+    && msft.claimSentence.length <= 400
+    && msft.claimSentence.includes('paid seats')
+    && !msft.claimSentence.includes('Amy Hood');  // claimSentence 是用量句本身，不是拼接段
+})(), '旧切分在 transformation." 后不断句（443 字超 400 窗），新切分必须把用量句切出（forecast 路径同型两处已同步修）');
+
+// 10. 已知边界如实：用量句不在「命中句+后 2 句」窗内时不进辨别——
+//     GOOGL 2026-02-04 备案的 750M MAU 句在 live 池中被前面的 demand
+//     句挤掉（claim 文本窗只送命中句+后 2 句，引擎既定语义）。
+c3111('已知边界：用量句在主张窗之外时不进辨别（如实记录）', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const items = [
+    { title: 'Alphabet Inc. (GOOGL) 8-K 业绩发布 · 2026-02-04',
+      body: 'Google Cloud saw a continued increase in customer demand as revenues increased 48% to $17.7 billion in the quarter. Filler sentence one about other results. Filler sentence two about other results. Filler sentence three about other results. Our first party models, like Gemini, now process over 10 billion tokens per minute, and the Gemini App has grown to over 750 million monthly active users.',
+      description: '', source: 'SEC EDGAR', bucket: 'sec_filings',
+      pubDate: 'Wed, 04 Feb 2026 00:00:00 GMT', link: 'https://www.sec.gov/z', origin: 'live' },
+  ];
+  const inst = new ProjectionEngine({});
+  inst.signals = { totalItems: items.length, domains: [], undomained: 0, dateRange: null, items };
+  const cd = inst.buildCommercialDiscrimination();
+  if (!cd.available || !cd.results) return false;   // 无 candidates 时精确失败不抛 TypeError
+  const um = cd.results.filter(r => r.kind === 'usage-metric');
+  return cd.available === true && um.length === 0     // 用量句在窗外，如实不进
+    && cd.results.every(r => r.kind !== 'usage-metric');
+})(), '用量句距首个命中句超过 2 句时不进辨别——claim 文本窗是引擎既定语义，漏报如实记录不凑数');
+
+// 11. 端到端渲染：formatReport 出现「类型: 用量/牵引度指标主张」行
+//     （只认渲染出的标签行，段内 note/图例文本同字符串会喂饱泛匹配——
+//     v3.2 同型教训）。
+c3111('端到端：formatReport 渲染「类型: 用量/牵引度指标主张」行', (() => {
+  const { ProjectionEngine, formatReport } = require('./scripts/project-future.js');
+  const item = {
+    title: 'Alphabet Inc. (GOOGL) 8-K 业绩发布 · 2026-07-22',
+    description: 'Gemini models now process 22 billion API tokens per minute and the Gemini App has 950 million monthly active users.',
+    body: '', source: 'SEC EDGAR', bucket: 'sec_filings',
+    pubDate: 'Wed, 22 Jul 2026 00:00:00 GMT', domains: ['market_claims'],
+    link: 'https://www.sec.gov/y', origin: 'live' };
+  const md = formatReport(new ProjectionEngine({ newsData: { sec_filings: { news: [item] } } }).generate());
+  const seg = md.split('## 商业主张辨别')[1] || '';
+  // 只认渲染出来的「类型:」行（note 文本同字符串会喂饱泛匹配，v3.2 教训）
+  return seg.includes('类型: 用量/牵引度指标主张 | 来源: SEC EDGAR')
+    && seg.includes('证据: 公开财报/公告(3)')
+    && seg.includes('证伪条件:');
+})(), '报告必须渲染「类型: 用量/牵引度指标主张 | 来源: SEC EDGAR」与「证据: 公开财报/公告(3)」行（只认渲染行）');
+
+// ── 组 6：cron 注入源级 + 精度门未破 ──
+// 12. 注入脚本源级：KIND_CN 含中文标签 + 上限 25 + 截断披露。
+c3111('cron 注入源级：usage-metric 中文标签与上限/披露', (() => {
+  const fs311 = require('fs');
+  const p = require('path').join(require('os').homedir(), '.hermes/scripts/hf-cron-fetch.sh');
+  if (!fs311.existsSync(p)) return false;
+  const sh = fs311.readFileSync(p, 'utf-8');
+  return /'usage-metric':\s*'用量\/牵引度指标主张'/.test(sh)
+    && /slice\(0,\s*25\)/.test(sh)
+    && /超出注入上限未显示/.test(sh);
+})(), 'hf-cron-fetch.sh 必须含 usage-metric 中文标签、slice(0,25) 与截断披露行');
+
+// 13. 精度门未破：Fed 公告/播客/订阅总量/速率上限/无数量部署谈话/
+//     合作公告/免责声明 boilerplate 不得因新形态进辨别。
+c3111('精度门未破：非主张文本不因新形态进入辨别', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const noise = [
+    { title: 'Federal Reserve issues FOMC statement', description: '', body: '', source: 'Federal Reserve', bucket: 'economy', pubDate: 'Wed, 30 Sep 2026 00:00:00 GMT', link: 'https://federalreserve.gov/a', origin: 'live' },
+    { title: 'LWiAI Podcast #258 - Opus 5.5, Sol and Luna, Muse, DeepSeek-V4.1-Flash', description: '', body: '', source: 'Last Week in AI', bucket: 'business', pubDate: 'Wed, 30 Sep 2026 00:00:00 GMT', link: 'https://lastweekin.ai/b', origin: 'live' },
+    { title: 'Overall the number of paid subscriptions has now reached 350 million, with YouTube and Google One being the key drivers.', description: '', body: '', source: 'SEC EDGAR', bucket: 'sec_filings', pubDate: 'Wed, 29 Apr 2026 00:00:00 GMT', link: 'https://www.sec.gov/s', origin: 'live' },
+    { title: 'Our API supports up to 128k tokens per minute on the standard tier.', description: '', body: '', source: 'Vendor Docs', bucket: 'frontier_models', pubDate: 'Wed, 30 Sep 2026 00:00:00 GMT', link: 'https://vendor.com/c', origin: 'live' },
+    { title: 'brings ChatGPT Work to all employees', description: '', body: '', source: 'OpenAI News', bucket: 'frontier_models', pubDate: 'Wed, 30 Sep 2026 00:00:00 GMT', link: 'https://openai.com/d', origin: 'live' },
+    { title: 'OpenAI and Poland\u2019s NASK partner to advance AI safety and security', description: '', body: '', source: 'OpenAI News', bucket: 'frontier_models', pubDate: 'Wed, 30 Sep 2026 00:00:00 GMT', link: 'https://openai.com/e', origin: 'live' },
+  ];
+  const inst = new ProjectionEngine({});
+  inst.signals = { totalItems: noise.length, domains: [], undomained: 0, dateRange: null, items: noise };
+  const cd = inst.buildCommercialDiscrimination();
+  return cd.available === false || cd.results.every(r => r.kind !== 'usage-metric');
+})(), 'Fed 公告/播客/订阅总量/速率上限/无数量部署谈话/合作公告不得因 usage-metric 进辨别');
+
+// ── 组 7：版本号一致性（corr-2026-014 同型）────────────────────
+c3111('版本号一致性：五处对齐 3.11.0', (() => {
+  const fs311 = require('fs');
+  const VERSION = fs311.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
+  const pkg = JSON.parse(fs311.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
+  const rp = fs311.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
+  const pf = fs311.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
+  return VERSION === '3.11.0'
+    && pkg.version === '3.11.0'
+    && rp.includes('文明推演引擎 v3.11.0')      // banner
+    && /version: '3\.11\.0'/.test(pf)          // projection meta
+    && /version: '3\.11\.0'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.11.0，防 corr-2026-014 版本漂移复发');
+
+// ── v3.11 汇总 ──
+(async () => {
+  const results = await Promise.all(v3111.map(c => Promise.resolve(c.ok)));
+  let f = 0;
+  v3111.forEach((c, i) => {
+    const ok = results[i];
+    if (!ok) f++;
+    console.log(`${ok ? '\u2713' : '\u2717'} ${c.name}${ok ? '' : '  —— ' + c.detail}`);
+  });
+  console.log(`\nv3.11: ${v3111.length - f} 通过, ${f} 失败, 共 ${v3111.length} 个`);
+  if (f > 0) {
+    console.log('结论：用量指标维度或切分修复不完整（命中/证伪/召回/精度/接入/端到端/版本有缺）。');
+    process.exitCode = 1;
+  } else {
+    console.log('结论：SEC 备案自报用量指标（席位数/月活/token 吞吐）进模式库（live 实证 3 条句式命中、引擎级 2 条进辨别），subscribers 族与速率上限句精确排除，引号切分修复使 MSFT 条进辨别且 forecast 路径零变化，报告与 cron 注入渲染中文标签。');
   }
 })();

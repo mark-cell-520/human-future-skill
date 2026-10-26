@@ -91,6 +91,51 @@ const COMMERCIAL_CLAIM_PATTERNS = [
   { id: 'deployment-scale',
     re: /(?:\b(?:rolling\s+out|rolls\s+out|rolled\s+out|deploy(?:s|ing|ed)?|bringing|brings|brought|expands?\s+to|expanding\s+to|launch(?:e[sd]|ing)?\s+(?:\w+\s+){0,3}(?:for|to))\s+(?:[^.!?]{0,40}?\s)?(?:nearly|almost|about|approximately|around|roughly|over|more\s+than|up\s+to|some\s+)?[\d,]+\s+(?:[\w-]+\s+)?(?:employees?|seats?|staff|workers?|users?|advertisers?|customers?|countries|companies|developers?|businesses?|enterprises?|organizations?|banks?|hospitals?|retailers?)\b)/i,
     kind: 'deployment-scale', label: '部署规模主张' },
+  // [v3.11] 用量/牵引度指标主张（usage-metric，新辨别维度）：
+  // adoption-claim 只认「趋势主体」（enterprises are adopting…）、
+  // deployment-scale 只认「部署事件+量化范围」（rolling out to 30,000
+  // employees）——而**产品用量状态**（"Microsoft 365 Copilot reached
+  // over 30 million paid seats"、"the Gemini App has 950 million monthly
+  // active users"、"Gemini models now process 22 billion API tokens per
+  // minute"）整条在库外。live 实证（2026-10-26 轮 300 条池，sec_filings
+  // 桶，v3.10 扩池后进池）：扩容前 20 种形态对上述四句全部不命中。用量
+  // 指标是客户采用域最硬的第一方证据——厂商在 SEC 备案里自报的席位数/
+  // 月活/token 吞吐，且有天然结算结构：下一期备案的同指标是新值，可对账。
+  // 与 deployment-scale 的分工：后者是「部署事件」（动词+范围），本形态
+  // 是「用量状态」（存量指标+水位值）；趋势主张靠调查证伪，具名部署靠
+  // 当事方确认证伪，用量状态靠下一期自报值与第三方估算证伪——三类证据。
+  // 形态族：用量状态动词（has/have/reached/grown to/process…）+ 量化值
+  // （N million/billion…）+ 用量指标名词（(monthly|weekly|daily) active
+  // users / paid seats / (api) tokens per minute / api calls）。
+  // 精度设计（v3.0.0c/v3.2/v3.3/v3.6/v3.7/v3.9/v3.10 教训：漏报比误报
+  // 诚实、没有实证不扩模式）：
+  //   ① 必须「量化值+用量指标名词」两件套——单独的 active users/tokens
+  //      不是主张（"how to grow monthly active users" 是指南文本）；
+  //   ② 指标名词族只认用量状态复合名词，**不认 subscribers**——live 实证
+  //      "the number of paid subscriptions has now reached 350 million,
+  //      with YouTube and Google One being the key drivers"（GOOGL
+  //      2026-04-29 备案）是订阅总量不是 AI 产品用量（YouTube/Google One
+  //      驱动），LWiAI/FLI 站点 "over 50,000+ subscribers" 是邮件列表
+  //      boilerplate，Suno "2 million paying subscribers" 是音乐服务——
+  //      subscribers 族整体不进库（与 v3.9 名词族只认 prices 不认 costs
+  //      同型纪律）；
+  //   ③ 必须有用量状态动词——"our API supports 128k tokens per minute"
+  //      是速率上限不是用量（supports/allows/offers 不是用量动词），
+  //      v3.10 已决议的基础设施 scaling（"scaling storage to serve 1
+  //      billion users" 是自身容量）同型不收；
+  //   ④ 动词与量化值之间只容忍 to + 数量副词，不容任词间隔（v3.6 宽窗
+  //      正则误命中 2 句的教训）。
+  //   ⑤ 只认「数值在前」语序（live 实证四句全部如此）——名词在前语序
+  //      （"monthly active users reached 950 million" / "apps with
+  //      monthly active users exceeding 100,000"）不进库：后者是调查
+  //      样本准入条件不是主张，且两种语序共用一个正则会放行它，按
+  //      「漏报比误报诚实」留作已知边界，等 live 实证再议。
+  // live 全池实测（300 条）：精确命中 4 条（MSFT Copilot 30M paid seats、
+  // GOOGL Gemini 950M/750M MAU、GOOGL 22B/10B tokens per minute），
+  // 精度回归 0 误报（含 GOOGL 订阅总量句与 FLI/Suno subscribers 句）。
+  { id: 'usage-metric',
+    re: /\b(?:now\s+)?(?:has|have|had|reach(?:ed|es|ing)?|grew|grown|exceed(?:s|ed|ing)?|surpass(?:es|ed|ing)?|top(?:s|ped|ping)?|process(?:es|ed|ing)?|stands?\s+at)\s+(?:to\s+)?(?:(?:nearly|almost|about|approximately|around|roughly|over|more\s+than|up\s+to|some)\s+)?\d[\d.,]*\s*(?:million|billion|thousand|mn|bn|k)?\s*(?:(?:monthly|weekly|daily)\s+active\s+users?|paid\s+seats?|(?:api\s+)?tokens?\s+per\s+(?:minute|second|hour|day)|api\s+calls?)\b/i,
+    kind: 'usage-metric', label: '用量/牵引度指标主张' },
   { id: 'market-demand-claim', re: /(market|demand|enterprises?|customers?|buyers?)\s+(want|needs?|demands?|is looking for|are looking for|requires?|is demanding)/i,
     kind: 'demand', label: '需求主张' },
   { id: 'replacement-claim', re: /(will|to|could|would)\s+(replace|displace|kill|obsolete|eliminate|disrupt|undercut)\s+(saas|software|services?|jobs?|workers?|vendors?|incumbents?|subscriptions?)/i,
@@ -518,6 +563,12 @@ function buildFalsification(patterns, text) {
     // 回滚」。厂商一手公告无第三方确认时按厂商自述档对待，不因数字
     // 具体而虚抬证据等级。
     'deployment-scale': '观察到部署方否认该部署、席位数/覆盖国家数与主张值不符，或该部署在主张时点后被暂停/缩减/回滚；厂商一手公告需第三方或当事方确认才能升级证据档',
+    // [v3.11] 用量/牵引度指标主张的证伪路径：用量类主张最常见的裂缝是
+    // 「下一期同口径自报值回落或不及主张值」「第三方用量估算（应用
+    // 分析/下载量/API 流量跟踪）不支持」「口径变化（active 的定义
+    // 改变、seats 与 subscriptions 混计、token 吞吐改按不同周期计）」。
+    // SEC 备案自报值有天然对账结构：下一期 8-K 的同指标就是新值。
+    'usage-metric': '观察到下一期备案或公告的同口径自报值低于主张值、第三方用量估算（应用分析/下载量/API 流量跟踪）与主张值不符，或指标口径发生变化（如 active 的定义改变、seats 与 subscriptions 混计、token 吞吐改按不同周期计）',
     'unclassified': '无明确证伪路径——这本身就是问题',
   };
   return FALSIFICATION_BY_KIND[kind] || FALSIFICATION_BY_KIND.unclassified;
@@ -541,6 +592,9 @@ function inferCommercialCategory(text, patterns) {
       // [v3.10] 具名部署是客户采用域最具体的 instantiation（与 adoption
       // 同域，兜底类目同为 market_claims——行为断言抓不到摘除，测试走源级）
       'deployment-scale': 'market_claims',
+      // [v3.11] 用量指标是客户采用域最具体的 instantiation（与 adoption
+      // 同域，兜底类目同为 market_claims——行为断言抓不到摘除，测试走源级）
+      'usage-metric': 'market_claims',
       // [v3.3] 交易过程是资本事件，归资本与商业模式域
       ma: 'capital_flow',
       funding: 'capital_flow', valuation: 'capital_flow', 'capital-signal': 'capital_flow',

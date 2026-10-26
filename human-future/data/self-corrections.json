@@ -296,6 +296,16 @@
       "lesson": "断链审计不能只查「产出了但注入脚本没读」，还要查「采集了但辨别器从不看」——候选池的桶白名单是另一种断链：数据在 live 池里躺着、辨别器门口写着「只认这两个桶」。每次给辨别器加新证据档或新形态，都要问一句「该形态的 live 实证从哪个桶进来」；桶白名单与证据档标记（public-filing 认 SEC EDGAR 来源）必须同轮匹配，否则新档永远空转。另：扩池会一次性暴露多个沉睡的精度缺陷（boilerplate 误触发/泛指句/样本名词组），扩池轮的精度回归必须拿新桶的全部命中逐条复核，不能只测新形态本身。",
       "severity": "high",
       "recordedAt": "2026-10-26T01:01:51.325Z"
+    },
+    {
+      "id": "corr-2026-028",
+      "reportVersion": "v3.11.0",
+      "wrongClaim": "v3.10 把 SEC 备案与厂商一手公告桶接进商业辨别候选池后，用量指标形态（SEC 备案自报席位数/月活/token 吞吐）又漏了一个版本才进库",
+      "rightClaim": "扩池轮的全池测量必须输出「新桶全部命中按 kind 分布 + 未命中条目人工过堂」，不能只测当轮新形态——v3.10 只问了 deployment-scale 命中几条，没问还有哪些形态在两个一手桶里 MISS",
+      "evidence": "2026-10-26 轮 300 条 live 池：MSFT「Copilot reached over 30 million paid seats」与 GOOGL「Gemini App has 950 million monthly active users」「process 22 billion API tokens per minute」在 sec_filings 桶里，扩容前 20 种形态全部不命中；v3.10 扩池同轮即可发现",
+      "lesson": "候选池/数据源扩容轮的全池测量口径是「全部命中按 kind 分布 + 未命中过堂」，不是「当轮新形态命中几条」；新桶接进来第一次就要把桶内全部主张形态过一遍，否则每轮补一种形态、断一种链路",
+      "severity": "high",
+      "recordedAt": "2026-10-26T03:26:36.347Z"
     }
   ]
 }
