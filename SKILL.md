@@ -1,9 +1,58 @@
 ---
 name: human-future-v2
-title: "人类未来 · 文明推演引擎 v3.11.0"
-version: "3.11.0"
+title: "人类未来 · 文明推演引擎 v3.12.0"
+version: "3.12.0"
 description: |-
-  人类未来技能 v3.11.0 — 商业主张辨别器新增「用量/牵引度指标主张」形态
+  人类未来技能 v3.12.0 — 商业主张辨别器新增「算力基建承诺/规模主张」形态
+  （新辨别维度）：
+  live 实证（2026-10-26 轮 300 条池，corr-2026-028 纪律的全池测量「未命中
+  条目过堂」——sec_filings 的 8-K highlights 段与 frontier_models 的厂商
+  博客）：「accelerate the buildout of more than 5 gigawatts of AI
+  factories by 2030」（NVDA/CRWV 备案）、「mobilize over $500 billion
+  of third-party capital for the buildout of AI infrastructure」（NVDA
+  备案）、「export license for 45,000 NVIDIA Grace Blackwell GPUs」
+  （NVIDIA 博客 Kazakhstan/Firebird）——扩容前 21 种形态全部不命中。
+  adoption-claim 只认「趋势主体」、deployment-scale 只认「部署事件+人的
+  量化范围」、usage-metric 只认「产品用量状态」，而**算力基建承诺**
+  （GW/MW/GPU/资本额）整条在库外——它是供给侧最前端的市场信号（电力
+  许可/GPU 交付/资本承诺领先营收数个季度），且有天然结算结构：交付
+  进度、并网容量、definitive agreements 签署都是可观测事件。新 kind
+  compute-infra：三段同句共现（lookahead 保证任词序、不跨句）——建设/
+  承诺动词（buildout/expands/mobilize/deploy/invest/commit/secured/
+  license/commission/construct/bring/under construction/commercial
+  launch）+ 量化算力（N GW/MW/gigawatts/megawatts/GPUs/accelerators，
+  容忍 NVIDIA 型号名间隔）或量化资本（$N million/billion/trillion）
+  + AI 基建锚点（AI factory/AI infrastructure/data center/compute/
+  GPU/NVIDIA…）。精度纪律（v3.0.0c/v3.2/v3.3/v3.6/v3.7/v3.9/v3.10/
+  v3.11：漏报比误报诚实、没有实证不扩模式）：① 必须有量化值——"build
+  sovereign AI infrastructure at gigawatt scale"（NVDA 备案，韩国
+  主权 AI）无数字不进库；② 动词族不含裸露 accelerate——候选模式第一轮
+  实测 "revenue … accelerated to 46%"（MRVL 8-K）与 "accelerated
+  computing"（NVDA Q4 亮点段）误命中 2 句营收句（改 lookahead 后
+  这两句因金额含小数点跨不过段，但无小数点的营收句照样误命中，
+  动词门必须留），"accelerate the buildout" 由 buildout 动词本身
+  覆盖；③ 资本形态必须有锚点+动词——
+  "raises $16B"（融资）与 "revenue was $89.0B … Data Center"（营收）
+  不抢 funding/demand 地盘；④ 算力单位族不含裸 chips（芯片工艺）、
+  不含 users/seats。专属证伪路径（第三方算力/电力跟踪的交付进度或
+  规模不符、基建未按主张时点落地、「承诺」实为未签署最终协议的意向
+  书）；类目 market_claims；报告与 cron 注入标签「算力基建承诺/规模
+  主张」。同轮维护（不单独涨号）：has-sample 名词组补算力单位（v3.10
+  同型——算力承诺的样本就是 GW/MW/GPU 数与资本额，不补则推理分恒 0）；
+  sec_filings 候选桶 8→10（新维度进池后候选 10 条，8 会把尾部 $64B
+  server orders 与 PLTR 营收主张静默切掉）；渲染/注入上限 25→30
+  （audited 27 超旧上限 25，不静默切尾）。live 端到端：商业辨别段
+  23→27 条，byKind 新增 compute-infra:4——NVDA $500B 与 5GW 两条判
+  推理单薄/公开财报/公告(3)/推理 1/3、decisionRelevant；CRWV 5GW 判
+  结构完整/公开财报/公告(3)/推理 2/3、decisionRelevant；NVIDIA 博客
+  Firebird 45,000 GPUs 判 证据不足/无出处(1)/推理 1/3、不虚抬（厂商
+  博客句式自身无归属词，v3.10 Uber 条同型）；公开财报/公告证据档
+  8→11 条；decisionRelevant 10→13 条；原 12 种 kind 计数逐一不变
+  （零串台零丢失）。测试 314→328 项；8 轮反向验证全部精确失败（摘除
+  模式→9/摘除证伪条件→1/摘除类目映射→1 源级/摘除报告 KIND_CN→1/
+  摘除注入 KIND_CN→1/去量化值要求→3/动词族加回 accelerate→1/摘除
+  has-sample 算力单位→4）。
+  历史：v3.11 — 商业主张辨别器新增「用量/牵引度指标主张」形态
   （新辨别维度）+ 同型切分修复（引号嵌套不断句）：
   live 实证（2026-10-26 轮 300 条池，sec_filings 桶）：「Microsoft 365
   Copilot reached over 30 million paid seats」（MSFT 2026-07-29 备案）、
@@ -471,10 +520,26 @@ poll 分支没有触发机会；v3.7 放行 Apollo economist 条目后，round 6
 
 ---
 
-## 当前状态（v3.11.0 实测）
+## 当前状态（v3.12.0 实测）
 
 以下数字全部来自 2026-10-26 的 `FETCH=1 FETCH_BODY=1 node scripts/run-pipeline.js` 实跑
-（v3.11.0 轮：pipeline exit 0、300 条 live 信号（business 48 + economy 46 +
+（v3.12.0 轮：pipeline exit 0、300 条 live 信号（business 48 + economy 46 +
+frontier_models 142 + sec_filings 42 + tech 22 + humanities 12）、商业辨别段 23→27 条
+含新维度算力基建承诺/规模 4 条（byKind 新增 compute-infra:4——NVDA 备案
+「Announced strategic partnerships ... to mobilize over $500 billion of
+third-party capital for the buildout of AI infrastructure」与「Strengthened
+a collaboration with CoreWeave to accelerate the buildout of more than 5
+gigawatts of AI factories by 2030」均判 推理单薄/公开财报/公告(3)/推理 1/3、
+decisionRelevant；CRWV 备案「accelerate the build-out of more than 5 GW of
+AI factories by 2030」判 结构完整/公开财报/公告(3)/推理 2/3、
+decisionRelevant；NVIDIA 博客（Kazakhstan/Firebird）「export license for
+45,000 NVIDIA Grace Blackwell GPUs」判 证据不足/无出处(1)/推理 1/3、
+不虚抬——厂商博客句式自身无归属词；公开财报/公告证据档 8→11 条；
+decisionRelevant 10→13 条；原 12 种 kind 计数逐一不变，零串台零丢失；
+hf-cron-fetch.sh 注入段 agent 可见「类型: 算力基建承诺/规模主张」；渲染/
+注入上限同步 25→30，audited 27 未触顶、截断披露行就位；forecast 辨别
+41 条与上轮逐条一致——本轮只加商业形态，未动 forecast 路径）；
+v3.11.0 轮：pipeline exit 0、300 条 live 信号（business 48 + economy 46 +
 frontier_models 142 + sec_filings 42 + tech 22 + humanities 12）、商业辨别段 20→23 条
 含新维度用量/牵引度指标 2 条（byKind 新增 usage-metric:2——MSFT 备案
 「Microsoft 365 Copilot reached over 30 million paid seats」判 结构完整/
@@ -605,6 +670,8 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
 - [v3.10] 商业辨别候选池四桶：business 12 / sec_filings 8 / frontier_models 10 /
   economy 6（business 第一优先）。v3.10 前只有 business/economy 两个媒体二手桶，
   SEC 备案与厂商一手公告里的量化主张从不进辨别（见「商业主张辨别」层 v3.10 段）
+  [v3.12] sec_filings 8→10：算力基建承诺主张进池后 sec_filings 候选增至 10 条，
+  8 会把尾部的 $64B server orders 与 PLTR 营收增长主张静默切掉
 
 **外部预测基准层（v2.17 新增）**
 - 来源：Good Judgment Open（gjopen.com），专业预测平台；`/questions?q=<词>` 公开可抓
@@ -748,6 +815,8 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   计数断言每轮跟代码走，v3.2 计数纠错同型纪律）。
   [v3.11 再纠错] v3.11 新增用量/牵引度指标（usage-metric）后真实条数为 21
   （v3.10→20 / v3.11→21，计数断言同轮同步）。
+  [v3.12 再纠错] v3.12 新增算力基建承诺/规模（compute-infra）后真实条数为 22
+  （v3.11→21 / v3.12→22，计数断言同轮同步）。
 - [v3.0.0c] 端到端断链修复：v3.0.0 起引擎产出 commercialDiscrimination、
   formatReport 渲染「商业主张辨别」段，但 cron 注入脚本从未读取该字段——
   报告文件里躺着、agent 完全看不到。这是 v2.9/v2.13/v2.17 之后第四次同型断链。
@@ -1050,7 +1119,7 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   ——整个在库外。2026-10-26 轮 300 条 live 实测：扩容前 19 种形态对上述
   两句全部不命中。
 - 候选池扩展（v3.10）：business 12 / sec_filings 8 / frontier_models 10 /
-  economy 6，business 仍第一优先（v3.0.0 的优先纪律保留，断言钉住同池时
+  economy 6，business 仍第一优先（[v3.12] sec_filings 8→10，见当前状态段）（v3.0.0 的优先纪律保留，断言钉住同池时
   business 排前）。live 实测：形态门在 sec_filings 42 条里命中 6 条
   （4 条真主张 + 2 条 forward-looking 免责声明 boilerplate，已加守卫）、
   frontier_models 142 条里命中 7 条（6 条真主张 + 1 条交易机制假设句，
@@ -1176,6 +1245,84 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   （用量句距首个命中句超过 2 句、不在 claim 文本窗内，已知边界漏报，
   测试钉住）、无量化用量的名词短语——等有 live 实证再扩。
 
+**[v3.12] 算力基建承诺/规模主张（compute-infra，新辨别维度）**
+- 定位：采用/供给证据的第四形态缺口。adoption-claim 只认「趋势主体」
+  （enterprises are adopting…）、deployment-scale 只认「部署事件+人的
+  量化范围」（rolling out to 30,000 employees）、usage-metric 只认
+  「产品用量状态」（30M paid seats / 950M MAU / 22B tokens per
+  minute）——而**算力基建承诺**（"accelerate the buildout of more than
+  5 gigawatts of AI factories by 2030"、"mobilize over $500 billion
+  of third-party capital for the buildout of AI infrastructure"、
+  "export license for 45,000 NVIDIA Grace Blackwell GPUs"）整条在库外。
+  live 实证（2026-10-26 轮 300 条池，corr-2026-028 纪律的全池测量
+  「未命中条目过堂」——sec_filings 的 8-K highlights 段与
+  frontier_models 的厂商博客）：扩容前 21 种形态对上述四句全部不命中。
+  算力承诺是供给侧最前端的市场信号——电力许可/GPU 交付/资本承诺领先
+  营收数个季度，且有天然结算结构：交付进度、并网容量、definitive
+  agreements 签署都是可观测事件。四类采用/供给证据分工：趋势主张靠
+  调查证伪，具名部署靠当事方确认证伪，用量状态靠下一期自报值证伪，
+  算力承诺靠交付/许可/资本落实证伪。
+- 形态族：三段同句共现（lookahead 保证任词序、不跨句）——① 建设/承诺
+  动词（buildout/expands/mobilize/deploy/invest/commit/secured/
+  license/commission/construct/bring/under construction/commercial
+  launch）；② 量化算力（N GW/MW/gigawatts/megawatts/GPUs/
+  accelerators，容忍 NVIDIA 型号名间隔）或量化资本（$N
+  million/billion/trillion）；③ AI 基建锚点（AI factory/AI
+  infrastructure/data center/compute/GPU/NVIDIA…）。
+- 精度设计（v3.0.0c/v3.2/v3.3/v3.6/v3.7/v3.9/v3.10/v3.11 教训：漏报
+  比误报诚实、没有实证不扩模式）：① 必须有量化值——"build
+  sovereign AI infrastructure at gigawatt scale"（NVDA 8-K，韩国
+  主权 AI）无数字不是可证伪主张，不进库；② 动词族不含裸露
+  accelerate——候选模式第一轮独立三段测试实测 "revenue … accelerated
+  to 46%"（MRVL 8-K）与 "accelerated computing"（NVDA Q4 亮点段）
+  误命中 2 句营收句；改 lookahead 后这两句因金额含小数点反而跨不过
+  段（"$62.3"/"$2.739" 的句点把 [^.!?] 段切断，动词段到不了句末的
+  accelerated）——小数点切断是附带防线不是设计意图，无小数点的营收
+  句（"Data Center revenue accelerated to a record $46 billion"）
+  照样误命中，动词门必须留（精度回归第 26 句钉住），"accelerate the
+  buildout" 由 buildout 动词本身覆盖；③ 资本
+  形态必须有 AI 基建锚点+动词——"raises $16B"（融资）、"revenue was
+  $89.0B … Data Center"（营收）都不是基建承诺，不抢 funding/demand
+  地盘；④ 算力单位族不含裸 chips（"each wafer contains more than 400
+  chips" 是芯片工艺）、不含 users/seats（用量指标与部署规模的地盘）。
+  live 全池实测（300 条）：精确命中 7 句、4 条进引擎候选，26 句精度
+  回归 0 误报。
+- 判别结果（live 实测）：NVDA $500B 资本动员与 NVDA-CoreWeave 5GW 两条
+  判 推理单薄/公开财报/公告(3)/推理 1/3、decisionRelevant（SEC EDGAR
+  采集源归公开财报档，v3.10 同型）；CRWV 8-K 5GW 判 结构完整/公开
+  财报/公告(3)/推理 2/3、decisionRelevant（对照来自拼接段上下文）；
+  NVIDIA 博客 Firebird 45,000 GPUs 判 证据不足/无出处(1)/推理 1/3、
+  不虚抬（厂商博客句式自身无归属词，与 v3.10 Uber 条同型）。证伪条件
+  走 compute-infra 专属路径（第三方算力/电力跟踪的交付进度或规模不符、
+  基建未按主张时点落地、「承诺」实为未签署最终协议的意向书）。类目归
+  market_claims。
+- 同轮维护（不单独涨号）：① has-sample 名词组补算力单位（容忍 NVIDIA
+  型号名间隔）——算力承诺主张的样本就是 GW/MW/GPU 数与资本额，不补则
+  推理分恒 0（v3.10 补 employees/countries 同型）；② sec_filings 候选
+  桶 8→10——新维度进池后 sec_filings 候选增至 10 条，8 会把尾部的
+  $64B server orders 与 PLTR 营收增长主张静默切掉（「辨别了但看不
+  见」，v3.10/v3.11 上限纪律同型）；③ 渲染/注入上限 25→30（audited
+  27 超旧上限 25，不静默切尾）。
+- 端到端：引擎候选门（isClaimForm 用同一个模式库，四桶）→
+  discriminateCommercial → formatReport KIND_CN「算力基建承诺/规模
+  主张」→ cron 注入第 6 段同标签。live 实测商业辨别段 23→27 条，
+  byKind 新增 compute-infra:4；该轮 byKind 全量 expert-judgment:1 /
+  adoption:4 / cost-signal:1 / capacity:1 / ma:2 / regulatory-action:2
+  / funding:4 / price-cut:1 / compute-infra:4 / usage-metric:2 /
+  demand:2 / deployment-scale:2 / competitive:1——原 12 种 kind 计数
+  逐一不变（零串台零丢失，不串台断言钉住）；公开财报/公告证据档
+  8→11 条；decisionRelevant 10→13 条。
+- 仍在库外的算力句式：无量化数的规模级表述（"at gigawatt scale"，
+  已知边界）、营收/指引句（"Data Center revenue was $89.0B" 是财报
+  事实归 forecast 路径）、政府资助授予（"NIST Awards $1.7M"，v3.10
+  已决议不收）、自身工程 scaling 叙述（"scaling storage to serve 1
+  billion users"）、无动词的存量描述（"the data center houses 5,000
+  GPUs" 是容量描述不是承诺）——等有 live 实证再扩。已知边界（切分）：
+  Firebird 主张句在 "U.S." 句点后被切开，主张句从 "export license
+  for 45,000…" 片段起（主体 Firebird 在前一段，与 v3.8 Treasury 条
+  同型），claim 文本窗仍含后 2 句（"under construction … commercial
+  launch Q3 2027" 与 "500 megawatts"），结算相关信息不丢。
+
 **自我修正登记簿层（v3.1 接入的 0 调用模块）**
 - 定位：这是接入，不是新写。self-correction-ledger.js 自 v2.4 存在，
   `human-future/data/self-corrections.json` 有 25 条真实修正（绕月≠登月、
@@ -1300,6 +1447,12 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   指标主张）已进模式库（usage-metric，用量状态动词+量化值+用量指标
   名词；必须有量化值+指标名词两件套，subscribers 族与速率上限句有意
   排除，只认数值在前语序）；
+  v3.12 起 "accelerate the buildout of more than 5 gigawatts of AI
+  factories by 2030" 与 "mobilize over $500 billion of third-party
+  capital for the buildout of AI infrastructure"（算力基建承诺/规模
+  主张）已进模式库（compute-infra，建设/承诺动词+量化算力或资本+AI
+  基建锚点三段同句共现；必须有量化值，裸露 accelerate 与裸 chips 不
+  收，资本形态不抢融资/营收地盘）；
   仍在库外的有 "Instacart Shares Rally 10%"（市场反应——可核验的市场价格
   事实，非待辨别主张）、ProductHunt 产品发布（产品公告非市场主张）、
   "Late fees for delayed GPU deliveries exceed $2M"（名词后接长修饰语，
@@ -1340,7 +1493,7 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   引擎不代劳——这是心虫铁律，不是能力缺失。
 
 **测试**
-- `npm test`：**314 项断言**（实测各 section 汇总；v3.4 的 230 + v3.5 新增 11 + v3.5.1 新增 9 + v3.6 新增 8 + v3.7 新增 9 + v3.8 新增 11 + v3.9 新增 8 + v3.10 新增 13 + v3.11 新增 15：
+- `npm test`：**328 项断言**（实测各 section 汇总；v3.4 的 230 + v3.5 新增 11 + v3.5.1 新增 9 + v3.6 新增 8 + v3.7 新增 9 + v3.8 新增 11 + v3.9 新增 8 + v3.10 新增 13 + v3.11 新增 15 + v3.12 新增 14：
   2 项纯结算函数（settleGuidance 单位感知容差：相对/绝对/bps/百分点/区间/无容差
   跳过，含区分相对vs绝对的边界用例 / normalizeMetric+parseMetricValue 单位解析）+
   3 项实际值抽取（extractActuals 营收+毛利率+标题期间 / GAAP/非GAAP 不同值抽出
@@ -1571,6 +1724,69 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   ② 切分修复测试第一版把两个正则硬编码在测试里，摘除代码修复照样过
   （断言空转）——改为源级（读代码数 lookbehind 出现次数）+ 行为级
   （引擎 claimSentence 是用量句本身）双层钉住后才精确失败。
+  v3.12 新增 14（1 项 live 实证命中（NVDA 8-K「Strengthened a
+  collaboration with CoreWeave to accelerate the buildout of more than
+  5 gigawatts of AI factories by 2030」→ kind=compute-infra，判 推理
+  单薄/公开财报/公告(3)/推理 1/3、decisionRelevant——SEC EDGAR 采集源
+  归公开财报档，v3.10 同型）
+  + 1 项 live 实证命中（「Announced strategic partnerships ... to
+  mobilize over $500 billion of third-party capital for the buildout
+  of AI infrastructure」→ 同 kind，资本+锚点+动词三件套）
+  + 1 项 live 实证命中（NVIDIA 博客「export license for 45,000 NVIDIA
+  Grace Blackwell GPUs」→ 同 kind，判 证据不足/无出处(1)/推理 1/3、
+  不虚抬——厂商博客句式自身无归属词，v3.10 Uber 条同型）
+  + 1 项 live 实证命中（CRWV 8-K「accelerate the build-out of more
+  than 5 GW of AI factories by 2030」→ 同 kind，同判）
+  + 1 项专属证伪条件与类目映射（第三方算力/电力跟踪的交付进度或规模
+  不符/基建未落地/意向书未转化；类目映射源级断言——兜底类目同为
+  market_claims，行为断言抓不到摘除）
+  + 1 项形态族召回八形（secured+export license / deployed+GPUs /
+  expand+gigawatts / committed+$ / investing+construct / bring+
+  megawatts / under construction+megawatts / mobilize+$）
+  + 1 项精度回归 26 句（营收句×5/指引/融资/订阅/售罄/监管/专家判断/
+  工程 scaling/政府资助/芯片工艺/无数量规模级句/现有 kind 原句全部
+  不命中；第 26 句是无小数点的营收句——R7 空转修复后补，钉住
+  accelerate 动词门）
+  + 1 项不串台（deployment-scale/usage-metric/cost-signal/funding/
+  capacity/price-cut 六个现有 kind 原句 kind 不变、kinds 不含
+  compute-infra——新模式追加在模式库末尾）
+  + 1 项 has-sample 维护（GW/MW/GPU 数与型号名间隔计入样本，v3.10
+  补 employees/countries 同型）
+  + 1 项引擎级四条主张进辨别（byKind compute-infra:4；NVDA×2/CRWV
+  归公开财报(3)且 decisionRelevant，NVIDIA 博客条无出处(1)不虚抬）
+  + 1 项端到端渲染（formatReport 渲染「类型: 算力基建承诺/规模主张 |
+  来源: SEC EDGAR」+「证据: 公开财报/公告(3)」+ 证伪条件行——只认
+  渲染出的标签行）
+  + 1 项 cron 注入源级（读 ~/.hermes/scripts/hf-cron-fetch.sh 验
+  compute-infra 中文标签 + slice(0,30) + 截断披露行）
+  + 1 项精度门未破（营收句/工程 scaling/政府资助/无数量规模级句/
+  Fed 公告/播客不因新形态进辨别）
+  + 1 项版本号一致性（VERSION/package.json/banner/projection meta/
+  run-pipeline meta 五处对齐 3.12.0））。
+  模式库计数 21→22（v3.3 的计数断言同步更新，v3.2 计数纠错同型纪律）。
+  v3.12 八轮反向验证全部精确失败：摘除模式→9 条（live 实证×4/证伪
+  条件/召回/精度回归/引擎级/端到端 + v3.3 计数断言）；摘除证伪条件→1；
+  摘除类目映射→1（源级）；摘除报告 KIND_CN→1；摘除注入 KIND_CN→1；
+  去量化值要求（摘除 lookahead 第二段）→3（精度回归+引擎级+精度门，
+  "at gigawatt scale" 误命中）；动词族加回裸露 accelerate→1（无
+  小数点营收句误命中——第一轮报 0 失败后补回归用例才精确失败，见
+  教训②）；摘除 has-sample 算力单位→4（has-sample 断言 + 3 条 live
+  实证的推理分断言——$500B 资本句的样本本就由旧正则的 $ 分支覆盖，
+  不受影响故不失败）。每轮基线全绿、摘除后断言必生效、备份还原
+  到位（filecmp 校验）、收尾基线全绿。
+  同轮实测教训（已修）：① 精度回归测试第一版没防护模式被摘除时的
+  undefined（v3.11 同型教训的第二次实证）——先防护再断言后才精确
+  失败；② R7 反向验证第一轮报 0 失败（断言空转）——根因是两句营收
+  回归用例的金额含小数点（"$62.3"/"$2.739"），句点把 [^.!?] 段
+  切断，动词族加回 accelerate 也跨不过段，用例证明不了动词门；补
+  一句无小数点的营收句后 R7 精确失败。教训：反向验证报 0 失败时
+  必须查「是修复无效还是用例触达不到被测分支」，不能改完预期数字
+  就收工；③ 小数点切断 [^.!?] 段是 lookahead 同句判定的附带性质——
+  金额含小数点的句子跨段共现会被自动阻断（对营收句是有利防线；
+  对真主张如 Firebird 的 "U.S. export license for 45,000 GPUs"
+  会被 U.S. 句点切碎、主张句从片段起，已知边界如实记录）；④ 反向
+  验证驱动第一版对 .sh 注入脚本误用 node --check（bash 脚本报语法
+  坏）——改用 bash -n 后 R5 才精确失败。
   历史：v3.4 的 230 + v3.4 新增 16：
   5 项采集器抽取（NVDA/AMZN/AMD/MRVL/MU 五种 live 句式命中 / 4 类精度回归 0 误报 /
   期间就近+同比排除+Oracle 两种期间形态 / 小数不截断+句点不冲段 / 词边界）+
@@ -1701,11 +1917,12 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   **商业主张辨别（v3.0.0c 补入，第 6 段；KIND_CN 标签随形态库扩充：
   v3.2 产能/供给约束、v3.3 并购/交易过程、v3.6 成本/价格信号、v3.7 专家/机构
   判断、v3.8 监管行动、v3.9 价格下调、v3.10 部署规模、v3.11 用量/牵引度
-  指标，注入与报告同标签；
+  指标、v3.12 算力基建承诺/规模，注入与报告同标签；
   v3.10 起渲染上限 12→20 / cron 10→16——候选池扩到四桶后辨别条数变多，
   切掉尾部等于「辨别了但看不见」；[v3.11] 20→25 / 16→25 并加截断披露
   （usage-metric 新维度+切分修复后 audited 23 超旧上限，超出时明确写
-  「另有 N 条未显示」））** /
+  「另有 N 条未显示」）；[v3.12] 25→30 / 25→30（算力基建承诺新维度后
+  audited 27 超旧上限，上限与 formatReport 同步））** /
   **口径错位检测（v3.1.1 补入，第 6.5 段，含触发句与口径限定——此前引擎产出+
   报告渲染都有，注入脚本从未读，第五次同型断链）** /
   **外部预测基准（v2.17 新增，第 7 段）** /

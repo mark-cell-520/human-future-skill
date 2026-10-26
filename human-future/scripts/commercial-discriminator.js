@@ -328,6 +328,59 @@ const COMMERCIAL_CLAIM_PATTERNS = [
     kind: 'compliance', label: '合规需求主张' },
   { id: 'trust-demand', re: /(trust|verification|verifiable|accountability|audit|transparency|provenance|attestation)\s+(is|are|will be|becomes?|grows?)\s+(critical|essential|important|necessary|a requirement|the differentiator|table stakes)/i,
     kind: 'trust', label: '信任需求主张' },
+  // ── 算力基建类 ──
+  // [v3.12] 算力基建承诺/规模主张（compute-infra，新辨别维度）：
+  // adoption-claim 只认「趋势主体」（enterprises are adopting…）、
+  // deployment-scale 只认「部署事件 + 人的量化范围」（30,000 employees /
+  // 26 countries）、usage-metric 只认「产品用量状态」（30M paid seats /
+  // 950M MAU / 22B tokens per minute）——而**算力基建承诺**（"secured a
+  // U.S. export license for 45,000 NVIDIA Grace Blackwell GPUs"、
+  // "accelerate the buildout of more than 5 gigawatts of AI factories by
+  // 2030"、"mobilize over $500 billion of third-party capital for the
+  // buildout of AI infrastructure"）整条在库外。live 实证（2026-10-26 轮
+  // 300 条池，sec_filings 的 8-K highlights 段与 frontier_models 的厂商
+  // 博客）：扩容前 21 种形态对上述四句全部不命中。算力承诺是供给侧最
+  // 前端的市场信号（电力许可/GPU 交付/资本承诺领先营收数个季度），且
+  // 有天然结算结构：交付进度、并网容量、definitive agreements 签署都
+  // 是可观测事件。四类采用/供给证据分工：趋势主张靠调查证伪，具名部署
+  // 靠当事方确认证伪，用量状态靠下一期自报值证伪，算力承诺靠交付/
+  // 许可/资本落实证伪。
+  // 形态族：三段同句共现（lookahead 保证任词序、不跨句）——
+  //   ① 建设/承诺动词（buildout/expands/mobilize/deploy/invest/commit/
+  //      secured/license/commission/construct/bring/under construction/
+  //      commercial launch）；
+  //   ② 量化算力（N GW/MW/gigawatts/megawatts/GPUs/accelerators，容忍
+  //      NVIDIA 型号名间隔）或量化资本（$N million/billion/trillion）；
+  //   ③ AI 基建锚点（AI factory/AI infrastructure/data center/compute/
+  //      GPU/accelerated computing/NVIDIA…）。
+  // 精度设计（v3.0.0c/v3.2/v3.3/v3.6/v3.7/v3.9/v3.10/v3.11 教训：漏报
+  // 比误报诚实、没有实证不扩模式）：
+  //   ① 必须有量化值——"build sovereign AI infrastructure at gigawatt
+  //      scale"（NVDA 8-K，韩国主权 AI）无数字不是可证伪主张，不进库；
+  //   ② 动词族不含裸露 accelerate——"revenue … accelerated to 46%"
+  //      （MRVL 8-K）与 "accelerated computing"（NVDA Q4 亮点段）会把
+  //      营收句误判成基建承诺（v3.12 候选模式第一轮独立三段测试实测
+  //      误命中 2 句；改 lookahead 后这两句因金额含小数点反而跨不过
+  //      段——"$62.3"/"$2.739" 的句点把 [^.!?] 段切断，动词段到不了
+  //      句末的 accelerated。小数点切断是附带防线不是设计意图：
+  //      无小数点的营收句（"Data Center revenue accelerated to a
+  //      record $46 billion"）照样会误命中，动词门必须留，精度回归
+  //      第 26 句钉住），"accelerate the buildout" 由 buildout 动词
+  //      本身覆盖；
+  //   ③ 资本形态必须有 AI 基建锚点 + 动词——"raises $16B"（融资）、
+  //      "revenue was $89.0B … Data Center"（营收）都不是基建承诺，
+  //      不抢 funding/demand 地盘；
+  //   ④ 算力单位族不含裸 chips（"each wafer contains more than 400
+  //      chips" 是芯片工艺不是算力承诺）、不含 users/seats（用量指标
+  //      与部署规模的地盘）。
+  // live 全池实测（300 条）：精确命中 7 句、4 条进引擎候选（NVDA
+  // $500B 资本动员、NVDA/CRWV 5GW AI factories by 2030、NVIDIA 博客
+  // Firebird 45,000 GPUs 出口许可），26 句精度回归 0 误报（营收/指引/
+  // 融资/订阅/售罄/监管/专家判断/工程 scaling/政府资助/芯片工艺句全部
+  // 不命中，含一句无小数点的营收句钉住 accelerate 动词门）。
+  { id: 'compute-infra',
+    re: /(?=[^.!?]*\b(?:buildouts?|build[-\s]?outs?|builds?|building|built|expands?|expanding|mobiliz(?:e|es|ed|ing)|deploy(?:s|ed|ing)?|invest(?:s|ed|ing|ment|ments)?|commit(?:s|ted|ment|ments|ing)?|secured?|licens(?:e|es|ed|ing)|commission(?:s|ed|ing)?|construct(?:s|ed|ing)?|brings?|bringing|brought|under\s+construction|commercial\s+launch)\b)(?=[^.!?]*(?:[\d,.]+\s+(?:[A-Za-z0-9.\-]+\s+){0,3}?(?:GW|MW|gigawatts?|megawatts?|GPUs?|accelerators?)\b|\$\s?[\d,.]+\s*(?:million|billion|trillion)\b))(?=[^.!?]*(?:AI\s+factor(?:y|ies)|AI\s+infrastructure|data\s?cent(?:er|re)|compute|GPUs?|accelerated\s+computing|gigawatts?|megawatts?|NVIDIA))/i,
+    kind: 'compute-infra', label: '算力基建承诺/规模主张' },
 ];
 
 /** 不可证伪的商业措辞：无主体、无量化、纯修辞 */
@@ -410,7 +463,11 @@ const REASONING_CHECKS = [
     // 具名部署规模主张的样本就是席位数与覆盖面（"30,000 employees"/
     // "26 new countries"/"100,000 advertisers"/"206 deals"），不补则
     // 部署规模主张的推理分恒为 0（有数字却判不出样本）。
-    test: (t) => /(\d+\s*(?:companies|enterprises|firms|customers|users|developers|respondents|employees|seats|staff|countries|advertisers|deals|percent|%|million|billion)|\$[\d.]+|n\s*=\s*\d+)/i.test(t) },
+    // [v3.12] 名词组再补算力单位（容忍 NVIDIA 型号名间隔）：算力基建
+    // 承诺主张的样本就是 GW/MW/GPU 数与资本额（"5 gigawatts"/"45,000
+    // NVIDIA Grace Blackwell GPUs"/"500 megawatts"），不补则算力主张
+    // 的推理分恒为 0（有数字却判不出样本，v3.10 同型）。
+    test: (t) => /(\d+\s*(?:companies|enterprises|firms|customers|users|developers|respondents|employees|seats|staff|countries|advertisers|deals|percent|%|million|billion)|\$[\d.]+|n\s*=\s*\d+|[\d,.]+\s+(?:[A-Za-z0-9.\-]+\s+){0,3}?(?:GW|MW|gigawatts?|megawatts?|GPUs?|accelerators?)\b)/i.test(t) },
   { id: 'has-comparison', label: '给出对照（和谁比/和什么时候比）',
     test: (t) => /(compared to|versus|vs\.?|up from|down from|year[\s-]over[\s-]year|yoy|qoq|against|relative to|than (?:last|previous))/i.test(t) },
   { id: 'has-counterexample', label: '承认反例（什么情况下不成立）',
@@ -569,6 +626,13 @@ function buildFalsification(patterns, text) {
     // 改变、seats 与 subscriptions 混计、token 吞吐改按不同周期计）」。
     // SEC 备案自报值有天然对账结构：下一期 8-K 的同指标就是新值。
     'usage-metric': '观察到下一期备案或公告的同口径自报值低于主张值、第三方用量估算（应用分析/下载量/API 流量跟踪）与主张值不符，或指标口径发生变化（如 active 的定义改变、seats 与 subscriptions 混计、token 吞吐改按不同周期计）',
+    // [v3.12] 算力基建承诺/规模主张的证伪路径：承诺类主张最常见的裂缝
+    // 是「交付进度或规模与主张值不符（第三方算力/电力跟踪：并网容量、
+    // GPU 交付、出口许可记录）」「承诺未落地（开工延期、许可被撤、
+    // 资本承诺撤回或缩水）」「承诺实为意向书（subject to definitive
+    // agreements 未签署）未转化为实际建设」。结算点是可观测事件
+    // （并网/交付/许可），不等财报。
+    'compute-infra': '观察到第三方算力/电力跟踪（并网容量、GPU 交付、出口许可记录）显示交付进度或规模与主张值不符，该基建未按主张时点落地（开工延期/许可被撤/资本承诺撤回或缩水），或「承诺」实为未签署最终协议（subject to definitive agreements）的意向书、未转化为实际建设',
     'unclassified': '无明确证伪路径——这本身就是问题',
   };
   return FALSIFICATION_BY_KIND[kind] || FALSIFICATION_BY_KIND.unclassified;
@@ -595,6 +659,9 @@ function inferCommercialCategory(text, patterns) {
       // [v3.11] 用量指标是客户采用域最具体的 instantiation（与 adoption
       // 同域，兜底类目同为 market_claims——行为断言抓不到摘除，测试走源级）
       'usage-metric': 'market_claims',
+      // [v3.12] 算力基建承诺是供给侧市场事实，归市场主张域（兜底类目
+      // 同为 market_claims——行为断言抓不到摘除，测试走源级）
+      'compute-infra': 'market_claims',
       // [v3.3] 交易过程是资本事件，归资本与商业模式域
       ma: 'capital_flow',
       funding: 'capital_flow', valuation: 'capital_flow', 'capital-signal': 'capital_flow',

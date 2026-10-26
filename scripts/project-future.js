@@ -340,7 +340,7 @@ class ProjectionEngine {
     }
     const report = {
       meta: {
-        version: '3.11.0',
+        version: '3.12.0',
         heartflowVersion: this.analysis.engineVersion,
         timestamp: this.timestamp,
         modulesLoaded: this.analysis.modulesLoaded,
@@ -1863,7 +1863,12 @@ class ProjectionEngine {
     // 机制假设句，ma 动词形态已收紧）。容量：business 12 / sec_filings 8 /
     // frontier_models 10 / economy 6——business 仍是第一优先。
     const PICK_BUCKETS = ['business', 'sec_filings', 'frontier_models', 'economy'];
-    const BUCKET_CAP = { business: 12, sec_filings: 8, frontier_models: 10, economy: 6 };
+    // [v3.12] sec_filings 8→10：算力基建承诺主张进池后 sec_filings 候选
+    // 增至 10 条（NVDA $500B 资本动员、NVDA/CRWV 5GW AI factories、
+    // CRWV 8-K 各一条 + 原有 7 条），8 会把尾部的 $64B server orders 与
+    // PLTR 营收增长主张静默切掉——「辨别了但看不见」，与 v3.10/v3.11
+    // 上限纪律同型。
+    const BUCKET_CAP = { business: 12, sec_filings: 10, frontier_models: 10, economy: 6 };
     const byBucket = { business: [], sec_filings: [], frontier_models: [], economy: [] };
     // [v3.0.0c] 精度门：候选题句必须命中商业主张形态。
     //
@@ -1876,7 +1881,7 @@ class ProjectionEngine {
     // 还因 2/3 推理分被判成★决策相关）、ConnectWise 安全新闻全部混入。
     // 它们根本不是商业主张，辨别它们产出的是噪音。
     //
-    // 门直接用辨别器自己的 COMMERCIAL_CLAIM_PATTERNS（20 种主张形态，
+    // 门直接用辨别器自己的 COMMERCIAL_CLAIM_PATTERNS（22 种主张形态，
     // v3.2 起含产能/供给约束；v3.3 起含并购/交易过程；v3.6 起含成本/
     // 价格信号；v3.7 起含专家/机构判断；v3.8 起含监管行动；v3.9 起含
     // 价格下调；v3.10 起含部署规模；v3.2 计数纠错：
@@ -1935,7 +1940,7 @@ class ProjectionEngine {
       return {
         available: false,
         reason: `本期 ${this.signals.items.length} 条 live 信号中（商业辨别候选池 business/sec_filings/frontier_models/economy 四桶）未抽到命中商业主张形态的条目`,
-        note: '只辨别命中商业主张形态（采用/部署规模/用量指标/需求/替代/市场规模/成本价格/价格下调/产能供给/并购交易/专家判断/监管行动/融资/估值/竞品/合规/信任共 21 种模式）的条目；'
+        note: '只辨别命中商业主张形态（采用/部署规模/用量指标/算力基建/需求/替代/市场规模/成本价格/价格下调/产能供给/并购交易/专家判断/监管行动/融资/估值/竞品/合规/信任共 22 种模式）的条目；'
           + 'v3.0.0c 起候选题句必须命中模式库，Fed 公告/播客/促销页脚等非主张文本不再进入辨别。',
       };
     }
@@ -1971,11 +1976,14 @@ class ProjectionEngine {
       // [v3.11] 20→25：usage-metric 新维度 + 引号切分修复后单轮辨别 23 条
       // （live 实测），20 会把尾部的部署规模与 PLTR 融资主张切掉。formatReport
       // 与 cron 注入的上限同步 25，超出时两处都披露未显示条数。
-      results: results.slice(0, 25),
+      // [v3.12] 25→30：算力基建承诺新维度后单轮辨别 27 条（live 实测：
+      // business 10 + sec_filings 10 + frontier_models 7），25 会把尾部
+      // 两条 SEC 备案主张切掉。上限与 formatReport/cron 注入同步 30。
+      results: results.slice(0, 30),
       note: '本段只辨别商业主张的表述与证据质量（可证伪性/证据等级/推理有效性/证伪条件），'
         + '不判断主张内容真假，也不生成「心虫应该怎么做」的商业建议。'
-        + 'v3.0.0c 起候选题句必须命中商业主张形态库（21 种模式，v3.2 新增产能/供给约束，'
-        + 'v3.3 新增并购/交易过程，v3.6 新增成本/价格信号，v3.7 新增专家/机构判断，v3.8 新增监管行动，v3.9 新增价格下调，v3.10 新增部署规模，v3.11 新增用量/牵引度指标），非主张文本（公告/播客/促销页脚/免责声明）不进辨别。'
+        + 'v3.0.0c 起候选题句必须命中商业主张形态库（22 种模式，v3.2 新增产能/供给约束，'
+        + 'v3.3 新增并购/交易过程，v3.6 新增成本/价格信号，v3.7 新增专家/机构判断，v3.8 新增监管行动，v3.9 新增价格下调，v3.10 新增部署规模，v3.11 新增用量/牵引度指标，v3.12 新增算力基建承诺/规模），非主张文本（公告/播客/促销页脚/免责声明）不进辨别。'
         + 'v3.10 起候选池含一手信源桶（SEC 备案 + 厂商一手公告）。'
         + '证据等级：独立验证(4) > 第三方调查/公开财报(3) > 厂商自述/媒体报道(2) > 无出处(1)。',
     };
@@ -2641,13 +2649,22 @@ function formatReport(report) {
       // 22 billion API tokens per minute」——厂商自报席位数/月活/token
       // 吞吐，下一期备案同指标可对账）
       'usage-metric': '用量/牵引度指标主张',
+      // [v3.12] 算力基建承诺/规模主张（live 实证：NVDA 8-K「accelerate
+      // the buildout of more than 5 gigawatts of AI factories by 2030」、
+      // 「mobilize over $500 billion of third-party capital for the
+      // buildout of AI infrastructure」与 NVIDIA 博客 Firebird「export
+      // license for 45,000 NVIDIA Grace Blackwell GPUs」——算力承诺是
+      // 供给侧最前端的市场信号，交付进度/并网容量/许可/资本落实可观测）
+      'compute-infra': '算力基建承诺/规模主张',
     };
     // [v3.10] 12→20：与 buildCommercialDiscrimination 的 results.slice(0, 20)
     // 对齐——扩池后辨别条数变多，渲染上限不跟着涨会把一手信源主张切掉。
     // [v3.11] 20→25：usage-metric 新维度 + 引号切分修复后单轮辨别 23 条
     // （live 实测），20 会把尾部的部署规模与 PLTR 融资主张切掉。超出上限
     // 时明确披露「还有 N 条未显示」，不静默切尾（切掉=辨别了但看不见）。
-    for (const r of cdsc.results.slice(0, 25)) {
+    // [v3.12] 25→30：算力基建承诺新维度后单轮辨别 27 条（live 实测），
+    // 上限与 results.slice 同步 30。
+    for (const r of cdsc.results.slice(0, 30)) {
       const rel = r.decisionRelevant ? '★决策相关' : '  ';
       lines.push(`${rel} [${VERDICT_CN[r.verdict] || r.verdict}] ${(r.claimSentence || r.text).slice(0, 105)}`);
       lines.push(`    类型: ${KIND_CN[r.kind] || r.kind} | 来源: ${r.source}`
@@ -2661,8 +2678,8 @@ function formatReport(report) {
       }
       lines.push(`    证伪条件: ${r.falsification}`);
     }
-    if (cdsc.results.length > 25) {
-      lines.push(`> 另有 ${cdsc.results.length - 25} 条辨别结果超出渲染上限未显示（不静默切尾）`);
+    if (cdsc.results.length > 30) {
+      lines.push(`> 另有 ${cdsc.results.length - 30} 条辨别结果超出渲染上限未显示（不静默切尾）`);
     }
     lines.push('');
     lines.push(`> ${cdsc.note}`);

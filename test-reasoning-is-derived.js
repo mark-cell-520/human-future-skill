@@ -3824,18 +3824,20 @@ c33('精度门未破：非主张文本仍被挡在辨别外', (() => {
 // [v3.6] 扩容成本/价格信号后真实条数为 16；[v3.7] 扩容专家/机构判断后
 // 真实条数为 17；[v3.8] 扩容监管行动后真实条数为 18；[v3.9] 扩容价格
 // 下调后真实条数为 19；[v3.10] 扩容部署规模后真实条数为 20；[v3.11]
-// 扩容用量/牵引度指标后真实条数为 21，计数跟着代码走（v3.2 同型纪律）。
-c33('模式计数口径：21 种与文档一致', (() => {
+// 扩容用量/牵引度指标后真实条数为 21；[v3.12] 扩容算力基建承诺/规模后
+// 真实条数为 22，计数跟着代码走（v3.2 同型纪律）。
+c33('模式计数口径：22 种与文档一致', (() => {
   const { COMMERCIAL_CLAIM_PATTERNS } = require('./human-future/scripts/commercial-discriminator.js');
   const pf = require('fs').readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return COMMERCIAL_CLAIM_PATTERNS.length === 21
-    && /共 21 种模式/.test(pf)
+  return COMMERCIAL_CLAIM_PATTERNS.length === 22
+    && /共 22 种模式/.test(pf)
     && COMMERCIAL_CLAIM_PATTERNS.some(p => p.id === 'expert-judgment')
     && COMMERCIAL_CLAIM_PATTERNS.some(p => p.id === 'regulatory-action')
     && COMMERCIAL_CLAIM_PATTERNS.some(p => p.id === 'price-cut')
     && COMMERCIAL_CLAIM_PATTERNS.some(p => p.id === 'deployment-scale')
-    && COMMERCIAL_CLAIM_PATTERNS.some(p => p.id === 'usage-metric');
-})(), '模式库真实条数必须与文档写的「21 种」一致（防文档计数腐烂）');
+    && COMMERCIAL_CLAIM_PATTERNS.some(p => p.id === 'usage-metric')
+    && COMMERCIAL_CLAIM_PATTERNS.some(p => p.id === 'compute-infra');
+})(), '模式库真实条数必须与文档写的「22 种」一致（防文档计数腐烂）');
 
 // ── v3.3 汇总 ──
 (async () => {
@@ -4229,11 +4231,11 @@ c34('cron 注入脚本渲染财报指引（VERDICT_CN/汇总/结构行）', (() 
 
 // ── 组 4：版本号（corr-2026-014 同型：banner 腐烂四个补丁轮）─────
 // [v3.6] 版本推进到 3.6.0（新辨别维度：成本/价格信号），本断言跟着当前版本走。
-c34('版本号一致性：banner 与 VERSION 对齐（3.11.0）', (() => {
+c34('版本号一致性：banner 与 VERSION 对齐（3.12.0）', (() => {
   const fs2 = require('fs');
   const version = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return version === '3.11.0' && rp.includes('文明推演引擎 v3.11.0');
+  return version === '3.12.0' && rp.includes('文明推演引擎 v3.12.0');
 })(), 'run-pipeline banner 必须与 VERSION 一致（v3.1 修过 banner/meta 同型后又腐烂）');
 
 // ── v3.4 汇总 ──
@@ -4427,15 +4429,15 @@ c35('cron 注入脚本渲染财报指引结算段', (() => {
 
 // ── 组 6：版本号一致性（corr-2026-014 同型，四处对齐）──────────
 // [v3.6] 推进到 3.6.0（新辨别维度），断言跟当前版本走。
-c35('版本号一致性：VERSION/package.json/projection meta/banner 对齐 3.11.0', (() => {
+c35('版本号一致性：VERSION/package.json/projection meta/banner 对齐 3.12.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.11.0'
-    && /3\.11\.0/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.11.0');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.11.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.12.0'
+    && /3\.12\.0/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.12.0');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.12.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.5 汇总 ──
 (async () => {
@@ -4653,15 +4655,15 @@ c351('结算证据来源是提供实际值的备案（actualPeriod 匹配）', (
 
 // ── 组 4：版本号一致性（corr-2026-014 同型）────────────────────
 // [v3.6] 推进到 3.6.0（新辨别维度：成本/价格信号）。
-c351('版本号一致性：VERSION/package.json/banner 对齐 3.11.0', (() => {
+c351('版本号一致性：VERSION/package.json/banner 对齐 3.12.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.11.0'
-    && /3\.11\.0/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.11.0');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.11.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.12.0'
+    && /3\.12\.0/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.12.0');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.12.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.5.1 汇总 ──
 (async () => {
@@ -4856,15 +4858,15 @@ c36('精度门未破：非主张文本仍被挡在辨别外', (() => {
 })(), 'Fed 公告与播客不得因 cost-signal 新模式进入辨别');
 
 // ── 组 5：版本号一致性（corr-2026-014 同型）────────────────────
-c36('版本号一致性：VERSION/package.json/banner 对齐 3.11.0', (() => {
+c36('版本号一致性：VERSION/package.json/banner 对齐 3.12.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.11.0'
-    && /3\.11\.0/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.11.0');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.11.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.12.0'
+    && /3\.12\.0/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.12.0');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.12.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.6 汇总 ──
 (async () => {
@@ -5100,15 +5102,15 @@ c37('精度门未破：非主张文本仍被挡在辨别外', (() => {
 })(), 'Fed 公告与播客不得因 expert-judgment 新模式进入辨别');
 
 // ── 组 5：版本号一致性（corr-2026-014 同型）────────────────────
-c37('版本号一致性：VERSION/package.json/banner 对齐 3.11.0', (() => {
+c37('版本号一致性：VERSION/package.json/banner 对齐 3.12.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.11.0'
-    && /3\.11\.0/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.11.0');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.11.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.12.0'
+    && /3\.12\.0/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.12.0');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.12.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.7 汇总 ──
 (async () => {
@@ -5399,15 +5401,15 @@ c38('精度门未破：非主张文本仍被挡在辨别外', (() => {
 })(), 'Fed 公告/播客/官员言论不得因 regulatory-action 新模式进入辨别');
 
 // ── 组 5：版本号一致性（corr-2026-014 同型）────────────────────
-c38('版本号一致性：VERSION/package.json/banner 对齐 3.11.0', (() => {
+c38('版本号一致性：VERSION/package.json/banner 对齐 3.12.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.11.0'
-    && /3\.11\.0/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.11.0');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.11.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.12.0'
+    && /3\.12\.0/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.12.0');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.12.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.8 汇总 ──
 (async () => {
@@ -5628,18 +5630,18 @@ c39('精度门未破：非主张文本与无幅度价格谈论仍被挡在辨别
 })(), 'Fed 公告/播客/无幅度降价谈论/TCO 效率句/官员言论不得因 price-cut 新模式进入辨别');
 
 // ── 组 5：版本号一致性（corr-2026-014 同型）────────────────────
-c39('版本号一致性：五处对齐 3.11.0', (() => {
+c39('版本号一致性：五处对齐 3.12.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs2.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.11.0'
-    && pkg.version === '3.11.0'
-    && rp.includes('文明推演引擎 v3.11.0')      // banner
-    && /version: '3\.11\.0'/.test(pf)          // projection meta
-    && /version: '3\.11\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.11.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.12.0'
+    && pkg.version === '3.12.0'
+    && rp.includes('文明推演引擎 v3.12.0')      // banner
+    && /version: '3\.12\.0'/.test(pf)          // projection meta
+    && /version: '3\.12\.0'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.12.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.9 汇总 ──
 (async () => {
@@ -6001,18 +6003,18 @@ c310('精度门未破：扩桶后非主张文本仍被挡在辨别外', (() => {
 })(), 'Fed 公告/播客/无数量部署谈话/合作公告/免责声明/泛指交易假设句/官员言论不得因扩池与新模式进入辨别');
 
 // ── 组 7：版本号一致性（corr-2026-014 同型）────────────────────
-c310('版本号一致性：五处对齐 3.11.0', (() => {
+c310('版本号一致性：五处对齐 3.12.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs2.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.11.0'
-    && pkg.version === '3.11.0'
-    && rp.includes('文明推演引擎 v3.11.0')      // banner
-    && /version: '3\.11\.0'/.test(pf)          // projection meta
-    && /version: '3\.11\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.11.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.12.0'
+    && pkg.version === '3.12.0'
+    && rp.includes('文明推演引擎 v3.12.0')      // banner
+    && /version: '3\.12\.0'/.test(pf)          // projection meta
+    && /version: '3\.12\.0'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.12.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.10 汇总 ──
 (async () => {
@@ -6321,9 +6323,9 @@ c3111('cron 注入源级：usage-metric 中文标签与上限/披露', (() => {
   if (!fs311.existsSync(p)) return false;
   const sh = fs311.readFileSync(p, 'utf-8');
   return /'usage-metric':\s*'用量\/牵引度指标主张'/.test(sh)
-    && /slice\(0,\s*25\)/.test(sh)
+    && /slice\(0,\s*30\)/.test(sh)
     && /超出注入上限未显示/.test(sh);
-})(), 'hf-cron-fetch.sh 必须含 usage-metric 中文标签、slice(0,25) 与截断披露行');
+})(), 'hf-cron-fetch.sh 必须含 usage-metric 中文标签、slice(0,30) 与截断披露行');
 
 // 13. 精度门未破：Fed 公告/播客/订阅总量/速率上限/无数量部署谈话/
 //     合作公告/免责声明 boilerplate 不得因新形态进辨别。
@@ -6344,18 +6346,18 @@ c3111('精度门未破：非主张文本不因新形态进入辨别', (() => {
 })(), 'Fed 公告/播客/订阅总量/速率上限/无数量部署谈话/合作公告不得因 usage-metric 进辨别');
 
 // ── 组 7：版本号一致性（corr-2026-014 同型）────────────────────
-c3111('版本号一致性：五处对齐 3.11.0', (() => {
+c3111('版本号一致性：五处对齐 3.12.0', (() => {
   const fs311 = require('fs');
   const VERSION = fs311.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs311.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs311.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs311.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.11.0'
-    && pkg.version === '3.11.0'
-    && rp.includes('文明推演引擎 v3.11.0')      // banner
-    && /version: '3\.11\.0'/.test(pf)          // projection meta
-    && /version: '3\.11\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.11.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.12.0'
+    && pkg.version === '3.12.0'
+    && rp.includes('文明推演引擎 v3.12.0')      // banner
+    && /version: '3\.12\.0'/.test(pf)          // projection meta
+    && /version: '3\.12\.0'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.12.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.11 汇总 ──
 (async () => {
@@ -6372,5 +6374,310 @@ c3111('版本号一致性：五处对齐 3.11.0', (() => {
     process.exitCode = 1;
   } else {
     console.log('结论：SEC 备案自报用量指标（席位数/月活/token 吞吐）进模式库（live 实证 3 条句式命中、引擎级 2 条进辨别），subscribers 族与速率上限句精确排除，引号切分修复使 MSFT 条进辨别且 forecast 路径零变化，报告与 cron 注入渲染中文标签。');
+  }
+})();
+
+// ════════════════════════════════════════════════════════════════
+// v3.12 新增断言：商业主张辨别器新增「算力基建承诺/规模主张」形态
+// （compute-infra，新辨别维度）。
+//
+// 背景（2026-10-26 轮全池测量，corr-2026-028 纪律的「未命中条目过堂」）：
+// SKILL.md 的已知边界里还有一整类供给侧主张在库外——算力基建承诺。
+// live 实证（300 条池）：NVDA 8-K「Strengthened a collaboration with
+// CoreWeave to accelerate the buildout of more than 5 gigawatts of AI
+// factories by 2030」与「Announced strategic partnerships ... to
+// mobilize over $500 billion of third-party capital for the buildout
+// of AI infrastructure」、CRWV 8-K「accelerate the build-out of more
+// than 5 GW of AI factories by 2030」、NVIDIA 博客（Kazakhstan/Firebird）
+// 「export license for 45,000 NVIDIA Grace Blackwell GPUs」——扩容前
+// 21 种形态对上述四句全部不命中。adoption 只认趋势主体、deployment-
+// scale 只认人的量化范围、usage-metric 只认产品用量状态，而**算力
+// 承诺**（GW/MW/GPU/资本额）是供给侧最前端的市场信号（电力许可/GPU
+// 交付/资本承诺领先营收数个季度），且有天然结算结构：交付进度、
+// 并网容量、definitive agreements 签署都是可观测事件。
+//
+// 精度设计（v3.0.0c/v3.2/v3.3/v3.6/v3.7/v3.9/v3.10/v3.11 教训：漏报
+// 比误报诚实、没有实证不扩模式）：
+//   ① 三段同句共现（lookahead，任词序不跨句）：建设/承诺动词 + 量化
+//      算力（N GW/MW/GPUs/accelerators，容忍型号名间隔）或量化资本
+//      （$N million/billion/trillion）+ AI 基建锚点；
+//   ② 必须有量化值——"at gigawatt scale"（NVDA 8-K 韩国主权 AI）无
+//      数字不是可证伪主张，不进库；
+//   ③ 动词族不含裸露 accelerate——实测 "revenue ... accelerated to
+//      46%"（MRVL）与 "accelerated computing"（NVDA Q4 亮点）误命中
+//      2 句营收句（候选模式第二轮抓出），"accelerate the buildout"
+//      由 buildout 覆盖；
+//   ④ 资本形态必须有锚点+动词——"raises $16B"/"revenue was $89B ...
+//      Data Center" 不抢 funding/demand 地盘；
+//   ⑤ 算力单位族不含裸 chips（芯片工艺）、不含 users/seats。
+// live 全池实测（300 条）：精确命中 7 句、4 条进引擎候选，25 句精度
+// 回归 0 误报。
+//
+// 本节断言分七组：① live 实证句式命中 + 证伪条件与类目；② 形态族
+// 召回；③ 精度回归；④ 不串台 + has-sample 维护；⑤ 引擎级与端到端
+// 渲染；⑥ cron 注入源级 + 精度门未破；⑦ 版本号一致性。
+// ════════════════════════════════════════════════════════════════
+const v312 = [];
+function c312(name, ok, detail) { v312.push({ name, ok, detail }); }
+
+// ── 组 1：live 实证句式命中 ──
+c312('live 实证：NVDA-CoreWeave 5GW AI factories 命中 compute-infra', (() => {
+  const { discriminateCommercial } = require('./human-future/scripts/commercial-discriminator.js');
+  const r = discriminateCommercial({
+    text: 'Strengthened a collaboration with CoreWeave to accelerate the buildout of more than 5 gigawatts of AI factories by 2030.',
+    source: 'SEC EDGAR',
+  });
+  return r.kind === 'compute-infra'
+    && r.kinds.length === 1 && r.kinds[0] === 'compute-infra'
+    && r.verdict === 'thin-reasoning'
+    && r.evidence.weight === 3                 // SEC EDGAR 采集源归公开财报档（v3.10 同型）
+    && r.reasoning.score === 1                 // has-sample（5 gigawatts），无对照无反例
+    && r.decisionRelevant === true;
+})(), 'NVDA 8-K 的 5GW AI factories 承诺必须命中算力基建形态并按一手备案量化主张对待');
+
+c312('live 实证：NVDA $500B 第三方资本动员命中 compute-infra', (() => {
+  const { discriminateCommercial } = require('./human-future/scripts/commercial-discriminator.js');
+  const r = discriminateCommercial({
+    text: 'Announced strategic partnerships to establish independent compute financing platforms with Apollo, BlackRock, Blackstone, Brookfield, Goldman Sachs and KKR to mobilize over $500 billion of third-party capital for the buildout of AI infrastructure over time, subject to definitive agreements.',
+    source: 'SEC EDGAR',
+  });
+  return r.kind === 'compute-infra'
+    && r.verdict === 'thin-reasoning'
+    && r.evidence.weight === 3
+    && r.reasoning.score === 1                 // has-sample（$500 billion）
+    && r.decisionRelevant === true;
+})(), 'NVDA 8-K 的 $500B 资本动员承诺必须命中算力基建形态（资本+锚点+动词三件套）');
+
+c312('live 实证：Firebird 45,000 GPUs 出口许可命中 compute-infra 且不虚抬', (() => {
+  const { discriminateCommercial } = require('./human-future/scripts/commercial-discriminator.js');
+  const r = discriminateCommercial({
+    text: 'export license for 45,000 NVIDIA Grace Blackwell GPUs.',
+    source: 'NVIDIA Blog',
+  });
+  return r.kind === 'compute-infra'
+    && r.verdict === 'weak-evidence'
+    && r.evidence.weight === 1                 // 厂商博客转述第三方交易，句式自身无归属词，不虚抬（v3.10 Uber 同型）
+    && r.reasoning.score === 1
+    && r.decisionRelevant === false;
+})(), 'NVIDIA 博客的 45,000 GPUs 出口许可必须命中但按厂商一手公告对待（无出处(1)，不虚抬）');
+
+c312('live 实证：CRWV 8-K 5GW build-out 命中 compute-infra', (() => {
+  const { discriminateCommercial } = require('./human-future/scripts/commercial-discriminator.js');
+  const r = discriminateCommercial({
+    text: 'CoreWeave strengthened its relationship with NVIDIA to accelerate the build-out of more than 5 GW of AI factories by 2030.',
+    source: 'SEC EDGAR',
+  });
+  return r.kind === 'compute-infra'
+    && r.verdict === 'thin-reasoning'
+    && r.evidence.weight === 3
+    && r.reasoning.score === 1
+    && r.decisionRelevant === true;
+})(), 'CRWV 8-K 的 5GW build-out 承诺必须命中算力基建形态');
+
+c312('专属证伪条件与类目映射（源级断言——兜底类目同为 market_claims）', (() => {
+  const fs312 = require('fs');
+  const src = fs312.readFileSync(require('path').join(__dirname, 'human-future/scripts/commercial-discriminator.js'), 'utf-8');
+  return /'compute-infra':\s*'观察到第三方算力\/电力跟踪/.test(src)
+    && /'compute-infra':\s*'market_claims'/.test(src)
+    && /definitive agreements/.test(src);      // 证伪路径含「意向书未转化为建设」这条 live 实证裂缝
+})(), 'compute-infra 必须有专属证伪路径（交付/许可/资本落实）与类目映射（行为断言抓不到同域摘除，走源级）');
+
+// ── 组 2：形态族召回八形 ──
+c312('形态族召回：建设动词 × 量化算力/资本八形', (() => {
+  const { discriminateCommercial } = require('./human-future/scripts/commercial-discriminator.js');
+  const forms = [
+    'Firebird has secured a U.S. export license for 45,000 NVIDIA Grace Blackwell GPUs.',
+    'Kazakhtelecom has already deployed 400 NVIDIA H200 and 480 NVIDIA B300 GPUs in Astana and Almaty.',
+    'NVIDIA announced plans to expand its data center capacity to 2 gigawatts by 2028.',
+    'The hyperscaler committed $10 billion to build new AI infrastructure in Texas.',
+    'Microsoft is investing $5 billion to construct additional data centers for AI training.',
+    'A planned second phase would bring total AI infrastructure capacity to approximately 500 megawatts.',
+    'The 300 megawatt facility is under construction at Data Center Valley, targeting commercial launch in Q3 2027.',
+    'Partners will mobilize $2 billion of capital for the buildout of AI factories in the region.',
+  ];
+  return forms.every(f => {
+    const r = discriminateCommercial({ text: f, source: 'Test' });
+    return r.kind === 'compute-infra';
+  });
+})(), 'secured/deployed/expand/committed/investing/bring/under construction/mobilize 八形必须全部命中');
+
+// ── 组 3：精度回归 25 句 ──
+c312('精度回归 26 句：营收/指引/融资/订阅/售罄/监管/专家/scaling/资助/工艺句不命中', (() => {
+  const { COMMERCIAL_CLAIM_PATTERNS } = require('./human-future/scripts/commercial-discriminator.js');
+  const p = COMMERCIAL_CLAIM_PATTERNS.find(x => x.id === 'compute-infra');
+  if (!p) return false;   // 模式被摘除（反向验证）时精确失败，不抛 TypeError（v3.11 教训）
+  const neg = [
+    'Rapidly scaling online storage to serve over 1 billion ChatGPT users (Part II)',
+    'Highlights Data Center • Second-quarter revenue was $89.0 billion, up 18% from the previous quarter and up 117% from a year ago.',
+    'Highlights Data Center • Fourth-quarter revenue was a record $62.3 billion, up 22% from the previous quarter and up 75% from a year ago, driven by the major platform shifts — accelerated computing and AI.',
+    'NVIDIA is not assuming any Data Center compute revenue from China in its outlook.',
+    'NIST Awards More Than $1.7 Million to Support Cybersecurity Workforce Development Across 8 States',
+    'Each wafer contains more than 400 chips, with each chip housing up to 300 tiny ring-shaped resonators.',
+    'Expanded Korea’s AI factory ecosystem through strategic partnerships to build sovereign AI infrastructure at gigawatt scale.',
+    'For the third quarter of 2026, AMD expects revenue to be approximately $13 billion, plus or minus $300 million.',
+    'Announced a multiyear technology partnership with SK hynix to advance next-generation memory for the global AI factory buildout.',
+    'During the third fiscal quarter, the Company generated $14.2 billion in cash from operations and spent $0.5 billion on capital expenditures.',
+    'Revolut is rebuilding its technology stack on a single foundation model PRAGMA, powered by NVIDIA accelerated computing.',
+    'Marvell delivered record second-quarter fiscal 2027 revenue of $2.739 billion, up 37% year over year, driven by continued strong demand across our Data Center portfolio, where revenue growth accelerated to 46% year over year.',
+    'Google Cloud saw a meaningful acceleration in growth as revenues increased 82% to $24.8 billion, led by an increase in Google Cloud Platform (GCP) across enterprise AI Solutions and enterprise AI Infrastructure.',
+    // [v3.12 R7 空转修复] 无小数点的营收句：$46 billion 无句点，动词段不被
+    // 小数点切断——动词族加回裸露 accelerate 时这句会误命中（证明动词门
+    // 有效）。含小数点的两句（$62.3/$2.739）跨不过小数点，证明不了该门。
+    'Data Center revenue accelerated to a record $46 billion in the third quarter, driven by enterprise AI demand.',
+    'Google Cloud saw a continued increase in customer demand as revenues increased 48% to $17.7 billion, led by an increase in Google Cloud Platform (GCP) across enterprise AI Infrastructure.',
+    'OpenAI says it will no longer train its AI models on the live internet, citing significant risks.',
+    'Uber is rolling out ChatGPT Work to more than 30,000 employees.',
+    'Microsoft 365 Copilot reached over 30 million paid seats.',
+    'Gemini models now process 22 billion API tokens per minute and the Gemini App has 950 million monthly active users.',
+    'Data Center Late Fees Hit $5 Million or More Per Day, Spawning New Insurance.',
+    'DeepSeek Raises Nearly $16 billion in Second Funding Round.',
+    'ORCL intends to raise up to $50 billion in debt financing.',
+    'Instacart Is Exploring a Sale.',
+    'U.S. Treasury Proposes to Widen Outbound Investment Restrictions for China and Other Countries.',
+    'AI delivers \'zero financial payoff\' to most companies, Apollo economist says.',
+    'AWS Largely Sold Out Of Capacity Into 2028, Jassy Says.',
+  ];
+  return neg.every(s => !p.re.test(s));
+})(), '营收/指引/融资/订阅/售罄/监管/专家判断/工程 scaling/政府资助/芯片工艺/无数量规模级句全部不得命中');
+
+// ── 组 4：不串台 + has-sample 维护 ──
+c312('不串台：现有 kind 原句 kind 不变、kinds 不含 compute-infra', (() => {
+  const { discriminateCommercial } = require('./human-future/scripts/commercial-discriminator.js');
+  const cases = [
+    ['Uber is rolling out ChatGPT Work to more than 30,000 employees.', 'deployment-scale'],
+    ['Microsoft 365 Copilot reached over 30 million paid seats.', 'usage-metric'],
+    ['Data Center Late Fees Hit $5 Million or More Per Day, Spawning New Insurance.', 'cost-signal'],
+    ['DeepSeek Raises Nearly $16 billion in Second Funding Round.', 'funding'],
+    ['AWS Largely Sold Out Of Capacity Into 2028, Jassy Says', 'capacity'],
+    ['Anthropic launches Claude Fable 5.1 and says it\'s up to 45 percent cheaper for agentic work', 'price-cut'],
+  ];
+  return cases.every(([s, k]) => {
+    const r = discriminateCommercial({ text: s, source: 'Test' });
+    return r.kind === k && !r.kinds.includes('compute-infra');
+  });
+})(), '新模式追加在模式库末尾，现有 kind 分类与 kinds 集合不得被串台');
+
+c312('has-sample 维护：算力单位计入样本（v3.10 同型）', (() => {
+  const { discriminateCommercial } = require('./human-future/scripts/commercial-discriminator.js');
+  const r1 = discriminateCommercial({
+    text: 'Strengthened a collaboration with CoreWeave to accelerate the buildout of more than 5 gigawatts of AI factories by 2030.',
+    source: 'SEC EDGAR',
+  });
+  const r2 = discriminateCommercial({
+    text: 'A planned second phase would bring total AI infrastructure capacity to approximately 500 megawatts.',
+    source: 'SEC EDGAR',
+  });
+  return r1.reasoning.met.includes('has-sample') && r1.reasoning.score === 1
+    && r2.reasoning.met.includes('has-sample');
+})(), 'GW/MW/GPU 数是算力承诺主张的样本，不补则推理分恒 0（有数字却判不出样本）');
+
+// ── 组 5：引擎级 + 端到端渲染 ──
+c312('引擎级：四条算力基建主张进辨别（byKind compute-infra:4）', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const items = [
+    { title: 'NVIDIA CORP (NVDA) 8-K 业绩发布 · 2026-05-20',
+      body: 'Highlights Data Center • Strengthened a collaboration with CoreWeave to accelerate the buildout of more than 5 gigawatts of AI factories by 2030. Revenue was a record $44.1 billion, up 12% from the previous quarter.',
+      description: '', source: 'SEC EDGAR', bucket: 'sec_filings',
+      pubDate: 'Wed, 20 May 2026 00:00:00 GMT', link: 'https://www.sec.gov/nvda-q2', origin: 'live' },
+    { title: 'NVIDIA CORP (NVDA) 8-K 业绩发布 · 2026-08-26',
+      body: 'Highlights Data Center • Announced strategic partnerships to establish independent compute financing platforms with Apollo, BlackRock, Blackstone, Brookfield, Goldman Sachs and KKR to mobilize over $500 billion of third-party capital for the buildout of AI infrastructure over time, subject to definitive agreements. Second-quarter revenue was $46.7 billion.',
+      description: '', source: 'SEC EDGAR', bucket: 'sec_filings',
+      pubDate: 'Wed, 26 Aug 2026 00:00:00 GMT', link: 'https://www.sec.gov/nvda-q3', origin: 'live' },
+    { title: 'CoreWeave, Inc. (CRWV) 8-K 业绩发布 · 2026-05-07',
+      body: 'We strengthened our relationship with NVIDIA to accelerate the build-out of more than 5 GW of AI factories by 2030. CoreWeave will provide forward-looking guidance in connection with this quarterly earnings announcement on its earnings call.',
+      description: '', source: 'SEC EDGAR', bucket: 'sec_filings',
+      pubDate: 'Wed, 07 May 2026 00:00:00 GMT', link: 'https://www.sec.gov/crwv', origin: 'live' },
+    { title: 'Kazakhstan Expands Compute for Its AI Future',
+      body: 'The Infrastructure Layer Is Scaling The visits coincided with a signing ceremony marking Firebird\'s investment agreement with the government of Kazakhstan, held at the presidential palace. Building on its first AI factory in Armenia, Firebird is expanding into Kazakhstan, where it has secured a U.S. export license for 45,000 NVIDIA Grace Blackwell GPUs. The first phase is under construction with Kazakhtelecom at Data Center Valley, targeting commercial launch in the third quarter of 2027.',
+      description: '', source: 'NVIDIA Blog', bucket: 'frontier_models',
+      pubDate: 'Fri, 23 Oct 2026 02:00:13 GMT', link: 'https://nvidia.blog/kz', origin: 'live' },
+  ];
+  const inst = new ProjectionEngine({});
+  inst.signals = { totalItems: items.length, domains: [], undomained: 0, dateRange: null, items };
+  const cd = inst.buildCommercialDiscrimination();
+  if (!cd.available || !cd.results) return false;   // 模式被摘除时无 candidates，精确失败不抛 TypeError
+  const ci = cd.results.filter(r => r.kind === 'compute-infra');
+  const nvdaGw = ci.find(r => /gigawatts/.test(r.claimSentence));
+  const nvdaCap = ci.find(r => /\$500 billion/.test(r.claimSentence));
+  const kz = ci.find(r => /export license/.test(r.claimSentence));
+  return cd.available === true && cd.audited === 4
+    && ci.length === 4
+    && nvdaGw && nvdaGw.evidence.weight === 3 && nvdaGw.decisionRelevant === true
+    && nvdaCap && nvdaCap.evidence.weight === 3 && nvdaCap.decisionRelevant === true
+    && kz && kz.evidence.weight === 1 && kz.decisionRelevant === false;   // 厂商博客不虚抬
+})(), 'NVDA×2/CRWV/Kazakhstan 四条算力承诺必须进辨别，一手备案归公开财报(3)、厂商博客不虚抬');
+
+c312('端到端：formatReport 渲染「类型: 算力基建承诺/规模主张」行', (() => {
+  const { ProjectionEngine, formatReport } = require('./scripts/project-future.js');
+  const item = {
+    title: 'NVIDIA CORP (NVDA) 8-K 业绩发布 · 2026-05-20',
+    description: 'Strengthened a collaboration with CoreWeave to accelerate the buildout of more than 5 gigawatts of AI factories by 2030.',
+    body: '', source: 'SEC EDGAR', bucket: 'sec_filings',
+    pubDate: 'Wed, 20 May 2026 00:00:00 GMT', domains: ['market_claims'],
+    link: 'https://www.sec.gov/nvda-q2', origin: 'live' };
+  const md = formatReport(new ProjectionEngine({ newsData: { sec_filings: { news: [item] } } }).generate());
+  const seg = md.split('## 商业主张辨别')[1] || '';
+  // 只认渲染出来的「类型:」行（note 文本同字符串会喂饱泛匹配，v3.2 教训）
+  return seg.includes('类型: 算力基建承诺/规模主张 | 来源: SEC EDGAR')
+    && seg.includes('证据: 公开财报/公告(3)')
+    && seg.includes('证伪条件:');
+})(), '报告必须渲染「类型: 算力基建承诺/规模主张 | 来源: SEC EDGAR」与「证据: 公开财报/公告(3)」行（只认渲染行）');
+
+// ── 组 6：cron 注入源级 + 精度门未破 ──
+c312('cron 注入源级：compute-infra 中文标签与上限/披露', (() => {
+  const fs312 = require('fs');
+  const p = require('path').join(require('os').homedir(), '.hermes/scripts/hf-cron-fetch.sh');
+  if (!fs312.existsSync(p)) return false;
+  const sh = fs312.readFileSync(p, 'utf-8');
+  return /'compute-infra':\s*'算力基建承诺\/规模主张'/.test(sh)
+    && /slice\(0,\s*30\)/.test(sh)
+    && /超出注入上限未显示/.test(sh);
+})(), 'hf-cron-fetch.sh 必须含 compute-infra 中文标签、slice(0,30) 与截断披露行');
+
+c312('精度门未破：营收/工程 scaling/政府资助/无数量规模级句不因新形态进辨别', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const noise = [
+    { title: 'Highlights Data Center • Second-quarter revenue was $89.0 billion, up 18% from the previous quarter.', description: '', body: '', source: 'SEC EDGAR', bucket: 'sec_filings', pubDate: 'Wed, 26 Aug 2026 00:00:00 GMT', link: 'https://www.sec.gov/a', origin: 'live' },
+    { title: 'Rapidly scaling online storage to serve over 1 billion ChatGPT users (Part II)', description: '', body: '', source: 'OpenAI News', bucket: 'frontier_models', pubDate: 'Wed, 30 Sep 2026 00:00:00 GMT', link: 'https://openai.com/b', origin: 'live' },
+    { title: 'NIST Awards More Than $1.7 Million to Support Cybersecurity Workforce Development Across 8 States', description: '', body: '', source: 'NIST News', bucket: 'frontier_models', pubDate: 'Wed, 30 Sep 2026 00:00:00 GMT', link: 'https://nist.gov/c', origin: 'live' },
+    { title: 'Expanded Korea’s AI factory ecosystem through strategic partnerships to build sovereign AI infrastructure at gigawatt scale.', description: '', body: '', source: 'SEC EDGAR', bucket: 'sec_filings', pubDate: 'Wed, 20 May 2026 00:00:00 GMT', link: 'https://www.sec.gov/d', origin: 'live' },
+    { title: 'Federal Reserve issues FOMC statement', description: '', body: '', source: 'Federal Reserve', bucket: 'economy', pubDate: 'Wed, 30 Sep 2026 00:00:00 GMT', link: 'https://federalreserve.gov/e', origin: 'live' },
+    { title: 'LWiAI Podcast #258 - Opus 5.5, Sol and Luna, Muse, DeepSeek-V4.1-Flash', description: '', body: '', source: 'Last Week in AI', bucket: 'business', pubDate: 'Wed, 30 Sep 2026 00:00:00 GMT', link: 'https://lastweekin.ai/f', origin: 'live' },
+  ];
+  const inst = new ProjectionEngine({});
+  inst.signals = { totalItems: noise.length, domains: [], undomained: 0, dateRange: null, items: noise };
+  const cd = inst.buildCommercialDiscrimination();
+  return cd.available === false || cd.results.every(r => r.kind !== 'compute-infra');
+})(), '营收句/工程 scaling/政府资助/无数量规模级句/Fed 公告/播客不得因 compute-infra 进辨别');
+
+// ── 组 7：版本号一致性（corr-2026-014 同型）────────────────────
+c312('版本号一致性：五处对齐 3.12.0', (() => {
+  const fs312 = require('fs');
+  const VERSION = fs312.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
+  const pkg = JSON.parse(fs312.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
+  const rp = fs312.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
+  const pf = fs312.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
+  return VERSION === '3.12.0'
+    && pkg.version === '3.12.0'
+    && rp.includes('文明推演引擎 v3.12.0')      // banner
+    && /version: '3\.12\.0'/.test(pf)          // projection meta
+    && /version: '3\.12\.0'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.12.0，防 corr-2026-014 版本漂移复发');
+
+// ── v3.12 汇总 ──
+(async () => {
+  const results = await Promise.all(v312.map(c => Promise.resolve(c.ok)));
+  let f = 0;
+  v312.forEach((c, i) => {
+    const ok = results[i];
+    if (!ok) f++;
+    console.log(`${ok ? '✓' : '✗'} ${c.name}${ok ? '' : '  —— ' + c.detail}`);
+  });
+  console.log(`\nv3.12: ${v312.length - f} 通过, ${f} 失败, 共 ${v312.length} 个`);
+  if (f > 0) {
+    console.log('结论：算力基建承诺维度不完整（命中/证伪/召回/精度/接入/端到端/版本有缺）。');
+    process.exitCode = 1;
+  } else {
+    console.log('结论：算力基建承诺（GW/MW/GPU/资本额，建设动词+量化+锚点三段同句共现）进模式库（live 实证 7 句命中、引擎级 4 条进辨别），营收/融资/订阅/工程 scaling/政府资助/无数量规模级句精确排除，报告与 cron 注入渲染中文标签。');
   }
 })();
