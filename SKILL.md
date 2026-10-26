@@ -1,560 +1,57 @@
 ---
 name: human-future-v2
-title: "人类未来 · 文明推演引擎 v3.13.0"
-version: "3.13.0"
+title: "人类未来 · 文明推演引擎 v3.14.0"
+version: "3.14.0"
 description: |-
-  人类未来技能 v3.13.0 — 财报指引自动结算指标扩展（已知边界推进，非新辨别
-  维度）：v3.5.1 白纸黑字的已知边界「opex/tax/EPS 等指标无实际值来源，相关
-  指引保持 pending」本轮按 live 实证推进（2026-10-26 从 SEC EDGAR 实抓原文
-  驱动）——台账 18 条到期未结算的 earnings_guidance 里 10 条有容差/区间
-  可结算，卡点在实际值侧而非指引侧：MRVL 亮点段只在标题 bullet 陈述毛利率
-  （"Q2 Gross Margin: 53.1% GAAP gross margin"，无 was/were 连接词，旧正则
-  整个不命中）、营收在 "Q2 Net Revenue: $2.739 billion" 冒号 bullet 形态、
-  EPS 在 "GAAP net income … was $308.0 million, or $0.33 per diluted share"
-  形态、AMZN 营业利润在 "Operating income increased to $27.5 billion" 形态。
-  且 GAAP/非 GAAP 不分口径时同财季同指标天然多值，v3.5 起一律判歧义跳过，
-  MRVL 6 条到期毛利率/EPS 因此永远 pending。本轮：① extractActuals 扩指标
-  族（营收冒号形态/毛利率 bullet/EPS/营业利润），每条实际值带口径标记
-  （gaapBasisOf：双口径同值/非GAAP/GAAP/未限定四态），每（族,口径）只收
-  第一个+全年值守卫（NVDA 02-25 实测旧 matchAll 把全年 71.1% 毛利率混进
-  FY26Q4 key，corr-2026-030；守卫窗口前后截到句边界，不跨句误杀季度值）；
-  ② 指引侧补 settleMetric（句推导，EPS→diluted eps；名词级 metric 对 EPS
-  是 income 配不上）+ gaapBasis（从原文名词前限定词推——14 字符回扩窗口
-  会把 "GAAP and non-GAAP" 切成 "non-GAAP"，句子里口径已丢；表格形态一律
-  未限定，MU 双列指引表实测）；③ 结算层口径分 key 配对（BASIS_FALLBACK：
-  gaap→[gaap, gaap+non-gaap, '']，双口径同值句对两边都有效；未限定查裸
-  key，多值判歧义不设法规避）；④ 句索引三 key（逐字/前 60 字符/名词对齐）
-  × 备案作用域（claim id 内备案号——同句连续备案指引不同财季，AMD live
-  实证）+ 名词对齐 key（旧抽取把 "GAAP" 切成 "P" 的 artifact claim 仍可
-  配对）；⑤ 同轮修一个端到端断链（corr-2026-031）：settle() 只落
-  sources/summary/settledBy，project-future 传的 metric/gaapBasis 被丢——
-  dedupeSameObligation 证据 key 读的正是这两个字段，不修则「同财季不同
-  指标不并成一个义务」在 live 数据上永不生效；dedup 证据 key 同轮补
-  metric+口径维度（7 条新结算曾被并成 1 个义务，Brier 样本失真）。live
-  端到端：到期未结算 18 条 → 新结算 7 条（MRVL 毛利率×4 全带内命中、MRVL
-  EPS×2 一命中一低于带、AMZN 营业利润 beat 带外），台账已结算 11→18 条，
-  去重后 Brier 样本 11 个义务、brier 0.2548、兑现率 0.455；最终代码复跑
-  幂等 0 新结算、跳过 4（AMD 点值无容差×2 + MU 口径未限定歧义×2）、
-  pending 25。仍在库外（如实）：opex/税率实际值在备案亮点段无可直读句子
-  或无容差指引。测试 328→341 项；3 轮反向验证全部精确失败（摘除冒号营收
-  形态→1/摘除 settle() 证据落账→1/恢复旧夹具→1）。历史：v3.12 算力基建
-  承诺/规模主张（新辨别维度）；v3.11 用量/牵引度指标主张+引号切分修复；
-  v3.10 一手信源桶接入+部署规模主张；v3.9 价格下调主张；v3.8 监管行动主张；
-  v3.7 专家/机构判断主张；v3.6 成本/价格信号主张；v3.5.1 结算链路修复
-  （维护）；v3.5 财报指引自动结算；v3.4 财报指引+SEC EDGAR；v3.3.1
-  survey-finding 精度修复（维护）；v3.3 并购/交易过程主张；v3.2.2/3.2.1
-  断链修复；v3.2 产能/供给约束主张；v3.1.1 口径错位精度修复；v3.1 接入
+  人类未来技能 v3.14.0 — META CFO 评论式指引形态进库（已知边界推进：区间
+  指引语法 + bullet 营收实际值 + 全年期间修复）：审计实测（corr-2026-032）
+  META 自 v3.4 起就在 14 家公司名单里，三份备案（10-21/07-29/04-29）的
+  CFO Outlook Commentary 段每份给 3-4 条量化区间指引，但三条旧指引形态
+  全部不命中——form A 要「指标+is/are expected to be」、form B 要动词与
+  指标名词紧邻，而 META 是「We expect fourth quarter 2026 total revenue
+  to be in the range of $73-76 billion」（动词在前+期间短语间隔+连字符
+  区间）。三个版本零条 META 指引进台账，「无数值指引」的描述与 MSFT/
+  GOOGL「只在电话会口头给指引」的如实记录混在同一句里——在窗公司≠
+  采到的指引。本轮（2026-10-26 从 SEC EDGAR 实抓原文驱动）：①
+  extractGuidance 新增 form D（动词+间隔词≥1+指标+区间标记；间隔词类
+  含连字符——NVDA「expects GAAP and non-GAAP tax rates」；值尾部小数点
+  容差——「between 16.0% and 18.0%」的小数点不是句读），区间语法扩两种：
+  连字符美元区间（$73-76 billion 两端同单位）与单百分号区间（between
+  15-17%），「between X% and Y%」单位组补 %（NVDA 全年税率）；② 期间
+  形态补两个全年形态（锚词在年份前「expect full year 2026」/裸年份
+  「anticipate 2026 capital expenditures」），顺带修复 ANNUAL_PERIOD_
+  PATTERN 对「full year fiscal 2027」不命中的隐藏错配——NVDA 全年税率
+  指引自 v3.4 起被错记成 FY27Q1（dueOn 2026-06-14 而非 2027-03-17，
+  corr-2026-033；pending 把错位藏了三个版本）；③ extractActuals 新增
+  META 亮点 bullet 营收形态——实际值句「• Revenue – Revenue was
+  $64.60 billion」在汇总表之后、超出 lead=1600 窗口（live 实测 10-21
+  @2088/04-29 @2153；07-29 @1343 在窗口内所以旧模式抽得到，另两份抽不到，
+  到期营收指引找不到对账依据）；④ 多季度指引守卫——「tax rate for the
+  remaining quarters of 2026」覆盖多财季不适用单期结算，句内期间短语缺
+  季度词会被 rightmost-wins 蹭前句 capex 句的全年标记错记成 FY2026 全年，
+  跳过不设法规避；⑤ 同轮修一个端到端断点：EDGAR 指引 claim 额度
+  40→70 并加截断披露——live 实测 61 条 claim，旧上限把 ticker 顺序尾部
+  的 META/AMZN/GOOGL/ORCL 整批切掉（辨别了但看不见/登记不了/结算不了，
+  v3.10 候选桶同型纪律）。live 端到端：10 条 META 指引登记，Q2 营收
+  区间 $58-61B vs 实际 $60.80B 带内命中（到期结算，Brier 义务样本
+  11→12、brier 0.2635、兑现率 0.5），Q3/Q4 营收与全年费用/capex/税率
+  按到期门与年度实际值边界 pending；NVDA 全年税率×3（三份备案）期间
+  归位 FY2027 全年；代码复跑幂等 0 新结算。已知边界（如实）：全年
+  费用/capex 实际值需从 Q4 备案「季度+全年」双值句抽全年值+annual key
+  索引（下轮候选）；税率实际值在备案亮点段无可直读句；opex 指引全是
+  点值无容差。测试 341→350 项；6 轮反向验证全部精确失败（摘除 form D
+  →3/摘除 bullet 营收形态→1/恢复旧年度期间正则→2/摘除多季度守卫→1/
+  摘除连字符美元区间→1/摘除单百分号区间→1）。历史：v3.13 财报指引
+  结算指标扩展（已知边界推进）；v3.12 算力基建承诺/规模主张（新辨别
+  维度）；v3.11 用量/牵引度指标主张+引号切分修复；v3.10 一手信源桶
+  接入+部署规模主张；v3.9 价格下调主张；v3.8 监管行动主张；v3.7 专家/
+  机构判断主张；v3.6 成本/价格信号主张；v3.5.1 结算链路修复（维护）；
+  v3.5 财报指引自动结算；v3.4 财报指引+SEC EDGAR；v3.3.1 survey-finding
+  精度修复（维护）；v3.3 并购/交易过程主张；v3.2.2/3.2.1 断链修复；
+  v3.2 产能/供给约束主张；v3.1.1 口径错位精度修复；v3.1 接入
   self-correction-ledger；v3.0.0c 商业段断链修复；v2.17 接入 GJOpen；
   v2.16 基准概率断链修复；v2.15 参考文本单列；v2.14 sitemap 真实发布
   时间；v2.13 停止假推演。
-  历史：v3.12 商业主张辨别器新增「算力基建承诺/规模主张」形态
-  （新辨别维度）：
-  live 实证（2026-10-26 轮 300 条池，corr-2026-028 纪律的全池测量「未命中
-  条目过堂」——sec_filings 的 8-K highlights 段与 frontier_models 的厂商
-  博客）：「accelerate the buildout of more than 5 gigawatts of AI
-  factories by 2030」（NVDA/CRWV 备案）、「mobilize over $500 billion
-  of third-party capital for the buildout of AI infrastructure」（NVDA
-  备案）、「export license for 45,000 NVIDIA Grace Blackwell GPUs」
-  （NVIDIA 博客 Kazakhstan/Firebird）——扩容前 21 种形态全部不命中。
-  adoption-claim 只认「趋势主体」、deployment-scale 只认「部署事件+人的
-  量化范围」、usage-metric 只认「产品用量状态」，而**算力基建承诺**
-  （GW/MW/GPU/资本额）整条在库外——它是供给侧最前端的市场信号（电力
-  许可/GPU 交付/资本承诺领先营收数个季度），且有天然结算结构：交付
-  进度、并网容量、definitive agreements 签署都是可观测事件。新 kind
-  compute-infra：三段同句共现（lookahead 保证任词序、不跨句）——建设/
-  承诺动词（buildout/expands/mobilize/deploy/invest/commit/secured/
-  license/commission/construct/bring/under construction/commercial
-  launch）+ 量化算力（N GW/MW/gigawatts/megawatts/GPUs/accelerators，
-  容忍 NVIDIA 型号名间隔）或量化资本（$N million/billion/trillion）
-  + AI 基建锚点（AI factory/AI infrastructure/data center/compute/
-  GPU/NVIDIA…）。精度纪律（v3.0.0c/v3.2/v3.3/v3.6/v3.7/v3.9/v3.10/
-  v3.11：漏报比误报诚实、没有实证不扩模式）：① 必须有量化值——"build
-  sovereign AI infrastructure at gigawatt scale"（NVDA 备案，韩国
-  主权 AI）无数字不进库；② 动词族不含裸露 accelerate——候选模式第一轮
-  实测 "revenue … accelerated to 46%"（MRVL 8-K）与 "accelerated
-  computing"（NVDA Q4 亮点段）误命中 2 句营收句（改 lookahead 后
-  这两句因金额含小数点跨不过段，但无小数点的营收句照样误命中，
-  动词门必须留），"accelerate the buildout" 由 buildout 动词本身
-  覆盖；③ 资本形态必须有锚点+动词——
-  "raises $16B"（融资）与 "revenue was $89.0B … Data Center"（营收）
-  不抢 funding/demand 地盘；④ 算力单位族不含裸 chips（芯片工艺）、
-  不含 users/seats。专属证伪路径（第三方算力/电力跟踪的交付进度或
-  规模不符、基建未按主张时点落地、「承诺」实为未签署最终协议的意向
-  书）；类目 market_claims；报告与 cron 注入标签「算力基建承诺/规模
-  主张」。同轮维护（不单独涨号）：has-sample 名词组补算力单位（v3.10
-  同型——算力承诺的样本就是 GW/MW/GPU 数与资本额，不补则推理分恒 0）；
-  sec_filings 候选桶 8→10（新维度进池后候选 10 条，8 会把尾部 $64B
-  server orders 与 PLTR 营收主张静默切掉）；渲染/注入上限 25→30
-  （audited 27 超旧上限 25，不静默切尾）。live 端到端：商业辨别段
-  23→27 条，byKind 新增 compute-infra:4——NVDA $500B 与 5GW 两条判
-  推理单薄/公开财报/公告(3)/推理 1/3、decisionRelevant；CRWV 5GW 判
-  结构完整/公开财报/公告(3)/推理 2/3、decisionRelevant；NVIDIA 博客
-  Firebird 45,000 GPUs 判 证据不足/无出处(1)/推理 1/3、不虚抬（厂商
-  博客句式自身无归属词，v3.10 Uber 条同型）；公开财报/公告证据档
-  8→11 条；decisionRelevant 10→13 条；原 12 种 kind 计数逐一不变
-  （零串台零丢失）。测试 314→328 项；8 轮反向验证全部精确失败（摘除
-  模式→9/摘除证伪条件→1/摘除类目映射→1 源级/摘除报告 KIND_CN→1/
-  摘除注入 KIND_CN→1/去量化值要求→3/动词族加回 accelerate→1/摘除
-  has-sample 算力单位→4）。
-  历史：v3.11 — 商业主张辨别器新增「用量/牵引度指标主张」形态
-  （新辨别维度）+ 同型切分修复（引号嵌套不断句）：
-  live 实证（2026-10-26 轮 300 条池，sec_filings 桶）：「Microsoft 365
-  Copilot reached over 30 million paid seats」（MSFT 2026-07-29 备案）、
-  「the Gemini App has 950 million monthly active users」「Gemini models
-  now process 22 billion API tokens per minute」（GOOGL 2026-07-22 备案）、
-  「grown to over 750 million monthly active users」（GOOGL 2026-02-04
-  备案）——扩容前 20 种形态全部不命中。adoption-claim 只认「趋势主体」
-  （enterprises are adopting…）、deployment-scale 只认「部署事件+量化
-  范围」（rolling out to 30,000 employees），而**产品用量状态**（厂商
-  在 SEC 备案里自报的席位数/月活/token 吞吐）整条在库外——它是客户采用
-  域最硬的第一方证据，且有天然结算结构：下一期备案同指标是新值，可对账。
-  新 kind usage-metric：用量状态动词（has/have/reached/grown to/
-  process…）+ 量化值 + 用量指标名词（(monthly|weekly|daily) active
-  users / paid seats / (api) tokens per minute / api calls）。精度纪律
-  （v3.0.0c/v3.2/v3.3/v3.6/v3.7/v3.9/v3.10：漏报比误报诚实、没有实证
-  不扩模式）：① 必须「量化值+用量指标名词」两件套；② 指标名词族不认
-  subscribers——GOOGL「paid subscriptions has now reached 350 million」
-  （YouTube/Google One 驱动）是订阅总量不是 AI 用量，FLI「50,000+
-  subscribers」是邮件列表 boilerplate，Suno「2 million paying
-  subscribers」是音乐服务；③ 必须有用量状态动词——「API supports
-  128k tokens per minute」是速率上限不是用量，基础设施 scaling（serve
-  1 billion users）同型不收；④ 只认「数值在前」语序——名词在前语序
-  （"monthly active users reached 950 million"）会放行 "apps with
-  monthly active users exceeding 100,000" 类抽样条件误报，留作已知
-  边界。专属证伪路径（下一期同口径自报值低于主张值/第三方用量估算
-  不符/口径变化）；类目 market_claims；报告与 cron 注入标签
-  「用量/牵引度指标主张」。同轮同型修复（配套）：句末标点后容忍一个
-  收尾引号再切句——SEC 备案正文把多条引言拼成一段时
-  `transformation." "We delivered…` 的句点在引号内，旧切分不断句，
-  含用量句的整段被拼成 443 字超出 400 字候选窗，MSFT 条整条不进辨别
-  （live 实证；forecast 路径同型两处同步修，实测 forecast 结果零变化）。
-  live 端到端：商业辨别段 20→23 条，byKind 新增 usage-metric:2——MSFT
-  条判 结构完整/公开财报/公告(3)/推理 2/3、decisionRelevant；GOOGL 条
-  判 推理单薄/公开财报/公告(3)/推理 1/3、decisionRelevant（一手备案
-  量化主张，证据档首次由用量指标触发）；渲染/注入上限同步 20→25 /
-  16→25 并加截断披露（audited 23 > 旧上限 20，不静默切尾）。测试
-  299→314 项；8 轮反向验证全部精确失败（摘除模式→10/摘除证伪条件→1/
-  摘除类目映射→1 源级/摘除报告 KIND_CN→1/摘除注入 KIND_CN→1/恢复旧
-  切分→2/名词族加 subscribers→1/动词族加 supports→2）。历史：v3.10
-  — 商业主张辨别接入一手信源（SEC 备案 + 厂商一手公告桶）+ 新辨别
-  维度「部署规模主张」（新辨别维度）：
-  商业辨别的候选池自 v3.0.0 起只有 business/economy 两个媒体二手桶——两个
-  一手桶从来不进辨别：① sec_filings（SEC EDGAR 备案，v3.4 起采集）：
-  「公开财报/公告(3)」证据档自 v3.0.0c 起只为「文本里提到 filing/announced」
-  设计，从来没有真实财报能触发它；备案里的量化主张（"Google Cloud saw a
-  continued increase in customer demand as revenues increased 48% to $17.7
-  billion"、"intent to raise up to $50 billion"、"Closed 206 deals of at
-  least $1 million"）整条看不见；② frontier_models（厂商一手公告，12 个
-  源）：具名部署主张（"Uber is rolling out ChatGPT Work to more than
-  30,000 employees"）与调查研究（"survey of almost 11,000 US adults"）都在
-  这个桶里，而 adoption-claim 只认「趋势主体」（enterprises are adopting…），
-  具名主体的量化部署整个在库外。v3.10 两件事：① 候选池扩到四桶
-  （business 12 / sec_filings 8 / frontier_models 10 / economy 6，business
-  仍第一优先）；public-filing 证据档同轮扩展为认 SEC EDGAR 采集源（与
-  v3.8 政府机构一手文书标记同型，非该来源不虚抬）；② 新 kind
-  deployment-scale（部署规模主张）：部署/扩张动词 + 量化范围（rolling out
-  to 30,000 employees / expands to 26 new countries / deployed across
-  12,000 seats / launched its platform to 100,000 users），精度纪律
-  （v3.0.0c/v3.2/v3.3/v3.6/v3.7/v3.9 纪律：漏报比误报诚实、没有实证不扩
-  模式）：必须有量化范围（"brings ChatGPT Work to all employees" 无数量
-  不进库）、只认部署/扩张动词（合作公告/基础设施 scaling/产品发布/销售
-  数字都不是部署规模主张）。具名部署与趋势主张是两类证据：趋势靠调查/
-  汇总证伪，具名部署靠「当事方确认 + 席位数/覆盖面核实」证伪。专属证伪
-  路径（部署方否认/席位数覆盖面不符/部署暂停缩减回滚；厂商一手公告需
-  第三方确认才升级证据档）；类目 market_claims；报告与 cron 注入标签
-  「部署规模主张」。精度配套（全部 live 实证驱动）：① forward-looking
-  免责声明守卫——MU/CRWV 两家 8-K 的 "Forward-Looking Statements" 段是
-  法律 boilerplate（"customer demand" 清单名词短语误触发 demand 形态），
-  命中句自身含免责声明标记即跳过；② ma 动词形态收紧——"What happens when
-  a deal falls through?" 类泛指交易假设句不是主张（"the deal fell
-  through" 仍命中）；③ has-sample 名词组补 employees/seats/staff/
-  countries/advertisers/deals——部署规模的样本就是席位数与覆盖面。
-  live 端到端（300 条池）：商业辨别段 10→20 条，byKind 新增
-  deployment-scale:2——Uber 条判 证据不足/无出处(1)/推理 1/3、不虚抬
-  （厂商一手公告句式自身无归属词，等价名方确认或第三方报道交叉验证）；
-  GOOGL 备案条判 推理单薄/公开财报/公告(3)/推理 1/3、decisionRelevant
-  （一手备案量化主张，证据档首次被真实财报触发）；公开财报/公告证据档
-  1→5 条；hf-cron-fetch.sh 注入段 agent 可见「类型: 部署规模主张」。
-  测试 286→299 项；8 轮反向验证全部精确失败。历史：v3.9 — 商业主张辨别器新增「价格下调主张」形态（新辨别维度）：
-  live 实证 LWiAI #343 简报内句「Anthropic launches Claude Fable 5.1 and
-  says it's up to 45 percent cheaper for agentic work」（2026-09-07，
-  business 桶）——扩容前 18 种形态全部不命中、整条不进辨别。v3.6 的
-  cost-signal 管「价格/成本打到某水平」（迟到费 $5M/天），但**价格下调**
-  （模型 API 降价、智能单价通缩）一直在库外——而智能价格通缩是 AI 市场
-  需求侧的一阶信号（降价驱动采用、重塑毛利结构、压缩竞争对手定价空间），
-  只辨「价格打到某水平」不辨「价格下调」，商业辨别对价格维度的理解只有
-  一半。新 kind price-cut：三形态族——名词+下调谓语+幅度（prices fell
-  20% / pricing has dropped 40% / prices plunged 60%）、下调动词+名词+
-  by/to+幅度（cut prices by 30% / lowered its API prices to $0.50）、
-  幅度+比较级（45 percent cheaper / 3x cheaper than，比较级后只认
-  for/than/句读）。精度设计（v3.0.0c/v3.2/v3.3/v3.6/v3.7 纪律：漏报比
-  误报诚实、没有实证不扩模式）：① 必须有幅度——无金额的价格变动句
-  （"with lower prices"/"costs are falling"/"API prices are falling"）按
-  v3.6 同型纪律（无金额的 "Prices Up" 不是可证伪主张）不进库，live 实证
-  LWiAI #258「Opus 5.5 with lower prices」如实记录为已知边界漏报；② 名词族
-  只认 prices/pricing 不认 costs——TCO 效率句（NVDA「35x lower cost for
-  agentic AI」/ ORCL「at a lower cost」/ "Operating costs fell 40%"）是
-  能力/成本效率主张不是市场定价主张；③ 比较级后只认 for/than/句读——
-  "cheaper to manufacture" 是制造成本效率不是定价。全池实测（300 条覆盖
-  审计轮 + 321 条端到端轮）精确命中 1 条（即该条），18 句精度回归 0 误报。
-  专属证伪路径（价目表/第三方 API 价格跟踪与主张值不符、降价实为功能/
-  用量配额削减的口径变化、价格回升）；类目 market_claims；报告与 cron
-  注入标签「价格下调主张」。live 端到端：商业辨别段 9→10 条，byKind 新增
-  price-cut:1——该条判 证据不足/无出处(1)/推理 1/3、不虚抬（简报转述的
-  厂商自述降价，等价目表或第三方价格跟踪交叉验证）；hf-cron-fetch.sh
-  注入段 agent 可见「类型: 价格下调主张」。测试 278→286 项；同轮维护
-  （不涨号）：6 处历史版本断言硬编码当前版本号随涨号同步（v3.4 段断言
-  名称留在「（3.7.0）」的腐烂一并改正）、package.json description 把
-  v3.8 测试数误写 276（实为 278）按实测改正。8 轮反向验证全部精确失败。
-  历史：v3.8 — 商业主张辨别器新增「监管行动主张」形态（新辨别维度）：
-  live 实证 The Information「U.S. Treasury Proposes to Widen Outbound Investment
-  Restrictions for China and Other Countries」（2026-10-23，AP/Reuters/Nikkei/
-  The Hill 四家交叉验证：10-22 提案、评论期至 12-07、覆盖 AI/超算/生物技术/
-  高超音速）与 LWiAI #251 简报内句「Trump lifts restrictions on Anthropic」
-  （2026-06-30 白宫解除 Anthropic 模型出口管制的简报转述）——扩容前 17 种形态
-  全部不命中、整条不进辨别。合规域自 v3.0.0c 起只有 compliance-demand（「监管
-  需求修辞」：regulators will require…），真实规则事件（提案/签发/加宽/解除
-  限制）一条都看不见——而规则事件才是合规需求域的一阶信号（跨境资本/出口管制/
-  AI 监管全经由规则落地），且有天然结算结构：提案 → 评论期 → 最终规则。新 kind
-  regulatory-action：必须「政府/监管主体 + 规制动词 + 规制工具名词」三段式同句
-  共现（两段间隔都不含句读号）；主体只认政府/监管机构与官员（Fed/ECB 的货币
-  政策公告主体库不含——v3.0.0c 精度门不打穿）；规制动词只认规则生命周期动作
-  （propose/issue/sign/finalize/widen/lift/ban…），不含 said/says/expect——
-  官员言论是 v3.7 expert-judgment 已决议不进库的形态，不重复收编。专属证伪路径
-  （最终规则范围不符/被 rescind/struck down/无限期推迟/评论期后正式文本收窄）；
-  类目 compliance_demand（fallback；live 条目 category 取信号域，与 v3.3/v3.6/
-  v3.7 同型）；报告与 cron 注入标签「监管行动」。证据等级同轮扩展：public-filing
-  增加政府机构一手文书标记（federal register/proposed rule/final rule + 机构名 +
-  发文动词）——机构规则文书是该形态能拿到的最强证据档（与 v3.0.0c「according
-  to a company announcement 归公开财报档」同型）；官员个人转述、厂商自述、
-  Fed chair said 都不抬级。事件型 no-quantity 豁免：监管行动的证伪靠「规则
-  是否落地」的可观测事件不靠量化基数（否则报告对同一条主张同时打印「不可证伪」
-  与「证伪条件」两行自相矛盾的输出）；只摘 no-quantity，推理三要素仍独立计分
-  （0/3 不虚抬成 well-formed）。精度按 v3.0.0c/v3.2/v3.3/v3.6/v3.7 纪律（漏报
-  比误报诚实）：全池 312 条 live 实测精确命中 2 条（即该两条），31 句精度回归
-  0 误报（Fed/ECB 公告/NBER 论文/宏观看价句/官员言论/厂商自述/股价反应/播客
-  boilerplate/其它形态库句式全部不命中）；已知边界如实记录：执法行动
-  （fined/sued/charged，无工具名词）与「SEC's new disclosure rules」类所有格
-  形态无 live 实证不进库。live 端到端：商业辨别段 8→10 条，byKind 新增
-  regulatory-action:2——Treasury 条判 推理单薄/公开财报/公告(3)/推理 0/3、
-  decisionRelevant（机构一手规则文书，一级监管信号）；LWiAI 条判 证据不足/
-  无出处(1)/推理 0/3、不虚抬（官员个人行动经简报转述，不借名字抬级）。
-  hf-cron-fetch.sh 注入段 agent 可见「类型: 监管行动」。测试 267→278 项；
-  同轮登记 corr-2026-025（ma 事件型主张仍被 no-quantity 误判 unfalsifiable，
-  与 v3.8 豁免不一致——旧维度行为已文档化已测试，本轮不改只登记，下轮统一）。
-  7 轮反向验证全部精确失败。历史：v3.7 — 商业主张辨别器新增「专家/机构判断主张」形态（新辨别维度）：
-live 实证 TechCrunch AI「AI delivers 'zero financial payoff' to most companies,
-Apollo economist says」（2026-10-25）扩容前 16 种形态全部不命中、整条不进辨别——
-第三方经济/市场专家对市场现状的量化判断（Apollo 首席经济学家论 AI 企业 ROI、
-卖方 strategist 论估值修正）是商业世界最高频的主张形态之一，且与 survey-finding
-（调查研究的数据汇总）是两类证据：前者是专家对数据的解读（可证伪但依赖专家
-信誉与机构口径），后者是数据本身。库里自 v3.0.0c 起只有后者——「AI 到底有没有
-财务回报」这个当前最大市场争议的核心主张整条漏掉。新 kind expert-judgment：
-只认经济/市场分析头衔（economist/analyst/strategist/investment officer/
-portfolio manager/fund manager/head of research）+ 判断动词或 + 机构
-（at/of/for/from + 大写机构名，排除 the/a/an 小词——/i 标志下 [A-Z] 会退化成
-任意字母，"at the" 误配，v3.7 实测修）；CEO/executive 自述是 vendor-selfreport
-地盘不抢，scientists/researchers（科研判断）、Fed chair/Trump（官员言论）
-不是市场分析头衔不进库；专属证伪路径（时点后实际数据/第三方调查/机构自身后续
-修订不符、同业同口径反证）；类目 market_claims；证据等级归第三方调查(3)
-（third-party-survey 扩展 expert 形态，与 v3.0.0c「according to a study in
-Science 归第三方」同型）；报告与 cron 注入标签「专家/机构判断」。精度按
-v3.0.0c/v3.2/v3.3/v3.6 纪律（漏报比误报诚实）：全池 300 条 live 实测精确命中
-1 条（即该条），21 句精度回归 0 误报（厂商自述/科研作者/官员转述/analyst
-名词短语/The Economist 杂志名/股价反应/播客 boilerplate/调查研究发现句全部
-不命中）；已知边界如实记录：头衔+机构+动词三段式（"analysts at the Fed
-expect"）与 "economists surveyed by" 形态无 live 实证不进库。live 端到端：
-商业辨别段 7→8 条，该条判 推理单薄/第三方调查(3)/推理 0-1/3，不虚抬为决策
-相关（有描述+第三方机构判断，与 v3.2/v3.3/v3.6 的标题-only 条不同级）；
-hf-cron-fetch.sh 注入段 agent 可见「类型: 专家/机构判断」。测试 258→267 项；
-7 轮反向验证全部精确失败。同轮修一个沉睡四个补丁轮的既有缺陷（corr-2026-024）：
-third-party-survey 的 (survey|poll|census) 自 v3.0.0c 起无 \b 词边界——
-"Apollo" 公司名含 "poll" 子串，任何含 Apollo 的句子都被当成民调证据抬到
-第三方调查(3)。该缺陷从未暴露是因为含 Apollo 的条目此前整条不进辨别段、
-poll 分支没有触发机会；v3.7 放行 Apollo economist 条目后，round 6 反向验证
-报 0 失败（断言被 poll 子串喂饱）才抓到。修 \b + 防回归断言（round 7 恢复
-无边界→精确失败 1 条）。教训登记：「该分支没有触发机会」不等于「该分支是对的」。
-历史：v3.6 — 历史：v3.5.1 — 财报指引结算链路修复（维护级：断链修复+实际值召回补强，非新辨别维度）：
-  v3.5 审计实测台账 47 条 earnings_guidance 的 settlement 元数据 0/47 可用——
-  forecast-discriminator 辨别结果从不带 ticker/fiscalYear/quarter，登记时写的
-  settlement.ticker 恒为 null，「元数据随新条目落盘」从落地起就没工作过，全部
-  流量挤在当期指引句反推兜底路径上（三字段已透传，新登记条目元数据完整）；
-  实际值抽取对 MRVL（全部备案）/MU（9 月备案）/AMZN（全部备案）返回空——标题
-  期间形态不命中（"of Fiscal Year 2027" / "FOURTH-QUARTER AND FULL-YEAR 2026" /
-  标题无年份走正文 quarter-ended 锚），补通用季度+年份形态与紧邻 net-sales-
-  increased-to 营收形态（精度回归：operating income 与 AWS 年化 run rate 不误当
-  净销售额——宽 gap 名词组扩 sales 的误配已回退）；跳过理由区分句式漂移与备案
-  滑出采集窗口（引用真实窗口常量）；同轮修第三处同型去重缺口：证据 key 补 dueOn
-  （v3.4 给文本 key 加过、漏了证据 key——同公司跨财季结算被并成一个义务，实测
-  11 条已结算去成 5 条，修复后 9 条），结算证据来源改按 actualPeriod 匹配提供
-  实际值的备案。live 实测新结算 4 条（MRVL FY2027Q1/Q2 营收带内命中；MU FY2026Q4
-  $50B±$1B vs $54.23B、AMZN FY2026Q2 $194-199B vs $200.6B 均 beat 带外），台账
-  已结算 7→11，base rate 首次用上本地台账真实样本（9 条去重后 3 中）。测试
-  241→250 项；8 轮反向验证全部精确失败（摘除修复→断言生效）。登记 corr-2026-021
-  （元数据宣称未验证，critical）/022（同型修复漏调用点）/023（猜句式+归因错误）。
-  历史：v3.5.0 — 财报指引自动结算（earnings-settlement，新能力）：
-  v3.5（2026-10-25）兑现 v2.13 核心承诺「到期结算 Brier」对最硬预测类的第一次
-  落地。v3.4 把 33 条 SEC EDGAR 财报指引进了台账，但审计实测 15 条到期、0 条
-  结算——结算逻辑整个缺失（「登记了但没人对账」）。v3.5 新增 edgar-collector
-  .extractActuals（从同一份 EX-99 抽「上一财季实际值」，过去时，与指引的期望
-  时态对立；期间取自标题句）+ earnings-settlement.js（单位感知容差带：$+%=
-  相对、$+$=绝对、%+bps=百分点、%+%=百分点、区间；结算判据＝实际值是否落在
-  指引容差带内，方向 beat/below 单独陈述）+ settleEarningsGuidance 编排
-  （台账到期指引与实际值配对落账）。保守性全部有测试钉住：只结有容差/区间的、
-  (ticker,财季,指标) 唯一实际值才结（GAAP/非GAAP 多值判歧义跳过，不设法规避）、
-  到期才结、只碰未结算条目。live 实测 7 条正确结算（NVDA/AMD/MU 营收被 actual
-  超出带上沿→beat/带外，毛利率命中→带内；Micron Q3 $33.5B±$750M vs $41.46B 是
-  HBM 超级周期的真实 21% beat，季度配对经复核正确）；MRVL GAAP/非GAAP 毛利率
-  经 matchAll 修正后正确判歧义跳过（首版单 match 会把非GAAP 指引错配到 GAAP
-  actual，测试抓出）。同轮维护（不涨号）：MAX_8K_PER_COMPANY 2→3（结算需
-  「指引备案+下一期实际值备案」这对连续备案同在窗口内，2 份每轮只清 3 条积压）。
-  测试 230→241 项；5 轮反向验证全部精确失败（摘除 matchAll→GAAP/非GAAP 断言/
-  摘除结算调用→formatReport/摘除单位感知→容差断言/摘除 actuals 透传→透传断言/
-  摘除 record settlement→持久化断言）。v3.5 版本号理由：新能力（结算），用户
-  可感知（报告「财报指引结算」段首次出现带证据的到期对账）。
-  历史：v3.4.0 — 新辨别维度「财报指引」+ 新数据源 SEC EDGAR：
-  v3.4（2026-10-25）接上市公司一手备案：8-K（Item 2.02 业绩发布）的 EX-99
-  附件里有厂商自报的下一期数值指引——"Revenue is expected to be $108.0
-  billion, plus or minus 2%"（NVIDIA FY2027 Q3，2026-08-26 备案）。有主体
-  （公司）、有事件（下一财季实际值）、有结算机制（下一期财报公布），是
-  v2.13 起记录六轮的边界缺口「RSS 前瞻表述多为意图声明、不可结算」的
-  第一次实质推进（Metaculus/Epoch AI 类预测源全部不可达后的换路）。
-  采集器 edgar-collector：company_tickers.json 解析 14 家境内备案人
-  （NVDA/AMD/AVGO/MRVL/MU/MSFT/GOOGL/AMZN/META/ORCL/CRWV/IBM/DELL/PLTR）
-  → submissions JSON（FYE+近期 8-K）→ index.json 挑 EX-99 → 指引句抽取
-  （指标+is/are expected to be+数值，五家公司五种句式实证；财季期间就近
-  匹配+同比引用排除）。live 实测 28 条业绩备案、32 条数值指引；MSFT/GOOGL
-  只在电话会口头给指引，如实报「无数值指引」不编造。forecast-discriminator
-  新增 verdict earnings-guidance：结算点按财季期间+fiscalYearEnd 推算为
-  估计值（财季/财年结束+45 天公布滞后，dueBasis=estimated-fiscal，产品
-  各处不得当精确日引用）；指引自动登记 prediction-ledger 到期结算 Brier，
-  先验取中性 0.5（FactSet「77% 超预期」是 vs 分析师预期的口径，挪用即
-  本引擎要抓的口径错位，note 写明）。同轮维护（不单独涨号）：run-pipeline
-  banner 版本漂移（3.1.1→3.4.0，corr-2026-014 同型）；prediction-ledger
-  自测补 evidence（v2.13 起坏掉的既有 bug，stash 对照实证）；台账幂等 id
-  加 metric+value 维度（MRVL GAAP/非 GAAP 同同时点互撞、非 GAAP 被静默
-  丢弃）；同义务去重 key 加 dueOn（跨财季同文指引是不同事件）。测试
-  214→230 项；6 轮反向验证全部精确失败（摘除接入→源级断言/摘除 verdict→
-  5 条/摘除 dueOn 推算→5 条/摘除 id value 维度→幂等断言/摘除期间对比
-  排除→期间断言/摘除句点处理→2 条）。版本号理由：新数据源+新辨别维度，
-  用户可感知（报告「预测辨别」段首次出现带结算期的可结算主张）。
-  历史：v3.3.1 — 维护级（非新辨别维度）：survey-finding 精度修复 + 版本号漂移修复：
-  v3.3.1（2026-10-25）修 v3.3.0 轮 live 实证的两条误报与一处版本漂移。① survey-finding
-  收紧——旧正则 (survey|study|…)\s+(of|by|from|…) 把「调查名词+介词」的 incidental
-  搭配当成研究发现：EconBrowser 站点导航 "Analysis of current economic conditions
-  and policy"（analysis of）与 LWiAI 播客列表 "interpretability research from
-  Anthropic"（research from）两条误报进商业辨别段。收紧为二选一：调查名词+发现
-  动词相邻（study found / research shows / analysis indicates…）或调查名词+of+量化
-  对象（survey of 1,200 / survey of almost 11,000，容忍数量副词）。live 全池实测
-  旧模式 7 条命中里 4 条真主张全保留（Survey of 2,018 / survey of almost 11,000 /
-  Study Shows / study found）、3 条 incidental 搭配精确消除（含 Fed 导航 "Payments
-  Research Reports"——连带把无 live 实证的 report 动词形态一并收紧，代价如实记录：
-  "a survey of enterprises found 34%" 无量化对象形态与 "survey reports that X"
-  不再命中，按 v3.0.0c「漏报比误报诚实」接受）。端到端实跑商业辨别段 8→6 条，
-  Grok 真调查主张保留。② 版本号漂移修复——VERSION=3.3.0 而 projection
-  meta.version 停在 3.2.2、package.json 停在 3.2.1，同一份报告两个版本号，v3.1
-  修过同型（banner/meta）但另两处腐烂了四个补丁轮；四处对齐 3.3.1 并加「版本号
-  一致性」断言（VERSION/package.json/projection meta/run-pipeline meta）。③ 三处
-  「播客不进辨别」测试夹具补强为 live 误报原句——旧夹具 description 压根不触发
-  模式门，断言恒真空转两个版本（反向验证实证：恢复旧正则后三处旧断言立刻真失败）。
-  登记 corr-2026-014（版本漂移）/corr-2026-015（误报+夹具空转）。测试 207→214 项；
-  3 轮反向验证全部精确失败（恢复旧正则→v3.3.1 4 失败+三处旧断言各 1 失败/收紧过头
-  摘形式 B→3 失败/版本漂移复发→恰好 1 失败）。版本号理由：精度修复+漂移修复=末位
-  补丁，本轮没有新辨别维度。
-  历史：v3.3.0 商业主张辨别器新增并购/交易过程主张形态（新辨别维度，live 实证
-  Instacart 出售探索与 Ramp/Airwallex 破裂交易两条 MISS 后扩库）；
-  v3.2.2 低置信度守门段端到端接通 cron 注入（第七次同型断链修复）；
-  v3.2.1 预测校准与台账状态端到端接通（第六次同型断链）；
-  v3.2 新增产能/供给约束主张形态（新辨别维度，live 实证补齐已知边界漏检）。
-
-  人类未来技能 v3.2.0 — 商业主张辨别器新增「产能/供给约束主张」形态（新辨别维度）：
-  v3.2（2026-10-25）给 commercial-discriminator 的 COMMERCIAL_CLAIM_PATTERNS 增加
-  capacity-claim——SKILL.md 自 v3.0.0c 记在「已知边界」的漏检（"AWS Largely Sold
-  Out Of Capacity Into 2028" 产能主张，当时形态库实为 13 种而文档写「14 种」，
-  全部不命中、整条不进辨别），
-  本轮实跑该条就在 258 条 live 池里（The Information 简报），逐条过形态门确认
-  MISS 后扩库：新 kind 'capacity' + 专属证伪条件（第三方产能跟踪/扩容/预留量）
-  + 类目映射 market_claims + 报告与 cron 注入的中文标签。供给侧约束（需求>供给
-  → 定价权/扩产周期）是 AI 算力市场的一阶信号，漏掉它商业辨别看不见最重要的
-  市场事实之一。精度设计按 v3.0.0c 教训（漏报比误报诚实、没有实证不扩模式）：
-  必须「供给名词+耗尽谓语」相邻共现，sold out 紧邻产能名词——storage capacity /
-  capacity building / capacity to reason / 演唱会与座位 sold out / waitlist for
-  silicon 类比 / 扩产新闻全部不命中（8 条精度回归）；形态族覆盖售罄/耗尽/
-  分配殆尽/短缺/需求超供给（含 has been 与形容词间隔、过去时态）。
-  live 实测：258 条里精确命中 1 条（就是 AWS 那条），报告「商业主张辨别」段
-  辨别数 5→6，该条判 证据不足/无出处(1)/推理 0/3——标题-only 不虚抬为决策相关。
-  维护级同轮（不单独涨号）：① 公式桥 Brier 样本按同义务去重——同一份报告里
-  「认知公式评估」段样本=3 而「预测台账」段已结算=1（3 条 EU AI Act 同义务
-  条目），两个自相矛盾的样本数正是本引擎要抓的口径错位，按 v2.16 口径对齐；
-  ② 测试夹具残留自愈——npm test 进程异常死亡（SIGKILL/EPIPE）时 exit 还原不
-  执行，夹具条目残留真实台账，轻则污染 pending 计数、重则让 v2.16 record()
-  探针抛「id 已存在」整套测试崩溃（2026-10-25 实测连续两轮各留一批、第三轮
-  直接崩），加夹具签名自愈 + 探针幂等；③ 文档计数纠错——SKILL.md/代码注释自
-  v3.0.0c 写「14 种商业主张形态」而实际只有 13 种（与 v3.1 修正的「17 个源」
-  同型文档计数错误），新增后真实条数为 14，按代码实测改正。
-  测试 183→192 项；6 轮反向验证全部精确失败（摘除模式→6 条、摘除精度收紧→3 条、
-  摘除证伪条件→1 条、摘除 cron 注入标签→1 条、摘除公式桥去重→1 条、摘除报告
-  标签→1 条；其中摘除报告标签一轮第一版 0 失败——断言被段内 note 文本里的
-  「产能/供给约束」喂饱，已改为只认渲染出的「类型:」行）。
-
-  人类未来技能 v3.1.1 — 口径错位检测段：精度修复 + 端到端接通：
-  v3.1.1（2026-10-25）修 2026-10-25 live 轮逐条复核出来的 7 条误报——
-  友谊勋章「Order of Dostyk」被 capacity 侧 /订单|order/ 当成采购订单、
-  democracy/democrat 里的 demo 子串、gigawatts/average/navigation 里的
-  GA 子串、「limited to two players」被当成灰度、「available in preview」
-  与产品名带 Preview 的正确表述被判错位、「on target + demonstrate」
-  跨句两件事、「our researchers + safety at the frontier」相隔 2000+ 字符、
-  benchmark 主张与促销页脚「15% off」相隔 1200+ 字符。修法：五个模式
-  （capacity-vs-order / benchmark-vs-capability / demo-vs-ga /
-  roadmap-vs-result / vendor-selfreport-vs-verification）启用同句判定
-  sentenceScoped（口径错位是「同一句话里把两件事说成一件事」，跨句共现
-  常是两件不相关的事），demo-vs-ga 加 \b 词边界 + 只认完成态可用性断言
-  + 灰度语义收紧，capacity B 侧只认采购语义；另三个模式无 live 误报
-  实证，保持整段判定——没有证据就改判据是另一种不严谨。命中带触发句
-  （evidenceSentence），报告与注入都可逐条复核。同时补 cron 注入段读取
-  proj.claimMismatches——这是 v2.9/v2.13/v2.17/v3.0.0c 之后第五次同型
-  断链（引擎产出 + formatReport 渲染都有，注入脚本从未读，agent 完全
-  看不到；该段引用纪律「同一句内带限定」的材料一直都在报告文件里躺着）。
-  测试 171→183 项；5 轮反向验证全部精确失败（摘除 demo-vs-ga 修复→5 条、
-  摘除 capacity 修复→1 条、摘除同句判定→1 条、摘除 cron 注入段→1 条、
-  摘除触发句透传→2 条）。live 实测：同轮数据重跑，口径错位命中 14 条→
-  1 条真命中（DeepMind ForTy 森林制图 90%/95% 跑分主张，触发句在产物里）。
-  版本号理由：修 bug + 断链修复 = 末位补丁，不涨 x.0；本轮没有新辨别维度。
-
-  人类未来技能 v3.1.0 — 心虫商业未来推演（v3.1 接入 0 调用模块自我修正登记簿）：
-  v3.1（2026-10-25）接入 self-correction-ledger——该模块自 v2.4 存在、
-  data/self-corrections.json 有 7 条真实修正（绕月≠登月 / v2.4 假能力三项审计 /
-  sitemap 页面简介≠新闻正文……），docstring 铁律「每次修正落盘，下次推演先读簿子
-  再说话」，但 live pipeline（scripts/）从未 require 过它，只有早期死副本
-  human-future/scripts/run-pipeline.js 调过——簿子记了、没人读。本轮接进引擎
-  （report.selfCorrectionLedger）+ 报告段（「自我修正登记簿」，位置在总体摘要之后、
-  信号热度分组之前，先对旧账再解读新信号）+ cron 注入段（第 8 段，带口径限定）；
-  同时修 recurringPatterns 高危计数口径：旧代码 severity === 'high' 严格过滤，
-  漏掉数据里 2 条 critical（v2.4 假能力审计），接入后会少报高危数（说 4 实际 6），
-  改为按等级表（critical > high > medium > low）比较，critical 排最前。
-  测试 164→171 项；5 轮反向验证全部精确失败（摘除引擎接线→4 条、摘除报告渲染→2 条、
-  摘除 cron 注入段→1 条、恢复旧计数口径→2 条、摘除等级排序→1 条）。
-  维护级（不涨号的那部分）：SKILL.md 采集源计数修正——实际 23 个源
-  （tech 2 + humanities 1 + frontier_models 12 + economy 4 + business 4），
-  旧文写「17 个」，且分项加总本身也不等于 17。
-
-  人类未来技能 v3.0.0 — 心虫商业未来推演（v3.0.0c 修复端到端断链）：
-  v3.0.0（f118603，10-22）新增 business 采集域（TechCrunch AI / The Information /
-  Last Week in AI / ProductHunt）与商业主张辨别器 commercial-discriminator——
-  辨别「关于市场的陈述」（可证伪性/证据等级四级/推理三要素/证伪条件），与
-  forecast-discriminator 的「关于未来的预测」分工；5 个商业主题域（市场主张/
-  竞品/资本/客户采用/合规需求）；报告段「商业主张辨别」。
-  2026-10-24 v3.0.0c：① 修复该段端到端断链——引擎产出、formatReport 渲染，
-  但 cron 注入脚本从未读取 proj.commercialDiscrimination（v2.9/v2.13/v2.17
-  之后第四次同型断链，「接口存在 ≠ 端到端到达」），本轮补上注入段并加源级
-  断言防复发；② 候选抽取加精度门：旧触发器「含 $/%/market 关键词即算候选」
-  把 7 条 Fed FOMC 公告、LWiAI 播客、TechCrunch 促销页脚（"Get your pass ...
-  REGISTER NOW"，还因 2/3 推理分被判★决策相关）混入辨别，实测 19 条里 18 条
-  kind=unclassified；现候选题句必须命中 14 种商业主张形态之一（标题参与判定），
-  实测同轮 248 条 live 里 6 条进辨别（估值 2/竞品 1/融资 1/采用 2）；
-  ③ 三处句式召回（raises nearly $16B / "$1.25T valuation" 两种语序 /
-  beat generalist doctors）与证据等级修正（according to a study in Science
-  归第三方调查而非无出处）。测试 155→164 项；7 轮反向验证全部精确失败
-  （摘除注入段→1 条失败、摘除精度门→3 条、摘除副词组→3 条、摘除透传→2 条、
-  摘除竞品目标→1 条、摘除估值语序→1 条、摘除报告渲染→1 条）。
-  已知边界：模式库外真实句式仍会漏（"AWS Largely Sold Out Of Capacity
-  Into 2028" 产能主张）；站点导航/页脚 boilerplate 偶有漏网（本轮 6 条里
-  1 条 EconBrowser 导航文本）；本段不生成商业建议，「心虫该怎么做」由报告
-  agent 判断并标注归属。
-
-  人类未来技能 v2.17 — 接入外部预测基准源 Good Judgment Open（gjopen.com）：
-  v2.13 起挂在「已知边界」的缺口（RSS 前瞻表述多为意图声明，缺带硬截止日的
-  可结算预测）本轮推进——2026-10-24 复测全部外部预测源，只剩 GJOpen 可达
-  （Metaculus API 403 带 UA 仍 403 / Manifold 连接超时 / Polymarket gamma-api
-  DNS 落到不可达 IP / Kalshi 超时 / PredictIt 301 / Epoch AI 只有统计数据无
-  预测类数据）。GJOpen /questions?q= 公开可抓（需浏览器 UA，裸 curl 406），
-  每问题带 ISO 截止时间。新增 prediction-benchmark-collector（9 个实测有返回的
-  查询、按问题 id 去重、6h 缓存、抓取失败不覆盖旧缓存），报告新增段
-  「外部预测基准（Good Judgment Open 开放问题）」：按主题分组 + 近截止排序 +
-  结构对照（本期 RSS 可结算率 vs 外部全部带硬截止日）+ per-claim 主题相邻
-  匹配（共享实词 ≥2 才命中，单专名不命中——实测本轮 7 条 claim 0 匹配，
-  如实展示不凑数）。边界如实声明：GJOpen 群体预测概率需登录可见，本引擎
-  不采集不估计，任何层不得对这些问题声称知道市场概率；匹配只说明「该主题
-  有硬截止日问题在跟踪」，主题相邻非同题，不构成概率参照。
-  本轮实测：9 查询 → 32 个未截止开放问题（AI 采用率 9 / 太空 7 / AI 安全 5 /
-  前沿厂商 4 / 模型基准排名 3 / 地缘与能源 2 / 气候 1 / 监管 1）；
-  cron 注入脚本已接该段（第 6 段，含「N 条能匹配」回显）。
-  测试新增 8 项断言（全套实测 155 项）；反向验证：摘除实体解码 → 1 条失败，
-  摘除去重 → 3 条失败，摘除缓存检查 → 1 条失败，minShared 降到 1 → 1 条失败
-  （单专名误命中），摘除报告渲染 → 2 条失败，摘除 available 门 → 1 条失败。
-
-  人类未来技能 v2.16（上一版记录）— 修复「基准概率」辨别维度断链：台账条目存 `domain`、
-  辨别器读 `p.category`，本地台账同类历史分支自 v2.13 声明起从未激活。
-  修复含三部分：① 字段映射兼容读 category||domain + record() 双写；
-  ② 同义务去重（同一现实事件被多个页面重复登记只计一次——实测台账 3 条
-  EU AI Act 条目证据来源完全相同，是同一义务；不去重会把一次兑现计成
-  三次、兑现率虚高到 100%，比不断链更糟）；③ 样本 <3 诚实降级：仍用
-  通用先验但报告如实展示本地已结算条数，不再一律显示 sample=0。
-  本轮真实数据实测：报告「预测辨别」段新增「本地台账同类历史」行，
-  regulatory_action 显示「已结算 1 条（同义务去重后，原始登记 3 条），
-  兑现 1 条——样本 <3 不具统计性，基准概率仍取通用先验」。
-  测试新增 7 项断言（全套实测 147 项）；反向验证：摘除字段映射 → 4 条
-  断言失败，摘除去重 → 4 条失败，摘除报告渲染 → 1 条失败。
-
-  人类未来技能 v2.15（上一版记录）— 预测辨别器新增「文本性质」子判别：指南/参考页文本不是预测。
-  条目=页面标题+页面简介，辨别段把 "A Practical Guide to Article 50 / What providers
-  and deployers must do by August 2026" 这类页面文本判成可结算预测（dueOn=2026-Q3）
-  登记进台账，同一句 boilerplate 在三个页面重复出现、登记三次全部结算 true。
-  参考文本没有任何主张主体，与「意图声明」是两类对象，旧代码把它贴上「意图声明」
-  标签属于误判。修复：新增 REFERENCE_TEXT_PATTERNS（只认页面框架措辞 guide /
-  overview / this page aims to / what X must do，不碰内容词，不误杀真实承诺），
-  新 verdict 'reference-text' 优先级高于不可证伪模式，settleable=false 不进台账，
-  报告汇总行单列「非预测文本 N 条」。本轮真实数据实测：4 条 EU AI Act 指南页
-  从「裸断言/可结算」改判「非预测文本/不可结算」，可结算 2→1。测试新增 7 项断言
-  （全套实测 140 项，此前 SKILL.md 记的 69 是漏计笔误，已按实测改正），
-  反向验证：摘除判据→4 条断言精确失败（真实样本/优先级/汇总计数/端到端台账）。
-
-  人类未来技能 v2.14 — sitemap 源修复「假发布日期」：lastmod 是页面最后修改时间不是
-  发布时间，旧页被编辑会更新 lastmod。实测 anthropic.com 按 lastmod 取「最新 12 条」
-  时 7 条是旧页（100k-context-windows 发布于 2023-05-11，lastmod 2026-10-15），
-  报告里的发布日期全是假的。修复：对 lastmod 最新的 24 个候选抓页面抽真实发布时间
-  （JSON-LD datePublished / article:published_time / <time datetime>），按真实发布
-  时间排名；抓不到页面的回退 lastmod 但打 _dateSource='sitemap-lastmod' 标记，
-  报告层 dateProvenance 统计两种出处。实测代价：fetchAll 8s→14-19s（页面解析放在
-  所有 RSS 落地之后串行做，不占现有源的 8 秒超时窗口——塞进同一次 Promise.all 会挤
-  掉 ECB/NBER，git stash 对照实验证实过）。测试 59→69 项断言，含 mock fetch 反向
-  验证（摘除修复→3 条核心断言失败）。
-
-  人类未来技能 v2.13 — v2.13 方向转变：**引擎不再自己生成未来，改为辨别他人关于未来的主张**。
-  - 停止假推演：阶段标签从「第一阶段（未来 0-12 个月）」改为「信号最集中方向（本期热度第 1-2 位）」；
-    报告标题从「分阶段推演」改为「信号热度分组（按本期活跃度排序，非推演）」
-  - 新增 forecast-discriminator（预测辨别器）：对每条含前瞻承诺的信号做四维辨别——
-    可证伪性 / 基准概率 / 推理有效性（机制+先行指标+反例条件）/ 证伪条件
-  - 新增报告段「预测辨别」：输出「这些关于未来的主张，哪些站得住脚」，而非「我认为未来会怎样」
-  - 校准警告：宣称置信度显著高于同类基准概率时给出落差提示（实测 95% vs 35% → 60 个百分点）
-  - 已知边界：RSS 与博客正文里的前瞻表述多为意图声明（无时间点），可结算预测需接
-    Metaculus / Epoch AI / 厂商路线图等专门预测源，当前采集范围不含
-  
-  人类未来技能 v2.12 — v2.12 瘦身：SKILL.md 从 48KB 降到 11KB，cron 每轮 prompt 从 52K 降到约 15K 字符。
-  历史升级清单（v2.5→v2.11）与 v2.2 设计文档已归档至 references/upgrade-history.md，按需加载。
-  
-  当前能力（v2.11 实测）：
-  - 采集：13 个 RSS 源并行抓取（约 4 秒），FETCH_BODY=1 时抓最新 24 条正文（实测 17 条成功）
-  - 专项大模型域：frontier_models 采集域 + 推演主题域 + 独立报告段（来源分布/最新进展倒序/周度节奏）
-  - 推演：11 个主题域，9 个组件接入（因果图/跨域传导/趋势判定/时间轴/来源分级/口径错位/认知公式/低置信度守门/预测台账）
-  - 源归一化：每源折算为篇/周取域内中位数，消除 RSS 返回窗口差异造成的假趋势（实测抓到 3 个假象域）
-  - 口径错位检测：8 个模式含 3 个专项大模型模式（跑分vs能力/demo vs GA/厂商自述vs验证），实测 9 条命中
-  - 测试：52 项断言，每项修复都做过反向验证（摘除修复 → 对应断言失败）
-  
-  已知边界（如实声明，不得对外宣称已解决）：
-  - 心虫 think() 对「多事实块新闻推演」输入实测恒定 confidence=0.4-0.45，
-    连单条原子事实也恒定，该输入形态下不具备可用辨别能力。
-    管线用的是 discriminate()/crossAnalyze() 等 stateless 检查器而非 think()。
-  - psychology / philosophy 两个域暂无 RSS 源，离线模式下只读知识库。
-  - 正文抓取覆盖率 17/24（openai.com 403、arstechnica.com 405、interconnects 链接失效）。
-  - 归一化在源数 <3 的域基本无效（中位数退化为均值），已在报告中标注。
-  
-  适用场景：
-  - 追踪事件间的因果传导链（A→B→C→D）
-  - 追踪预测准确度，建立校准曲线
-  - 两遍分析（快速扫描 → 深度挖掘）
-  - 信号频率分析与异常检测
-  - 跨域知识吸收与融合
 ---
 
 # 人类未来 · 文明推演引擎 v3.0.0
@@ -564,9 +61,24 @@ poll 分支没有触发机会；v3.7 放行 Apollo economist 条目后，round 6
 
 ---
 
-## 当前状态（v3.13.0 实测）
+## 当前状态（v3.14.0 实测）
 
 以下数字全部来自 2026-10-26 的 `FETCH=1 FETCH_BODY=1 node scripts/run-pipeline.js` 实跑
+（v3.14.0 轮：pipeline exit 0、312 条 live 信号、META CFO 评论式指引形态进库的
+live 端到端——三份 META 备案（10-21/07-29/04-29）抽到 10 条量化区间指引
+（营收 Q4 $73-76B/Q3 $61-64B/Q2 $58-61B、全年费用 $175-179B/$165-169B/
+$162-169B、全年 capex $135-145B/$130-145B/$125-145B、Q4 税率 15-17%），
+10 条全部登记进台账；META FY2026Q2 营收区间 $58-61B vs 实际 $60.80B
+**带内命中**（引擎第一条 META 结算，Q3/Q4 营收与全年费用/capex/税率按
+到期门与年度实际值边界 pending）；NVDA 全年税率指引×3 期间归位
+FY2027 全年（旧代码错记 FY27Q1，corr-2026-033）；GOOGL capex 与 AMZN
+net-sales/opinc 指引同轮补登（旧 claim 额度 40 的尾部截断修复，见下）；
+台账已结算 11→12 条、去重后 Brier 样本 11→12 个义务（brier 0.2635、
+兑现率 0.5=6/12）；最终代码复跑幂等 0 新结算、跳过 4 条（AMD 点值
+无容差×2 + MU 口径未限定歧义×2）、pending 40；forecast 辨别 61 条
+（旧 claim 额度 40 切尾修复后 61 条 EDGAR 指引全进，无截断披露——
+额度 70）；商业辨别段与 forecast 段其余部分和上轮一致（本轮只动
+EDGAR 指引抽取/结算链，未动商业形态库）；
 （v3.13.0 轮：pipeline exit 0、288 条 live 信号（专项大模型域 162）、
 财报指引结算指标扩展的 live 端到端——到期未结算 18 条 → 新结算 7 条
 （MRVL FY2027Q1/Q2 毛利率×4 全带内命中、MRVL EPS×2 一命中一低于带、
@@ -661,10 +173,26 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   头条（营收 of/was/were + AMZN increased 紧邻形态 / 毛利率 was/were）→ v3.13
   五个族（+ MRVL 冒号 bullet 营收 "Net Revenue: $2.739 billion" / MRVL 标题
   bullet 毛利率 "53.1% GAAP gross margin" 无连接词形态 / EPS "or $X per
-  diluted share" / AMZN 合并营业利润，分部行用 lookbehind 挡）。每条实际值
+  diluted share" / AMZN 合并营业利润，分部行用 lookbehind 挡）→ v3.14 六个
+  族（+ META 亮点 bullet 营收 "• Revenue – Revenue was $64.60 billion"，
+  实际值句在汇总表之后、超出 lead=1600 窗口，搜索窗放宽到前 8000 字符、
+  五段紧邻结构保精度）。每条实际值
   带口径标记（gaapBasisOf），每（指标族,口径）只收第一个匹配（先本季、后
   全年；同口径重复陈述去重），全年值守卫（FULLYEAR_GUARD_RE + 句边界截断
   窗口，corr-2026-030）。
+- 指引抽取覆盖：v3.4 起三种句式（名词+is/are expected to be / expects 在前
+  / 表格相邻）→ v3.14 四种（+ META CFO 评论式「expect <期间/所有格间隔>
+  <指标> to be in the range of $X-Y billion / between X-Y%」：动词在前、
+  间隔词≥1（含连字符——"GAAP and non-GAAP"）、必须有区间标记；间隔词≥1
+  与 form B 零重叠）。区间语法：between X and Y / X% to Y% → v3.14 补
+  连字符美元区间（$73-76 billion 两端同单位）、单百分号区间（between
+  15-17%）与双百分号 between-and（NVDA 全年税率 16.0% and 18.0%）。
+- 指引 claim 额度（project-future buildForecastDiscrimination）：v3.14 起
+  40→70 且超限披露 seen/cut/cap——live 实测 61 条 claim（form D 新增
+  META 10 条 + NVDA 全年税率 3 条后），旧上限把 ticker 顺序尾部的
+  META/AMZN/GOOGL/ORCL 整批切掉（辨别了但看不见/登记不了/结算不了）。
+  RSS 前瞻 claim 仍与 EDGAR 共用 claims.length>=20 的断点（EDGAR 超额度
+  后 RSS 每轮仅 1 条进辨别——已知边界（RSS 与 EDGAR 共用 claims.length>=20 断点，EDGAR 占满额度后 RSS 前瞻主张被挤压，后续轮次候选：RSS 独立额度）。
 - 结算判据（earnings-settlement.js）：outcome=实际值是否落在指引容差带内
   [guided ± tolerance]（区间指引落区间内）。单位感知：$+%=相对、$+$=绝对、
   %+bps=百分点、%+%=百分点。方向（beat 超带上沿 / below 低于带下沿 / in-band）
@@ -728,11 +256,18 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   **一致**才配对（MRVL 毛利率/EPS 分口径各判各的）」。
 - 已知边界（如实）：v3.5.1 前登记且指引备案已滑出窗口的残废条目无法反推元数据，
   诚实留待后续轮次（re-fetch 修复候选）；EPS/营业利润指标 v3.13 已推进
-  （MRVL/MU/AMZN live 实证可结算），**opex/税率实际值在备案亮点段无可直读
-  句子或无容差指引**（AMD/NVDA opex 指引全是点值），相关指引保持 pending/
-  无容差跳过；MRVL 毛利率为 GAAP/非GAAP 双值，v3.13 起按口径分 key 各判
-  各的；v3.13 轮 7 条新结算落账于 settle() 修复前，evidence 无 metric/
-  gaapBasis 字段（去重时按旧口径并组，4 个义务而非 7 个——向后生效不补造）。
+  （MRVL/MU/AMZN live 实证可结算）；**opex 指引全是点值无容差**
+  （NVDA/MRVL/MU live 实证，"approximately $X billion"），相关指引保持
+  pending/无容差跳过；**全年费用/capex 实际值未抽**（v3.14 新边界：
+  META FY2026 费用/capex 区间指引已登记，dueOn 2027-02-14，但全年实际值
+  在 Q4 备案的「季度 and 全年」双值句里（"were $22.14 billion and
+  $72.x billion"），抽全年值+annual key 索引是后续轮次候选——到期前
+  保持 pending，不硬结）；**税率实际值在备案亮点段无可直读句**
+  （META Q4 税率区间 15-17% 与 NVDA 全年税率区间已登记待结算，亮点段
+  只有对比句式没有干净的 effective tax rate was X% 句）；MRVL 毛利率为
+  GAAP/非GAAP 双值，v3.13 起按口径分 key 各判各的；v3.13 轮 7 条新结算
+  落账于 settle() 修复前，evidence 无 metric/gaapBasis 字段（去重时按旧
+  口径并组，4 个义务而非 7 个——向后生效不补造）。
 
 **采集层**
 - 源：23 个（tech 2 + humanities 1 + frontier_models 12 + economy 4 + business 4
@@ -1603,7 +1138,7 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   引擎不代劳——这是心虫铁律，不是能力缺失。
 
 **测试**
-- `npm test`：**341 项断言**（实测各 section 汇总；v3.4 的 230 + v3.5 新增 11 + v3.5.1 新增 9 + v3.6 新增 8 + v3.7 新增 9 + v3.8 新增 11 + v3.9 新增 8 + v3.10 新增 13 + v3.11 新增 15 + v3.12 新增 14 + v3.13 新增 13：
+- `npm test`：**350 项断言**（实测各 section 汇总；v3.4 的 230 + v3.5 新增 11 + v3.5.1 新增 9 + v3.6 新增 8 + v3.7 新增 9 + v3.8 新增 11 + v3.9 新增 8 + v3.10 新增 13 + v3.11 新增 15 + v3.12 新增 14 + v3.13 新增 13 + v3.14 新增 9：
   2 项纯结算函数（settleGuidance 单位感知容差：相对/绝对/bps/百分点/区间/无容差
   跳过，含区分相对vs绝对的边界用例 / normalizeMetric+parseMetricValue 单位解析）+
   3 项实际值抽取（extractActuals 营收+毛利率+标题期间 / GAAP/非GAAP 不同值抽出
@@ -1922,7 +1457,32 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   + 1 项 formatReport 渲染结算段（口径一致才配对限定+口径未限定措辞——
   只认渲染行）
   + 1 项 cron 注入源级（hf-cron-fetch.sh 口径措辞+歧义新措辞+截断披露）
-  + 1 项版本号一致性（五处对齐 3.13.0））。
+  + 1 项版本号一致性（五处对齐 3.14.0））。
+  v3.14 新增 9（1 项 extractGuidance META CFO 评论式四形态（live 实抓原文：
+  季度连字符区间/全年区间/裸年份全年/between 百分点——期间、区间标记、
+  settleMetric 族逐一断言）
+  + 1 项多季度指引跳过（remaining quarters 不蹭前句 capex 的全年期间——
+  rightmost-wins 实证）
+  + 1 项 NVDA expects 在前全年税率（full year fiscal 2027 → annual +
+  between X% and Y% 区间；旧 ANNUAL_PERIOD_PATTERN 错配修复）
+  + 1 项 extractActuals META 亮点 bullet 营收（逐字 live 原文，bullet 在
+  lead=1600 窗外 @2078/@2143——第一版夹具把 bullet 搬进窗口内、旧模式
+  就抽得到，断言空转，R2 反向验证报 0 失败后换逐字原文）
+  + 1 项 parseRange 连字符美元区间/单百分号/双百分号 between-and +
+  单位不混（纯函数）
+  + 1 项 settleEarningsGuidance/buildForecastDiscrimination 端到端
+  （10 条 META 指引登记 + Q2 营收区间 in-band 命中 + Q3 到期门不提前结）
+  + 1 项 EDGAR 指引 claim 额度 40→70（45 条全进无披露/75 条披露 seen
+  =75 cut=5 cap=70/渲染披露行源级）
+  + 1 项精度回归（无区间标记期望句不进库 form B/D 分界 + NVDA 02-25 旧
+  夹具期间从 FY27Q1 纠正为 FY27 全年）
+  + 1 项版本号一致性（五处对齐 3.14.0））。
+  v3.14 六轮反向验证全部精确失败：摘除 form D→3（四形态/多季度/NVDA 年度
+  断言）；摘除 bullet 营收形态→1（夹具换逐字 live 原文后精确失败——第一版
+  夹具 bullet 在 lead 窗口内、断言空转，corr-2026-029 同型）；恢复旧
+  ANNUAL_PERIOD_PATTERN→2（NVDA 年度+精度回归）；摘除多季度守卫→1；摘除
+  连字符美元区间→1；摘除单百分号区间→1。每轮基线全绿、摘除后断言必生效、
+  diff 校验还原到位、收尾基线全绿（350/0）。
   v3.13 三轮反向验证全部精确失败：摘除冒号营收形态调用点→1（MRVL 抽取
   断言）；摘除 settle() 证据落账两行→1（结算编排断言的 evidence 字段）；
   恢复旧夹具（MU 实际值挂 Q2 actualPeriod + 计数 6/4/2）→1（MU 落空

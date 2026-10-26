@@ -340,7 +340,7 @@ class ProjectionEngine {
     }
     const report = {
       meta: {
-        version: '3.13.0',
+        version: '3.14.0',
         heartflowVersion: this.analysis.engineVersion,
         timestamp: this.timestamp,
         modulesLoaded: this.analysis.modulesLoaded,
@@ -1443,10 +1443,21 @@ class ProjectionEngine {
     // 的可结算主张（一手备案、指标+数值+结算期），先占 claims 额度，
     // 避免被 RSS 意图声明挤掉（额度 20，见下方 break）。
     // 无期间的指引条目跳过——没有结算点的数值期望不可结算。
+    // [v3.14] 额度 40→70 且截断必须披露：v3.14 轮 live 实测 EDGAR 指引
+    // claim 达 61 条（form D 新增 META 10 条 + NVDA 全年税率 3 条后），
+    // 40 的上限把 ticker 顺序尾部的 META/AMZN/GOOGL/ORCL 整批切掉——
+    // 辨别了但看不见/登记不了/结算不了，正是 v3.10（候选桶 8 会静默切尾）
+    // 与 v3.11（渲染上限加截断披露）的同型纪律。上限仍可能被突破（公司
+    // 数×每备案指引数还会涨），超限时如实报「另有 N 条未进辨别」。
+    let edgarClaimsSeen = 0;
+    let edgarClaimsCut = 0;
+    const EDGAR_CLAIMS_CAP = 70;
     for (const it of this.signals.items) {
       if (!Array.isArray(it.guidance)) continue;
       for (const g of it.guidance) {
         if (!g.quarter && !g.annual) continue;
+        edgarClaimsSeen++;
+        if (claims.length >= EDGAR_CLAIMS_CAP) { edgarClaimsCut++; continue; }
         claims.push({
           text: g.sentence,
           claimSentence: g.sentence,
@@ -1459,10 +1470,11 @@ class ProjectionEngine {
           // [v3.5] ticker 透传：结算元数据要用它把指引对到具体公司的财报实际值
           ticker: it.ticker || null,
         });
-        if (claims.length >= 40) break;
       }
-      if (claims.length >= 40) break;
     }
+    const edgarTruncation = edgarClaimsCut > 0
+      ? { seen: edgarClaimsSeen, cut: edgarClaimsCut, cap: EDGAR_CLAIMS_CAP }
+      : null;
     for (const it of this.signals.items) {
       const text = `${it.title || ''} ${it.body || ''} ${it.description || ''}`;
       // [v2.13] 归一化弯引号/弯撇号。
@@ -1667,6 +1679,9 @@ class ProjectionEngine {
 
     return {
       ...res,
+      // [v3.14] EDGAR 指引 claim 截断披露（额度 70 仍可能被突破）——
+      // 辨别了但看不见/登记不了/结算不了，必须如实报数不静默切尾
+      edgarClaimsTruncation: edgarTruncation,
       // 登记结果回填进报告，让 agent 与读者都能看到「这条真的进台账了」
       ledgerRegistration: {
         registered,
@@ -2578,6 +2593,12 @@ function formatReport(report) {
       + ` | 不可证伪 ${s.notForecastCount} 条 | 非预测文本 ${s.referenceTextCount || 0} 条`
       + ` | 财报指引 ${s.guidanceCount || 0} 条`
       + ` | 校准警告 ${s.calibrationWarnings} 条`);
+    // [v3.14] EDGAR 指引 claim 额度截断披露（v3.10/v3.11 同型纪律：
+    // 超限时明确写「另有 N 条未显示」，不静默切尾）
+    if (fd.edgarClaimsTruncation) {
+      const t = fd.edgarClaimsTruncation;
+      lines.push(`> 口径限定：本期 SEC EDGAR 指引 claim 共 ${t.seen} 条，辨别额度上限 ${t.cap} 条，另有 ${t.cut} 条未进辨别（公司数×每备案指引数增长所致——未辨别的指引不登记不结算，不是「没有问题」）。`);
+    }
     lines.push('');
     const VERDICT_CN = {
       'not-a-forecast': '不可证伪', 'bare-assertion': '裸断言',

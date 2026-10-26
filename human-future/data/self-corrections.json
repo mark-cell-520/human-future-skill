@@ -1,5 +1,5 @@
 {
-  "version": "3.13.0",
+  "version": "3.14.0",
   "corrections": [
     {
       "id": "corr-2026-007",
@@ -336,6 +336,26 @@
       "lesson": "跨模块传字段时，「接收函数签收了吗」要看到落盘后的文件内容才算数——JSON 台账是最终消费者，断言必须读落账后的字段值（v3.5.1「登记元数据完整」断言同型：不只字段存在，要值非空）。传参与落账之间任何一层做白名单过滤，整条链路就是断的。",
       "severity": "high",
       "recordedAt": "2026-10-26T12:14:20.259Z"
+    },
+    {
+      "id": "corr-2026-032",
+      "reportVersion": "v3.14",
+      "wrongClaim": "（沿用假设）14 家公司名单里的公司，采集窗口内有业绩 8-K 就意味着拿到了它们的数值指引——META 三份备案在窗口内、description 写着「备案附件中无数值指引（部分公司只在电话会口头给指引）」，与 MSFT/GOOGL 的如实记录混在同一句里，看不出区别",
+      "rightClaim": "META 自 v3.4（2026-10-25）起就在 DEFAULT_TICKERS 里，三份备案（10-21/07-29/04-29）的 CFO Outlook Commentary 段每份给 3-4 条量化区间指引（\"We expect fourth quarter 2026 total revenue to be in the range of $73-76 billion\" 等），但三条指引形态全部不命中：form A 要 \"指标+is/are expected to be\"、form B 要动词与指标名词紧邻，而 META 是动词在前+期间短语间隔+连字符区间。三个版本零条 META 指引进台账，「无数值指引」的描述对 META 是形态漏报不是如实记录——在窗公司≠采到的指引",
+      "evidence": "2026-10-26 从 SEC EDGAR 实抓三份 META EX-99（meta-09302026xexhibit991.htm 等）：extractGuidance 旧代码命中 0 条/份；新增 form D 后 4/3/3 条，10 条登记进台账、Q2 营收区间 $58-61B vs 实际 $60.80B 带内命中",
+      "lesson": "「窗口内有备案」与「采到了指引」是两件事，而「无数值指引」的同一句描述混报了两种完全不同的状态（口头指引的如实记录 vs 形态漏报）。纪律：① 每轮对在窗公司跑「零指引」过堂——有备案但零指引的公司逐个确认是口头指引还是形态不命中（MSFT/GOOGL 口头有 live 依据，META 是漏报）；② 扩指标族/形态族时问「该形态的 live 实证从哪个公司来」——corr-2026-028 对商业辨别立过同型纪律（新桶全部命中过堂），指引抽取侧同样要。",
+      "severity": "high",
+      "recordedAt": "2026-10-26T14:55:00.950Z"
+    },
+    {
+      "id": "corr-2026-033",
+      "reportVersion": "v3.14",
+      "wrongClaim": "（沿用假设）ANNUAL_PERIOD_PATTERN 覆盖了全年指引的期间形态——NVDA 全年税率指引「For the full year fiscal 2027, … tax rates are expected to be between 17.0% and 19.0%」登记进台账时期间是对的",
+      "rightClaim": "该正则 `(?:full\\s+)?(?:fiscal\\s+year|FY|year)\\s*(20\\d{2})` 要求年份词与数字紧邻，而 NVDA 原文是 \"full year fiscal 2027\"（year 与 2027 之间还有 fiscal）——整个不命中，全年指引被右侧邻近的 \"first quarter of fiscal 2027\"（outlook 段头）抢走，错记成 FY27Q1 指引（台账 dueOn 2026-06-14 而非 2027-03-17，v3.4 起三个版本的隐藏错配；该条因 NVDA 亮点段无税率实际值句一直 pending，错配没暴露成错误结算）。v3.14 年份词与数字间容忍可选 fiscal 后期间归位",
+      "evidence": "直接正则复现：旧 ANNUAL_PERIOD_PATTERN 对 \"For the full year fiscal 2027, GAAP and non-GAAP tax rates are expected…\" no-match；台账实查 fc-sec-edgar-0001045810-26-000019-…-tax-r 条目 dueOn=2026-06-14（Q1 结算点）；修复后 extractGuidance 输出 annual=true/FY2027/periodLabel 为 FY2027 全年",
+      "lesson": "「全年 vs 季度」的期间判据错配不会报错、只会静默改变结算点（dueOn 差 9 个月），且实际值缺失时连「结错」都暴露不了——pending 把错位藏起来了。判据修复的验证不能只看「修好后对」，要拿**修复前会怎样**对照：本次是靠「台账里已存在 dueOn 2026-06-14 的全年税率条目」反推出来的。另：rightmost-wins 期间匹配让错配总是倒向**最近**的季度词——年度形态漏配时，最近的季度段头就是接盘者。",
+      "severity": "medium",
+      "recordedAt": "2026-10-26T14:55:00.951Z"
     }
   ]
 }

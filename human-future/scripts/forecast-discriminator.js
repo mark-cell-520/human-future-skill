@@ -101,9 +101,11 @@ const REFERENCE_TEXT_PATTERNS = [
 // EX-99 业绩发布里："Revenue is expected to be $108.0 billion, plus or
 // minus 2%"（NVIDIA FY2027 Q3 指引）。有主体（公司）、有事件（下一财季
 // 实际值）、有结算机制（下一期财报公布）。判据与 edgar-collector 的
-// 抽取模式同源（三条 live 实证句式：指标+is/are expected to be+数值）。
-// 与「意图声明」的分界：意图声明没有指标名词与数值的相邻共现。
-const GUIDANCE_METRIC = '(?:net revenues?|revenues?|net sales|total revenue|income|earnings|eps|diluted earnings per share|gross margins?|operating expenses|operating income|tax rates?|free cash flow|capital expenditures?|capex)';
+// 判据与 edgar-collector 的抽取模式同源（三条 live 实证句式：指标+is/are expected to be+数值）。
+// [v3.14] total expenses 与 edgar-collector 的 METRIC_NOUNS 同步（META 全年
+// 费用指引 live 实证）——两份名词表历来一致，只改一处会让 RSS 文本路径与
+// 结构化元数据路径对同一句式给出不同判定。
+const GUIDANCE_METRIC = '(?:net revenues?|revenues?|net sales|total revenue|total expenses|income|earnings|eps|diluted earnings per share|gross margins?|operating expenses|operating income|tax rates?|free cash flow|capital expenditures?|capex)';
 const GUIDANCE_TEXT_RE = new RegExp(
   `(?:${GUIDANCE_METRIC})\\b[^.;•]{0,140}?\\b(?:is|are)\\s+(?:expected|projected|anticipated|forecast|guided)\\s+to\\s+be\\b[^.;•]{0,80}?[\\d$%]`,
   'i');

@@ -61,18 +61,38 @@ function parseMetricValue(str) {
 
 /**
  * 解析区间指引值 → {lo, hi, unit}。
- * 支持 "between $197.0 billion and $202.0 billion" 与 "52.1% to 53.1%"。
+ * 支持 "between $197.0 billion and $202.0 billion" / "52.1% to 53.1%" /
+ * [v3.14] "in the range of $73-76 billion"（连字符区间，两端同单位）/
+ * "between 15-17%"（单百分号区间）——META CFO 评论式指引 live 实证。
  */
 function parseRange(str) {
   const s = String(str || '');
-  const mDollar = s.match(/between\s+\$?\s?([\d.,]+)\s*(billion|million)?\s+and\s+\$?\s?([\d.,]+)\s*(billion|million)?/i);
+  const mDollar = s.match(/between\s+\$?\s?([\d.,]+)\s*(billion|million|%)?\s+and\s+\$?\s?([\d.,]+)\s*(billion|million|%)?/i);
   if (mDollar) {
+    // [v3.14] 百分比区间（NVDA 全年税率 live 实证：「between 16.0% and
+    // 18.0%」）：任一侧带 % 按百分点判，数值不缩放——旧正则单位组
+    // 只有 billion/million，"16.0%" 的 % 让整段不命中、区间退化成
+    // 点值指引（无容差不可结算）。
+    if ((mDollar[2] || '').includes('%') || (mDollar[4] || '').includes('%')) {
+      return { lo: Number(mDollar[1].replace(/,/g, '')), hi: Number(mDollar[3].replace(/,/g, '')), unit: 'pct' };
+    }
     const scale = (u) => (u && SCALE[u.toLowerCase()]) || 1e9; // 营收区间默认 billion
     return { lo: Number(mDollar[1].replace(/,/g, '')) * scale(mDollar[2]),
       hi: Number(mDollar[3].replace(/,/g, '')) * scale(mDollar[4]), unit: 'usd' };
   }
+  // [v3.14] 连字符美元区间：「in the range of $73-76 billion」两端同单位
+  // （billion 只写一次——不吃进来两端都按 billion 折，$135-145 就是 1350 亿）
+  const mDashUsd = s.match(/in\s+the\s+range\s+of\s+\$\s?([\d.,]+)\s*[-–]\s*\$?\s?([\d.,]+)\s*(billion|million)/i);
+  if (mDashUsd) {
+    const sc = SCALE[mDashUsd[3].toLowerCase()];
+    return { lo: Number(mDashUsd[1].replace(/,/g, '')) * sc,
+      hi: Number(mDashUsd[2].replace(/,/g, '')) * sc, unit: 'usd' };
+  }
   const mPct = s.match(/([\d.]+)\s*%\s*(?:to|and|-|–)\s*([\d.]+)\s*%/i);
   if (mPct) return { lo: Number(mPct[1]), hi: Number(mPct[2]), unit: 'pct' };
+  // [v3.14] 单百分号区间：「between 15-17%」（旧正则要求两端都有 %）
+  const mDashPct = s.match(/between\s+([\d.]+)\s*[-–]\s*([\d.]+)\s*%/i);
+  if (mDashPct) return { lo: Number(mDashPct[1]), hi: Number(mDashPct[2]), unit: 'pct' };
   return null;
 }
 
@@ -137,7 +157,10 @@ function settleGuidance(g, actualValue) {
  * 见 SKILL.md「仍在库外」）。每股写法（diluted net income per share /
  * diluted earnings per share / EPS）都归 diluted eps——旧实现只归两名，
  * MRVL EPS 指引的指标名是 income，与实际值侧配不上。
- * 其余原样返回（配不上就不结算，不硬凑）。
+ * [v3.14] total expenses 归一族（META 全年费用指引 "full year 2026
+ * total expenses"，live 实证）——指引侧 settleMetric 与实际值侧同族
+ * 才能配对；全年实际值抽取（Q4 备案「季度+全年」双值句取全年值）是
+ * 已知边界，见 SKILL.md。其余原样返回（配不上就不结算，不硬凑）。
  */
 function normalizeMetric(m) {
   const s = String(m || '').toLowerCase().trim();
@@ -146,6 +169,7 @@ function normalizeMetric(m) {
   if (/diluted\s+(?:net\s+)?income\s+per\s+share|diluted\s+earnings\s+per\s+share|earnings\s+per\s+(?:diluted\s+)?share|\beps\b/.test(s)) return 'diluted eps';
   if (/operating\s+income/.test(s)) return 'operating income';
   if (/operating\s+expenses/.test(s)) return 'operating expenses';
+  if (/total\s+(?:costs\s+and\s+)?expenses/.test(s)) return 'total expenses';
   if (/tax\s+rates?/.test(s)) return 'tax rate';
   return s;
 }
@@ -162,6 +186,15 @@ if (require.main === module) {
     ['52.1%', null, false, '52.1%', null, null],                          // 无容差点值 → 不可结算
     ['between $197.0 billion and $202.0 billion', null, true, '$200.0 billion', true, 'in-band'], // Amazon range
     ['$3.150 billion', '5%', false, '$2.9 billion', false, 'below'],       // MRVL net revenue 相对容差, actual 低于带下沿
+    // [v3.14] META CFO 评论式区间（live 实证）：连字符美元区间两端同单位
+    ['in the range of $58-61 billion', null, true, '$60.80 billion', true, 'in-band'],   // META Q2-26 revenue
+    ['in the range of $61-64 billion', null, true, '$64.60 billion', false, 'beat'],     // META Q3-26 revenue: 实际超带上沿
+    // [v3.14] 单百分号区间（税率）
+    ['between 15-17%', null, true, '16.2%', true, 'in-band'],             // META Q4-26 tax rate
+    // [v3.14] 双百分号 between-and 区间（NVDA 全年税率 live：between 16.0% and 18.0%）
+    ['between 16.0% and 18.0%', null, true, '17.1%', true, 'in-band'],
+    // [v3.14] 单位不混：美元区间 vs 百分点实际值不可结算
+    ['in the range of $58-61 billion', null, true, '16.2%', null, null],
   ];
   let pass = 0, fail = 0;
   for (const [gv, tol, isRange, av, expHit, expDir] of cases) {

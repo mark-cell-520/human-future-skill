@@ -4231,11 +4231,11 @@ c34('cron 注入脚本渲染财报指引（VERDICT_CN/汇总/结构行）', (() 
 
 // ── 组 4：版本号（corr-2026-014 同型：banner 腐烂四个补丁轮）─────
 // [v3.6] 版本推进到 3.6.0（新辨别维度：成本/价格信号），本断言跟着当前版本走。
-c34('版本号一致性：banner 与 VERSION 对齐（3.13.0）', (() => {
+c34('版本号一致性：banner 与 VERSION 对齐（3.14.0）', (() => {
   const fs2 = require('fs');
   const version = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return version === '3.13.0' && rp.includes('文明推演引擎 v3.13.0');
+  return version === '3.14.0' && rp.includes('文明推演引擎 v3.14.0');
 })(), 'run-pipeline banner 必须与 VERSION 一致（v3.1 修过 banner/meta 同型后又腐烂）');
 
 // ── v3.4 汇总 ──
@@ -4429,15 +4429,15 @@ c35('cron 注入脚本渲染财报指引结算段', (() => {
 
 // ── 组 6：版本号一致性（corr-2026-014 同型，四处对齐）──────────
 // [v3.6] 推进到 3.6.0（新辨别维度），断言跟当前版本走。
-c35('版本号一致性：VERSION/package.json/projection meta/banner 对齐 3.13.0', (() => {
+c35('版本号一致性：VERSION/package.json/projection meta/banner 对齐 3.14.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.13.0'
-    && /3\.13\.0/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.13.0');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.13.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.14.0'
+    && /3\.14\.0/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.14.0');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.14.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.5 汇总 ──
 (async () => {
@@ -4664,15 +4664,15 @@ c351('结算证据来源是提供实际值的备案（actualPeriod 匹配）', (
 
 // ── 组 4：版本号一致性（corr-2026-014 同型）────────────────────
 // [v3.6] 推进到 3.6.0（新辨别维度：成本/价格信号）。
-c351('版本号一致性：VERSION/package.json/banner 对齐 3.13.0', (() => {
+c351('版本号一致性：VERSION/package.json/banner 对齐 3.14.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.13.0'
-    && /3\.13\.0/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.13.0');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.13.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.14.0'
+    && /3\.14\.0/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.14.0');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.14.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.5.1 汇总 ──
 (async () => {
@@ -4867,15 +4867,15 @@ c36('精度门未破：非主张文本仍被挡在辨别外', (() => {
 })(), 'Fed 公告与播客不得因 cost-signal 新模式进入辨别');
 
 // ── 组 5：版本号一致性（corr-2026-014 同型）────────────────────
-c36('版本号一致性：VERSION/package.json/banner 对齐 3.13.0', (() => {
+c36('版本号一致性：VERSION/package.json/banner 对齐 3.14.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.13.0'
-    && /3\.13\.0/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.13.0');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.13.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.14.0'
+    && /3\.14\.0/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.14.0');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.14.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.6 汇总 ──
 (async () => {
@@ -5111,15 +5111,15 @@ c37('精度门未破：非主张文本仍被挡在辨别外', (() => {
 })(), 'Fed 公告与播客不得因 expert-judgment 新模式进入辨别');
 
 // ── 组 5：版本号一致性（corr-2026-014 同型）────────────────────
-c37('版本号一致性：VERSION/package.json/banner 对齐 3.13.0', (() => {
+c37('版本号一致性：VERSION/package.json/banner 对齐 3.14.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.13.0'
-    && /3\.13\.0/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.13.0');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.13.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.14.0'
+    && /3\.14\.0/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.14.0');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.14.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.7 汇总 ──
 (async () => {
@@ -5410,15 +5410,15 @@ c38('精度门未破：非主张文本仍被挡在辨别外', (() => {
 })(), 'Fed 公告/播客/官员言论不得因 regulatory-action 新模式进入辨别');
 
 // ── 组 5：版本号一致性（corr-2026-014 同型）────────────────────
-c38('版本号一致性：VERSION/package.json/banner 对齐 3.13.0', (() => {
+c38('版本号一致性：VERSION/package.json/banner 对齐 3.14.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.13.0'
-    && /3\.13\.0/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.13.0');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.13.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.14.0'
+    && /3\.14\.0/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.14.0');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.14.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.8 汇总 ──
 (async () => {
@@ -5639,18 +5639,18 @@ c39('精度门未破：非主张文本与无幅度价格谈论仍被挡在辨别
 })(), 'Fed 公告/播客/无幅度降价谈论/TCO 效率句/官员言论不得因 price-cut 新模式进入辨别');
 
 // ── 组 5：版本号一致性（corr-2026-014 同型）────────────────────
-c39('版本号一致性：五处对齐 3.13.0', (() => {
+c39('版本号一致性：五处对齐 3.14.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs2.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.13.0'
-    && pkg.version === '3.13.0'
-    && rp.includes('文明推演引擎 v3.13.0')      // banner
-    && /version: '3\.13\.0'/.test(pf)          // projection meta
-    && /version: '3\.13\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.13.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.14.0'
+    && pkg.version === '3.14.0'
+    && rp.includes('文明推演引擎 v3.14.0')      // banner
+    && /version: '3\.14\.0'/.test(pf)          // projection meta
+    && /version: '3\.14\.0'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.14.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.9 汇总 ──
 (async () => {
@@ -6012,18 +6012,18 @@ c310('精度门未破：扩桶后非主张文本仍被挡在辨别外', (() => {
 })(), 'Fed 公告/播客/无数量部署谈话/合作公告/免责声明/泛指交易假设句/官员言论不得因扩池与新模式进入辨别');
 
 // ── 组 7：版本号一致性（corr-2026-014 同型）────────────────────
-c310('版本号一致性：五处对齐 3.13.0', (() => {
+c310('版本号一致性：五处对齐 3.14.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs2.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.13.0'
-    && pkg.version === '3.13.0'
-    && rp.includes('文明推演引擎 v3.13.0')      // banner
-    && /version: '3\.13\.0'/.test(pf)          // projection meta
-    && /version: '3\.13\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.13.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.14.0'
+    && pkg.version === '3.14.0'
+    && rp.includes('文明推演引擎 v3.14.0')      // banner
+    && /version: '3\.14\.0'/.test(pf)          // projection meta
+    && /version: '3\.14\.0'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.14.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.10 汇总 ──
 (async () => {
@@ -6355,18 +6355,18 @@ c3111('精度门未破：非主张文本不因新形态进入辨别', (() => {
 })(), 'Fed 公告/播客/订阅总量/速率上限/无数量部署谈话/合作公告不得因 usage-metric 进辨别');
 
 // ── 组 7：版本号一致性（corr-2026-014 同型）────────────────────
-c3111('版本号一致性：五处对齐 3.13.0', (() => {
+c3111('版本号一致性：五处对齐 3.14.0', (() => {
   const fs311 = require('fs');
   const VERSION = fs311.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs311.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs311.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs311.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.13.0'
-    && pkg.version === '3.13.0'
-    && rp.includes('文明推演引擎 v3.13.0')      // banner
-    && /version: '3\.13\.0'/.test(pf)          // projection meta
-    && /version: '3\.13\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.13.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.14.0'
+    && pkg.version === '3.14.0'
+    && rp.includes('文明推演引擎 v3.14.0')      // banner
+    && /version: '3\.14\.0'/.test(pf)          // projection meta
+    && /version: '3\.14\.0'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.14.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.11 汇总 ──
 (async () => {
@@ -6660,18 +6660,18 @@ c312('精度门未破：营收/工程 scaling/政府资助/无数量规模级句
 })(), '营收句/工程 scaling/政府资助/无数量规模级句/Fed 公告/播客不得因 compute-infra 进辨别');
 
 // ── 组 7：版本号一致性（corr-2026-014 同型）────────────────────
-c312('版本号一致性：五处对齐 3.13.0', (() => {
+c312('版本号一致性：五处对齐 3.14.0', (() => {
   const fs312 = require('fs');
   const VERSION = fs312.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs312.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs312.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs312.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.13.0'
-    && pkg.version === '3.13.0'
-    && rp.includes('文明推演引擎 v3.13.0')      // banner
-    && /version: '3\.13\.0'/.test(pf)          // projection meta
-    && /version: '3\.13\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.13.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.14.0'
+    && pkg.version === '3.14.0'
+    && rp.includes('文明推演引擎 v3.14.0')      // banner
+    && /version: '3\.14\.0'/.test(pf)          // projection meta
+    && /version: '3\.14\.0'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.14.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.12 汇总 ──
 (async () => {
@@ -6989,19 +6989,19 @@ c313('cron 注入源级：口径一致才配对措辞进注入脚本', (() => {
     && /guidanceSettlement/.test(sh);   // v3.5 注入不断链
 })(), 'hf-cron-fetch.sh 必须含口径配对限定与歧义新措辞——引擎产出了但注入脚本不读＝agent 看不到（同型断链纪律）');
 
-// 13. 版本号一致性（五处对齐 3.13.0）
-c313('版本号一致性：五处对齐 3.13.0', (() => {
+// 13. 版本号一致性（五处对齐 3.14.0）
+c313('版本号一致性：五处对齐 3.14.0', (() => {
   const fs313 = require('fs');
   const VERSION = fs313.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs313.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs313.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs313.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.13.0'
-    && pkg.version === '3.13.0'
-    && rp.includes('文明推演引擎 v3.13.0')      // banner
-    && /version: '3\.13\.0'/.test(pf)          // projection meta
-    && /version: '3\.13\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.13.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.14.0'
+    && pkg.version === '3.14.0'
+    && rp.includes('文明推演引擎 v3.14.0')      // banner
+    && /version: '3\.14\.0'/.test(pf)          // projection meta
+    && /version: '3\.14\.0'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.14.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.13 汇总 ──
 (async () => {
@@ -7018,5 +7018,277 @@ c313('版本号一致性：五处对齐 3.13.0', (() => {
     process.exitCode = 1;
   } else {
     console.log('结论：结算指标从 2 个扩到 4 个族（毛利率 bullet 形态/EPS/营业利润；opex/税率无实际值来源留边界），GAAP/非 GAAP 口径分 key 配对，全年值不混进财季 key，同句连续备案按备案号定位财季，旧 artifact claim 经名词对齐 key 配对。live 端到端新结算 7 条（5 命中/2 未中），Brier 义务样本 10→11。');
+  }
+})();
+
+// ════════════════════════════════════════════════════════════════
+// v3.14 — META CFO 评论式指引形态进库（已知边界推进：区间指引语法
+// + bullet 营收实际值 + 全年期间修复）
+//
+// 审计实测（2026-10-26，corr-2026-032）：META 自 v3.4 起就在 14 家
+// 公司名单里，但三份备案的 CFO Outlook Commentary 段三条旧指引形态
+// 全部不命中——form A 要 "is/are expected to be"、form B 要动词与
+// 指标名词紧邻，而 META 的句式是 "We expect fourth quarter 2026
+// total revenue to be in the range of $73-76 billion"（动词在前、
+// 期间短语间隔、连字符区间）。三个版本零条 META 指引进台账，与
+// MSFT/GOOGL「只在电话会口头给指引」混在同一句描述里——在窗公司
+// ≠ 采到的指引。
+//
+// 本轮（全部 2026-10-26 从 SEC EDGAR 实抓原文驱动）：
+//   ① extractGuidance 新增 form D（动词+间隔词≥1+指标+区间标记），
+//      间隔词类含连字符（"GAAP and non-GAAP"），值尾部小数点容差
+//      （"between 16.0% and 18.0%" 的小数点不是句读）
+//   ② 区间语法扩两种：连字符美元区间（$73-76 billion 两端同单位）
+//      与单百分号区间（between 15-17%）；"between X% and Y%" 的
+//      单位组补 %（NVDA 全年税率 live）
+//   ③ 期间形态补两个全年形态：锚词在年份前（expect full year 2026）
+//      与裸年份（anticipate 2026 capital expenditures）；顺带修复
+//      ANNUAL_PERIOD_PATTERN 对 "full year fiscal 2027" 不命中的
+//      隐藏错配（NVDA 全年税率指引自 v3.4 起被错记成 FY27Q1）
+//   ④ extractActuals 新增 META 亮点 bullet 营收形态（实际值句在
+//      汇总表之后、超出 lead=1600 窗口：10-21@2088/04-29@2153）
+//   ⑤ 多季度指引守卫（"remaining quarters of 2026" 不适用单期
+//      结算，跳过不蹭前句期间）
+// live 端到端（见组 3）：10 条 META 指引登记，Q2 营收区间
+// $58-61B vs 实际 $60.80B 带内命中（到期结算），Q3/Q4/全年
+// 费用/capex/税率按到期门与年度实际值边界保持 pending。
+// 同轮修一个端到端断点：EDGAR 指引 claim 额度 40→70 并加截断
+// 披露——live 实测 61 条 claim，旧上限把 ticker 顺序尾部的
+// META/AMZN/GOOGL/ORCL 整批切掉（辨别了但看不见/登记不了/
+// 结算不了，v3.10 候选桶同型）。
+// ════════════════════════════════════════════════════════════════
+const v314 = [];
+function c314(name, ok, detail) { v314.push({ name, ok, detail }); }
+
+// live 原文（2026-10-26 从 SEC EDGAR 实抓：meta-09302026xexhibit991.htm
+// 等三份 EX-99，stripHtml 后节选——指引段与实际值段的位置关系保持原样）
+const META_1021_TXT = 'EX-99.1 3 meta-09302026xexhibit991.htm EX-99.1 Document Meta Reports Third Quarter 2026 Results Announces Establishment of New Class C Common Stock MENLO PARK, Calif. – October 21, 2026 – Meta Platforms, Inc. (Nasdaq: META) today reported financial results for the quarter ended September 30, 2026. "We hit major milestones this quarter toward delivering personal superintelligence for everyone - including launching Muse and Muse Wonder, our first frontier model," said Mark Zuckerberg, Meta founder and CEO. "Our investments are paying off, the core business is strong, and we\'re seeing velocity across the board." Third Quarter 2026 Financial Highlights Three Months Ended September 30, % Change In millions, except percentages and per share amounts 2026 2025 Revenue $ 64,601 $ 51,242 26 % Costs and expenses 51,613 30,707 68 % Income from operations $ 12,988 $ 20,535 (37) % Operating margin 20 % 40 % Provision for income taxes $ 3,141 $ 18,954 (83) % Effective tax rate 24 % 87 % Net income $ 9,860 $ 2,709 264 % Diluted earnings per share (EPS) $ 3.83 $ 1.05 265 % Agreement with U.S. State Attorneys General In August 2026, we announced an agreement with 52 attorneys general to resolve litigation related to teen mental health and social media, which provides for payments of up to approximately $18.59 billion. Third quarter 2026 costs and expenses includes a $9.89 billion charge related to this agreement. Excluding this charge, the third quarter 2026: • Income from operations of $12.99 billion would have increased by $9.89 billion to $22.88 billion. • Diluted EPS of $3.83 would have increased by $3.57 to $7.40. • Effective tax rate of 24% would have decreased by 7 percentage points to 17%. Third Quarter 2026 Operational and Other Financial Highlights • Family daily active people (DAP) – DAP was 3.64 billion on average for September 2026, an increase of 3% year-over-year. • Ad impressions – Ad impressions delivered across our Family of Apps increased by 10% year-over-year. • Average price per ad – Average price per ad increased by 14% year-over-year. • Revenue – Revenue was $64.60 billion, an increase of 26% year-over-year on both a reported and constant currency basis. • Costs and expenses – Total costs and expenses were $51.61 billion, an increase of 68% year-over-year. This includes the litigation charge as discussed above. • Capital expenditures – Capital expenditures, including principal payments on finance leases, were $34.91 billion. • Capital return program – Dividend and dividend equivalent payments were $1.36 billion. • Cash, cash equivalents, and marketable securities – Cash, cash equivalents, and marketable securities were $82.45 billion as of September 30, 2026. • Cash flow – Cash flow from operating activities was $32.79 billion, and free cash flow was negative $2.12 billion. (1) • Headcount – Headcount was 66,775 as of September 30, 2026, a decrease of 15% year-over-year. ____________________________________ (1) For more information on our free cash flow non-GAAP financial measure, see the sections entitled "Non-GAAP Financial Measures" and "Reconciliation of GAAP to Non-GAAP Results" in this press release. 1 CFO Outlook Commentary We expect fourth quarter 2026 total revenue to be in the range of $73-76 billion. Our guidance assumes foreign currency is an approximately 1% headwind to year-over-year total revenue growth, based on current exchange rates. We are raising our expense outlook to incorporate the $9.9 billion charge related to legal proceedings recognized in the third quarter. We now expect full year 2026 total expenses to be in the range of $175-179 billion. Excluding the third quarter legal charge, we continue to expect 2026 operating income to be above 2025 operating income. At a segment level, we now expect Reality Labs losses to decline compared to 2025 to a range of $18-19 billion. We anticipate 2026 capital expenditures, including principal payments on finance leases, to be in the range of $135-145 billion, narrowed from our prior outlook of $130-145 billion. Absent any changes to our tax landscape, we expect our fourth quarter 2026 tax rate to be between 15-17%. Additionally, we continue to monitor active legal and regulatory matters that could significantly impact our business and financial results. For example, we continue to see scrutiny on youth-related issues in several markets and have a number of youth-related trials scheduled in the coming months in the U.S. Looking beyond 2026, we are still developing our budget and capacity plans for next year, but we expect to continue investing aggr';
+const META_0729_TXT = 'EX-99.1 2 meta-06302026xexhibit991.htm EX-99.1 Document Meta Reports Second Quarter 2026 Results MENLO PARK, Calif. – July 29, 2026 – Meta Platforms, Inc. (Nasdaq: META) today reported financial results for the quarter ended June 30, 2026. Second Quarter 2026 Financial Highlights Three Months Ended June 30, % Change In millions, except per share data Revenue $60,800 $51,220 19 % Costs and expenses 42,030 27,179 55 % Income from operations 18,770 24,041 (22)% Net income 7,529 12,560 (40)% • Revenue – Revenue was $60.80 billion, an increase of 28% year-over-year. • Costs and expenses – Total costs and expenses were $42.03 billion, an increase of 55% year-over-year. • Capital expenditures – Capital expenditures, including principal payments on finance leases, were $31.08 billion. 1 CFO Outlook Commentary We expect third quarter 2026 total revenue to be in the range of $61-64 billion. Our guidance assumes foreign currency is an approximately 1% headwind to year-over-year total revenue growth, based on current exchange rates. We are raising the lower-end of our expense outlook to incorporate the $2.4 billion charges related to legal proceedings recognized in the second quarter. We now expect full year 2026 total expenses to be in the range of $165-169 billion. We continue to expect to deliver operating income this year that is above 2025 operating income. We anticipate 2026 capital expenditures, including principal payments on finance leases, to be in the range of $130-145 billion, narrowed from our prior outlook of $125-145 billion. Absent any changes to our tax landscape, we expect our tax rate for the remaining quarters of 2026 to be between 15-17%, an increase from our prior outlook of 13-16%.';
+const META_0429_TXT = 'EX-99.1 2 meta-03312026xexhibit991.htm EX-99.1 Document Meta Reports First Quarter 2026 Results MENLO PARK, Calif. – April 29, 2026 – Meta Platforms, Inc. (Nasdaq: META) today reported financial results for the quarter ended March 31, 2026. "We had a milestone quarter with strong momentum across our apps and the release of our first model from Meta Superintelligence Labs," said Mark Zuckerberg, Meta founder and CEO. "We\'re on track to deliver personal superintelligence to billions of people." First Quarter 2026 Financial Highlights Three Months Ended March 31, % Change In millions, except percentages and per share amounts 2026 2025 Revenue $ 56,311 $ 42,314 33 % Costs and expenses 33,439 24,759 35 % Income from operations $ 22,872 $ 17,555 30 % Operating margin 41 % 41 % Provision (benefit) for income taxes (1) $ (5,021) $ 1,738 NM Effective tax rate (1) (23) % 9 % Net income $ 26,773 $ 16,644 61 % Diluted earnings per share (EPS) (1) $ 10.44 $ 6.43 62 % ____________________________________ NM — not meaningful (1) Includes an $8.03 billion income tax benefit recognized in the first quarter of 2026, which partially offsets the $15.93 billion non-cash tax charge recorded in the third quarter of 2025 upon enactment of the One Big Beautiful Bill Act. This benefit is the result of U.S. Treasury Notice 2026-7, which addressed the Corporate Alternative Minimum Tax treatment of previously capitalized U.S. research and development costs. Excluding this tax benefit, our effective tax rate would have been 37 percentage points higher and our diluted earnings per share (EPS) would have been $3.13 lower. First Quarter 2026 Operational and Other Financial Highlights • Family daily active people (DAP) – DAP was 3.56 billion on average for March 2026, an increase of 4% year-over-year. The slight decline in DAP on a quarter-over-quarter basis was driven by internet disruptions in Iran, as well as a restriction on access to WhatsApp in Russia. • Ad impressions – Ad impressions delivered across our Family of Apps increased by 19% year-over-year. • Average price per ad – Average price per ad increased by 12% year-over-year. • Revenue – Revenue was $56.31 billion, an increase of 33% year-over-year. Revenue on a constant currency basis would have increased by 29% year-over-year. • Costs and expenses – Total costs and expenses were $33.44 billion, an increase of 35% year-over-year. • Capital expenditures – Capital expenditures, including principal payments on finance leases, were $19.84 billion. • Capital return program – Dividend and dividend equivalent payments were $1.35 billion. • Cash, cash equivalents, and marketable securities – Cash, cash equivalents, and marketable securities were $81.18 billion as of March 31, 2026. • Cash flow – Cash flow from operating activities was $32.23 billion, and free cash flow was $12.39 billion. (1) • Headcount – Headcount was 77,986 as of March 31, 2026, an increase of 1% year-over-year. ____________________________________ (1) For more information on our free cash flow non-GAAP financial measure, see the sections entitled "Non-GAAP Financial Measures" and "Reconciliation of GAAP to Non-GAAP Results" in this press release. 1 CFO Outlook Commentary We expect second quarter 2026 total revenue to be in the range of $58-61 billion. Our guidance assumes foreign currency is an approximately 2% tailwind to year-over-year total revenue growth, based on current exchange rates. We expect full year 2026 total expenses to be in the range of $162-169 billion, unchanged from our prior outlook. We continue to expect to deliver operating income this year that is above 2025 operating income. We anticipate 2026 capital expenditures, including principal payments on finance leases, to be in the range of $125-145 billion, increased from our prior range of $115-135 billion. This reflects our expectations for higher component pricing this year and, to a lesser extent, additional data center costs to support future year capacity. Absent any changes to our tax landscape, we expect our tax rate for the remaining quarters of 2026 to be between 13-16%. Lastly, we continue to monitor active legal and regulatory matters, including headwinds in the EU and the U.S. that could significantly impact our business and financial results. For example, we continue to see scrutiny on youth-related issues and have additional trials scheduled for this year in the U.S., which may ultimately result in a material loss. 2 Webcast and Conference Call Information Meta will host a conference call to discuss its results at 2:30 p.m. PT / 5:30 p.m. ET';
+
+// ── 组 1：采集器指引抽取扩库（live 实证原文）──────────────────
+// 1. META 10-21 CFO Commentary 四形态（季度连字符区间/全年区间/裸年份全年/between 百分点）
+c314('extractGuidance：META CFO 评论式四形态（区间语法+全年期间+多季度守卫）', (() => {
+  const { extractGuidance } = require('./human-future/scripts/edgar-collector.js');
+  const { guidance } = extractGuidance(META_1021_TXT);
+  const rev = guidance.find(g => /73-76/.test(g.value || ''));
+  const exp = guidance.find(g => /175-179/.test(g.value || ''));
+  const capex = guidance.find(g => /135-145/.test(g.value || ''));
+  const tax = guidance.find(g => /15-17/.test(g.value || ''));
+  return guidance.length === 4
+    && rev && rev.settleMetric === 'revenue' && rev.isRange === true && rev.quarter === 4 && rev.fiscalYear === 2026 && rev.annual === false
+    && exp && exp.settleMetric === 'total expenses' && exp.annual === true && exp.quarter === null && exp.fiscalYear === 2026 && exp.periodLabel === 'FY2026 全年'
+    && capex && capex.settleMetric === 'capital expenditures' && capex.annual === true   // 裸年份全年形态
+    && tax && tax.settleMetric === 'tax rate' && tax.isRange === true && tax.quarter === 4 && tax.value === 'between 15-17%';
+})(), 'META 三份备案零条指引进台账（v3.4 起三个版本）——"We expect fourth quarter 2026 total revenue to be in the range of $73-76 billion" 三条旧形态全部不命中');
+
+// 2. META 07-29：多季度指引跳过（不蹭前句 capex 的全年期间）
+c314('extractGuidance：多季度指引跳过（remaining quarters 不适用单期结算）', (() => {
+  const { extractGuidance } = require('./human-future/scripts/edgar-collector.js');
+  const { guidance } = extractGuidance(META_0729_TXT);
+  const multi = guidance.find(g => /remaining\s+quarters/i.test(g.sentence));
+  const rev = guidance.find(g => /61-64/.test(g.value || ''));
+  const capex = guidance.find(g => /130-145/.test(g.value || ''));
+  return guidance.length === 3 && !multi
+    && rev && rev.quarter === 3 && rev.fiscalYear === 2026            // 季度指引期间不串台
+    && capex && capex.annual === true && capex.fiscalYear === 2026;   // 全年指引期间正确
+})(), '"tax rate for the remaining quarters of 2026" 覆盖多财季——不跳过会被右侧邻近的 "anticipate 2026 capital expenditures" 抢成 FY2026 全年（rightmost-wins 实测）');
+
+// 3. NVDA expects 在前全年税率（full year fiscal 2027 → annual；between X% and Y% 区间）
+c314('extractGuidance：NVDA expects 在前全年税率（年度期间修复+双百分号区间）', (() => {
+  const { extractGuidance } = require('./human-future/scripts/edgar-collector.js');
+  const NVDA = 'Outlook NVIDIA\'s outlook for the second quarter of fiscal 2027 is as follows: • Revenue is expected to be $91.0 billion, plus or minus 2%. • GAAP and non-GAAP gross margins are expected to be 74.9% and 75.0%, respectively, plus or minus 50 basis points. • GAAP and non-GAAP operating expenses are expected to be approximately $8.5 billion and $8.3 billion, respectively. For the full year fiscal 2027, NVIDIA expects GAAP and non-GAAP tax rates to be between 16.0% and 18.0%, excluding any discrete items.';
+  const { guidance } = extractGuidance(NVDA);
+  const tax = guidance.find(g => g.metric === 'tax rates');
+  const rev = guidance.find(g => g.metric === 'revenue');
+  return guidance.length === 4
+    && tax && tax.annual === true && tax.quarter === null && tax.fiscalYear === 2027 && tax.periodLabel === 'FY2027 全年'
+    && tax && tax.isRange === true && tax.value === 'between 16.0% and 18.0%' && tax.gaapBasis === 'gaap+non-gaap'
+    && rev && rev.quarter === 2 && rev.fiscalYear === 2027;          // 季度指引不受全年形态影响
+})(), 'ANNUAL_PERIOD_PATTERN 旧写法不匹配 "full year fiscal 2027"（year 与数字间还有 fiscal）——NVDA 全年税率指引自 v3.4 起被错记成 FY27Q1（dueOn 2026-06-14）；between X% and Y% 的单位组旧写法只有 billion/million，区间退化成点值');
+
+// 4. extractActuals META bullet 营收（lead 窗口外，10-21/04-29 live）
+c314('extractActuals：META 亮点 bullet 营收（汇总表之后、lead 窗口外）', (() => {
+  const { extractActuals } = require('./human-future/scripts/edgar-collector.js');
+  const ex21 = extractActuals(META_1021_TXT);
+  const ex29 = extractActuals(META_0429_TXT);
+  const ex0729 = extractActuals(META_0729_TXT);
+  return ex21.quarter === 3 && ex21.fiscalYear === 2026
+    && ex21.actuals.length === 1 && ex21.actuals[0].metric === 'revenue' && ex21.actuals[0].value === '$64.60 billion'
+    && ex29.quarter === 1 && ex29.fiscalYear === 2026 && ex29.actuals[0].value === '$56.31 billion'
+    && ex0729.actuals[0].value === '$60.80 billion';   // 07-29 bullet 在 lead 窗口内（旧模式本就抽得到）
+})(), 'META 实际值句 "• Revenue – Revenue was $64.60 billion" 在汇总表之后（live 实测 10-21@2088、04-29@2153，超出 lead=1600）——07-29@1343 在窗口内所以旧模式抽得到，另两份抽不到，到期营收指引找不到对账依据');
+
+// ── 组 2：区间解析纯函数（连字符两种 + 双百分号 + 单位不混）─────
+// 5. parseRange 连字符美元区间/单百分号/双百分号 between-and
+c314('parseRange：连字符区间与单百分号区间（META/NVDA live 两种新语法）', (() => {
+  const { parseRange, settleGuidance } = require('./human-future/scripts/earnings-settlement.js');
+  const dashUsd = parseRange('in the range of $58-61 billion');
+  const dashPct = parseRange('between 15-17%');
+  const bothPct = parseRange('between 16.0% and 18.0%');
+  const legacy = parseRange('between $197.0 billion and $202.0 billion');
+  const legacyPct = parseRange('52.1% to 53.1%');
+  const hitQ2 = settleGuidance({ value: 'in the range of $58-61 billion', isRange: true }, '$60.80 billion');
+  const beatQ3 = settleGuidance({ value: 'in the range of $61-64 billion', isRange: true }, '$64.60 billion');
+  const unitMix = settleGuidance({ value: 'in the range of $58-61 billion', isRange: true }, '16.2%');
+  return dashUsd && dashUsd.lo === 58e9 && dashUsd.hi === 61e9 && dashUsd.unit === 'usd'
+    && dashPct && dashPct.lo === 15 && dashPct.hi === 17 && dashPct.unit === 'pct'
+    && bothPct && bothPct.lo === 16 && bothPct.hi === 18 && bothPct.unit === 'pct'
+    && legacy && legacy.lo === 197e9 && legacyPct && legacyPct.lo === 52.1   // 旧语法不回退
+    && hitQ2.settleable && hitQ2.hit === true && /in-band/.test(hitQ2.direction)
+    && beatQ3.settleable && beatQ3.hit === false && /beat/.test(beatQ3.direction)
+    && unitMix.settleable === false && /不兼容/.test(unitMix.reason);       // 美元区间 vs 百分点实际值
+})(), '"$73-76 billion" 两端同单位（billion 只写一次）、"between 15-17%" 单百分号——旧正则整个不命中，区间指引被当成点值（无容差不可结算）');
+
+// ── 组 3：结算编排端到端（登记 + 到期门 + in-band 命中）─────────
+// 6. buildForecastDiscrimination 端到端：10 条登记、Q2 in-band 命中、Q3/Q4/全年 pending
+c314('端到端：META 指引登记 + Q2 营收区间 in-band 命中（到期门生效）', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const fs = require('fs');
+  const LEDGER = path.join(__dirname, 'human-future/data/prediction-ledger.json');
+  const saved = fs.existsSync(LEDGER) ? fs.readFileSync(LEDGER, 'utf-8') : null;
+  try {
+    fs.writeFileSync(LEDGER, JSON.stringify({ version: '1.0.0', predictions: [] }, null, 2));
+    // 指引/实际值字段用本轮 live 探针实抽结果（extractGuidance/extractActuals 对
+    // 三份原文的产物），期间/口径/区间标记保持采集器输出原样
+    const mkItem = (date, acc, quarter, guidance, actuals, actualPeriod) => ({
+      title: `Meta Platforms, Inc. (META) 8-K 业绩发布 · ${date}`, link: `https://www.sec.gov/Archives/edgar/data/1326801/${acc}/${acc}-index.htm`,
+      pubDate: date, description: '财报指引', body: '', source: 'SEC EDGAR', origin: 'live',
+      ticker: 'META', form: '8-K', accession: acc, filingDate: date, fiscalYearEnd: '1231',
+      guidance, actuals, actualPeriod,
+    });
+    const g = (sentence, metric, settleMetric, value, quarter, annual) =>
+      ({ sentence, metric, settleMetric, gaapBasis: '', value, tolerance: null, isRange: true, quarter, fiscalYear: 2026, annual: !!annual, periodLabel: quarter ? `FY2026 Q${quarter}` : 'FY2026 全年', caveats: [] });
+    const eng = new ProjectionEngine({});
+    eng.signals = { totalItems: 3, domains: [], items: [
+      mkItem('2026-04-29', '0001628280-26-028364', 1, [
+        g('expect second quarter 2026 total revenue to be in the range of $58-61 billion', 'total revenue', 'revenue', 'in the range of $58-61 billion', 2),
+        g('expect full year 2026 total expenses to be in the range of $162-169 billion', 'total expenses', 'total expenses', 'in the range of $162-169 billion', null, true),
+        g('anticipate 2026 capital expenditures, including principal payments on finance leases, to be in the range of $125-145 billion', 'capital expenditures', 'capital expenditures', 'in the range of $125-145 billion', null, true),
+      ], [{ metric: 'revenue', value: '$56.31 billion', gaapBasis: '' }], { quarter: 1, fiscalYear: 2026 }),
+      mkItem('2026-07-29', '0001628280-26-050596', 2, [
+        g('expect third quarter 2026 total revenue to be in the range of $61-64 billion', 'total revenue', 'revenue', 'in the range of $61-64 billion', 3),
+        g('expect full year 2026 total expenses to be in the range of $165-169 billion', 'total expenses', 'total expenses', 'in the range of $165-169 billion', null, true),
+        g('anticipate 2026 capital expenditures, including principal payments on finance leases, to be in the range of $130-145 billion', 'capital expenditures', 'capital expenditures', 'in the range of $130-145 billion', null, true),
+      ], [{ metric: 'revenue', value: '$60.80 billion', gaapBasis: '' }], { quarter: 2, fiscalYear: 2026 }),
+      mkItem('2026-10-21', '0001628280-26-066700', 3, [
+        g('expect fourth quarter 2026 total revenue to be in the range of $73-76 billion', 'total revenue', 'revenue', 'in the range of $73-76 billion', 4),
+        g('expect full year 2026 total expenses to be in the range of $175-179 billion', 'total expenses', 'total expenses', 'in the range of $175-179 billion', null, true),
+        g('anticipate 2026 capital expenditures, including principal payments on finance leases, to be in the range of $135-145 billion', 'capital expenditures', 'capital expenditures', 'in the range of $135-145 billion', null, true),
+        g('expect our fourth quarter 2026 tax rate to be between 15-17%', 'tax rate', 'tax rate', 'between 15-17%', 4),
+      ], [{ metric: 'revenue', value: '$64.60 billion', gaapBasis: '' }], { quarter: 3, fiscalYear: 2026 }),
+    ]};
+    const r = eng.buildForecastDiscrimination();
+    const after = JSON.parse(fs.readFileSync(LEDGER, 'utf-8'));
+    const q2 = after.predictions.find(p => /58-61/.test(p.claim || ''));
+    const q3 = after.predictions.find(p => /61-64/.test(p.claim || ''));
+    const eg = (r.results || []).filter(x => x.verdict === 'earnings-guidance');
+    const settled = r.guidanceSettlement.settled || [];
+    return eg.length === 10
+      && r.ledgerRegistration.registered.length === 10
+      && settled.length === 1 && settled[0].hit === true && /in-band/.test(settled[0].direction)
+      && /FY2026 Q2/.test(settled[0].period) && settled[0].actual === '$60.80 billion'
+      && r.guidanceSettlement.pending === 9            // Q3/Q4 营收 + 全年费用/capex + 税率：到期门与年度实际值边界
+      && q2 && q2.outcome === true && q2.evidence && q2.evidence.metric === 'revenue' && /in-band/.test(q2.evidence.summary || '')
+      && q3 && q3.outcome === null;                     // Q3 未到期（dueOn 2026-11-14）不提前结
+  } finally {
+    if (saved === null) { try { fs.unlinkSync(LEDGER); } catch (_) {} } else fs.writeFileSync(LEDGER, saved);
+  }
+})(), '到期才结算：Q2 营收区间 $58-61B vs 实际 $60.80B 带内命中落账；Q3（dueOn 2026-11-14）未到期不提前结；全年费用/capex 无年度实际值保持 pending（已知边界）');
+
+// 7. EDGAR 指引 claim 额度：60+ 条不静默切尾（v3.14 live：61 条，旧上限 40 把 META/AMZN 整批切掉）
+c314('端到端：EDGAR 指引 claim 额度 40→70（尾部公司不静默切掉）+ 超限披露', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const fs = require('fs');
+  const LEDGER = path.join(__dirname, 'human-future/data/prediction-ledger.json');
+  const saved = fs.existsSync(LEDGER) ? fs.readFileSync(LEDGER, 'utf-8') : null;
+  try {
+    fs.writeFileSync(LEDGER, JSON.stringify({ version: '1.0.0', predictions: [] }, null, 2));
+    // 15 家「公司」× 3 条指引 = 45 条 claim（live 实测 61 条的同型场景：
+    // 旧代码 claims.length>=40 即 break，第 41 条起（ticker 顺序尾部的
+    // META/AMZN/GOOGL/ORCL）整批不进辨别、不登记、不结算）
+    const mkItem = (i, q) => ({
+      title: `TEST Co${i} 8-K 业绩发布 · 2026-05-0${(i % 9) + 1}`, link: `https://example.com/edgar-cap-${i}`,
+      pubDate: '2026-05-01', description: '财报指引', body: '', source: 'SEC EDGAR', origin: 'live',
+      ticker: `T${i}`, form: '8-K', accession: `0000000000-26-00000${i}`, filingDate: '2026-05-01', fiscalYearEnd: '1231',
+      guidance: [1, 2, 3].map(k => ({
+        sentence: `expect quarter ${q} 2026 total revenue to be in the range of $5${k}-6${k} billion`,
+        metric: 'total revenue', settleMetric: 'revenue', gaapBasis: '', value: `in the range of $5${k}-6${k} billion`,
+        tolerance: null, isRange: true, quarter: q, fiscalYear: 2026, annual: false, periodLabel: `FY2026 Q${q}`, caveats: [],
+      })),
+      actuals: [], actualPeriod: null,
+    });
+    const eng = new ProjectionEngine({});
+    eng.signals = { totalItems: 15, domains: [], items: Array.from({ length: 15 }, (_, i) => mkItem(i, 2)) };
+    const r = eng.buildForecastDiscrimination();
+    // 超限场景：25 家 × 3 = 75 条 > 70 → 披露 seen/cut/cap
+    const eng2 = new ProjectionEngine({});
+    eng2.signals = { totalItems: 25, domains: [], items: Array.from({ length: 25 }, (_, i) => mkItem(i, 2)) };
+    const r2 = eng2.buildForecastDiscrimination();
+    const t = r2.edgarClaimsTruncation;
+    // 渲染披露行源级（formatReport 的口径限定行——与 v3.10 源级断言同型）
+    const src = fs.readFileSync(path.join(__dirname, 'scripts/project-future.js'), 'utf-8');
+    // cron 注入源级：披露必须到达 agent prompt（v3.10/v3.11 同型断链纪律）
+    const sh = fs.readFileSync(require('path').join(require('os').homedir(), '.hermes/scripts/hf-cron-fetch.sh'), 'utf-8');
+    return r.ledgerRegistration.registered.length === 45 && r.edgarClaimsTruncation === null   // 45 < 70：全进，无披露
+      && t && t.seen === 75 && t.cut === 5 && t.cap === 70              // 75 > 70：披露 5 条未进
+      && /口径限定：本期 SEC EDGAR 指引 claim 共/.test(src)              // 披露行渲染进报告
+      && /EDGAR_CLAIMS_CAP = 70/.test(src)                             // 额度 70 落在代码里
+      && /edgarClaimsTruncation/.test(sh) && /不得当成「没有问题」/.test(sh);  // 注入脚本同屏披露
+  } finally {
+    if (saved === null) { try { fs.unlinkSync(LEDGER); } catch (_) {} } else fs.writeFileSync(LEDGER, saved);
+  }
+})(), 'live 实测 EDGAR 指引 claim 61 条——旧上限 40 把 ticker 顺序尾部的 META/AMZN/GOOGL/ORCL 整批切掉（辨别了但看不见/登记不了/结算不了，v3.10 候选桶同型）；超限时披露 seen/cut/cap 不静默切尾');
+
+// ── 组 4：精度回归 + 版本号 ────────────────────────────────────
+// 8. 精度回归：无区间标记的期望句不进库（form B/C 分界）+ 旧 live 夹具不变
+c314('精度回归：无区间标记期望句不进库 + 旧形态夹具逐一不变', (() => {
+  const { extractGuidance } = require('./human-future/scripts/edgar-collector.js');
+  // ① 点值期望句（form B 地盘）不得被 form D 重复抽取
+  const AMD = 'For the third quarter of 2026, AMD expects revenue to be approximately $13 billion, plus or minus $300 million. AMD expects non-GAAP gross margin to be approximately 56%.';
+  const { guidance: amd } = extractGuidance(AMD);
+  const revCount = amd.filter(g => /13 billion/.test(g.value || '')).length;
+  // ② 无区间标记的期望句根本不进库（"expects revenue to grow" 类）
+  const NOVAL = 'We expect revenue to grow nicely next year as demand accelerates across all segments.';
+  const { guidance: nv } = extractGuidance(NOVAL);
+  // ③ v3.4/v3.13 旧 live 夹具：NVDA 02-25（全年税率修复后期间正确）
+  const NVDA_OLD = 'Outlook NVIDIA\'s outlook for the first quarter of fiscal 2027 is as follows: • Revenue is expected to be $78.0 billion, plus or minus 2%. • GAAP and non-GAAP gross margins are expected to be 74.9% and 75.0%, respectively, plus or minus 50 basis points. • GAAP and non-GAAP operating expenses are expected to be approximately $7.7 billion and $7.5 billion, respectively. For the full year fiscal 2027, GAAP and non-GAAP tax rates are expected to be between 17.0% and 19.0%, excluding any discrete items.';
+  const { guidance: nvOld } = extractGuidance(NVDA_OLD);
+  const nvTax = nvOld.find(g => g.metric === 'tax rates');
+  return revCount === 1 && nv.length === 0
+    && nvOld.length === 4
+    && nvTax && nvTax.annual === true && nvTax.fiscalYear === 2027 && nvTax.value === 'between 17.0% and 19.0%'
+    && nvOld.find(g => g.metric === 'revenue').quarter === 1;
+})(), 'form D 间隔词≥1 与 form B 零重叠（点值区间句不重复抽取）；无区间标记的期望句不是可证伪主张；NVDA 02-25 旧夹具期间从 FY27Q1 纠正为 FY27 全年');
+
+// 8. 版本号一致性（五处对齐 3.14.0）
+c314('版本号一致性：五处对齐 3.14.0', (() => {
+  const fs314 = require('fs');
+  const VERSION = fs314.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
+  const pkg = JSON.parse(fs314.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
+  const rp = fs314.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
+  const pf = fs314.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
+  return VERSION === '3.14.0'
+    && pkg.version === '3.14.0'
+    && rp.includes('文明推演引擎 v3.14.0')      // banner
+    && /version: '3\.14\.0'/.test(pf)          // projection meta
+    && /version: '3\.14\.0'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.14.0，防 corr-2026-014 版本漂移复发');
+
+// ── v3.14 汇总 ──
+(async () => {
+  const results = await Promise.all(v314.map(c => Promise.resolve(c.ok)));
+  let f = 0;
+  v314.forEach((c, i) => {
+    const ok = results[i];
+    if (!ok) f++;
+    console.log(`${ok ? '✓' : '✗'} ${c.name}${ok ? '' : '  —— ' + c.detail}`);
+  });
+  console.log(`\nv3.14: ${v314.length - f} 通过, ${f} 失败, 共 ${v314.length} 个`);
+  if (f > 0) {
+    console.log('结论：META CFO 评论式指引形态进库不完整（抽取/区间/期间/实际值/结算/精度/版本有缺）。');
+    process.exitCode = 1;
+  } else {
+    console.log('结论：META CFO 评论式指引（动词+期间间隔+连字符/单百分号区间）进库，bullet 营收实际值可抽，全年期间修复（full year fiscal YYYY + 锚词在前 + 裸年份），多季度指引守卫，EDGAR claim 额度 40→70 不静默切尾；live 端到端 10 条登记、Q2 营收区间 in-band 命中。');
   }
 })();
