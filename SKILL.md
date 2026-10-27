@@ -1,23 +1,50 @@
 ---
 name: human-future-v2
-title: "人类未来 · 文明推演引擎 v3.17.0"
-version: "3.17.0"
+title: "人类未来 · 文明推演引擎 v3.18.0"
+version: "3.18.0"
 description: |-
-  人类未来 v3.17.0 - 表格式全年 capex 实际值抽取（已知边界推进：现金流量表进库，全年指引结算链第四环）——v3.16 白纸黑字的已知边界「GOOGL capex 全年实际值在现金流量表（purchases of property and equipment），全年实际值形态族不收表格式陈述——FY2026 capex 指引到期时可能无对账依据（下轮候选）」本轮按 live 实证推进（2026-10-27 从 SEC EDGAR 实抓四家 Q4 备案原文驱动）：① extractAnnualActuals 增补表格式形态——现金流量表标题锚（STATEMENTS OF CASH FLOWS）+ 全年列标记（Year/Twelve Months/Fiscal Year Ended，GOOGL Q2 的 "Year To Date" 与 META Q3 的 "Nine Months Ended" 天然拒绝）+ 仅 Q4 备案（AMZN Q1 live 实证：Q1-Q3 的 Twelve Months Ended 是 TTM 列且年份与标题财年相同，期间守卫 quarter===4，corr-2026-036）+ 列对齐（数据行数值个数驱动：4 列=2 季度+2 全年、2 列=纯全年；全年列=后两列，表头年份 token 匹配标题财年——AMD 表头年份序 2025 2024 2025 2024，财年 2025 命中第 3 列 $974M 不是末列 $636M，MRVL FY2026=Year Ended January 31, 2026 财年标签与日历年终年同数）+ 单位只认百万（千分位报表防错标度 1000 倍）+ ≥1000 折算 billion 与指引带同量纲；② 双来源去重：叙事口径优先——META Q4-2025 live 实证叙事 "Capital expenditures, including principal payments on finance leases, were ... $72.22 billion" 与报表行 "(69,691)" 口径不一致，两个不同值落同一 annual key 会判歧义跳过（把可结算指引变成跳过比漏报更糟）；③ 结算链端到端：真实抽取的全年 capex 值直通 annual key 配对（受控台账带内命中 + 残废季度形态条目季度 key 隔离不误结算）。live 端到端（EDGAR 缓存先删再跑）：pipeline exit 0；GOOGL FY2025 $91.447B/AMD FY2025 $974M/MRVL FY2026 $354.1M/AMZN FY2025 $131.819B 四家全年 capex 全部抽中并进报告产物（newsData.sec_filings[].annualActuals）；NVDA 发布不含现金流表如实漏报；GOOGL FY2026 capex 指引（dueOn 2027-02-14）按到期门保持 pending——不硬结；信号池/62 条 forecast 辨别/61 条指引/财季 actuals 逐条 diff 零漂移；结算段幂等 0 新结算/跳过 4（AMD 点值无容差×2 + MU 口径未限定歧义×2）/pending 41、ledger 69 条零变化；同代码复跑幂等。已知边界（如实）：FCF 对账表 TTM 列形态（GOOGL live 实证 5 列）仍不收；MU Q4 备案的资本开支行标签是「Investments in capital expenditures, net」（非 GAAP 对账表 5 列），行标签族只认 purchases of property and equipment——MU 无 capex 指引所以无结算需求；ORCL FY2027 全年营收句句内带 non-GAAP EPS，settleMetric 句级推导取错族（无容差不可结算无错误结局，下轮候选：指标族名词优先）。测试 371→381 项；6 轮反向验证全部精确失败（摘除表格式调用→组 1 四家+结算端到端/摘除 quarter===4→AMZN Q1 TTM 误收/摘除列数 2/4→Q4 五列误收/摘除表头年份匹配→AMD 抽错列+年份不符误收/摘除单位检查→千分位错标度/版本漂移→16）。登记 corr-2026-036（全年列标记≠全年列——TTM 列年份与标题财年相同，期间守卫必须锚备案季度；live 端到端的零漂移 diff 抓到的夹具覆盖不到的形态，medium）；登记簿 34→35 条。历史：v3.16 GOOGL FY2026 capex 残废条目修复；v3.15 全年实际值抽取+annual key 配对；v3.14 META CFO 评论式指引形态进库；v3.13 财报指引结算指标扩展；v3.12 算力基建承诺/规模主张（新辨别维度）；v3.11 用量/牵引度指标主张+引号切分修复；v3.10 一手信源桶接入+部署规模主张；v3.9 价格下调主张；v3.8 监管行动主张；v3.7 专家/机构判断主张；v3.6 成本/价格信号主张；v3.5.1 结算链路修复（维护）；v3.5 财报指引自动结算；v3.4 财报指引+SEC EDGAR；v3.3.1 survey-finding 精度修复（维护）；v3.3 并购/交易过程主张；v3.2.2/3.2.1 断链修复；v3.2 产能/供给约束主张；v3.1.1 口径错位精度修复；v3.1 接入 self-correction-ledger；v3.0.0c 商业段断链修复；v2.17 接入 GJOpen；v2.16 基准概率断链修复；v2.15 参考文本单列；v2.13 停止假推演。
+  人类未来 v3.18.0 - RSS 前瞻主张独立额度（断链修复：共享 breakpoint 饿死 RSS 路径，v2.13 核心承诺对媒体/博客失效）——v3.14 起白纸黑字的已知边界「RSS 与 EDGAR 共用 claims.length>=20 断点，EDGAR 占满额度后 RSS 前瞻主张被挤压，后续轮次候选：RSS 独立额度」本轮按 live 实证修复（2026-10-27 探针实测：62 条辨别结果 = 61 条 EDGAR 指引 + 仅 1 条 RSS）：① 非结构化前瞻主张（RSS/博客/备案正文）独立额度 RSS_CLAIMS_CAP=20，seen/cut/cap 截断披露（EDGAR 额度 70 同型纪律，超限不静默切尾）——live 实测解锁后 79 条结果（61 EDGAR + 18 RSS 路径），7 条新可结算主张进台账（Meta $95B 融资计划/Oracle 2026 年不发债/AMZN 营业利润指引等首次进辨别）；② 同轮精度配套（corr-2026-037，live 探针抓到的 latent 缺陷）：FORWARD_LOOKING_BOILERPLATE 守卫——「The Company undertakes no intent or obligation to publicly update」免责声明 boilerplate 含 obligation to 命中 COMMITMENT、live 原文里还与后续描述拼成一句带 2026-03 时间 token（或截断在 plans to 上走 form B），辨别器判 bare-assertion 且 settleable=true——不挡则解锁额度后每轮把法律套话登记进台账污染 Brier 样本（商业路径 v3.10 早有同型守卫，forecast 路径从来没有）；③ 结果分组渲染（财报指引组 30 条 + 非结构化前瞻主张组 20 条，各自截断披露）+ cron 注入同步分组（各 10 条）——不分组则 RSS 主张追加在 61 条 EDGAR 之后全被渲染上限切掉，「辨别了但看不见」（v3.10/v3.11/v3.14/v3.16 同型纪律）。live 端到端（EDGAR 缓存先删再跑）：pipeline exit 0、312 条 live 信号；forecast 辨别 62→79 条；7 条 RSS 新登记进台账（ledger 69→76），同代码复跑幂等 0 新登记；61 条结构化指引/71 条财季 actuals/结算段（0 新结算/跳过 4/pending 41）/商业辨别 21 条逐条 diff 零漂移。测试 381→387 项；6 轮反向验证全部精确失败（摘除独立额度→3/摘除 boilerplate 守卫→2——第一版夹具用单独存在的 disclaimer 句不过门、断言空转，换 live 同形（拼句带 2026-03/截断在 plans to）后精确失败/摘除分组渲染→1/摘除 cron 注入披露→1/摘除截断落账→3/版本漂移→17）。登记 corr-2026-037（同型缺陷分路径各修各的+「没有触发机会」不等于「没有问题」，medium）；登记簿 35→36 条。历史：v3.16 GOOGL FY2026 capex 残废条目修复；v3.15 全年实际值抽取+annual key 配对；v3.14 META CFO 评论式指引形态进库；v3.13 财报指引结算指标扩展；v3.12 算力基建承诺/规模主张（新辨别维度）；v3.11 用量/牵引度指标主张+引号切分修复；v3.10 一手信源桶接入+部署规模主张；v3.9 价格下调主张；v3.8 监管行动主张；v3.7 专家/机构判断主张；v3.6 成本/价格信号主张；v3.5.1 结算链路修复（维护）；v3.5 财报指引自动结算；v3.4 财报指引+SEC EDGAR；v3.3.1 survey-finding 精度修复（维护）；v3.3 并购/交易过程主张；v3.2.2/3.2.1 断链修复；v3.2 产能/供给约束主张；v3.1.1 口径错位精度修复；v3.1 接入 self-correction-ledger；v3.0.0c 商业段断链修复；v2.17 接入 GJOpen；v2.16 基准概率断链修复；v2.15 参考文本单列；v2.13 停止假推演。
 ---
 
-# 人类未来 · 文明推演引擎 v3.17.0
+# 人类未来 · 文明推演引擎 v3.18.0
 
 > 数据采集（RSS 真联网 + 可选正文增强 + 外部预测基准 GJOpen）→ 心虫 stateless 检查器 → 三年推演引擎。
 > 当前状态与实测数字见下一节，历史版本记录见 references/upgrade-history.md。
 
 ---
 
-## 当前状态（v3.17.0 实测）
+## 当前状态（v3.18.0 实测）
 
 以下数字全部来自 2026-10-27 的 `FETCH=1 FETCH_BODY=1 node scripts/run-pipeline.js` 实跑
 （EDGAR 缓存先删再跑——TTL 6h 内的旧缓存不含当期代码的抽取结果，v3.5.1/v3.15
-同款纪律；v3.17.0 轮：pipeline exit 0、表格式全年 capex 实际值抽取的 live
+同款纪律；v3.18.0 轮：pipeline exit 0、RSS 前瞻主张独立额度的 live 端到端——
+v3.14 起白纸黑字的已知边界「RSS 与 EDGAR 共用 claims.length>=20 断点，EDGAR
+占满额度后 RSS 前瞻主张被挤压，后续轮次候选：RSS 独立额度」本轮按 live 实证
+修复（探针实测：62 条辨别结果 = 61 条 EDGAR 指引 + **仅 1 条** RSS——v2.13
+核心承诺「辨别他人关于未来的主张」对媒体/博客/备案正文的前瞻表述整个失效，
+Meta $95B 融资计划、Oracle 2026 年不发债、EU AI Act 义务句式全部被挤掉）：
+① 非结构化前瞻主张独立额度 RSS_CLAIMS_CAP=20（EDGAR 额度 70 不动），
+seen/cut/cap 截断披露同型落地（v3.10/v3.11/v3.14 纪律：超限不静默切尾）；
+② 同轮精度配套（corr-2026-037，live 探针抓到的 latent 缺陷）：
+FORWARD_LOOKING_BOILERPLATE 守卫——「undertakes no intent or obligation」
+免责声明含 obligation to 命中 COMMITMENT，live 原文里该句还与后续描述拼成
+一句（0001730168-26-000011：「…these projections, whether  8-K Item 2.02
+业绩发布，2026-03-04 提交…」无标点间隔）带 2026-03 时间 token，或截断在
+plans to 上走 form B（0001769628-26-000220），不挡则解锁额度后每轮把法律
+套话登记进台账污染 Brier 样本（商业路径 v3.10 早有同型守卫，forecast 路径
+从来没有）；③ 结果分组渲染（财报指引组 + 非结构化前瞻主张组，各自截断披露）
++ cron 注入同步分组——不分组则 RSS 主张追加在 61 条 EDGAR 之后全被渲染
+上限切掉，「辨别了但看不见」。live 端到端：forecast 辨别 62→79 条
+（61 条结构化指引 + 18 条 RSS 路径，其中 1 条被辨别器判 earnings-guidance）；
+7 条新可结算主张进台账（ledger 69→76：NVDA/AMZN×2/META×3/IBM×2 的备案
+正文前瞻句，dueOn 2026-12-31），同代码复跑幂等 0 新登记；61 条结构化指引/
+71 条财季 actuals/结算段（0 新结算/跳过 4：AMD 点值无容差×2 + MU 口径
+未限定歧义×2/pending 41）/商业辨别 21 条逐条 diff 零漂移；md 报告出现
+「### 非结构化前瞻主张」分组与两组截断披露。已知边界（如实）：RSS 池
+超 20 条时超额段被挡且披露（本轮 17-18 条未触顶）；免责声明守卫只挡
+「命中句自身含标记」的句子，同条目后续句继续参与抽取（真主张常在
+boilerplate 之后，不连坐）。
+（v3.17.0 轮：pipeline exit 0、表格式全年 capex 实际值抽取的 live
 端到端——v3.16 白纸黑字的已知边界「GOOGL capex 全年实际值在现金流量表
 （purchases of property and equipment），全年实际值形态族不收表格式陈述——
 FY2026 capex 指引到期时可能无对账依据（下轮候选）」本轮按 live 实证推进
@@ -219,8 +246,14 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   40→70 且超限披露 seen/cut/cap——live 实测 61 条 claim（form D 新增
   META 10 条 + NVDA 全年税率 3 条后），旧上限把 ticker 顺序尾部的
   META/AMZN/GOOGL/ORCL 整批切掉（辨别了但看不见/登记不了/结算不了）。
-  RSS 前瞻 claim 仍与 EDGAR 共用 claims.length>=20 的断点（EDGAR 超额度
-  后 RSS 每轮仅 1 条进辨别——已知边界（RSS 与 EDGAR 共用 claims.length>=20 断点，EDGAR 占满额度后 RSS 前瞻主张被挤压，后续轮次候选：RSS 独立额度）。
+  [v3.18] RSS 前瞻主张独立额度 RSS_CLAIMS_CAP=20——v3.14 提额后 RSS 路径
+  仍共用 claims.length>=20 断点，EDGAR 61 条占满后 RSS 每轮仅 1 条进辨别
+  （live 实证 62 条 = 61 EDGAR + 1 RSS），v2.13 核心承诺对媒体/博客/备案
+  正文整个失效；两路径各自额度、各自披露（rssClaimsTruncation seen/cut/cap
+  同型），EDGAR 优先只影响拼接顺序不再决定 RSS 存活。同轮加
+  FORWARD_LOOKING_BOILERPLATE 守卫（免责声明 boilerplate 不是预测，
+  corr-2026-037）与结果分组渲染（财报指引组 + 非结构化前瞻主张组各自
+  上限与截断披露——不分组 RSS 主张全被渲染上限切掉）。
 - 结算判据（earnings-settlement.js）：outcome=实际值是否落在指引容差带内
   [guided ± tolerance]（区间指引落区间内）。单位感知：$+%=相对、$+$=绝对、
   %+bps=百分点、%+%=百分点。方向（beat 超带上沿 / below 低于带下沿 / in-band）
@@ -423,7 +456,7 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   不虚抬（厂商一手公告句式自身无归属词，等价名方确认或第三方报道交叉验证）；
   SEC 备案量化主张同轮进段（GOOGL 判 推理单薄/公开财报/公告(3)/推理 1/3、
   decisionRelevant——证据档首次被真实财报触发；公开财报/公告 1→5 条））/
-  自我修正登记簿 ✅（35 条修正：critical 4 / high 17 / medium 14（含 corr-2026-024/025 两条前轮手写条目未设 severity、按 medium 计；v3.9 起走模块 record() 默认 medium；v3.10 新增 corr-2026-027：一手信源桶从不进商业辨别候选池+扩池暴露的三个精度缺陷，high；v3.14 新增 corr-2026-032/033，v3.15 新增 corr-2026-034：营收抽值路径从落地起没过全年值守卫，AMD Q4-FY2025 live 实证全年营收混进财季 key；v3.16 新增 corr-2026-035：残废条目修复必须连到结算配对全链——GOOGL capex 修好抽取侧（期间/区间/指标族三环）时同轮发现 guidanceStruct 从 v3.4 起不漏 isRange，区间指引持久化 settlement 恒退化，备案滑出窗口后到期永远无法结算（v3.5.1「ticker 恒 null」/v3.13「metric 被丢弃」同型第三次），high）；v3.17 新增 corr-2026-036：全年列标记≠全年列——AMZN Q1 live 实证 Q1-Q3 备案的「Twelve Months Ended」是 TTM 列且 TTM 列年份与标题财年相同，只靠列标记+年份匹配会把 TTM 值当月度值落进 annual key 与 Q4 真全年值撞 key 判歧义；期间守卫必须锚备案季度（quarter===4）。live 端到端的零漂移 diff 抓到夹具覆盖不到的形态（AMZN Q1 的 TTM 列），medium）；v3.3.1 登记
+  自我修正登记簿 ✅（36 条修正：critical 4 / high 17 / medium 15（含 corr-2026-024/025 两条前轮手写条目未设 severity、按 medium 计；v3.9 起走模块 record() 默认 medium；v3.10 新增 corr-2026-027：一手信源桶从不进商业辨别候选池+扩池暴露的三个精度缺陷，high；v3.14 新增 corr-2026-032/033，v3.15 新增 corr-2026-034：营收抽值路径从落地起没过全年值守卫，AMD Q4-FY2025 live 实证全年营收混进财季 key；v3.16 新增 corr-2026-035：残废条目修复必须连到结算配对全链——GOOGL capex 修好抽取侧（期间/区间/指标族三环）时同轮发现 guidanceStruct 从 v3.4 起不漏 isRange，区间指引持久化 settlement 恒退化，备案滑出窗口后到期永远无法结算（v3.5.1「ticker 恒 null」/v3.13「metric 被丢弃」同型第三次），high；v3.17 新增 corr-2026-036：全年列标记≠全年列——AMZN Q1 live 实证 Q1-Q3 备案的「Twelve Months Ended」是 TTM 列且 TTM 列年份与标题财年相同，只靠列标记+年份匹配会把 TTM 值当月度值落进 annual key 与 Q4 真全年值撞 key 判歧义；期间守卫必须锚备案季度（quarter===4）。live 端到端的零漂移 diff 抓到夹具覆盖不到的形态（AMZN Q1 的 TTM 列），medium；v3.18 新增 corr-2026-037：同型缺陷分路径各修各的——商业路径 v3.10 早有 forward-looking 免责声明守卫，forecast 路径从来没有，且 RSS 路径被共享断点饿死时 boilerplate 句压根进不了辨别，「没有触发机会」被当成「没有问题」；解锁 RSS 额度前 live 探针实测免责声明套话能过全部抽取门（拼句带 2026-03 时间 token 或截断在 plans to 上走 form B）且被判 settleable 会污染台账；精度夹具必须用能真正触达被测分支的 live 同形句子（第一版用单独存在的 disclaimer 句、断言空转，R2 反向验证抓出），medium）；v3.3.1 登记
   corr-2026-014（版本号漂移：projection meta 停 3.2.2/package.json 停 3.2.1，
   四处对齐+一致性断言）与 corr-2026-015（survey-finding 误报+三处播客夹具
   空转）；v3.3 登记
@@ -1023,11 +1056,22 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   严格过滤，漏掉数据里 2 条 critical（都是「整段推演作废」级的假能力审计），
   接入后会少报高危数（说 4 实际 6）。改为按等级表比较（critical > high >
   medium > low），critical 排最前。这是修 bug，不算升级——升级点是接入本身。
-- 边界（如实声明）：登记簿 35 条（v3.13 轮新增 corr-2026-030/031、v3.14 轮
+- 边界（如实声明）：登记簿 36 条（v3.13 轮新增 corr-2026-030/031、v3.14 轮
   新增 corr-2026-032/033、v3.15 轮新增 corr-2026-034、v3.16 轮新增
-  corr-2026-035 后：
-  critical 4 / high 16 / medium 13（含 corr-2026-024/025 两条前轮手写条目
-  未设 severity、按 medium 计）——corr-2026-034 记的是「守卫写在本函数里
+  corr-2026-035、v3.17 轮新增 corr-2026-036、v3.18 轮新增 corr-2026-037 后：
+  critical 4 / high 17 / medium 15（含 corr-2026-024/025 两条前轮手写条目
+  未设 severity、按 medium 计）——corr-2026-037 记的是「同型缺陷分路径
+  各修各的 + 没有触发机会不等于没有问题」——商业辨别路径 v3.10 早有
+  forward-looking 免责声明守卫，forecast 路径从来没有；RSS 路径被共享
+  断点饿死时 boilerplate 句压根进不了辨别，该分支的缺陷因此沉睡四个
+  版本。解锁 RSS 独立额度前的 live 探针实测：免责声明套话能过 forecast
+  路径全部抽取门（「undertakes no intent or obligation」含 obligation to
+  命中 COMMITMENT，live 原文里与后续描述拼成一句带 2026-03 时间 token，
+  或截断在 plans to 上走 form B），辨别器判 bare-assertion 且
+  settleable=true——不挡则每轮把法律套话登记进台账污染 Brier 样本；
+  且精度夹具必须用能真正触达被测分支的 live 同形句子（第一版夹具用
+  单独存在的 disclaimer 句、不过门、断言空转，R2 反向验证报 0 失败
+  才发现）；corr-2026-034 记的是「守卫写在本函数里
   ≠ 每条抽值路径都过了哨」——v3.13 给毛利率/EPS/营业利润加了 notFullYear
   全年值守卫（corr-2026-030），营收三形态从 v3.5 落地起从没调过守卫，AMD
   Q4-FY2025 live 实证全年营收 $34.6B 被当成财季实际值索引进
@@ -1193,7 +1237,7 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   引擎不代劳——这是心虫铁律，不是能力缺失。
 
 **测试**
-- `npm test`：**381 项断言**（实测各 section 汇总；v3.4 的 230 + v3.5 新增 11 + v3.5.1 新增 9 + v3.6 新增 8 + v3.7 新增 9 + v3.8 新增 11 + v3.9 新增 8 + v3.10 新增 13 + v3.11 新增 15 + v3.12 新增 14 + v3.13 新增 13 + v3.14 新增 9 + v3.15 新增 10 + v3.16 新增 11：
+- `npm test`：**387 项断言**（实测各 section 汇总；v3.4 的 230 + v3.5 新增 11 + v3.5.1 新增 9 + v3.6 新增 8 + v3.7 新增 9 + v3.8 新增 11 + v3.9 新增 8 + v3.10 新增 13 + v3.11 新增 15 + v3.12 新增 14 + v3.13 新增 13 + v3.14 新增 9 + v3.15 新增 10 + v3.16 新增 11 + v3.17 新增 10 + v3.18 新增 6：
   2 项纯结算函数（settleGuidance 单位感知容差：相对/绝对/bps/百分点/区间/无容差
   跳过，含区分相对vs绝对的边界用例 / normalizeMetric+parseMetricValue 单位解析）+
   3 项实际值抽取（extractActuals 营收+毛利率+标题期间 / GAAP/非GAAP 不同值抽出
@@ -1606,6 +1650,24 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   误收）；摘除表头年份匹配→3（AMD 抽错列+年份不符误收）；摘除单位检查→1
   （千分位错标度）；版本漂移→16。每轮基线全绿、摘除后断言必生效、hash 校验
   还原到位、收尾基线全绿（381/0）。
+  v3.18 新增 6（1 项端到端 RSS 独立额度（EDGAR 30 条指引占满旧额度后 4 条
+  RSS 主张全进辨别 + 3 条登记 + 同代码复跑 0 新登记幂等——旧共享断点下只有
+  1 条）
+  + 1 项超额披露（RSS 池 25 条 > 额度 20 → seen=25 cut=5 cap=20，不静默切尾）
+  + 1 项精度回归免责声明守卫（live 同形两句零误收：拼句带 2026-03 时间 token /
+  截断在 plans to 走 form B——单独存在的 disclaimer 句不过门、断言空转，R2
+  反向验证实测教训；Oracle 不发债/EU AI Act 义务句式不误伤）
+  + 1 项 formatReport 分组渲染（非结构化前瞻主张子标题 + 两组各自截断披露 +
+  RSS 口径限定行，只认渲染行）
+  + 1 项 cron 注入源级（rssClaimsTruncation 披露 + 分组渲染 + RSS_CLAIMS_CAP
+  常量 + 共享 breakpoint 已拆除防复发）
+  + 1 项版本号一致性（五处对齐 3.18.0））。
+  v3.18 六轮反向验证全部精确失败：摘除独立额度（恢复共享 break）→3（端到端/
+  超额披露/注入源级）；摘除 boilerplate 守卫→2（第一版夹具断言空转，换 live
+  同形后精确失败）；摘除 formatReport RSS 组渲染块→1（分组渲染断言）；摘除
+  cron 注入 RSS 披露块→1（注入源级）；摘除 rssClaimsTruncation 落账→3；
+  版本漂移→17。每轮基线全绿、摘除后断言必生效、备份还原到位、收尾基线全绿
+  （387/0）。
   v3.13 三轮反向验证全部精确失败：摘除冒号营收形态调用点→1（MRVL 抽取
   断言）；摘除 settle() 证据落账两行→1（结算编排断言的 evidence 字段）；
   恢复旧夹具（MU 实际值挂 Q2 actualPeriod + 计数 6/4/2）→1（MU 落空
@@ -1735,7 +1797,11 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   自 v3 引擎起产出+渲染，注入脚本从未读，第七次同型断链；段序必须在推演阶段结论
   之前：限定先于被限定者到达 agent）** /
   推演阶段 /
-  预测辨别 / **财报指引结算（v3.5 补入，预测辨别之后——被结算的对象就是那段
+  预测辨别（[v3.18] 起分组注入：财报指引组 10 条 + 非结构化前瞻主张组
+  （媒体/博客/备案正文，RSS 独立额度）10 条，两组各自「另有 N 条未显示」；
+  读 fd.rssClaimsTruncation 披露 RSS 路径 seen/cut/cap——不分组则 RSS
+  主张追加在 61 条 EDGAR 之后全被切掉，「辨别了但看不见」） /
+  **财报指引结算（v3.5 补入，预测辨别之后——被结算的对象就是那段
   登记的财报指引，限定先于被限定者；读 proj.forecastDiscrimination.guidanceSettlement，
   含口径限定：outcome=实际值落在指引容差带内，beat/below 方向单独陈述，beat 不得
   读成「公司没做到」；只结有容差/区间且实际值唯一的指引；[v3.13] 歧义措辞同步为

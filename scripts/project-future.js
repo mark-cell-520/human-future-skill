@@ -344,7 +344,7 @@ class ProjectionEngine {
     }
     const report = {
       meta: {
-        version: '3.17.0',
+        version: '3.18.0',
         heartflowVersion: this.analysis.engineVersion,
         timestamp: this.timestamp,
         modulesLoaded: this.analysis.modulesLoaded,
@@ -1442,6 +1442,17 @@ class ProjectionEngine {
     const TIME_POINT = /(20\d{2}(?:-Q[1-4]|-H[12]|-\d{2})?|明年|后年|未来\s*\d+\s*年?|个月内|年内|季度|Q[1-4]|H[12]|within\s+\d|in\s+20\d{2}|by\s+20\d{2}|next\s+(?:year|quarter|month)|this\s+year|end\s+of\s+(?:this\s+)?year|year[\s-]end|年底|今年|明年初|年底前|(?:january|february|march|april|may|june|july|august|september|october|november|december)\s+20\d{2}|20\d{2}\s+(?:january|february|march|april|may|june|july|august|september|october|november|december)|Q[1-4]\s+20\d{2})/i;
     const COMMITMENT = /(plans?\s+to|aims?\s+to|intends?\s+to|expects?\s+to|targets?\s|goal\s+is|on\s+the\s+roadmap|roadmap| slated|poised|set\s+to|计划|预计|拟于|定于|有望|目标|路线图|将要|将会|will\s+(?:match|reach|hit|achieve|arrive|be\s+at)|they'?ll\s+(?:match|reach|hit|be)|would\s+(?:match|reach|hit|be)|must\s+(?:do|comply|implement|ensure|provide|register|report|obtain|conduct)|shall\s+(?:do|comply|implement|ensure|provide|be)|(?:is|are|be)\s+required\s+to|required\s+to\s+(?:comply|implement|ensure|provide|register)|obligation\s+to|义务|必须|须于|应于|应当)/i;
     const NOT_A_PREDICTION = /(at\s+(?:an?\s+)?(?:introductory\s+)?price|priced\s+at|is\s+confined\s+to|will\s+be\s+able\s+to|is\s+designed\s+to|this\s+ensures|with\s+this\s+new|定价|价格为|售价|must\s+register\s+by|registration\s+(?:deadline|closes|due)|register\s+by\s+\d|wishing\s+to\s+attend|virtual\s+meeting|webinar|会议注册|报名截止| wishing to attend)/i;
+    // [v3.18] 前瞻声明免责 boilerplate 守卫（commercial-discriminator
+    // v3.10 同型，forecast 路径从来没有——corr-2026-037）：8-K 的
+    // Forward-Looking Statements 段是法律套话不是预测。live 探针实测：
+    // 「The Company undertakes no intent or obligation to publicly update
+    // or revise any of these projections」含 obligation to（COMMITMENT
+    // 命中）+ 上下文时间点，辨别器判 bare-assertion 且 settleable=true
+    // ——不挡则解锁 RSS 额度后每轮把免责声明登记进台账、污染 Brier
+    // 样本。命中句自身含标记即跳过（继续找同条目后续句——真主张常在
+    // boilerplate 之后，与 v3.10 商业路径「不碰窗口内其它句子」不同：
+    // 那里主张窗是固定 3 句，这里 findIndex 天然逐句过）。
+    const FORWARD_LOOKING_BOILERPLATE = /(undertakes no intent or obligation|these statements include,? but are not limited to|forward-looking statements?)/i;
     const claims = [];
     // [v3.4] SEC EDGAR 结构化指引**优先**进入辨别：它们是本期质量最高
     // 的可结算主张（一手备案、指标+数值+结算期），先占 claims 额度，
@@ -1479,6 +1490,25 @@ class ProjectionEngine {
     const edgarTruncation = edgarClaimsCut > 0
       ? { seen: edgarClaimsSeen, cut: edgarClaimsCut, cap: EDGAR_CLAIMS_CAP }
       : null;
+    // [v3.18] 非结构化前瞻主张（RSS/博客/备案正文）独立额度。
+    //
+    // v3.4 起 EDGAR 结构化指引优先占 claims 额度（当时总额度 20），
+    // v3.14 把 EDGAR 额度提到 70 后，RSS 路径仍与 EDGAR 共用同一个
+    // `claims.length >= 20` 断点——EDGAR 指引（live 实测 61 条）先把
+    // claims 填满，RSS 循环第一个命中项 push 后立即 break：**每轮仅
+    // 1 条 RSS 主张进辨别**（live 实证：62 条结果 = 61 EDGAR + 1 RSS）。
+    // v2.13 核心承诺「辨别他人关于未来的主张」对媒体/博客/备案正文的
+    // 前瞻表述整个失效——Meta $95B 融资计划、Oracle 2026 年不发债、
+    // EU AI Act 义务句式全部被挤掉。这是 SKILL.md 白纸黑字的已知边界
+    // （「RSS 与 EDGAR 共用 claims.length>=20 断点……后续轮次候选：
+    // RSS 独立额度」）。
+    //
+    // 修法：两条路径各自额度、各自披露（v3.10/v3.11/v3.14 同型纪律：
+    // 超限不静默切尾）。EDGAR 优先只影响拼接顺序，不再决定 RSS 存活。
+    let rssClaims = 0;
+    let rssClaimsSeen = 0;
+    let rssClaimsCut = 0;
+    const RSS_CLAIMS_CAP = 20;
     for (const it of this.signals.items) {
       const text = `${it.title || ''} ${it.body || ''} ${it.description || ''}`;
       // [v2.13] 归一化弯引号/弯撇号。
@@ -1505,11 +1535,19 @@ class ProjectionEngine {
       const hitIdx = sents.findIndex(s => {
         if (s.length < 20 || s.length > 400) return false;
         if (NOT_A_PREDICTION.test(s)) return false;
+        // [v3.18] 免责声明 boilerplate 不是预测（live 实证：不挡则
+        // 「undertakes no intent or obligation」被判 settleable 登记进
+        // 台账，corr-2026-037）
+        if (FORWARD_LOOKING_BOILERPLATE.test(s)) return false;
         if (guided.some(g => s.toLowerCase().startsWith(g))) return false;
         return (COMMITMENT.test(s) && TIME_POINT.test(s))   // A: 承诺+时间
           || (COMMITMENT.test(s) && /(将|计划|预计|有望|目标|plans?|aims?|expects?|targets?|roadmap)/i.test(s)); // B: 明确承诺
       });
       if (hitIdx < 0) continue;
+      // [v3.18] seen 计「有命中」的条目；超额跳过并计数（披露用）——
+      // 不再用共享 break（那会让 RSS 路径每轮只进 1 条）
+      rssClaimsSeen++;
+      if (rssClaims >= RSS_CLAIMS_CAP) { rssClaimsCut++; continue; }
       // [v2.13] 把命中句连同**后 2 句**一起送进辨别器。
       //
       // 实测踩坑：Anthropic 的预测句是
@@ -1529,8 +1567,13 @@ class ProjectionEngine {
         date: it.pubDate,
         url: it.link,
       });
-      if (claims.length >= 20) break;
+      rssClaims++;
     }
+    // [v3.18] RSS 路径截断披露（与 edgarClaimsTruncation 同型：超限
+    // 不静默切尾，seen/cut/cap 随报告与注入同屏出现）
+    const rssTruncation = rssClaimsCut > 0
+      ? { seen: rssClaimsSeen, cut: rssClaimsCut, cap: RSS_CLAIMS_CAP }
+      : null;
     if (claims.length === 0) {
       return {
         available: false,
@@ -1686,6 +1729,9 @@ class ProjectionEngine {
       // [v3.14] EDGAR 指引 claim 截断披露（额度 70 仍可能被突破）——
       // 辨别了但看不见/登记不了/结算不了，必须如实报数不静默切尾
       edgarClaimsTruncation: edgarTruncation,
+      // [v3.18] 非结构化前瞻主张（RSS/博客/备案正文）截断披露——
+      // 独立额度（RSS_CLAIMS_CAP=20），与 EDGAR 各自计数互不挤占
+      rssClaimsTruncation: rssTruncation,
       // 登记结果回填进报告，让 agent 与读者都能看到「这条真的进台账了」
       ledgerRegistration: {
         registered,
@@ -2627,6 +2673,12 @@ function formatReport(report) {
       const t = fd.edgarClaimsTruncation;
       lines.push(`> 口径限定：本期 SEC EDGAR 指引 claim 共 ${t.seen} 条，辨别额度上限 ${t.cap} 条，另有 ${t.cut} 条未进辨别（公司数×每备案指引数增长所致——未辨别的指引不登记不结算，不是「没有问题」）。`);
     }
+    // [v3.18] 非结构化前瞻主张（RSS/博客/备案正文）截断披露——与
+    // EDGAR 指引各自独立额度（RSS_CLAIMS_CAP=20），互不挤占
+    if (fd.rssClaimsTruncation) {
+      const t = fd.rssClaimsTruncation;
+      lines.push(`> 口径限定：本期非结构化前瞻主张（媒体/博客/备案正文）共 ${t.seen} 条，辨别额度上限 ${t.cap} 条，另有 ${t.cut} 条未进辨别（与 SEC EDGAR 指引各自独立额度——未辨别的主张不登记不结算，不是「没有问题」）。`);
+    }
     lines.push('');
     const VERDICT_CN = {
       'not-a-forecast': '不可证伪', 'bare-assertion': '裸断言',
@@ -2636,12 +2688,23 @@ function formatReport(report) {
       // [v3.4] 财报指引：厂商一手备案里的自报预测（SEC EDGAR）
       'earnings-guidance': '财报指引',
     };
+    // [v3.18] 结果分两组渲染：财报指引（结构化，EDGAR 独立额度）与
+    // 非结构化前瞻主张（RSS 独立额度）。v3.18 前 RSS 主张追加在 61 条
+    // EDGAR 结果之后、全被渲染上限 30 切掉——「辨别了但看不见」，正是
+    // v3.10/v3.11/v3.14/v3.16 每次解锁额度都要同时解决的可见性问题。
+    // 分组判据用 verdict/guidance 字段（结果与 claim 一一对应，EDGAR
+    // 指引 claim 恒带 guidance 且 verdict=earnings-guidance）。
+    const isGuidanceResult = r => r.verdict === 'earnings-guidance' || !!r.guidance;
+    const guidanceResults = fd.results.filter(isGuidanceResult);
+    const rssResults = fd.results.filter(r => !isGuidanceResult(r));
     // [v3.16] 渲染上限 12→30 并加截断披露（v3.10/v3.11/v3.12 同型纪律：
     // v3.14 把 claim 额度修到 70 后 live 实测 61 条 EDGAR 指引全进辨别/
     // 登记/结算，但本段渲染上限停在 12——50 条在 md 里静默切尾，
     // 「辨别了但看不见」。上限与 edgarClaimsTruncation 披露配套：
     // 超出时明确写「另有 N 条未显示」，不静默切尾。
-    for (const r of fd.results.slice(0, 30)) {
+    // 单条辨别结果的渲染（财报指引组与非结构化主张组共用——两组结构
+    // 完全同构，复制一份必然漂移；v3.18 分组渲染时抽成闭包）
+    const pushForecastResultLines = (r) => {
       lines.push(`[${VERDICT_CN[r.verdict] || r.verdict}] ${r.text.slice(0, 110)}`);
       lines.push(`  来源: ${r.source} | 类别: ${r.category} | 结算点: ${r.dueOn || '(无)'}`
         + ` | 可结算: ${r.settleable ? '是' : '否'}`);
@@ -2697,10 +2760,24 @@ function formatReport(report) {
         lines.push(`  文本性质: ${r.textNature.markers.map(m => `${m.label}——${m.guidance}`).join('；')}`);
       }
       if (r.calibrationWarning) lines.push(`  ⚠ ${r.calibrationWarning.message}`);
-    }
+    };
+    for (const r of guidanceResults.slice(0, 30)) pushForecastResultLines(r);
     // [v3.16] 截断披露：辨别条数超渲染上限时如实报数（全文在报告 JSON）
-    if (fd.results.length > 30) {
-      lines.push(`…另有 ${fd.results.length - 30} 条未显示（详见报告 JSON 的 projection.forecastDiscrimination.results）`);
+    if (guidanceResults.length > 30) {
+      lines.push(`…另有 ${guidanceResults.length - 30} 条财报指引未显示（详见报告 JSON 的 projection.forecastDiscrimination.results）`);
+    }
+    // [v3.18] 非结构化前瞻主张组（RSS 独立额度 20 + 渲染上限 20 + 截断
+    // 披露）：不分组则 RSS 主张追加在 61 条 EDGAR 结果之后、全被渲染
+    // 上限切掉——「辨别了但看不见」，正是 v3.10/v3.11/v3.14/v3.16 每次
+    // 解锁额度都要同时解决的可见性问题。
+    if (rssResults.length) {
+      lines.push('');
+      lines.push('### 非结构化前瞻主张（媒体/博客/备案正文；与财报指引各自独立额度）');
+      lines.push('');
+      for (const r of rssResults.slice(0, 20)) pushForecastResultLines(r);
+      if (rssResults.length > 20) {
+        lines.push(`…另有 ${rssResults.length - 20} 条未显示（详见报告 JSON 的 projection.forecastDiscrimination.results）`);
+      }
     }
     lines.push('');
     lines.push(`> ${fd.note}`);

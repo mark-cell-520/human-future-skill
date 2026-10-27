@@ -384,6 +384,16 @@
       "evidence": "2026-10-27 live 实证（EDGAR 缓存先删再跑，v3.17 中间轮次）：annualActuals diff 出现计划外新增——AMZN 2026-04-29（Q1）抽出 capital expenditures=$93.093 billion（actualPeriod {quarter:1, fiscalYear:2025}，TTM'25 值）；实抓 amzn-20260331xex991.htm / amzn-20260630xex991.htm 原文确认 TTM 列形态；加 quarter===4 守卫后复跑，该计划外新增消失、四家 Q4 抽取值不变（GOOGL FY2025 $91.447B/AMD $974M/MRVL $354.1M/AMZN Q4 $131.819B）。测试钉住：AMZN Q1/Q2 live 逐字夹具进精度回归（零误收）",
       "lesson": "「全年列标记」≠「全年列」——TTM 列的年份与标题财年相同，列标记+年份匹配双条件都挡不住它；期间类判据（全年/YTD/TTM）必须锚在备案季度上（quarter===4），不能只锚在列形态上。另：live 端到端的价值就在这——夹具全绿但真数据池里躺着夹具覆盖不到的形态（AMZN Q1 的 TTM 列），零漂移 diff 必须逐字段比对企业，计划外新增=误收嫌疑，先实抓原文再决定是特性还是缺陷",
       "severity": "medium"
+    },
+    {
+      "id": "corr-2026-037",
+      "reportVersion": "v3.18",
+      "severity": "medium",
+      "wrongClaim": "（沿用假设）forecast 路径没有免责声明 boilerplate 问题——商业辨别路径 v3.10 早有 forward-looking 免责声明守卫，就以为两条路径都安全；且 RSS 路径被共享断点饿死（每轮仅 1 条进辨别），boilerplate 句根本没有触发机会，「没有触发机会」被当成了「没有问题」",
+      "rightClaim": "解锁 RSS 独立额度前的 live 探针实测（2026-10-27，62 条结果 = 61 EDGAR + 1 RSS 的池子上直接跑辨别器）：8-K Forward-Looking Statements 段的法律套话能过 forecast 路径的全部抽取门——「The Company undertakes no intent or obligation to publicly update or revise any of these projections」含 obligation to（COMMITMENT 命中），live 原文里该句还与后续描述被拼成一句（0001730168-26-000011：「…these projections, whether  8-K Item 2.02 业绩发布，2026-03-04 提交…」无标点间隔），合并句含 2026-03 时间 token 于是 TIME_POINT 也命中；「These statements include, but are not limited to…our plans to」（0001769628-26-000220 截断在 plans to 上）走 form B 过门。辨别器把前者判 bare-assertion 且 settleable=true——不挡则解锁额度后每轮把免责声明登记进台账、污染 Brier 样本。修法：FORWARD_LOOKING_BOILERPLATE 守卫（三形态：undertakes no intent or obligation / these statements include, but not limited to / forward-looking statements），命中句自身含标记即跳过、同条目后续句继续参与 findIndex（真主张常在 boilerplate 之后，不连坐）",
+      "evidence": "2026-10-27 live 探针（缓存池原样）：摘除守卫后 20 条 RSS 路径 claim 里 2 条免责声明套话进辨别（1 条被判 settleable 将登记）；加守卫后同池 17-18 条、2 条套话精确消除、真主张零误伤（Oracle 不发债/EU AI Act 义务句式/Meta $95B 全保留）。精度夹具用 live 同形两句（拼句带 2026-03 / 截断在 plans to）——第一版夹具用单独存在的 disclaimer 句，不过门、断言空转（R2 反向验证摘除守卫后测试仍全绿才发现），换 live 同形后精确失败",
+      "lesson": "同型缺陷分路径各修各的：商业路径 v3.10 修过免责声明守卫，forecast 路径从来没有——「另一条路径修过」不等于「这条路径安全」；且「该分支没有触发机会」不等于「该分支是对的」（RSS 路径被饿死时 boilerplate 压根进不了辨别）。解锁任何额度/扩任何池子前，先对将被放行的文本跑一遍精度探针；精度夹具必须用能真正触达被测分支的 live 同形句子，否则反向验证会报假绿",
+      "registeredBy": "v3.18 cron round (hermes agent)"
     }
   ]
 }
