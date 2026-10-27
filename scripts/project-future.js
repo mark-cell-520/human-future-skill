@@ -344,7 +344,7 @@ class ProjectionEngine {
     }
     const report = {
       meta: {
-        version: '3.18.0',
+        version: '3.19.0',
         heartflowVersion: this.analysis.engineVersion,
         timestamp: this.timestamp,
         modulesLoaded: this.analysis.modulesLoaded,
@@ -1464,9 +1464,14 @@ class ProjectionEngine {
     // 辨别了但看不见/登记不了/结算不了，正是 v3.10（候选桶 8 会静默切尾）
     // 与 v3.11（渲染上限加截断披露）的同型纪律。上限仍可能被突破（公司
     // 数×每备案指引数还会涨），超限时如实报「另有 N 条未进辨别」。
+    // [v3.19] 额度 70→80：v3.19 轮 live 实测 EDGAR 指引 claim 达 77 条
+    // （AVGO/DELL/PLTR 书面数值指引形态进库新增 16 条——form E/F/G +
+    // 期间形态，corr-2026-032 同型第三波），70 的上限会把 ticker 顺序
+    // 尾部的 7 条整批切掉（辨别了但看不见/登记不了/结算不了，v3.14 同型
+    // 纪律第二次实证）。
     let edgarClaimsSeen = 0;
     let edgarClaimsCut = 0;
-    const EDGAR_CLAIMS_CAP = 70;
+    const EDGAR_CLAIMS_CAP = 80;
     for (const it of this.signals.items) {
       if (!Array.isArray(it.guidance)) continue;
       for (const g of it.guidance) {

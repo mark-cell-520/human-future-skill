@@ -394,6 +394,16 @@
       "evidence": "2026-10-27 live 探针（缓存池原样）：摘除守卫后 20 条 RSS 路径 claim 里 2 条免责声明套话进辨别（1 条被判 settleable 将登记）；加守卫后同池 17-18 条、2 条套话精确消除、真主张零误伤（Oracle 不发债/EU AI Act 义务句式/Meta $95B 全保留）。精度夹具用 live 同形两句（拼句带 2026-03 / 截断在 plans to）——第一版夹具用单独存在的 disclaimer 句，不过门、断言空转（R2 反向验证摘除守卫后测试仍全绿才发现），换 live 同形后精确失败",
       "lesson": "同型缺陷分路径各修各的：商业路径 v3.10 修过免责声明守卫，forecast 路径从来没有——「另一条路径修过」不等于「这条路径安全」；且「该分支没有触发机会」不等于「该分支是对的」（RSS 路径被饿死时 boilerplate 压根进不了辨别）。解锁任何额度/扩任何池子前，先对将被放行的文本跑一遍精度探针；精度夹具必须用能真正触达被测分支的 live 同形句子，否则反向验证会报假绿",
       "registeredBy": "v3.18 cron round (hermes agent)"
+    },
+    {
+      "id": "corr-2026-038",
+      "date": "2026-10-27",
+      "version": "3.19.0",
+      "severity": "medium",
+      "title": "SKILL.md 状态描述是会腐烂的「活结论」——「某公司没有 X」必须随每轮全池测量刷新",
+      "what": "v3.4 起 SKILL.md 采集层写着「MSFT/GOOGL/AVGO/CRWV/IBM/DELL/PLTR 只在电话会口头给指引或无数值——如实报无数值指引」，连续三个版本（v3.5-v3.18）没人复核这条否定式状态。2026-10-27 v3.19 轮全池过堂（corr-2026-028 纪律）live 实证：AVGO/DELL/PLTR 三家 9 份在窗 8-K 正文都有书面数值指引（AVGO「Fourth quarter fiscal year 2026 revenue guidance of approximately $34.8 billion」、DELL「Second-quarter FY27 revenue expected between $44.0 billion and $45.0 billion」、PLTR「We are raising our revenue guidance to between $8.150 – $8.158 billion」），extractGuidance 四条旧形态全部不命中、零条进台账——corr-2026-032「在窗公司≠采到的指引」同型第三波。",
+      "lesson": "否定式状态（「X 没有 Y」）比肯定式状态腐烂得更快：它成立的那一刻起就不再被验证，而公司行为持续变化。纪律：① 每轮扩库/审计必须跑全池测量（形态门在每个桶的命中数 + 未命中条目过堂），把 SKILL.md 里「没有 X」的结论当本周期待刷新项；② 改抽取逻辑后必须做新旧代码零漂移 diff（全部在窗备案逐条比对）——本轮 diff 抓到两个夹具覆盖不到的期间回归：ANNUAL_PERIOD_PATTERN 与 ANNUAL_HEADER_RE 缺季度词 lookbehind（v3.16 只加给 ANNUAL_YEAR_NOUN_RE，同族另外两个年度形态漏加），不加则 AVGO 季度指引被 fiscal year 锚词抢成全年、ORCL Q2 EPS 指引被「Q2 FY 2027:」冒号节头抢成全年，dueOn 错位会撞 Q2 实际值 key 判假 beat。",
+      "fix": "v3.19：form E/F/G 三形态 + 期间形态四位 + lookbehind 两处 + actuals 年份前置锚 + 全年守卫 + 同事实去重 + parseRange/rangeM 双側同构；SKILL.md 采集层状态描述按 live 实测改写（10/14 家有书面数值指引）；登记簿 36→37 条。"
     }
   ]
 }

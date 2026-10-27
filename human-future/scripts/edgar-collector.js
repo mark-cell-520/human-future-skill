@@ -135,6 +135,68 @@ const GUIDANCE_TABLE_RE = new RegExp(
 // 整个数值丢失（第二版实测，META 的 $73-76 无小数点所以没暴露）。
 const GUIDANCE_EXPECTS_GAP_RE = new RegExp(
   `(?:expects?|anticipates?|projects?|forecasts?)\\s+(?:our\\s+)?(?:[A-Za-z0-9-]+\\s+){1,4}?(?:${METRIC_NOUNS})\\b[^.;•]{0,90}?\\bto\\s+be\\s+(?:in\\s+the\\s+range\\s+of|between)\\b(?:(?<=\\d)\\.(?=\\d)|[^.;•]){0,60}`, 'i');
+
+// [v3.19] 名词式区间指引（form E）。live 实证（2026-10-27 从 SEC EDGAR
+// 实抓 DELL 0001571996-26-000021/000003 原文驱动）：
+//   「Second-quarter FY27 revenue expected between $44.0 billion and
+//     $45.0 billion, up 49% year over year at the midpoint of $44.5 billion」
+//   「Full-year FY27 revenue expected between $138.0 billion and $142.0
+//     billion, up 23% year over year at the midpoint of $140.0 billion」
+//   「First-quarter FY27 revenue expected between $34.7 billion and
+//     $35.7 billion, ...」
+// 指标名词在前、无 is/are、expected 紧邻名词、between-and 区间——
+// form A 要 is/are expected to be（该句没有）、form B/D 要动词在前
+// （该句名词在前），三条旧形态全部不命中：DELL 自 v3.4 起就在 14 家
+// 公司名单里，三个版本零条指引进台账（corr-2026-032「在窗公司≠采到
+// 的指引」同型第三波——v3.4 状态描述写着「MSFT/GOOGL/AVGO/CRWV/IBM/
+// DELL/PLTR 只在电话会口头给指引或无数值」，live 实证 AVGO/DELL/PLTR
+// 备案里都有书面数值指引，状态描述腐烂三个版本）。
+// 精度：名词与 expected 之间只容忍可选 is/are（无量词间隔——v3.6 宽窗
+// 误命中教训）；区间值由既有 rangeM between-and 形态解析，落句即入库。
+// extendBack=40：期间短语在名词前（"Second-quarter FY27 "），向前扩到
+// 分句边界（bullet '• '）把期间包进句子；期间解析的 500 字符向前窗
+// 本来就含匹配自身，窗口内 rightmost-wins 拿句内期间。
+const GUIDANCE_NOUN_RANGE_RE = new RegExp(
+  `(?:${METRIC_NOUNS})\\s+(?:is|are\\s+)?expected\\s+between\\b${NUM_OR_TERM}{0,120}`, 'i');
+
+// [v3.19] 提升式区间指引（form F）。live 实证（2026-10-27 实抓 PLTR
+// 0001321655-26-000039/000026 原文驱动）：
+//   「We are raising our revenue guidance to between $8.150 – $8.158
+//     billion.」（en-dash 分隔，句读号结尾）
+//   「We are raising our adjusted income from operations guidance to
+//     between $4.889 – $4.897 billion.」
+//   「We are raising our adjusted free cash flow guidance to between
+//     $4.5 – $4.7 billion.」
+// raise 动词在前、名词与 guidance 之间可隔修饰语（"adjusted income
+// from operations"）。旧区间正则只认 and / in the range of / 单百分号
+// 连字符，between + en-dash 整个不命中（rangeM 同轮补形态）。
+// 精度：必须有区间标记（to between）——"raising our full-year revenue
+// guidance to 71% growth"（PLTR 05-04 live 同文）是增长率指点不是
+// 区间，不命中；"guidance to in excess of $3.424 billion"（U.S.
+// commercial revenue）无 between，不命中（漏报比误报诚实）。
+// extendBack=0：期间在句外节头（"For full year 2026:"），冒号是分句
+// 边界扩不进来，靠 ANNUAL_HEADER_RE 从 500 字符向前窗解析。
+const GUIDANCE_RAISING_RANGE_RE = new RegExp(
+  `(?:rais(?:e|es|ing|ed))\\s+(?:our\\s+)?(?:[A-Za-z0-9-]+\\s+){0,3}?(?:${METRIC_NOUNS})\\b[^.;•]{0,40}?\\bguidance\\s+to\\s+between\\b${NUM_OR_TERM}{0,120}`, 'i');
+
+// [v3.19] 名词式点值指引（form G）。live 实证（2026-10-27 实抓 AVGO
+// 0001730168-26-000076/000051/000011 与 DELL 0001571996-26-000039）：
+//   「Fourth quarter fiscal year 2026 revenue guidance of approximately
+//     $34.8 billion, an increase of 93 percent from the prior year period」
+//   「Full-year FY27 revenue guidance of $192.0 billion, up 69% year
+//     over year」
+//   「Full-year FY27 EPS guidance of $24.37 and non-GAAP EPS guidance
+//     of $25.50, ...」
+// 名词+guidance of+数值，无谓语动词。点值（approximately 无容差）不
+// 自动结算，但作为可辨别主张登记（与 AMD opex 点值指引同型——登记
+// 与结算是两回事，v3.5 起纪律）。ORCL「we confirm our prior revenue
+// guidance of $90 billion」重述句同命中：同一 FY2027 营收义务在两份
+// 备案各登记一次，结算时证据源同指提供实际值的备案，dedupeSame-
+// Obligation 按证据 key 合并（Brier 样本不重复计数，口径见
+// prediction-ledger.js 证据 key 注释）。
+// extendBack=40：期间短语在名词前（"Fourth quarter fiscal year 2026"）。
+const GUIDANCE_NOUN_OF_RE = new RegExp(
+  `(?:${METRIC_NOUNS})\\s+guidance\\s+of\\s+(?:approximately\\s+)?\\$\\s?[\\d.,]+\\s*(?:billion|million|bn|tn|trillion)?`, 'i');
 // [v3.14] 多季度指引不适用单期结算机制：「we expect our tax rate for
 // the remaining quarters of 2026 to be between 15-17%」（META 07-29
 // live 实证）覆盖多个财季，而结算按 (ticker,财季,指标) 单期配对。
@@ -168,7 +230,15 @@ const MULTI_PERIOD_RE = /(?:remaining|following|next)\s+quarters|quarters\s+of\s
 // 形态（锚词在年份后同句）会被本模式命中且比季度模式更靠右、rightmost-wins 抢成
 // 全年；live 实证 ORCL 真文标题句后接句点不命中（期间归属正确），冒号形态
 //（"outlook for Q2 FY 2027 is as follows:"，: 不在 [^.;•] 排除类）会误判。
-const ANNUAL_PERIOD_PATTERN = /(?<![Qq][1-4]\s*)(?:full\s+)?(?:fiscal\s+year|FY|year)\s*(?:fiscal\s+)?(20\d{2})\b[^.;•]{0,40}?(?:guidance|outlook|expect)/i;
+// [v3.19] lookbehind 补季度词全族（v3.16 给 ANNUAL_YEAR_NOUN_RE 加过、
+// 本形态漏加的同型缺口）：AVGO live 实证「Fourth quarter fiscal year
+// 2026 revenue guidance of approximately $34.8 billion」的 "fiscal
+// year 2026 … guidance" 让全年形态命中（锚词 guidance 就在年份后），
+// 匹配起点比季度形态更靠右，rightmost-wins 把 Q4 季度指引抢成
+// FY2026 全年（dueOn 从 2027-01 推到 2026-12-16 之后全年，季度结算
+// 全部落空）。判据与 ANNUAL_YEAR_NOUN_RE 逐字同型：Q 前缀 + 季度词
+// 前缀都挡。
+const ANNUAL_PERIOD_PATTERN = /(?<![Qq][1-4]\s*(?:FY|fiscal\s+year|fiscal)?\s*)(?<!(?:first|second|third|fourth|1st|2nd|3rd|4th)[\s-]quarter\s*(?:of\s+)?(?:fiscal\s+)?)(?:full\s+)?(?:fiscal\s+year|FY|year)\s*(?:fiscal\s+)?(20\d{2})\b[^.;•]{0,40}?(?:guidance|outlook|expect)/i;
 // [v3.14] META 评论式全年指引形态：「We now expect full year 2026 total
 // expenses to be in the range of $175-179 billion」——锚词 expect 在
 // 年份**之前**，ANNUAL_PERIOD_PATTERN 要求锚词在年份之后（NVDA「For
@@ -207,7 +277,41 @@ const ANNUAL_BARE_YEAR_RE = new RegExp(
 // ④ 捕获组只有 1 个（年份），与其余年度形态同形，readPeriod 按集合判全年。
 const ANNUAL_YEAR_NOUN_RE = new RegExp(
   `(?<![Qq][1-4]\\s*(?:FY|fiscal\\s+year|fiscal)?\\s*)(?<!(?:first|second|third|fourth|1st|2nd|3rd|4th)[\\s-]quarter\\s*(?:of\\s+)?(?:fiscal\\s+)?)\\b(20\\d{2})\\s+(?:${METRIC_NOUNS})\\b[^.;•]{0,80}?\\b(?:is|are)\\s+(?:anticipated|expected|projected|forecast|guided)\\s+to\\s+be\\b`, 'i');
-const ANNUAL_PERIOD_SET = new Set([ANNUAL_PERIOD_PATTERN, ANNUAL_EXPECT_RE, ANNUAL_BARE_YEAR_RE, ANNUAL_YEAR_NOUN_RE]);
+// [v3.19] 连字符季度词 + 两位财年（DELL live 实证：「Second-quarter
+// FY27 revenue expected between...」）。PERIOD_PATTERNS 旧形态全部要求
+// 四位年份（20\d{2}），FY27 的两位形态整个不命中——期间抽不到，
+// buildForecastDiscrimination 的 `!g.quarter && !g.annual` 门直接把
+// 指引拦在辨别之外（v3.4 起同型：期间是 claim 的准入条件）。捕获组
+// 1=季度词 2=两位年份，readPeriod 同轮补 <100 → +2000 展开。
+const QUARTER_FY2_RE = /(first|second|third|fourth|1st|2nd|3rd|4th)[\s-]quarter\s+FY\s*(\d{2})\b/i;
+// [v3.19] 连字符全年词 + 两位财年（DELL live 实证：「Full-year FY27
+// revenue expected between $138.0 billion and $142.0 billion」）。捕获
+// 组只有 1 个（两位年份），与其余年度形态同形，readPeriod 按集合判全年。
+const FULLYEAR_FY2_RE = /full[\s-]year\s+FY\s*(\d{2})\b/i;
+// [v3.19] 冒号节头全年形态（PLTR live 实证：「For full year 2026: •
+// We are raising our revenue guidance to between $8.150 – $8.158
+// billion.」）。PLTR 的期间写在句外节头，指引句自身无期间；且
+// ANNUAL_PERIOD_PATTERN 的锚词（guidance|outlook|expect）跨不过
+// 节头的 bullet（[^.;•] 排除 •），500 字符窗内最右的期间匹配会是
+// 前文财务摘要表的 "Q2 2026"——不补这个形态，全年指引被错记成
+// FY2026Q2、dueOn 提前到已过期的 2026-09，与 Q2 实际值（PLTR 按
+// 千位上报）撞 key 判 beat 带外（v3.14 NVDA 全年税率错记 FY27Q1
+// 同型）。精度：年份短语后必须紧跟冒号（节头形态），不认裸年份。
+// [v3.19] lookbehind 同款（ORCL live 实证：「for Q2 FY 2027: • Total
+// revenues are expected to grow...」——冒号紧跟年份的节头形态被 Q2
+// 前缀骗过：ANNUAL_HEADER_RE 匹配 "FY 2027:" 起点在 Q 形态
+// "Q2 FY 2027" 之后，rightmost-wins 把 Q2 EPS 区间指引抢成全年，
+// dueOn 提前到已过期时点）。Q 前缀与季度词前缀都挡；PLTR 的
+// 「For full year 2026:」（无季度前缀）照常命中。
+const ANNUAL_HEADER_RE = /(?<![Qq][1-4]\s*(?:FY|fiscal\s+year|fiscal)?\s*)(?<!(?:first|second|third|fourth|1st|2nd|3rd|4th)[\s-]quarter\s*(?:of\s+)?(?:fiscal\s+)?)(?:(?:full|fiscal)[\s-]year|FY)\s*(?:fiscal\s+)?(20\d{2})\s*:/i;
+// [v3.19] 季度词 + fiscal year 全拼 + 年份（AVGO live 实证：「Fourth
+// quarter fiscal year 2026 revenue guidance of approximately $34.8
+// billion」与正文锚「the outlook for the fourth quarter of fiscal year
+// 2026, ending November 1, 2026」）。旧季度形态 quarter\s+(?:of\s+)?
+// (?:fiscal\s+)?(20\d{2}) 吃不下 "fiscal year 2026" 的 year 单词
+// （fiscal 后直接要数字），Q4 FY2026 指引期间整个抽不到。
+const QUARTER_FISCALYEAR_RE = /(first|second|third|fourth|1st|2nd|3rd|4th)[\s-]quarter\s+(?:of\s+)?fiscal\s+year\s+(20\d{2})\b/i;
+const ANNUAL_PERIOD_SET = new Set([ANNUAL_PERIOD_PATTERN, ANNUAL_EXPECT_RE, ANNUAL_BARE_YEAR_RE, ANNUAL_YEAR_NOUN_RE, FULLYEAR_FY2_RE, ANNUAL_HEADER_RE]);
 const PERIOD_PATTERNS = [
   /(?:outlook|guidance)\s+for\s+(?:the\s+)?(first|second|third|fourth|1st|2nd|3rd|4th)\s+quarter\s+of\s+fiscal\s+(20\d{2})/i,
   /(first|second|third|fourth|1st|2nd|3rd|4th)\s+quarter\s+(?:of\s+)?(?:fiscal\s+)?(20\d{2})\b[^.;•]{0,30}?(?:outlook|guidance)/i,
@@ -222,9 +326,16 @@ const PERIOD_PATTERNS = [
   // （见下方 fallback 分支），新形态优先级低于既有形态，不影响旧行为。
   ANNUAL_EXPECT_RE,
   ANNUAL_BARE_YEAR_RE,
-  // [v3.16] 年份在名词前的全年形态（GOOGL capex live 实证）追加在末尾：
+  // [v3.16] 年份在名词前的全年形态（GOOGL FY2026 capex live 实证）追加在末尾：
   // 全文兜底匹配按数组顺序取第一个，新形态优先级低于既有形态。
   ANNUAL_YEAR_NOUN_RE,
+  // [v3.19] 追加在末尾（同款优先级纪律）：两位财年/全拼 fiscal year/
+  // 冒号节头三组 live 实证形态（DELL/AVGO/PLTR），全文兜底匹配时
+  // 不影响既有公司的期间解析。
+  QUARTER_FISCALYEAR_RE,
+  QUARTER_FY2_RE,
+  FULLYEAR_FY2_RE,
+  ANNUAL_HEADER_RE,
 ];
 const QWORD = { first: 1, second: 2, third: 3, fourth: 4, '1st': 1, '2nd': 2, '3rd': 3, '4th': 4 };
 
@@ -308,6 +419,10 @@ const RESULTS_HEADLINE_RES = [
 ];
 // [v3.5.1] 标题无年份时的正文权威锚：已报告财季的结束日期。
 const QUARTER_ENDED_RE = /(first|second|third|fourth)\s+quarter\s+ended\s+[A-Za-z]+\s+\d{1,2},\s+(20\d{2})/i;
+// [v3.19] 年份前置标题锚（DELL live 实证，见 extractActuals 内注释）：
+// 「results for its fiscal 2027 second quarter」——季度词在年份后的
+// 标题语序。捕获组 1=年份 2=季度词。
+const RESULTS_YEARFIRST_RE = /(?:results?|earnings)\s+for\s+(?:its\s+)?(?:the\s+)?fiscal\s+(20\d{2})\s+(first|second|third|fourth|1st|2nd|3rd|4th)[\s-]quarter/i;
 // 营收实际值："reported revenue for the second quarter ended July 26, 2026,
 // of $96.2 billion" / 亮点行 "Revenue of $96.2 billion" / "revenue was $X"。
 // 指标与数值间的 [^.;]{0,90} 吃掉 "for the ... ended <date>, " 这类插入语；
@@ -346,7 +461,13 @@ const ACTUAL_MARGIN_RE = new RegExp(
 // 就是错配——旧 matchAll 把 NVDA 71.1% 全年毛利率混进 FY26Q4 key（该条
 // 无 Q4 毛利率指引所以没暴露，corr-2026-030 登记）。判据：匹配点前后
 // 窗内的全年期间标记（for fiscal YYYY / for the fiscal year / in YYYY）。
-const FULLYEAR_GUARD_RE = /for\s+(?:the\s+)?(?:fiscal\s+year|full[\s-]?year)|for\s+fiscal\s+20\d{2}|\bin\s+(?:19|20)\d{2}\b/i;
+// [v3.19] 名词相邻全年标记（DELL live 实证：「Record full-year revenue
+// of $113.5 billion」——2026-02-26 备案标题期间是 FY2026 Q4，全年营收
+// 句若进财季 key 就是错事实（corr-2026-034 同型：查找表里躺着错事实；
+// 无 Q4 FY2026 营收指引所以不会错结算，但事实是错的）。只认「标记+
+// 指标名词」相邻——META Q4 双值句的 "and full year 2025, respectively"
+// 在数值之后不相邻，季度值照常收（v3.15 夹具不回归）。
+const FULLYEAR_GUARD_RE = /for\s+(?:the\s+)?(?:fiscal\s+year|full[\s-]?year)|for\s+fiscal\s+20\d{2}|\bin\s+(?:19|20)\d{2}\b|\bfull[\s-]?year\s+(?:total\s+|net\s+|record\s+)?(?:revenue|revenues|sales|income|margins?|cash\s+flow|expenditures?|capex|eps)\b/i;
 // [v3.13] MRVL 标题 bullet 毛利率实际值：「Q2 Gross Margin: 53.1% GAAP
 // gross margin; 58.9% non-GAAP gross margin」——MRVL 亮点段只在这里陈述
 // 毛利率实际值（无 was/were 连接词，ACTUAL_MARGIN_RE 整个不命中，到期
@@ -501,8 +622,19 @@ function extractGuidance(text) {
     // [v3.14] META CFO 评论式（动词+间隔+指标+区间标记）。extendBack=0：
     // 期间短语在匹配区内，不需要向前扩展；间隔词≥1 保证与 form B 零重叠。
     { re: new RegExp(GUIDANCE_EXPECTS_GAP_RE.source, 'gi'), extendBack: 0 },
+    // [v3.19] 名词式区间（DELL live：无 is/are、名词在前）。extendBack=40：
+    // 期间短语在名词前，扩到分句边界包进句子。
+    { re: new RegExp(GUIDANCE_NOUN_RANGE_RE.source, 'gi'), extendBack: 40 },
+    // [v3.19] 提升式区间（PLTR live：raising...guidance to between，
+    // en-dash 分隔）。extendBack=0：期间在句外冒号节头，向前窗解析。
+    { re: new RegExp(GUIDANCE_RAISING_RANGE_RE.source, 'gi'), extendBack: 0 },
+    // [v3.19] 名词式点值（AVGO/DELL live：名词+guidance of+数值）。
+    // extendBack=40：期间短语在名词前（"Fourth quarter fiscal year 2026"）。
+    { re: new RegExp(GUIDANCE_NOUN_OF_RE.source, 'gi'), extendBack: 40 },
   ];
   const seen = new Set();
+  // [v3.19] 同事实去重集合（期间+指标+数值），见 push 前注释
+  const seenFacts = new Set();
   for (const form of forms) {
     let m;
     while ((m = form.re.exec(text)) !== null) {
@@ -540,8 +672,11 @@ function extractGuidance(text) {
       let annual = false;
       // annual 形态只有 1 个捕获组（年份）；季度形态 1=季度 2=年份
       const readPeriod = (p, pm) => {
-        if (ANNUAL_PERIOD_SET.has(p)) { annual = true; quarter = null; fiscalYear = Number(pm[1]); }
-        else { annual = false; quarter = QWORD[String(pm[1]).toLowerCase()] ?? Number(pm[1]); fiscalYear = Number(pm[2]); }
+        // [v3.19] 两位财年展开（DELL live 实证 "Second-quarter FY27"）：
+        // 既有形态全部捕获四位年份不受影响；<100 的是两位形态，+2000。
+        const yr = (y) => { const n = Number(y); return n < 100 ? n + 2000 : n; };
+        if (ANNUAL_PERIOD_SET.has(p)) { annual = true; quarter = null; fiscalYear = yr(pm[1]); }
+        else { annual = false; quarter = QWORD[String(pm[1]).toLowerCase()] ?? Number(pm[1]); fiscalYear = yr(pm[2]); }
         periodPhrase = pm[0].trim();
       };
       // ③ 句内的**同比/对比引用**不是本指引期间——"compared with third
@@ -599,7 +734,13 @@ function extractGuidance(text) {
         || sentence.match(/in\s+the\s+range\s+of\s+\$?\s?([\d.,]+)\s*(?:million|billion)?\s*(?:[-–]|\bto\b)\s*\$?\s?([\d.,]+)\s*(billion|million)/i)
         // [v3.14] 单百分号区间（META live）：「between 15-17%」（旧 % 区间
         // 正则要求两端都有 %，单 % 形态整个不命中）
-        || sentence.match(/between\s+([\d.]+)\s*[-–]\s*([\d.]+)\s*%/i);
+        || sentence.match(/between\s+([\d.]+)\s*[-–]\s*([\d.]+)\s*%/i)
+        // [v3.19] between + en-dash 美元区间（PLTR live 实证：「to
+        // between $8.150 – $8.158 billion」——旧 and / in the range of /
+        // 单百分号三种区间语法全部不命中，value 退化成点值 $8.150、
+        // 无容差不可结算）。与 earnings-settlement.js parseRange 同轮
+        // 同构新增（v3.16 教训：两边正则必须一起改）。
+        || sentence.match(/between\s+\$?\s?([\d.,]+)\s*(?:million|billion)?\s*[–-]\s*\$?\s?([\d.,]+)\s*(billion|million)/i);
       const valueM = sentence.match(/\$\s?[\d.,]+\s*(?:billion|million|bn|tn|trillion)?/i)
         || sentence.match(/[\d.]+\s*%/) || sentence.match(/[\d.]+\s*basis points/i);
       const tolM = sentence.match(/(?:\+\/-|±|plus or minus)\s*(\$?\s?[\d.,]+\s*(?:%|billion|million|basis points|bps)?)/i);
@@ -611,6 +752,11 @@ function extractGuidance(text) {
       for (const s of after.split(/(?<=[.!?])\s+/)) {
         if (CAVEAT_RE.test(s) && s.length < 300) caveats.push(s.trim());
       }
+      // [v3.19] 同（期间,指标,数值）去重：见上方注释。口径差异以首条
+      // 为准（不同值时数值不同，key 天然分开）。
+      const factKey = `${fiscalYear}|${quarter}|${annual}|${metricM ? metricM[0].toLowerCase() : ''}|${(rangeM ? rangeM[0] : (valueM ? valueM[0] : '')).replace(/\s+/g, ' ').trim()}`;
+      if (seenFacts.has(factKey)) continue;
+      seenFacts.add(factKey);
       guidance.push({
         sentence,
         metric: metricM ? metricM[0].toLowerCase() : null,
@@ -680,6 +826,20 @@ function extractActuals(text) {
   // 只认 ended+日期 结构——同比引用（"compared with second quarter 2025"）
   // 没有 ended 日期，天然不命中；报告期结束日是对「已报告哪个财季」最
   // 明确的陈述，不是推测。
+  // [v3.19] 年份前置标题形态（DELL live 实证，2026-10-27 实抓
+  // 0001571996-26-000039/000021/000003）：「announces financial results
+  // for its fiscal 2027 second quarter and provides guidance for its
+  // fiscal 2027 third quarter and full year」——RESULTS_HEADLINE_RES
+  // 四种形态全部要求季度词在年份前，DELL 标题句是年份在前，期间抽不到、
+  // actuals 整个返回空：Q1/Q2 FY27 区间指引本可结算（对账依据就是
+  // 下一期备案亮点段的 "Record revenue of $47.0 billion"，ACTUAL_
+  // REVENUE_RE 的 record 前缀 v3.4 起就容忍），却因期间锚缺失永远
+  // pending。捕获组 1=年份 2=季度词（与 RESULTS_HEADLINE_RES 的
+  // 1=季度 2=年份相反，单独赋值不经 readPeriod）。
+  if (!fiscalYear || !quarter) {
+    const m = head.match(RESULTS_YEARFIRST_RE);
+    if (m) { fiscalYear = Number(m[1]); quarter = QWORD[String(m[2]).toLowerCase()] ?? Number(m[2]); }
+  }
   if ((!fiscalYear || !quarter) && QUARTER_ENDED_RE) {
     const m = t.slice(0, 2500).match(QUARTER_ENDED_RE);
     if (m) { quarter = QWORD[String(m[1]).toLowerCase()] ?? Number(m[1]); fiscalYear = Number(m[2]); }

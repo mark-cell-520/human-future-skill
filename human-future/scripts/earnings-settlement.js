@@ -68,6 +68,10 @@ function parseMetricValue(str) {
  * range of $175 to $185 billion"——X-to-Y 形态旧正则整个不命中，value 退化
  * 成点值 $175、无容差不可结算）；首侧补可选单位（"$175 million to $1
  * billion" 两端不同单位各折各的，缺省按尾侧单位）。
+ * [v3.19] between + en-dash 美元区间（PLTR live 实证：「to between
+ * $8.150 – $8.158 billion」——between-and / in the range of / 单百分号
+ * 三种旧语法全部不命中）。与 edgar-collector rangeM 同构（v3.16 教训：
+ * 抽取侧与结算侧必须同轮改，只改一侧会越界崩溃或断言空转）。
  */
 function parseRange(str) {
   const s = String(str || '');
@@ -101,6 +105,17 @@ function parseRange(str) {
   // [v3.14] 单百分号区间：「between 15-17%」（旧正则要求两端都有 %）
   const mDashPct = s.match(/between\s+([\d.]+)\s*[-–]\s*([\d.]+)\s*%/i);
   if (mDashPct) return { lo: Number(mDashPct[1]), hi: Number(mDashPct[2]), unit: 'pct' };
+  // [v3.19] between + en-dash 美元区间（PLTR live 实证：「to between
+  // $8.150 – $8.158 billion」）。首侧无单位按尾侧单位折（与 mDashUsd
+  // 同规则）；单位组只认 million/billion（千分位报表防错标度，v3.17
+  // 表格式 capex 同款纪律）。
+  const mBetweenDash = s.match(/between\s+\$?\s?([\d.,]+)\s*(million|billion)?\s*[–-]\s*\$?\s?([\d.,]+)\s*(billion|million)/i);
+  if (mBetweenDash) {
+    const scLo = SCALE[(mBetweenDash[2] || mBetweenDash[4]).toLowerCase()];
+    const scHi = SCALE[mBetweenDash[4].toLowerCase()];
+    return { lo: Number(mBetweenDash[1].replace(/,/g, '')) * scLo,
+      hi: Number(mBetweenDash[3].replace(/,/g, '')) * scHi, unit: 'usd' };
+  }
   return null;
 }
 
@@ -212,6 +227,12 @@ if (require.main === module) {
     ['in the range of $175 to $185 billion', null, true, '$190 billion', false, 'beat'],
     // [v3.16] 两端不同单位（首侧 million 尾侧 billion，各折各的）
     ['in the range of $175 million to $1 billion', null, true, '$500 million', true, 'in-band'],
+    // [v3.19] between + en-dash 美元区间（PLTR live 实证）
+    ['between $8.150 – $8.158 billion', null, true, '$8.155 billion', true, 'in-band'],
+    ['between $8.150 – $8.158 billion', null, true, '$8.200 billion', false, 'beat'],
+    ['between $4.889 – $4.897 billion', null, true, '$4.5 billion', false, 'below'],
+    // [v3.19] DELL between-and 区间（旧形态，回归不破）
+    ['between $44.0 billion and $45.0 billion', null, true, '$47.0 billion', false, 'beat'],
   ];
   let pass = 0, fail = 0;
   for (const [gv, tol, isRange, av, expHit, expDir] of cases) {
