@@ -197,6 +197,47 @@ const GUIDANCE_RAISING_RANGE_RE = new RegExp(
 // extendBack=40：期间短语在名词前（"Fourth quarter fiscal year 2026"）。
 const GUIDANCE_NOUN_OF_RE = new RegExp(
   `(?:${METRIC_NOUNS})\\s+guidance\\s+of\\s+(?:approximately\\s+)?\\$\\s?[\\d.,]+\\s*(?:billion|million|bn|tn|trillion)?`, 'i');
+// [v3.20] 冒号+bullet 期望式指引（form H）。live 实证（2026-10-27 实抓
+// PLTR 0001321655-26-000013/000026/000039 三份备案 Outlook 段逐字）：
+//   「For Q1 2026, we expect: • Revenue of between $1.532 - $1.536
+//     billion.」
+//   「• Adjusted income from operations of between $870 - $874
+//     million.」
+//   「For full year 2026, we expect: • Revenue of between $7.182 -
+//     $7.198 billion.」
+//   「For Q2 2026, we expect: • Revenue of between $1.797 – $1.801
+//     billion. • Adjusted income from operations of between $1.063 –
+//     $1.067 million.」（05-04 备案，季度指引同样在 colon-bullet 里）
+// PLTR 自 v3.4 起就在 14 家公司名单里，v3.19 全池过堂只补了 raising 式
+// **全年**指引（form F）——**季度指引 bullet 整个在库外**：三份备案的
+// Q1/Q2/Q3 2026 营收指引全部漏采（corr-2026-032「在窗公司≠采到的指引」
+// 同型第四波：v3.19 过了「哪些公司没指引」的堂，没过「已命中公司的
+// 其它段落还有没有漏」的堂——同一公司不同段落可以用完全不同句式，
+// 形态命中数>0 ≠ 该公司覆盖完整）。
+// 形态：expect 动词 + 冒号 + bullet 列表 + 指标名词（+{0,40} 修饰语）
+// + of + (between)? + 美元数值。名词与 of 之间容忍修饰语——live 实证
+// 「Adjusted income from operations of between」（"from operations"
+// 17 字符，第一版紧邻形态漏采该 bullet）。
+// 结构要点（lookbehind 起句于名词，句子不含 expect/冒号/bullet 前缀）：
+// ① 冒号是硬锚——"we expect revenue to be $X"（form B 地盘）无冒号
+//    不命中；② bullet 列表的**后续 bullet** 不带动词，靠 lookbehind
+//    的 [^:]{0,300} 隔段窗追上（节头「For full year 2026, we expect:」
+//    必含冒号，隔段窗跨不过去，Q1 节的 expect 追不上 FY 节的 bullet——
+//    V8 lookbehind 实测嵌套懒量化迭代走不通两迭代，冒号隔段是可靠结构）；
+//    ③ in excess of
+//    指点值不收（gap 负向断言挡 "in excess"——v3.19 同款决议：单边
+//    下界登记成点值会扭曲义务语义，漏报比误报诚实）；④ 修饰语窗
+//    [^.;•]{0,40} 不过句读不过 bullet。
+// extendBack=0：期间短语在冒号节头（"For Q1 2026, we expect:"/
+// "For full year 2026, we expect:"），冒号是分句边界扩不进来，靠
+// PERIOD_PATTERNS 从 500 字符向前窗解析（ANNUAL_PERIOD_PATTERN 的
+// "full year 2026, we expect" 锚词在节头内，v3.19 已实测可用；
+// 季度形态 "Q1 2026" 就近取胜，ANNUAL_BARE_YEAR_RE 要 expect 紧接
+// 年份不命中，季度指引不会被抢成全年）。
+const GUIDANCE_COLON_BULLET_RE = new RegExp(
+  `(?<=(?:expects?|anticipates?|projects?|forecasts?)\\s*:\\s*[^:]{0,300})` +
+  `(?:[A-Za-z][\\w-]*\\s+){0,2}?(?:${METRIC_NOUNS})\\b(?:(?!\\bin\\s+excess\\b)${NUM_OR_TERM}){0,40}?\\bof\\s+(?:between\\s+)?\\$\\s?[\\d.,]+` +
+  `(?:\\s*(?:million|billion|bn|tn|trillion)|\\s*[-\u2013\u2014]\\s*\\$?\\s?[\\d.,]+(?:\\s*(?:million|billion|bn|tn|trillion))?)${NUM_OR_TERM}{0,30}`, 'i');
 // [v3.14] 多季度指引不适用单期结算机制：「we expect our tax rate for
 // the remaining quarters of 2026 to be between 15-17%」（META 07-29
 // live 实证）覆盖多个财季，而结算按 (ticker,财季,指标) 单期配对。
@@ -449,6 +490,32 @@ const ACTUAL_SALES_INCREASED_RE = new RegExp(
 // 惯例在最前（与主模式同一首匹配纪律，分部营收 bullets 在后不取）。
 const ACTUAL_REVENUE_COLON_RE = new RegExp(
   `\\b(?:record\\s+|total\\s+|net\\s+)?revenue\\s*:\\s*(?:approximately\\s+)?(\\$\\s?[\\d.,]+\\s*(?:billion|million|bn|m))\\b`, 'i');
+// [v3.20] PLTR grew-to 营收实际值形态。live 实证（2026-10-27 实抓
+// 0001321655-26-000026/000039 亮点段逐字）：
+//   「• Revenue grew 85% year-over-year and 16% quarter-over-quarter
+//     to $1.633 billion」（05-04，Q1 2026 实际值）
+//   「• Revenue grew 93% year-over-year and 19% quarter-over-quarter
+//     to $1.935 billion」（08-03，Q2 2026 实际值）
+// 增长动词+同比%+to+绝对值，无 of/was/were 连接词（主模式不命中）、
+// 无冒号（colon 形态不命中）、无 increased（AMZN 紧邻形态不命中）。
+// PLTR 三份备案 actuals 全为 0——form H 同轮进库的 Q1/Q2 2026 区间
+// 指引找不到对账依据（v3.13「卡点在实际值侧而非指引侧」同型）。
+// 精度：① 名词与 grew 紧邻、grew 与数值间 [^.;$]{0,80}（不过句读、
+//    不过美元符号、不过 bullet——不能桥到下一句/下一 bullet 的值
+//    （v3.5.1 AMZN 宽 gap 教训；live 亮点段 bullet 间无句点，不排除
+//    • 时「Revenue grew 85% year-over-year」会桥接到下一 bullet 的
+//    "to $5.0 billion"，精度夹具钉住）；
+//    ② 分部守卫 lookbehind：bullet 后名词前有 1-3 个限定词即拒绝——
+//    live 实证三条分部行在总营收句之前：「◦ U.S. revenue grew 104%
+//    … to $1.282 billion」「◦ U.S. commercial revenue grew 133% … to
+//    $595 million」「• U.S. government revenue grew 84% … to $687
+//    million」（AMZN 分部行 lookbehind 同型，v3.5.1/v3.13）；
+//    ③ 财季路径取第一个匹配——Q4 备案的 FY 亮点段（「• Revenue grew
+//    56% year-over-year to $4.475 billion」）在本财季句之后，先到即
+//    本财季（v3.13 既定纪律；该 FY 句无 full-year 相邻标记不被守卫
+//    挡住，顺序是唯一防线，与 NVDA「先本季后全年」同型）。
+const ACTUAL_REVENUE_GREW_RE = new RegExp(
+  `(?<![•◦]\\s+(?:[A-Za-z][\\w.-]*\\s+){1,3})\\b(?:record\\s+|total\\s+|net\\s+)?revenue\\s+grew\\s+[\\d.]+\\s*%[^.;$•]{0,80}?\\bto\\s+(\\$\\s?[\\d.,]+\\s*(?:billion|million|bn|m))\\b`, 'i');
 // 毛利率实际值："GAAP and non-GAAP gross margins were both 75.0%" /
 // "GAAP gross margin was 52.1%"。取第一个（若 GAAP 与非 GAAP 不同值会抽出
 // 两条，由结算层唯一性规则挡掉）。
@@ -631,6 +698,11 @@ function extractGuidance(text) {
     // [v3.19] 名词式点值（AVGO/DELL live：名词+guidance of+数值）。
     // extendBack=40：期间短语在名词前（"Fourth quarter fiscal year 2026"）。
     { re: new RegExp(GUIDANCE_NOUN_OF_RE.source, 'gi'), extendBack: 40 },
+    // [v3.20] 冒号+bullet 期望式（PLTR live：季度指引 bullet 在
+    // "we expect:" 节头后，首 bullet 带动词、后续 bullet 只有名词）。
+    // extendBack=0：期间在冒号节头（"For Q1 2026, we expect:"），向前
+    // 窗解析（与 form F 同款）。
+    { re: new RegExp(GUIDANCE_COLON_BULLET_RE.source, 'gi'), extendBack: 0 },
   ];
   const seen = new Set();
   // [v3.19] 同事实去重集合（期间+指标+数值），见 push 前注释
@@ -902,6 +974,13 @@ function extractActuals(text) {
         const wide = t.slice(0, 8000);
         const rv4 = wide.match(ACTUAL_REVENUE_BULLET_RE);
         if (rv4 && notFullYear(rv4, wide)) push('revenue', '', rv4[1]);
+        else {
+          // [v3.20] PLTR grew-to 形态（"Revenue grew 85% ... to $1.633
+          // billion"）：四个旧营收形态全部不命中时的最后兜底。见
+          // ACTUAL_REVENUE_GREW_RE 注释（分部守卫 + 先到即本财季）。
+          const rv5 = lead.match(ACTUAL_REVENUE_GREW_RE);
+          if (rv5 && notFullYear(rv5)) push('revenue', '', rv5[1]);
+        }
       }
     }
   }
@@ -1307,12 +1386,12 @@ function guidanceNounKey(sentence) {
 
 module.exports = {
   collectEdgarFilings, extractGuidance, extractActuals, extractAnnualActuals, stripHtml,
-  DEFAULT_TICKERS, GUIDANCE_SENTENCE_RE, PERIOD_PATTERNS,
+  DEFAULT_TICKERS, GUIDANCE_SENTENCE_RE, PERIOD_PATTERNS, GUIDANCE_COLON_BULLET_RE,
   ACTUAL_REVENUE_RE, ACTUAL_REVENUE_COLON_RE, ACTUAL_MARGIN_RE, RESULTS_HEADLINE_RES,
   ACTUAL_SALES_INCREASED_RE, QUARTER_ENDED_RE, MAX_8K_PER_COMPANY,
   // [v3.13] 结算配对用导出：口径推导 / 指标族推导 / 新实际值形态（测试）
   gaapBasisOf, settleMetricOf, guidanceNounKey, METRIC_NOUNS,
-  ACTUAL_MARGIN_BULLET_RE, ACTUAL_EPS_RE, ACTUAL_OPINC_RE, FULLYEAR_GUARD_RE,
+  ACTUAL_MARGIN_BULLET_RE, ACTUAL_EPS_RE, ACTUAL_OPINC_RE, ACTUAL_REVENUE_GREW_RE, FULLYEAR_GUARD_RE,
   // [v3.14] META CFO 评论式指引形态 + 多季度守卫 + bullet 营收实际值（测试）
   GUIDANCE_EXPECTS_GAP_RE, MULTI_PERIOD_RE, ACTUAL_REVENUE_BULLET_RE,
   ANNUAL_EXPECT_RE, ANNUAL_BARE_YEAR_RE, ANNUAL_PERIOD_SET, ANNUAL_YEAR_NOUN_RE,

@@ -1,9 +1,9 @@
 ---
 name: human-future-v2
 title: "人类未来 · 文明推演引擎 v3.18.0"
-version: "3.19.0"
+version: "3.20.0"
 description: |-
-  人类未来 v3.19.0 - AVGO/DELL/PLTR 书面数值指引形态进库（已知边界推进：corr-2026-032「在窗公司≠采到的指引」同型第三波——v3.4 状态描述「MSFT/GOOGL/AVGO/CRWV/IBM/DELL/PLTR 只在电话会口头给指引或无数值」live 实证腐烂三个版本，2026-10-27 全池过堂实测三家 9 份在窗 8-K 正文都有书面数值指引含可结算区间、四条旧形态全部不命中零条进台账）：① form E 名词式区间（DELL live 逐字「Second-quarter FY27 revenue expected between $44.0 billion and $45.0 billion」——名词在前、无 is/are，form A 要 is/are expected to be、form B/D 要动词在前）；② form F 提升式区间（PLTR live 逐字「We are raising our revenue guidance to between $8.150 – $8.158 billion」——raise 动词+名词与 guidance 间容忍修饰语+en-dash 区间，旧区间正则只认 and / in the range of / 单百分号三种全部不命中）；③ form G 名词式点值（AVGO/DELL live 逐字「Fourth quarter fiscal year 2026 revenue guidance of approximately $34.8 billion」——名词+guidance of+数值无谓语动词，点值无容差不结算但作为可辨别主张登记，与 AMD opex 点值同型）；④ 期间形态四位：连字符季度词+两位财年（Second-quarter FY27）/连字符全年词+两位财年（Full-year FY27）+readPeriod 两位年份展开、冒号节头全年（For full year 2026:，PLTR 期间在句外节头）、季度词+fiscal year 全拼（Fourth quarter fiscal year 2026）+ ANNUAL_PERIOD_PATTERN/ANNUAL_HEADER_RE 补季度词 lookbehind（零漂移 diff 实证：不加则 AVGO 季度指引被 fiscal year 锚词抢成全年、ORCL Q2 EPS 指引被「Q2 FY 2027:」冒号节头抢成全年）；⑤ actuals 年份前置标题锚（DELL「announces financial results for its fiscal 2027 second quarter」——RESULTS_HEADLINE_RES 四形态全不命中的语序）+ 名词相邻全年守卫（Record full-year revenue 不进财季 key）+ 同（期间,指标,数值）去重（DELL 一句双 EPS 指引的错位记录：basis=non-gaap 但 value=$24.37）；⑥ 结算侧 parseRange/rangeM 双側同构补 between+en-dash 美元区间。live 端到端（EDGAR 缓存先删再跑）：pipeline exit 0、95 条 forecast 辨别（77 EDGAR + 18 RSS）；DELL FY2027Q1 区间 $34.7-35.7B vs 实际 $43.8B、Q2 区间 $44-45B vs 实际 $47.0B 两条真实结算（均 beat 带外）；台账 76→92（+16：AVGO×3/DELL×6/PLTR×6/ORCL 重述×1，2 条新增即结算）；42 份备案新旧代码逐条 diff 全部纯新增零漂移；claim 额度 70→80（77>70，v3.14 同型纪律第二次实证）。测试 387→396 项；10 轮反向验证全部精确失败（form E/F/G 各形态/lookbehind×2/年份前置锚/全年守卫/同事实去重/parseRange/版本漂移）。登记 corr-2026-038（状态描述腐烂+全池过堂纪律：扩库轮的测量必须输出新桶全部命中按 kind 分布+未命中条目过堂，「口头给指引」的旧结论三个版本没人复核）；登记簿 36→37 条。历史：v3.18 RSS 前瞻主张独立额度；v3.17 表格式全年 capex 实际值抽取；v3.16 GOOGL FY2026 capex 残废条目修复；v3.15 全年实际值抽取+annual key 配对；v3.14 META CFO 评论式指引形态进库；v3.13 财报指引结算指标扩展；v3.12 算力基建承诺/规模主张（新辨别维度）；v3.11 用量/牵引度指标主张+引号切分修复；v3.10 一手信源桶接入+部署规模主张；v3.9 价格下调主张；v3.8 监管行动主张；v3.7 专家/机构判断主张；v3.6 成本/价格信号主张；v3.5.1 结算链路修复（维护）；v3.5 财报指引自动结算；v3.4 财报指引+SEC EDGAR；v3.3.1 survey-finding 精度修复（维护）；v3.3 并购/交易过程主张；v3.2.2/3.2.1 断链修复；v3.2 产能/供给约束主张；v3.1.1 口径错位精度修复；v3.1 接入 self-correction-ledger；v3.0.0c 商业段断链修复；v2.17 接入 GJOpen；v2.16 基准概率断链修复；v2.15 参考文本单列；v2.13 停止假推演。
+  人类未来 v3.20.0 - PLTR 冒号+bullet 期望式指引形态进库（已知边界推进：corr-2026-032「在窗公司≠采到的指引」同型第四波，corr-2026-039「扩库轮测量必须覆盖已命中公司的全部段落」——v3.19 全池过堂只问了「哪些公司没指引」没问「已命中公司的其它段落还有没有漏」，2026-10-27 全池测量 live 实证 PLTR 三份在窗 8-K 的 Outlook 段季度指引 bullet 整个在库外：v3.19 只收 raising 式全年指引 form F，Q1/Q2/Q3 2026 营收与 adjusted income 指引全部漏采）：① form H 冒号+bullet 期望式（PLTR live 逐字「For Q1 2026, we expect: • Revenue of between $1.532 - $1.536 billion. • Adjusted income from operations of between $870 - $874 million.」——expect 动词+冒号+bullet 列表，首 bullet 带动词、后续 bullet 靠 [^:] 隔段 lookbehind 追上（V8 嵌套懒量化迭代实测走不通两迭代）；名词前容忍 {0,2} 修饰词；in excess of 指点值不收、无 expect 动词的冒号节头不收、截断残值（正文被裁的 "$4"）不收）；② grew-to 实际值形态（PLTR live 逐字「• Revenue grew 85% year-over-year and 16% quarter-over-quarter to $1.633 billion」——增长动词+同比%+to+绝对值，四个旧营收形态全部不命中；分部守卫 lookbehind 挡 U.S./U.S. commercial/U.S. government 三条分部行；间隔窗 [^.;$•] 防跨 bullet 桥接；先到即本财季）；③ 结算端到端：PLTR FY2026Q1 区间 $1.532-1.536B vs 实际 $1.633B、Q2 区间 $1.797-1.801B vs 实际 $1.935B 两条真实结算（均 beat 带外）；台账 92→101（+9：PLTR 02-02×5/05-04×2/08-03×2，Q3 指引按到期门 pending）；42 份备案新旧代码逐条 diff 纯新增零漂移（41 家不变）；claim 额度 80→90（live 实测 84>80，砍掉的正是本轮新增 PLTR 尾部条目，v3.14/v3.19 同型纪律第三次实证）；同代码复跑幂等 0 新登记。测试 396→404 项；11 轮反向验证全部精确失败（form H/grew-to/in-excess 负向断言——第一版被 live 句 "U.S." 前缀挡在断言前、补无前缀夹具后才精确失败/修饰词容忍/[^:] 隔段/截断残值守卫——第一版被 lookbehind 两迭代失败挡在前面职责错配、改隔段结构后回到数值守卫/分部守卫/bullet 桥接/额度/parseRange/版本漂移）。登记 corr-2026-039（扩库轮测量必须逐公司过全部 outlook 段——同一公司不同段落可以用完全不同句式，形态命中数>0 ≠ 该公司覆盖完整；夹具必须触达被测分支两个实测）；登记簿 37→38 条。历史：v3.19 AVGO/DELL/PLTR 书面数值指引形态进库；v3.18 RSS 前瞻主张独立额度；v3.17 表格式全年 capex 实际值抽取；v3.16 GOOGL FY2026 capex 残废条目修复；v3.15 全年实际值抽取+annual key 配对；v3.14 META CFO 评论式指引形态进库；v3.13 财报指引结算指标扩展；v3.12 算力基建承诺/规模主张（新辨别维度）；v3.11 用量/牵引度指标主张+引号切分修复；v3.10 一手信源桶接入+部署规模主张；v3.9 价格下调主张；v3.8 监管行动主张；v3.7 专家/机构判断主张；v3.6 成本/价格信号主张；v3.5.1 结算链路修复（维护）；v3.5 财报指引自动结算；v3.4 财报指引+SEC EDGAR；v3.3.1 survey-finding 精度修复（维护）；v3.3 并购/交易过程主张；v3.2.2/3.2.1 断链修复；v3.2 产能/供给约束主张；v3.1.1 口径错位精度修复；v3.1 接入 self-correction-ledger；v3.0.0c 商业段断链修复；v2.17 接入 GJOpen；v2.16 基准概率断链修复；v2.15 参考文本单列；v2.13 停止假推演。
 ---
 
 # 人类未来 · 文明推演引擎 v3.18.0
@@ -13,11 +13,36 @@ description: |-
 
 ---
 
-## 当前状态（v3.19.0 实测）
+## 当前状态（v3.20.0 实测）
 
 以下数字全部来自 2026-10-27 的 `FETCH=1 FETCH_BODY=1 node scripts/run-pipeline.js` 实跑
 （EDGAR 缓存先删再跑——TTL 6h 内的旧缓存不含当期代码的抽取结果，v3.5.1/v3.15
-同款纪律；v3.19.0 轮：pipeline exit 0、AVGO/DELL/PLTR 书面数值指引形态进库的
+同款纪律；v3.20.0 轮：pipeline exit 0、PLTR 冒号+bullet 期望式指引形态进库的
+live 端到端——v3.19 全池过堂补了 AVGO/DELL/PLTR 的书面数值指引（form E/F/G），
+但没过「已命中公司的其它段落还有没有漏」的堂（corr-2026-039）：PLTR 三份在窗
+8-K 的 Outlook 段**季度指引 bullet 整个在库外**，Q1/Q2/Q3 2026 营收与
+adjusted income 指引全部漏采（corr-2026-032「在窗公司≠采到的指引」同型第四波）：
+① form H 冒号+bullet 期望式（PLTR live 逐字：「For Q1 2026, we expect: •
+Revenue of between $1.532 - $1.536 billion. • Adjusted income from
+operations of between $870 - $874 million.」——expect+冒号+bullet 列表，
+首 bullet 带动词、后续 bullet 靠 [^:] 隔段 lookbehind 追上；名词前容忍
+{0,2} 修饰词；「to in excess of $X」指点值不收、无 expect 动词的冒号节头
+不收、截断残值（正文被裁的 "$4"）不收）；
+② grew-to 实际值形态（PLTR live 逐字：「• Revenue grew 85% year-over-year
+and 16% quarter-over-quarter to $1.633 billion」——增长动词+同比%+to+
+绝对值，四个旧营收形态全部不命中；分部守卫 lookbehind 挡 U.S./U.S.
+commercial/U.S. government 三条分部行；间隔窗排除 bullet 防跨 bullet 桥接；
+先到即本财季）；
+③ live 端到端：forecast 辨别 95→104 条（86 EDGAR + 18 RSS，edgarClaims
+Truncation=null 零切尾）；PLTR FY2026Q1 区间 $1.532-1.536B vs 实际
+$1.633B、Q2 区间 $1.797-1.801B vs 实际 $1.935B 两条真实结算（均 beat
+带外，台账 92→101：PLTR 02-02×5/05-04×2/08-03×2，Q3 指引按到期门
+pending，同代码复跑幂等 0 新登记）；42 份备案新旧代码逐条 diff 纯新增
+零漂移（41 家不变，仅 PLTR 02-02 因新 lookbehind 到达 FY 节更远 bullet
+而 +2 条全年指引）；claim 额度 80→90（live 实测 84>80，砍掉的正是本轮
+新增 PLTR 尾部条目——v3.14/v3.19 同型纪律第三次实证：新形态的主张总落在
+ticker 序尾部，涨额度必须与扩库同轮做）。
+（v3.19.0 轮：pipeline exit 0、AVGO/DELL/PLTR 书面数值指引形态进库的
 live 端到端——v3.4 起 SKILL.md 状态描述写着「MSFT/GOOGL/AVGO/CRWV/IBM/DELL/PLTR
 只在电话会口头给指引或无数值」，2026-10-27 全池过堂（corr-2026-028 纪律）live
 实证该描述腐烂三个版本：三家 9 份在窗 8-K 正文都有书面数值指引（含可结算区间），
@@ -52,8 +77,17 @@ md 报告结算段出现两条 DELL beat、财报指引组出现 AVGO/DELL/PLTR 
 FY27 指引只在表格形态（"Third-Quarter Guidance Q3FY27 Revenue $ 49.0
 81 %"——form C 要 ± 容差，点值表格不收，无结算需求）；PLTR 增长效率
 指引（"raising our full-year revenue guidance to 71% growth"）与
-"in excess of" 指点值不收；PLTR 按千位上报（Amounts in thousands），
-FY2026 全年实际值到期（2027-02）时的千分位单位折算是下轮候选；DELL
+"in excess of" 指点值不收（单边下界登记成点值会扭曲义务语义）；
+[v3.20 已推进] PLTR colon-bullet 季度指引（form H）与 grew-to 营收
+实际值已进库，FY2026Q1/Q2 区间指引两条真实结算（beat 带外），Q3 指引
+dueOn 2026-11-14 按到期门 pending；PLTR 按千位上报（Amounts in
+thousands），FY2026 全年实际值到期（2027-02）时的千分位单位折算是
+下轮候选；PLTR 02-02 备案标题语序「fourth quarter and fiscal year
+ended」四季期间锚全不命中、actuals 为空（无 Q4 2025 在窗指引，无结算
+需求，如实留界——Q1/Q2 结算的实际值由 05-04/08-03 备案提供）；
+[v3.20 新增候选] IBM 文字数字区间（"in the range of four-to-five
+percent"——拼写数字非阿拉伯数字，值解析需词-数转换，无 live 实证不扩）、
+DELL 2026-02-26
 2026-02-26 备案标题句的 "results" 词被正文裁掉，年份前置锚匹配不到、
 actuals 为空（无 Q4 FY2026 在窗指引，无结算需求，如实留界）；
 ORCL FY2027 全年营收句内带 non-GAAP EPS 致 settleMetric 取错族
@@ -290,7 +324,16 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   必须有 to between 区间标记（增长率指点与 in excess of 不收）；
   + form G 名词式点值：AVGO/DELL live「Fourth quarter fiscal year 2026
   revenue guidance of approximately $34.8 billion」——名词+guidance
-  of+数值，点值登记不结算）。区间语法：between X and Y / X% to Y% →
+  of+数值，点值登记不结算）。[v3.20] 八种（+ form H 冒号+bullet 期望式：
+  PLTR live「For Q1 2026, we expect: • Revenue of between $1.532 -
+  $1.536 billion. • Adjusted income from operations of between $870 -
+  $874 million.」——expect+冒号+bullet 列表，首 bullet 带动词、后续
+  bullet 靠 [^:] 隔段 lookbehind 追上（节头必含冒号，隔段窗跨不过节；
+  V8 嵌套懒量化两迭代实测走不通，冒号隔段是可靠结构）；名词与 of 间
+  容忍 {0,40} 修饰语、名词前容忍 {0,2} 修饰词；in excess of 指点值
+  与无 expect 动词的冒号节头不收；数值部分要求单位或第二区间腿——
+  采集器正文截断产生的残值（"of between $4"）不入库）。区间语法：
+  between X and Y / X% to Y% →
   v3.14 补连字符美元区间（$73-76 billion 两端同单位）、单百分号区间
   （between 15-17%）与双百分号 between-and（NVDA 全年税率 16.0% and
   18.0%）→ [v3.19] 补 between + en-dash 美元区间（PLTR「$8.150 –
@@ -317,6 +360,11 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   META/AMZN/GOOGL/ORCL 整批切掉（辨别了但看不见/登记不了/结算不了）。
   [v3.19] 70→80：form E/F/G 进库后 live 实测 77 条（AVGO×3/DELL×6/
   PLTR×6/ORCL 重述×1 新增 16 条），70 会切掉 ticker 顺序尾部 7 条
+  （v3.14 同型纪律第二次实证）。
+  [v3.20] 80→90：form H（PLTR colon-bullet 季度指引）进库后 live 实测
+  84 条（+7：PLTR 02-02×5/05-04×2/08-03×2），80 把 ticker 顺序尾部的
+  4 条整批切掉——被砍的正是本轮新增的 PLTR 条目（v3.14/v3.19 同型纪律
+  第三次实证：新形态的主张总落在 ticker 序尾部，涨额度必须与扩库同轮做）
   （v3.14 同型纪律第二次实证；live 端到端 edgarClaimsTruncation=null
   零切尾）。
   [v3.18] RSS 前瞻主张独立额度 RSS_CLAIMS_CAP=20——v3.14 提额后 RSS 路径
@@ -437,11 +485,15 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   附件正文；指引句 = 指标名词 + is/are expected to be + 数值（五家公司五种句式实证），
   附财季期间（就近匹配，同比引用排除）、容差、前提削减；实际值句 = 指标 + 过去时
   （was/were/of）+ 数值，期间取自标题句（v3.5 extractActuals）
-- 实测产出：42 条业绩备案 / 77 条数值指引（[v3.19] live：14 家中 10 家有
+- 实测产出：42 条业绩备案 / 86 条数值指引（[v3.20] live：14 家中 10 家有
   书面数值指引）；MSFT/GOOGL/CRWV/IBM 只在电话会口头给指引或无数值——
-  如实报「无数值指引」；[v3.19 修正] v3.4 起本行写着「AVGO/CRWV/IBM/DELL/
-  PLTR 口头给指引」——live 实证 AVGO/DELL/PLTR 备案里都有书面数值指引
-  （form E/F/G 已进库），该描述腐烂三个版本（corr-2026-038）
+  如实报「无数值指引」（v3.20 轮按 corr-2026-038 纪律复测刷新：四家在窗
+  8-K 正文无数值期望句，否定式状态维持）；[v3.19 修正] v3.4 起本行写着
+  「AVGO/CRWV/IBM/DELL/PLTR 口头给指引」——live 实证 AVGO/DELL/PLTR 备案
+  里都有书面数值指引（form E/F/G 已进库），该描述腐烂三个版本
+  （corr-2026-038）；[v3.20 补充] PLTR 的季度指引在 colon-bullet 里
+  （form H），v3.19 只收了它的 raising 式全年指引——已命中公司的其它
+  段落仍可能整段在库外（corr-2026-039）
 - [v3.5] MAX_8K_PER_COMPANY 2→3：自动结算需要「指引备案 + 下一期实际值备案」
   这对连续备案同在采集窗口内。2 份每轮只能结最近一季（清 3 条积压），3 份能
   同时结最近两季。成本约 14 个额外请求（120ms 间隔下可忽略）。
@@ -532,7 +584,7 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   不虚抬（厂商一手公告句式自身无归属词，等价名方确认或第三方报道交叉验证）；
   SEC 备案量化主张同轮进段（GOOGL 判 推理单薄/公开财报/公告(3)/推理 1/3、
   decisionRelevant——证据档首次被真实财报触发；公开财报/公告 1→5 条））/
-  自我修正登记簿 ✅（37 条修正：critical 4 / high 17 / medium 16（含 corr-2026-024/025 两条前轮手写条目未设 severity、按 medium 计；v3.9 起走模块 record() 默认 medium；v3.10 新增 corr-2026-027：一手信源桶从不进商业辨别候选池+扩池暴露的三个精度缺陷，high；v3.14 新增 corr-2026-032/033，v3.15 新增 corr-2026-034：营收抽值路径从落地起没过全年值守卫，AMD Q4-FY2025 live 实证全年营收混进财季 key；v3.16 新增 corr-2026-035：残废条目修复必须连到结算配对全链——GOOGL capex 修好抽取侧（期间/区间/指标族三环）时同轮发现 guidanceStruct 从 v3.4 起不漏 isRange，区间指引持久化 settlement 恒退化，备案滑出窗口后到期永远无法结算（v3.5.1「ticker 恒 null」/v3.13「metric 被丢弃」同型第三次），high；v3.17 新增 corr-2026-036：全年列标记≠全年列——AMZN Q1 live 实证 Q1-Q3 备案的「Twelve Months Ended」是 TTM 列且 TTM 列年份与标题财年相同，只靠列标记+年份匹配会把 TTM 值当月度值落进 annual key 与 Q4 真全年值撞 key 判歧义；期间守卫必须锚备案季度（quarter===4）。live 端到端的零漂移 diff 抓到夹具覆盖不到的形态（AMZN Q1 的 TTM 列），medium；v3.18 新增 corr-2026-037：同型缺陷分路径各修各的——商业路径 v3.10 早有 forward-looking 免责声明守卫，forecast 路径从来没有，且 RSS 路径被共享断点饿死时 boilerplate 句压根进不了辨别，「没有触发机会」被当成「没有问题」；解锁 RSS 额度前 live 探针实测免责声明套话能过全部抽取门（拼句带 2026-03 时间 token 或截断在 plans to 上走 form B）且被判 settleable 会污染台账；精度夹具必须用能真正触达被测分支的 live 同形句子（第一版用单独存在的 disclaimer 句、断言空转，R2 反向验证抓出），medium；v3.19 新增 corr-2026-038：SKILL.md 的状态描述是会腐烂的「活结论」——v3.4 写下「AVGO/DELL/PLTR 只在电话会口头给指引或无数值」之后连续三个版本没人复核，2026-10-27 全池过堂（corr-2026-028 纪律）live 实证三家 9 份在窗 8-K 都有书面数值指引（含可结算区间）、四条旧形态全部不命中零条进台账；「某公司没有 X」这类否定式状态必须随每轮全池测量刷新，不能当永久事实引用；同轮零漂移 diff（42 份备案新旧代码逐条比对）抓到两个夹具覆盖不到的期间回归（AVGO 季度指引被 fiscal year 锚词抢成全年、ORCL Q2 EPS 指引被冒号节头抢成全年——v3.16 lookbehind 只加给了 ANNUAL_YEAR_NOUN_RE，同族另外两个年度形态漏加），medium）；v3.3.1 登记
+  自我修正登记簿 ✅（38 条修正：critical 4 / high 17 / medium 17（含 corr-2026-024/025 两条前轮手写条目未设 severity、按 medium 计；v3.9 起走模块 record() 默认 medium；v3.10 新增 corr-2026-027：一手信源桶从不进商业辨别候选池+扩池暴露的三个精度缺陷，high；v3.14 新增 corr-2026-032/033，v3.15 新增 corr-2026-034：营收抽值路径从落地起没过全年值守卫，AMD Q4-FY2025 live 实证全年营收混进财季 key；v3.16 新增 corr-2026-035：残废条目修复必须连到结算配对全链——GOOGL capex 修好抽取侧（期间/区间/指标族三环）时同轮发现 guidanceStruct 从 v3.4 起不漏 isRange，区间指引持久化 settlement 恒退化，备案滑出窗口后到期永远无法结算（v3.5.1「ticker 恒 null」/v3.13「metric 被丢弃」同型第三次），high；v3.17 新增 corr-2026-036：全年列标记≠全年列——AMZN Q1 live 实证 Q1-Q3 备案的「Twelve Months Ended」是 TTM 列且 TTM 列年份与标题财年相同，只靠列标记+年份匹配会把 TTM 值当月度值落进 annual key 与 Q4 真全年值撞 key 判歧义；期间守卫必须锚备案季度（quarter===4）。live 端到端的零漂移 diff 抓到夹具覆盖不到的形态（AMZN Q1 的 TTM 列），medium；v3.18 新增 corr-2026-037：同型缺陷分路径各修各的——商业路径 v3.10 早有 forward-looking 免责声明守卫，forecast 路径从来没有，且 RSS 路径被共享断点饿死时 boilerplate 句压根进不了辨别，「没有触发机会」被当成「没有问题」；解锁 RSS 额度前 live 探针实测免责声明套话能过全部抽取门（拼句带 2026-03 时间 token 或截断在 plans to 上走 form B）且被判 settleable 会污染台账；精度夹具必须用能真正触达被测分支的 live 同形句子（第一版用单独存在的 disclaimer 句、断言空转，R2 反向验证抓出），medium；v3.19 新增 corr-2026-038：SKILL.md 的状态描述是会腐烂的「活结论」——v3.4 写下「AVGO/DELL/PLTR 只在电话会口头给指引或无数值」之后连续三个版本没人复核，2026-10-27 全池过堂（corr-2026-028 纪律）live 实证三家 9 份在窗 8-K 都有书面数值指引（含可结算区间）、四条旧形态全部不命中零条进台账；「某公司没有 X」这类否定式状态必须随每轮全池测量刷新，不能当永久事实引用；同轮零漂移 diff（42 份备案新旧代码逐条比对）抓到两个夹具覆盖不到的期间回归（AVGO 季度指引被 fiscal year 锚词抢成全年、ORCL Q2 EPS 指引被冒号节头抢成全年——v3.16 lookbehind 只加给了 ANNUAL_YEAR_NOUN_RE，同族另外两个年度形态漏加），medium）；v3.20 新增 corr-2026-039：扩库轮的测量必须覆盖「已命中公司」的全部段落——v3.19 过了「哪些公司没指引」的堂，没过「已命中公司的其它段落还有没有漏」的堂，live 实证 PLTR 三份在窗 8-K 的 Outlook 段季度指引 bullet 整个在库外（expect+冒号+bullet 列表结构，form A/B/D/E/F/G 七种形态全部不命中，corr-2026-032 同型第四波）；同一公司不同段落可以用完全不同句式（PLTR：raising 式全年 + colon-bullet 季度 + grew-to 实际值陈述三种句式三种形态），形态命中数>0 ≠ 该公司覆盖完整；同轮两个「夹具没触达被测分支」实测：in-excess 负向断言第一版被 live 句的 "U.S." 前缀挡在断言前面（名词前修饰词 pattern 吃不下带点的 "U.S."，match 起点对不上 lookbehind 终点，补无前缀夹具后才精确失败）、截断残值守卫被 V8 lookbehind 两迭代失败挡在前面（职责错配，改 [^:] 隔段结构后才回到数值守卫）——corr-2026-029/037 同型第三次实证，medium）；v3.3.1 登记
   corr-2026-014（版本号漂移：projection meta 停 3.2.2/package.json 停 3.2.1，
   四处对齐+一致性断言）与 corr-2026-015（survey-finding 误报+三处播客夹具
   空转）；v3.3 登记
@@ -1132,7 +1184,7 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   严格过滤，漏掉数据里 2 条 critical（都是「整段推演作废」级的假能力审计），
   接入后会少报高危数（说 4 实际 6）。改为按等级表比较（critical > high >
   medium > low），critical 排最前。这是修 bug，不算升级——升级点是接入本身。
-- 边界（如实声明）：登记簿 36 条（v3.13 轮新增 corr-2026-030/031、v3.14 轮
+- 边界（如实声明）：登记簿 38 条（v3.13 轮新增 corr-2026-030/031、v3.14 轮
   新增 corr-2026-032/033、v3.15 轮新增 corr-2026-034、v3.16 轮新增
   corr-2026-035、v3.17 轮新增 corr-2026-036、v3.18 轮新增 corr-2026-037 后：
   critical 4 / high 17 / medium 15（含 corr-2026-024/025 两条前轮手写条目
@@ -1313,7 +1365,7 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   引擎不代劳——这是心虫铁律，不是能力缺失。
 
 **测试**
-- `npm test`：**396 项断言**（实测各 section 汇总；v3.4 的 230 + v3.5 新增 11 + v3.5.1 新增 9 + v3.6 新增 8 + v3.7 新增 9 + v3.8 新增 11 + v3.9 新增 8 + v3.10 新增 13 + v3.11 新增 15 + v3.12 新增 14 + v3.13 新增 13 + v3.14 新增 9 + v3.15 新增 10 + v3.16 新增 11 + v3.17 新增 10 + v3.18 新增 6 + v3.19 新增 9：
+- `npm test`：**404 项断言**（实测各 section 汇总；v3.4 的 230 + v3.5 新增 11 + v3.5.1 新增 9 + v3.6 新增 8 + v3.7 新增 9 + v3.8 新增 11 + v3.9 新增 8 + v3.10 新增 13 + v3.11 新增 15 + v3.12 新增 14 + v3.13 新增 13 + v3.14 新增 9 + v3.15 新增 10 + v3.16 新增 11 + v3.17 新增 10 + v3.18 新增 6 + v3.19 新增 9 + v3.20 新增 8：
   2 项纯结算函数（settleGuidance 单位感知容差：相对/绝对/bps/百分点/区间/无容差
   跳过，含区分相对vs绝对的边界用例 / normalizeMetric+parseMetricValue 单位解析）+
   3 项实际值抽取（extractActuals 营收+毛利率+标题期间 / GAAP/非GAAP 不同值抽出
@@ -1760,7 +1812,14 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   1 项 parseRange en-dash 纯函数（浮点折算容差断言）+
   1 项引擎端到端（三家新指引进辨别+登记，额度 80 落在代码里）+
   1 项版本号一致性（五处对齐 3.19.0））。
-  v3.19 十轮反向验证全部精确失败：摘除 form E→1；摘除 form F→1；摘除
+  v3.20 新增 8（3 项 live 实证抽取（PLTR 02-02 colon-bullet 三形态：Q1 收入区间+Q1 adjusted income+FY 收入区间，逐字 live 原文，截断残值 "of between $4" 与 in-excess-of 指点值拒绝 / PLTR 05-04/08-03 季度指引：Q2/Q3 revenue+income 期间与 en-dash 区间值，form F raising 式同文并存零重叠 / grew-to 实际值：总营收句入账+三条分部行拒绝+Q4 备案期间锚缺失如实为空+不跨 bullet 桥接）
+  + 1 项 form H 精度回归（form A/B/D 地盘不抢/无 expect 冒号锚不收/过去时 actuals 不收/非指标名词不收/跨节不串段/in-excess 无前缀形态不收——第一版被 live 句 "U.S." 前缀挡在断言前、补无前缀夹具后才精确失败/无 expect 动词的冒号节头不收）
+  + 1 项结算端到端（受控台账：Q1 区间 $1.532-1.536B vs 实际 $1.633B、Q2 区间 $1.797-1.801B vs 实际 $1.935B 均 beat 带外；Q3 按到期门 dueOn 2026-11-14 pending 不提前结）
+  + 1 项 parseRange 带空格连字符美元区间纯函数（PLTR 02-02 live 同型，抽取/结算双側一致）
+  + 1 项引擎端到端（三条 colon-bullet 指引进辨别+登记，额度 90 落在代码里）
+  + 1 项版本号一致性（五处对齐 3.20.0））。
+  v3.20 十一轮反向验证全部精确失败：摘除 form H→3；摘除 grew-to rv5→1；摘除 in-excess 负向断言→2（第一版 0 失败=断言空转：live 句的 "U.S." 前缀让名词前修饰词 pattern 吃不下、match 起点对不上 lookbehind 终点，压根到不了断言分支——补无前缀 in-excess 夹具后才精确失败，corr-2026-029/037 同型）；摘除名词前修饰词容忍→1（claim 句子文本断言）；[^:] 隔段→跨冒号→1（无 expect 节头被追上说）；摘除截断残值守卫→1（第一版 0 失败=职责错配：V8 lookbehind 嵌套懒量化两迭代走不通、截断 bullet 被 lookbehind 挡在前面压根到不了数值守卫，改 [^:] 隔段结构后守卫职责回到数值部分才精确失败）；摘除分部守卫→1；摘除间隔窗 bullet 排除→1（跨 bullet 桥接）；额度 90→80→1；摘除 parseRange 连字符分支→2；版本漂移→1。每轮基线全绿、摘除后断言必生效、还原校验到位、收尾基线全绿（404/0）。
+  历史：v3.19 十轮反向验证全部精确失败：摘除 form E→1；摘除 form F→1；摘除
   form G→2（live 实证+精度回归）；摘除 ANNUAL_HEADER_RE lookbehind→1
   （ORCL Q2 期间回归）；摘除 ANNUAL_PERIOD_PATTERN lookbehind→1（AVGO 不
   抢全年）；摘除年份前置锚→1；摘除全年守卫→1；摘除同事实去重→2（第一版

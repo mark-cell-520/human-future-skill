@@ -404,6 +404,15 @@
       "what": "v3.4 起 SKILL.md 采集层写着「MSFT/GOOGL/AVGO/CRWV/IBM/DELL/PLTR 只在电话会口头给指引或无数值——如实报无数值指引」，连续三个版本（v3.5-v3.18）没人复核这条否定式状态。2026-10-27 v3.19 轮全池过堂（corr-2026-028 纪律）live 实证：AVGO/DELL/PLTR 三家 9 份在窗 8-K 正文都有书面数值指引（AVGO「Fourth quarter fiscal year 2026 revenue guidance of approximately $34.8 billion」、DELL「Second-quarter FY27 revenue expected between $44.0 billion and $45.0 billion」、PLTR「We are raising our revenue guidance to between $8.150 – $8.158 billion」），extractGuidance 四条旧形态全部不命中、零条进台账——corr-2026-032「在窗公司≠采到的指引」同型第三波。",
       "lesson": "否定式状态（「X 没有 Y」）比肯定式状态腐烂得更快：它成立的那一刻起就不再被验证，而公司行为持续变化。纪律：① 每轮扩库/审计必须跑全池测量（形态门在每个桶的命中数 + 未命中条目过堂），把 SKILL.md 里「没有 X」的结论当本周期待刷新项；② 改抽取逻辑后必须做新旧代码零漂移 diff（全部在窗备案逐条比对）——本轮 diff 抓到两个夹具覆盖不到的期间回归：ANNUAL_PERIOD_PATTERN 与 ANNUAL_HEADER_RE 缺季度词 lookbehind（v3.16 只加给 ANNUAL_YEAR_NOUN_RE，同族另外两个年度形态漏加），不加则 AVGO 季度指引被 fiscal year 锚词抢成全年、ORCL Q2 EPS 指引被「Q2 FY 2027:」冒号节头抢成全年，dueOn 错位会撞 Q2 实际值 key 判假 beat。",
       "fix": "v3.19：form E/F/G 三形态 + 期间形态四位 + lookbehind 两处 + actuals 年份前置锚 + 全年守卫 + 同事实去重 + parseRange/rangeM 双側同构；SKILL.md 采集层状态描述按 live 实测改写（10/14 家有书面数值指引）；登记簿 36→37 条。"
+    },
+    {
+      "id": "corr-2026-039",
+      "date": "2026-10-27",
+      "version": "3.20.0",
+      "severity": "medium",
+      "title": "扩库轮的测量必须覆盖「已命中公司」的全部段落——形态命中数>0 ≠ 该公司覆盖完整",
+      "what": "v3.19 轮全池过堂（corr-2026-038 纪律）问了「哪些公司没指引」，补了 AVGO/DELL/PLTR 的 form E/F/G——但没过「已命中公司的其它段落还有没有漏」的堂。2026-10-27 v3.20 轮全池测量 live 实证：PLTR 三份在窗 8-K 的 Outlook 段**季度指引 bullet 整个在库外**——「For Q1 2026, we expect: • Revenue of between $1.532 - $1.536 billion. • Adjusted income from operations of between $870 - $874 million.」（02-02 备案）、「For Q2 2026, we expect: • Revenue of between $1.797 – $1.801 billion.」（05-04）、「For Q3 2026, we expect: • Revenue of between $2.160 – $2.164 billion.」（08-03）——expect+冒号+bullet 列表结构，form A 要 is/are expected to be、form B/D 要动词与名词紧邻、form E/F/G 都不管这个语序，Q1/Q2/Q3 营收与 adjusted income 指引全部漏采，corr-2026-032「在窗公司≠采到的指引」同型第四波。且实际值侧同型：PLTR 三份备案 actuals 全为 0——「• Revenue grew 85% year-over-year and 16% quarter-over-quarter to $1.633 billion」四个旧营收形态全部不命中（无 of/was/were、无冒号、无 increased）。",
+      "lesson": "扩库轮的测量必须是「逐公司过全部 outlook 段」不是「逐形态过全池」：同一公司的不同段落可以用完全不同句式（PLTR：raising 式全年指引 + colon-bullet 季度指引 + grew-to 实际值陈述，三种句式三种形态），形态命中数>0 只证明「该公司有至少一种句式被覆盖」。纪律：① 每轮扩库后对在窗公司逐家输出「该公司全部段落 vs 已命中形态」的覆盖矩阵，未命中段落逐段过堂；② 新形态的 lookbehind/守卫要做「夹具必须触达被测分支」的反向验证——本轮两个实测：in-excess 负向断言第一版被 live 句的 \"U.S.\" 前缀挡在前面（断言空转，补无前缀夹具后才精确失败）、截断残值守卫被 V8 lookbehind 的两迭代失败挡在前面（职责错配，改 [^:] 隔段结构后才回到数值守卫）；③ 指引侧与实际值侧要同轮配套——只收指引不收实际值，到期结算链照样断（v3.13「卡点在实际值侧」同型）。"
     }
   ]
 }

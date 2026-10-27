@@ -344,7 +344,7 @@ class ProjectionEngine {
     }
     const report = {
       meta: {
-        version: '3.19.0',
+        version: '3.20.0',
         heartflowVersion: this.analysis.engineVersion,
         timestamp: this.timestamp,
         modulesLoaded: this.analysis.modulesLoaded,
@@ -1469,9 +1469,14 @@ class ProjectionEngine {
     // 期间形态，corr-2026-032 同型第三波），70 的上限会把 ticker 顺序
     // 尾部的 7 条整批切掉（辨别了但看不见/登记不了/结算不了，v3.14 同型
     // 纪律第二次实证）。
+    // [v3.20] 额度 80→90：form H（PLTR colon-bullet 季度指引）进库后
+    // live 实测 84 条（+7：PLTR 02-02×3/05-04×2/08-03×2），80 把
+    // ticker 顺序尾部的 4 条整批切掉——被砍的正是本轮新增的 PLTR 条目
+    // （02-02 的 Q1 指引本可当轮结算）。v3.14/v3.19 同型纪律第三次
+    // 实证：新形态的主张总落在 ticker 序尾部，涨额度必须与扩库同轮做。
     let edgarClaimsSeen = 0;
     let edgarClaimsCut = 0;
-    const EDGAR_CLAIMS_CAP = 80;
+    const EDGAR_CLAIMS_CAP = 90;
     for (const it of this.signals.items) {
       if (!Array.isArray(it.guidance)) continue;
       for (const g of it.guidance) {
