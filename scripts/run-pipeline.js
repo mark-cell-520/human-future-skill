@@ -21,7 +21,7 @@ const path = require('path');
  */
 async function main() {
   console.log('═══════════════════════════════════════════');
-  console.log('🚀 人类未来 · 文明推演引擎 v3.20.0');
+  console.log('🚀 人类未来 · 文明推演引擎 v3.21.0');
   console.log('❤️  心虫 v6.7.69 驱动');
   console.log('═══════════════════════════════════════════\n');
 
@@ -91,7 +91,7 @@ async function main() {
 
     const fullReport = {
       meta: {
-        version: '3.20.0',
+        version: '3.21.0',
         timestamp: new Date().toISOString(),
         heartflowVersion: analysis.engineVersion,
         modulesLoaded: analysis.modulesLoaded

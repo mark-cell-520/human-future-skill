@@ -1,23 +1,52 @@
 ---
 name: human-future-v2
-title: "人类未来 · 文明推演引擎 v3.18.0"
-version: "3.20.0"
+title: "人类未来 · 文明推演引擎 v3.21.0"
+version: "3.21.0"
 description: |-
-  人类未来 v3.20.0 - PLTR 冒号+bullet 期望式指引形态进库（已知边界推进：corr-2026-032「在窗公司≠采到的指引」同型第四波，corr-2026-039「扩库轮测量必须覆盖已命中公司的全部段落」——v3.19 全池过堂只问了「哪些公司没指引」没问「已命中公司的其它段落还有没有漏」，2026-10-27 全池测量 live 实证 PLTR 三份在窗 8-K 的 Outlook 段季度指引 bullet 整个在库外：v3.19 只收 raising 式全年指引 form F，Q1/Q2/Q3 2026 营收与 adjusted income 指引全部漏采）：① form H 冒号+bullet 期望式（PLTR live 逐字「For Q1 2026, we expect: • Revenue of between $1.532 - $1.536 billion. • Adjusted income from operations of between $870 - $874 million.」——expect 动词+冒号+bullet 列表，首 bullet 带动词、后续 bullet 靠 [^:] 隔段 lookbehind 追上（V8 嵌套懒量化迭代实测走不通两迭代）；名词前容忍 {0,2} 修饰词；in excess of 指点值不收、无 expect 动词的冒号节头不收、截断残值（正文被裁的 "$4"）不收）；② grew-to 实际值形态（PLTR live 逐字「• Revenue grew 85% year-over-year and 16% quarter-over-quarter to $1.633 billion」——增长动词+同比%+to+绝对值，四个旧营收形态全部不命中；分部守卫 lookbehind 挡 U.S./U.S. commercial/U.S. government 三条分部行；间隔窗 [^.;$•] 防跨 bullet 桥接；先到即本财季）；③ 结算端到端：PLTR FY2026Q1 区间 $1.532-1.536B vs 实际 $1.633B、Q2 区间 $1.797-1.801B vs 实际 $1.935B 两条真实结算（均 beat 带外）；台账 92→101（+9：PLTR 02-02×5/05-04×2/08-03×2，Q3 指引按到期门 pending）；42 份备案新旧代码逐条 diff 纯新增零漂移（41 家不变）；claim 额度 80→90（live 实测 84>80，砍掉的正是本轮新增 PLTR 尾部条目，v3.14/v3.19 同型纪律第三次实证）；同代码复跑幂等 0 新登记。测试 396→404 项；11 轮反向验证全部精确失败（form H/grew-to/in-excess 负向断言——第一版被 live 句 "U.S." 前缀挡在断言前、补无前缀夹具后才精确失败/修饰词容忍/[^:] 隔段/截断残值守卫——第一版被 lookbehind 两迭代失败挡在前面职责错配、改隔段结构后回到数值守卫/分部守卫/bullet 桥接/额度/parseRange/版本漂移）。登记 corr-2026-039（扩库轮测量必须逐公司过全部 outlook 段——同一公司不同段落可以用完全不同句式，形态命中数>0 ≠ 该公司覆盖完整；夹具必须触达被测分支两个实测）；登记簿 37→38 条。历史：v3.19 AVGO/DELL/PLTR 书面数值指引形态进库；v3.18 RSS 前瞻主张独立额度；v3.17 表格式全年 capex 实际值抽取；v3.16 GOOGL FY2026 capex 残废条目修复；v3.15 全年实际值抽取+annual key 配对；v3.14 META CFO 评论式指引形态进库；v3.13 财报指引结算指标扩展；v3.12 算力基建承诺/规模主张（新辨别维度）；v3.11 用量/牵引度指标主张+引号切分修复；v3.10 一手信源桶接入+部署规模主张；v3.9 价格下调主张；v3.8 监管行动主张；v3.7 专家/机构判断主张；v3.6 成本/价格信号主张；v3.5.1 结算链路修复（维护）；v3.5 财报指引自动结算；v3.4 财报指引+SEC EDGAR；v3.3.1 survey-finding 精度修复（维护）；v3.3 并购/交易过程主张；v3.2.2/3.2.1 断链修复；v3.2 产能/供给约束主张；v3.1.1 口径错位精度修复；v3.1 接入 self-correction-ledger；v3.0.0c 商业段断链修复；v2.17 接入 GJOpen；v2.16 基准概率断链修复；v2.15 参考文本单列；v2.13 停止假推演。
+  人类未来 v3.21.0 - IPO/上市过程主张进库（新辨别维度：v3.3「估值形态已覆盖 IPO」的否定式覆盖决议腐烂，corr-2026-038/039 同型第四次实证）——2026-10-27 全池过堂（corr-2026-028 纪律）live 实证 2026-10-26 一天内 7 条 Anthropic S-1/IPO 过程主张整个在库外（估值形态要 $估值额，S-1 备案过程主张无数值一条也覆盖不到）：TechCrunch AI「Anthropic's IPO filing reveals its strategy for keeping enterprise customers hooked」「Anthropic officially files for its public debut」、The Information「Anthropic S-1 Highlights Rising Payment Costs」「Anthropic's S-1 Takeaways: From Giant Compute Commitments to Complex Lock-Ups」「Anthropic Publicly Files S-1 for Its Planned IPO」「Goldman Sachs to Lead Anthropic IPO」与 Transformer News 简报内句「Anthropic is reportedly planning to publicly file for an IPO as early as today」：① ipo-claim 三形态（备案动作 files/filed/filing/submits+S-1/IPO/public debut；文书主体 S-1/IPO+filing/takeaways/highlights 名词形态——动词形态无 live 实证不进库，MIT TR 修辞疑问句 "Will the IPO reveal…" 实测收紧；承销牵头 lead/leads/led/leading/underwrites+[^.!?]{0,40}+IPO/offering/listing/debut）——不认裸 IPO 名词（ahead of IPO 归估值地盘、pre-IPO round 不收），不抢融资/并购地盘（$40B GPU financing deal、DoorDash-Instacart $17B 零误命中）；② 事件型 no-quantity 豁免扩到 ipo（v3.8 regulatory-action 同型：IPO 主张的证伪靠「S-1 是否在 EDGAR 查到/是否撤回/是否挂牌」可观测事件，不靠量化基数；豁免只摘 no-quantity，推理三要素独立计分）；③ public-filing 证据档补 \bS-1\b 窄标记（S-1 是 SEC 公开备案文书与 10-K/10-Q 同族，v3.8 政府文书/v3.10 SEC EDGAR 来源同型扩展；不认裸 IPO 名词，Goldman 承销转述留无出处(1) 不虚抬）；④ 专属证伪路径（S-1 在 EDGAR 查无实据或被撤回/定价区间挂牌时间表与主张情形不符/挂牌后披露财务数据与 S-1 矛盾）+ capital_flow 类目 + KIND_CN 双处（报告+注入）。同轮精度修复（维护级）：⑤ competitive 动词族摘除裸 leads?——live 实证 2 条命中全是误报（"who leads OpenAI's enterprise product team" 团队管理、"Goldman Sachs to Lead Anthropic IPO" 承销牵头）0 条真正命中，「leads the market」无 live 实证留已知边界；⑥ has-counterexample 补 \b 词边界——本轮 live 夹具暴露的 latent 缺陷："files for its public debut" 的 debut 含 but 子串，把 IPO 主张推理分从 0/3 虚抬到 1/3（corr-2026-024 Apollo/poll 同型第三次实证；全池另实测 debut/distributed/contribute/debugging/distribution/attribute 11 条候选误报面）。live 端到端（EDGAR 缓存先删再跑）：pipeline exit 0、商业辨别段 22→26 条含 ipo:7（business 6 + frontier_models 1，byKind 新增 ipo:7；S-1 句归公开财报/公告(3) 判 thin-reasoning+决策相关，无文书引用/简报转述句留无出处(1)/媒体报道(2) 判 weak-evidence 不虚抬）；两条 competitive live 误报精确消除（Embiricos 团队管理句整条出池、Goldman 承销句改判 ipo），Artificial Analysis 真命中（ahead of GPT-6 Astra）保留；模式库计数 22→23；渲染/注入上限 30 未触顶零切尾。测试 404→420 项；11 轮反向验证全部精确失败（摘除 ipo 模式→组 1/2/4 多条/摘除 S-1 标记/摘除 ipo 豁免/摘除证伪条件/摘除类目映射/摘除报告 KIND_CN/摘除注入 KIND_CN/competitive 恢复 leads?→2/has-counterexample 去 \b→debut 虚抬回归/计数漂移/版本漂移）。登记 corr-2026-040（否定式覆盖决议必须随每轮全池测量刷新——「X 已被 Y 覆盖」不是永久事实，判据是「被覆盖方主张的全池命中数>0」不是「覆盖方存在」；同型：corr-2026-032/038/039）；登记簿 38→39 条。历史：v3.20 PLTR 冒号+bullet 期望式指引形态进库；v3.19 AVGO/DELL/PLTR 书面数值指引形态进库；v3.18 RSS 前瞻主张独立额度；v3.17 表格式全年 capex 实际值抽取；v3.16 GOOGL FY2026 capex 残废条目修复；v3.15 全年实际值抽取+annual key 配对；v3.14 META CFO 评论式指引形态进库；v3.13 财报指引结算指标扩展；v3.12 算力基建承诺/规模主张（新辨别维度）；v3.11 用量/牵引度指标主张+引号切分修复；v3.10 一手信源桶接入+部署规模主张；v3.9 价格下调主张；v3.8 监管行动主张；v3.7 专家/机构判断主张；v3.6 成本/价格信号主张；v3.5.1 结算链路修复（维护）；v3.5 财报指引自动结算；v3.4 财报指引+SEC EDGAR；v3.3.1 survey-finding 精度修复（维护）；v3.3 并购/交易过程主张；v3.2.2/3.2.1 断链修复；v3.2 产能/供给约束主张；v3.1.1 口径错位精度修复；v3.1 接入 self-correction-ledger；v3.0.0c 商业段断链修复；v2.17 接入 GJOpen；v2.16 基准概率断链修复；v2.15 参考文本单列；v2.13 停止假推演。
 ---
 
-# 人类未来 · 文明推演引擎 v3.18.0
+# 人类未来 · 文明推演引擎 v3.21.0
 
 > 数据采集（RSS 真联网 + 可选正文增强 + 外部预测基准 GJOpen）→ 心虫 stateless 检查器 → 三年推演引擎。
 > 当前状态与实测数字见下一节，历史版本记录见 references/upgrade-history.md。
 
 ---
 
-## 当前状态（v3.20.0 实测）
+## 当前状态（v3.21.0 实测）
 
 以下数字全部来自 2026-10-27 的 `FETCH=1 FETCH_BODY=1 node scripts/run-pipeline.js` 实跑
 （EDGAR 缓存先删再跑——TTL 6h 内的旧缓存不含当期代码的抽取结果，v3.5.1/v3.15
-同款纪律；v3.20.0 轮：pipeline exit 0、PLTR 冒号+bullet 期望式指引形态进库的
+同款纪律；v3.21.0 轮：pipeline exit 0、IPO/上市过程主张进库的 live 端到端——
+v3.3 曾把 IPO 整体排除在模式库外，理由「估值形态已覆盖该条」，该否定式覆盖
+决议未经全池测量腐烂三个版本（corr-2026-038/039 同型第四次实证）：
+2026-10-26 一天内 **7 条** Anthropic S-1/IPO 过程主张整个在库外——
+① live 逐字七条：TechCrunch AI「Anthropic's IPO filing reveals its strategy
+for keeping enterprise customers hooked」（S-1 披露交叉销售数据）、
+「Anthropic officially files for its public debut」（"has officially filed
+for an IPO, revealing soaring revenue…"）、The Information「Anthropic S-1
+Highlights Rising Payment Costs」「Anthropic's S-1 Takeaways: From Giant
+Compute Commitments to Complex Lock-Ups」「Anthropic Publicly Files S-1
+for Its Planned IPO」「Goldman Sachs to Lead Anthropic IPO」与 Transformer
+News 简报内句「Anthropic is reportedly planning to publicly file for an
+IPO as early as today」；
+② ipo-claim 三形态（备案动作 files/filed/filing/submits+S-1/IPO/public
+debut；文书主体 S-1/IPO+filing/takeaways/highlights 名词形态；承销牵头
+lead/underwrites+[^.!?]{0,40}+IPO/offering/listing/debut）——不认裸
+IPO 名词（ahead of IPO 归估值地盘）、动词形态无 live 实证不进库（MIT TR
+修辞疑问句收紧）、不抢融资/并购地盘；
+③ 事件型 no-quantity 豁免扩到 ipo（v3.8 同型：证伪靠备案/定价/挂牌可观测
+事件，豁免只摘 no-quantity 不抬推理分）；public-filing 证据档补 \bS-1\b
+窄标记（S-1 句归公开财报/公告(3)，无文书引用的 Goldman 承销转述留无出处(1)
+不虚抬）；专属证伪路径（EDGAR 查无/撤回/定价时间表不符/挂牌后披露矛盾）
++ capital_flow 类目；
+④ live 端到端：商业辨别段 22→26 条含 ipo:7（business 6 + frontier_models
+1；S-1 句判 thin-reasoning+决策相关，简报转述/reportedly 句判 weak-evidence
+不虚抬）；同轮精度修复（维护）：competitive 动词族摘除裸 leads?（两条 live
+误报——团队管理句整条出池、承销句改判 ipo；Artificial Analysis 真命中保留）、
+has-counterexample 补 \b 词边界（debut 的 but 子串不再虚抬反例分，
+corr-2026-024 同型第三次实证）；模式库计数 22→23；渲染/注入上限 30 未触顶。
+（v3.20.0 轮：pipeline exit 0、PLTR 冒号+bullet 期望式指引形态进库的
 live 端到端——v3.19 全池过堂补了 AVGO/DELL/PLTR 的书面数值指引（form E/F/G），
 但没过「已命中公司的其它段落还有没有漏」的堂（corr-2026-039）：PLTR 三份在窗
 8-K 的 Outlook 段**季度指引 bullet 整个在库外**，Q1/Q2/Q3 2026 营收与
@@ -1164,6 +1193,63 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   同型），claim 文本窗仍含后 2 句（"under construction … commercial
   launch Q3 2027" 与 "500 megawatts"），结算相关信息不丢。
 
+**[v3.21] IPO/上市过程主张（ipo-claim，新辨别维度）**
+- 定位：资本与商业模式域的覆盖缺口，且是一次「否定式覆盖决议腐烂」——
+  v3.3 曾把 IPO 整体排除在模式库外，理由「估值形态已覆盖该条」，该决议
+  未经全池测量（corr-2026-038/039 同型第四次实证）。2026-10-27 全池过堂
+  live 实证：2026-10-26 一天内 **7 条** Anthropic S-1/IPO 过程主张整个
+  在库外，估值形态（要 $估值额）一条也覆盖不到：TechCrunch AI
+  「Anthropic's IPO filing reveals its strategy for keeping enterprise
+  customers hooked」（S-1 披露交叉销售数据）、「Anthropic officially
+  files for its public debut」、The Information「Anthropic S-1 Highlights
+  Rising Payment Costs」「Anthropic's S-1 Takeaways: From Giant Compute
+  Commitments to Complex Lock-Ups」「Anthropic Publicly Files S-1 for Its
+  Planned IPO」「Goldman Sachs to Lead Anthropic IPO」与 Transformer
+  News 简报内句「Anthropic is reportedly planning to publicly file for
+  an IPO as early as today」。IPO 过程（S-1 备案 → 定价 → 挂牌 → 锁定期
+  解禁）是资本市场一阶信号，且有天然结算结构：备案文件在 EDGAR 可查、
+  定价区间与挂牌时点可观测、撤回事例可证伪——与 regulatory-action
+  （提案→最终规则）、ma（探索→交割）同构。
+- 形态族（三族，全部 live 实证驱动）：① 备案动作（files/filed/filing/
+  submits + S-1/IPO/public debut）；② 文书主体（S-1/IPO + filing/
+  takeaways/highlights 名词形态——动词形态无 live 实证不进库，MIT TR
+  修辞疑问句 "Will the IPO reveal…" 实测收紧）；③ 承销牵头（lead/
+  leads/led/leading/underwrites + [^.!?]{0,40} + IPO/offering/
+  listing/debut）。
+- 精度设计（v3.0.0c/v3.2/v3.3/v3.6/v3.7/v3.9/v3.10/v3.11/v3.12 教训：
+  漏报比误报诚实、没有实证不扩模式）：① 不认裸 IPO 名词——"ahead of
+  IPO"（估值形态地盘，v3.3 原决议）与 "pre-IPO round" 无备案/挂牌动作
+  动词，整个不命中；② 不抢融资/交易地盘——"locks in $40B GPU
+  financing deal"（funding 候选）、"Nears Deal to Buy Instacart in
+  $17 Billion Deal"（ma 候选）无 IPO/S-1 标记，全部不命中；③ 事件型
+  no-quantity 豁免（v3.8 regulatory-action 同型）：IPO 过程主张的证伪靠
+  「备案是否存在/是否撤回/是否挂牌」可观测事件，不靠量化基数——
+  "Goldman Sachs to Lead Anthropic IPO" 无数字但不是不可证伪。豁免只摘
+  no-quantity，推理三要素仍独立计分。
+- 同轮配套（v3.21）：① public-filing 证据档补 \bS-1\b 窄标记——S-1 是
+  SEC 公开备案文书，与 10-K/10-Q 同族（v3.8 政府机构一手文书/v3.10 SEC
+  EDGAR 采集源同型扩展）；不认裸 IPO 名词，"Goldman Sachs to Lead
+  Anthropic IPO" 是媒体转述无文书引用，仍归无出处(1) 不虚抬；
+  ② 专属证伪路径（EDGAR 查无/撤回/定价时间表不符/挂牌后披露矛盾）+
+  capital_flow 类目 + KIND_CN 双处（报告+注入）。
+- 判别结果（live 实测）：7 条全部进辨别（business 6 + frontier_models
+  1）。S-1 句归公开财报/公告(3) 判 thin-reasoning+决策相关；无文书引用
+  与简报转述句（reportedly）留无出处(1)/媒体报道(2) 判 weak-evidence、
+  不虚抬。证伪条件走 ipo 专属路径。类目归 capital_flow。
+- 同轮精度修复（维护级，全部 live 实证驱动）：① competitive 动词族
+  摘除裸 leads?——2 条命中全是误报（"who leads OpenAI's enterprise
+  product team" 团队管理、"Goldman Sachs to Lead Anthropic IPO" 承销
+  牵头）、0 条真正命中；「leads the market」无 live 实证留已知边界；
+  ② has-counterexample 补 \b 词边界——本轮 live 夹具暴露的 latent
+  缺陷："files for its public debut" 的 "debut" 含 "but" 子串，把 IPO
+  主张推理分从 0/3 虚抬到 1/3（corr-2026-024 Apollo/poll 同型第三次
+  实证；全池另实测 debut/distributed/contribute/debugging/
+  distribution/attribute 11 条候选误报面）。
+- 仍在库外的资本句式：无备案/挂牌动作的裸 IPO 谈论（"ahead of IPO"、
+  "pre-IPO round"——估值/融资地盘）、定价与挂牌事件形态（"prices its
+  IPO"/"begins trading"——无 live 实证不进库）、"leads the market"
+  （competitive 动词族摘除后的已知边界）——等有 live 实证再扩。
+
 **自我修正登记簿层（v3.1 接入的 0 调用模块）**
 - 定位：这是接入，不是新写。self-correction-ledger.js 自 v2.4 存在，
   `human-future/data/self-corrections.json` 有 25 条真实修正（绕月≠登月、
@@ -1184,7 +1270,7 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   严格过滤，漏掉数据里 2 条 critical（都是「整段推演作废」级的假能力审计），
   接入后会少报高危数（说 4 实际 6）。改为按等级表比较（critical > high >
   medium > low），critical 排最前。这是修 bug，不算升级——升级点是接入本身。
-- 边界（如实声明）：登记簿 38 条（v3.13 轮新增 corr-2026-030/031、v3.14 轮
+- 边界（如实声明）：登记簿 39 条（v3.13 轮新增 corr-2026-030/031、v3.14 轮
   新增 corr-2026-032/033、v3.15 轮新增 corr-2026-034、v3.16 轮新增
   corr-2026-035、v3.17 轮新增 corr-2026-036、v3.18 轮新增 corr-2026-037 后：
   critical 4 / high 17 / medium 15（含 corr-2026-024/025 两条前轮手写条目
@@ -1365,7 +1451,7 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   引擎不代劳——这是心虫铁律，不是能力缺失。
 
 **测试**
-- `npm test`：**404 项断言**（实测各 section 汇总；v3.4 的 230 + v3.5 新增 11 + v3.5.1 新增 9 + v3.6 新增 8 + v3.7 新增 9 + v3.8 新增 11 + v3.9 新增 8 + v3.10 新增 13 + v3.11 新增 15 + v3.12 新增 14 + v3.13 新增 13 + v3.14 新增 9 + v3.15 新增 10 + v3.16 新增 11 + v3.17 新增 10 + v3.18 新增 6 + v3.19 新增 9 + v3.20 新增 8：
+- `npm test`：**420 项断言**（实测各 section 汇总；v3.4 的 230 + v3.5 新增 11 + v3.5.1 新增 9 + v3.6 新增 8 + v3.7 新增 9 + v3.8 新增 11 + v3.9 新增 8 + v3.10 新增 13 + v3.11 新增 15 + v3.12 新增 14 + v3.13 新增 13 + v3.14 新增 9 + v3.15 新增 10 + v3.16 新增 11 + v3.17 新增 10 + v3.18 新增 6 + v3.19 新增 9 + v3.20 新增 8 + v3.21 新增 16：
   2 项纯结算函数（settleGuidance 单位感知容差：相对/绝对/bps/百分点/区间/无容差
   跳过，含区分相对vs绝对的边界用例 / normalizeMetric+parseMetricValue 单位解析）+
   3 项实际值抽取（extractActuals 营收+毛利率+标题期间 / GAAP/非GAAP 不同值抽出
@@ -1819,6 +1905,16 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   + 1 项引擎端到端（三条 colon-bullet 指引进辨别+登记，额度 90 落在代码里）
   + 1 项版本号一致性（五处对齐 3.20.0））。
   v3.20 十一轮反向验证全部精确失败：摘除 form H→3；摘除 grew-to rv5→1；摘除 in-excess 负向断言→2（第一版 0 失败=断言空转：live 句的 "U.S." 前缀让名词前修饰词 pattern 吃不下、match 起点对不上 lookbehind 终点，压根到不了断言分支——补无前缀 in-excess 夹具后才精确失败，corr-2026-029/037 同型）；摘除名词前修饰词容忍→1（claim 句子文本断言）；[^:] 隔段→跨冒号→1（无 expect 节头被追上说）；摘除截断残值守卫→1（第一版 0 失败=职责错配：V8 lookbehind 嵌套懒量化两迭代走不通、截断 bullet 被 lookbehind 挡在前面压根到不了数值守卫，改 [^:] 隔段结构后守卫职责回到数值部分才精确失败）；摘除分部守卫→1；摘除间隔窗 bullet 排除→1（跨 bullet 桥接）；额度 90→80→1；摘除 parseRange 连字符分支→2；版本漂移→1。每轮基线全绿、摘除后断言必生效、还原校验到位、收尾基线全绿（404/0）。
+  v3.21 十一轮反向验证全部精确失败：摘除 ipo-claim 模式整块→12 失败（组 1/2/4 十六条期望断言全覆盖）；摘除 S-1 证据档标记→2；摘除 ipo 的 no-quantity 豁免→4（Goldman/files/Transformer 三条 live 实证+豁免精确性）；摘除 ipo 证伪条件行→3；摘除 ipo 类目映射→3；摘除报告 KIND_CN ipo 行→端到端渲染失败；摘除 cron 注入 KIND_CN ipo 行→注入源级失败；competitive 恢复裸 leads?→2（两条 live FP 回归）；has-counterexample 去 \b→debut 虚抬回归；模式计数 23→22 漂移→1；版本漂移→多处。每轮基线全绿、摘除后断言必生效、还原校验到位、收尾基线全绿（420/0）。实测教训（脚本侧，已修）：反向验证脚本必须后台跑——前台 180s 超时 SIGKILL 会留下摘除中的半成品（第一版实测被 kill 在 R8，competitive leads? 被改回、后续轮次摘除态累积）；且 check_restore 必须在 restore_all 之后跑、还原函数不能带门闩（第一版两个 bug 让每轮误报「还原失败」且摘除态跨轮累积）。
+  v3.21 新增 16（5 项 live 实证命中（TechCrunch「IPO filing reveals…」交叉销售主张：kind=ipo+公开财报/公告(3)（filing 标记）+has-sample（$100,000-plus）+thin-reasoning+决策相关 / The Information「S-1 Takeaways」标题-only：ipo+\bS-1\b 窄标记归公开财报档+不串台 compute-infra / 「Goldman Sachs to Lead Anthropic IPO」承销牵头：ipo 归类且 kinds 不含 competitive+无文书引用留无出处(1) 不虚抬+no-quantity 豁免生效+推理分独立计 0/3 / 「files for its public debut」：ipo+无出处不虚抬+豁免 / Transformer 简报「reportedly planning to publicly file for an IPO」：ipo+媒体报道(2)+weak-evidence 不虚抬）
+  + 1 项形态族召回三族十形 + 1 项精度回归（MIT TR 修辞疑问句/ahead-of-IPO 估值句/pre-IPO/融资交易/并购/裁员/Fed/播客零误命中，估值与融资地盘不抢）
+  + 1 项 competitive 精度修复（两条 live 误报——团队管理句整条出辨别、承销牵头句改判 ipo；「ahead of GPT-6 Astra」真命中不打穿）
+  + 1 项证据档 \bS-1\b 标记（S-1 句归公开财报/公告(3)、裸 IPO 名词不虚抬、第三方调查档不受影响）
+  + 1 项 no-quantity 豁免精确性（事件型豁免生效+不抬推理分+非事件型仍判不可证伪）
+  + 1 项 has-counterexample 词边界修复（debut 不算反例、Despite/But 真反例词保留）
+  + 1 项专属证伪条件与类目映射（行为+源级双钉）
+  + 1 项引擎端到端（6 条 live IPO 条目进辨别+byKind ipo:6+formatReport 渲染「类型: IPO/上市过程主张」行+competitive FP 出池）
+  + 1 项 cron 注入源级 + 1 项模式库计数 23 + 1 项版本号一致性（五处对齐 3.21.0））。
   历史：v3.19 十轮反向验证全部精确失败：摘除 form E→1；摘除 form F→1；摘除
   form G→2（live 实证+精度回归）；摘除 ANNUAL_HEADER_RE lookbehind→1
   （ORCL Q2 期间回归）；摘除 ANNUAL_PERIOD_PATTERN lookbehind→1（AVGO 不
@@ -1969,7 +2065,7 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   **商业主张辨别（v3.0.0c 补入，第 6 段；KIND_CN 标签随形态库扩充：
   v3.2 产能/供给约束、v3.3 并购/交易过程、v3.6 成本/价格信号、v3.7 专家/机构
   判断、v3.8 监管行动、v3.9 价格下调、v3.10 部署规模、v3.11 用量/牵引度
-  指标、v3.12 算力基建承诺/规模，注入与报告同标签；
+  指标、v3.12 算力基建承诺/规模、v3.21 IPO/上市过程，注入与报告同标签；
   v3.10 起渲染上限 12→20 / cron 10→16——候选池扩到四桶后辨别条数变多，
   切掉尾部等于「辨别了但看不见」；[v3.11] 20→25 / 16→25 并加截断披露
   （usage-metric 新维度+切分修复后 audited 23 超旧上限，超出时明确写

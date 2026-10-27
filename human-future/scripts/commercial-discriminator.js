@@ -268,7 +268,16 @@ const COMMERCIAL_CLAIM_PATTERNS = [
   // TechCrunch）——旧目标库只有厂商名与 sota，"beat doctors" 完全失配，
   // 这条带 Science 研究引用的竞品能力主张整个漏掉。generalist/human/
   // expert/specialist 是常见前置修饰，一并进可选组。
-  { id: 'competitive-claim', re: /(beats?|outperforms?|surpasses?|exceeds?|defeats?|ahead of|leads?)\s+(?:openai|anthropic|google|meta|microsoft|deepseek|qwen|mistral|gpt|claude|gemini|the competition|rivals?|competitors?|sota|(?:generalist\s+|human\s+|expert\s+|specialist\s+)?doctors|radiologists|physicians|humans?|experts?|specialists)/i,
+  // [v3.21 精度修复] 动词族摘除裸 leads?——live 实证（2026-10-27 全池
+  // 过堂）该动词 2 条命中全是误报、0 条真正命中：
+  //   ① "Alexander Embiricos, who leads OpenAI's enterprise product
+  //      team, joined us at TechCrunch Disrupt…"——leads 是团队管理
+  //      不是能力领先；
+  //   ② "Goldman Sachs to Lead Anthropic IPO"——leads 是承销牵头
+  //     不是能力领先（该条由 v3.21 ipo-claim 正确归类）。
+  // 摘除后 "leads the market/field" 形态（无 live 实证）留作已知边界，
+  // 按「漏报比误报诚实」等有 live 实证再扩（v3.9 无幅度降价句同型纪律）。
+  { id: 'competitive-claim', re: /(beats?|outperforms?|surpasses?|exceeds?|defeats?|ahead of)\s+(?:openai|anthropic|google|meta|microsoft|deepseek|qwen|mistral|gpt|claude|gemini|the competition|rivals?|competitors?|sota|(?:generalist\s+|human\s+|expert\s+|specialist\s+)?doctors|radiologists|physicians|humans?|experts?|specialists)/i,
     kind: 'competitive', label: '竞品能力主张' },
   // ── 专家/机构判断类 ──
   // [v3.7] 2026-10-26 轮 live 实证的新漏检：TechCrunch AI「AI delivers
@@ -381,6 +390,53 @@ const COMMERCIAL_CLAIM_PATTERNS = [
   { id: 'compute-infra',
     re: /(?=[^.!?]*\b(?:buildouts?|build[-\s]?outs?|builds?|building|built|expands?|expanding|mobiliz(?:e|es|ed|ing)|deploy(?:s|ed|ing)?|invest(?:s|ed|ing|ment|ments)?|commit(?:s|ted|ment|ments|ing)?|secured?|licens(?:e|es|ed|ing)|commission(?:s|ed|ing)?|construct(?:s|ed|ing)?|brings?|bringing|brought|under\s+construction|commercial\s+launch)\b)(?=[^.!?]*(?:[\d,.]+\s+(?:[A-Za-z0-9.\-]+\s+){0,3}?(?:GW|MW|gigawatts?|megawatts?|GPUs?|accelerators?)\b|\$\s?[\d,.]+\s*(?:million|billion|trillion)\b))(?=[^.!?]*(?:AI\s+factor(?:y|ies)|AI\s+infrastructure|data\s?cent(?:er|re)|compute|GPUs?|accelerated\s+computing|gigawatts?|megawatts?|NVIDIA))/i,
     kind: 'compute-infra', label: '算力基建承诺/规模主张' },
+  // ── IPO/上市过程类 ──
+  // [v3.21] IPO/上市过程主张（ipo，新辨别维度）：
+  // v3.3 曾把 IPO 整体排除在模式库外，理由「估值形态已覆盖该条」——
+  // 2026-10-27 全池过堂（corr-2026-028/039 纪律）live 实证该覆盖决议腐烂
+  // （corr-2026-038 同型：否定式覆盖决议未经全池测量）：2026-10-26 一天内
+  // **7 条** IPO 过程主张整个在库外，估值形态（要 $估值额）一条也覆盖不到：
+  //   ① TechCrunch AI「Anthropic's IPO filing reveals its strategy for
+  //      keeping enterprise customers hooked」（S-1 披露交叉销售数据）；
+  //   ② TechCrunch AI「Anthropic officially files for its public debut」
+  //      （"has officially filed for an IPO, revealing soaring revenue…"）；
+  //   ③ The Information「Anthropic S-1 Highlights Rising Payment Costs」；
+  //   ④ The Information「Anthropic's S-1 Takeaways: From Giant Compute
+  //      Commitments to Complex Lock-Ups」；
+  //   ⑤ The Information「Anthropic Publicly Files S-1 for Its Planned
+  //      IPO」；
+  //   ⑥ The Information「Goldman Sachs to Lead Anthropic IPO」（承销牵头）；
+  //   ⑦ Transformer News 简报内句「Anthropic is reportedly planning to
+  //      publicly file for an IPO as early as today」（frontier_models 桶）。
+  // IPO 过程（S-1 备案 → 定价 → 挂牌 → 锁定期解禁）是资本与商业模式域的
+  // 一阶信号，且有天然结算结构：备案文件在 EDGAR 可查、定价区间与挂牌
+  // 时点可观测、撤回事例可证伪——与 regulatory-action（提案→最终规则）、
+  // ma（探索→交割）同构。漏掉它，商业辨别对当期最大的资本事件失明。
+  // 形态族（三族，全部 live 实证驱动）：
+  //   A 备案动作：files/filed/filing/submits + (S-1|IPO|public debut)；
+  //   B 文书主体：(S-1|IPO) + (filing|takeaways|highlights) 名词形态
+  //     ——动词形态（reveals/shows）无 live 实证不进库（MIT TR 修辞
+  //     疑问句 "Will the IPO reveal…" 实测会被 base-form 动词放行，
+  //     该桶（tech）不在候选池，收紧后双保险）；
+  //   C 承销牵头：lead/leads/led/underwrites + [^.!?]{0,40} + (IPO|
+  //     offering|listing|debut)。
+  // 精度设计（v3.0.0c/v3.2/v3.3/v3.6/v3.7/v3.9/v3.10/v3.11/v3.12 教训：
+  // 漏报比误报诚实、没有实证不扩模式）：
+  //   ① 不认裸 IPO 名词——"ahead of IPO"（估值形态地盘，v3.3 原决议）
+  //     与 "pre-IPO round" 无备案/挂牌动作动词，整个不命中；
+  //   ② 不抢融资/交易地盘——"locks in $40B GPU financing deal"
+  //     （funding 候选）、"Nears Deal to Buy Instacart in $17 Billion
+  //     Deal"（ma 候选）无 IPO/S-1 标记，全部不命中；
+  //   ③ 事件型 no-quantity 豁免（v3.8 regulatory-action 同型）：IPO
+  //     过程主张的证伪靠「备案是否存在/是否撤回/是否挂牌」可观测事件，
+  //     不靠量化基数——"Goldman Sachs to Lead Anthropic IPO" 无数字
+  //     但不是不可证伪。豁免只摘 no-quantity，推理三要素仍独立计分。
+  // live 全池实测（300 条池）：精确命中 7 条（business 6 + frontier_models
+  // 1），精度回归 0 误报（修辞疑问句/估值 ahead-of-IPO/融资交易/并购/
+  // 裁员/Fed 公告/播客全部不命中）。
+  { id: 'ipo-claim',
+    re: /(?:\b(?:files?|filed|filing|submits?|submitted|submitting)\s+(?:for\s+)?(?:an?\s+|its\s+|the\s+|their\s+|planned\s+|initial\s+|public\s+)?(?:S-1|IPO|public\s+debut)\b|\b(?:S-1|IPO)\s+(?:filing|takeaways?|highlights?)\b|\b(?:lead|leads|led|leading|underwrites?|to\s+lead)\b[^.!?]{0,40}?\b(?:IPO|offering|listing|debut)\b)/i,
+    kind: 'ipo', label: 'IPO/上市过程主张' },
 ];
 
 /** 不可证伪的商业措辞：无主体、无量化、纯修辞 */
@@ -440,6 +496,20 @@ const UNFALSIFIABLE_COMMERCIAL_PATTERNS = [
       // Fed/ECB，且其动词 said 不在标记动词表——"The Fed chair said" 仍是
       // 无出处档，v3.0.0c 的独立验证判据教训不回归）。
     test: (t, claim) => /(earnings|quarterly results|filing|10-[kq]|sec filing|annual report|press release|announced|announcement|statement|disclosed|confirmation|confirmed|federal register|proposed rule|final rule|(?:treasury|securities and exchange commission|\bsec\b|federal trade commission|\bftc\b|department of justice|\bdoj\b|white house|european commission|\beu\b|commerce department|state department|\bofac\b|regulators?|government|administration|\bbeijing\b)\s+(?:department\s+)?(?:proposes?|proposed|proposing|announces?|announced|issues?|issued|issuing|imposes?|imposed|signs?|signed|enacts?|enacted|passes?|passed|finaliz\w+|finalis\w+|adopts?|adopted|approves?|approved|widen(?:s|ed)?|expand(?:s|ed)?|tighten(?:s|ed)?|loosen(?:s|ed)?|relax(?:es|ed|ing)?|eases?|eased|bans?|banned|blocked?|blocks?|struck\s+down|overturn\w+|rescind\w+|vetoes?|vetoed|lifts?|lifted|unveils?|unveiled|publishes?|published|releases?|released|said|says))/i.test(t)
+      // [v3.21] S-1 标记（IPO 过程主张的证据基础）：S-1 是 SEC 公开备案
+      // 文书，与 10-K/10-Q 同族（v3.8 政府机构一手文书/v3.10 SEC EDGAR
+      // 采集源同型扩展）——IPO 主张的证据档就是 S-1 本身，不认则每条
+      // S-1 主张都掉到「无出处(1)」。窄标记：只认 \bS-1\b 文书编号，
+      // 不认裸 IPO 名词（"Goldman Sachs to Lead Anthropic IPO" 是媒体
+      // 转述无文书引用，仍归无出处(1)，不虚抬）。
+      || /\bS-1\b/i.test(t)
+      // [v3.21] S-1 标记（IPO 过程主张的证据基础）：S-1 是 SEC 公开备案
+      // 文书，与 10-K/10-Q 同族（v3.8 政府机构一手文书/v3.10 SEC EDGAR
+      // 采集源同型扩展）——IPO 主张的证据档就是 S-1 本身，不认则每条
+      // S-1 主张都掉到「无出处(1)」。窄标记：只认 \bS-1\b 文书编号，
+      // 不认裸 IPO 名词（"Goldman Sachs to Lead Anthropic IPO" 是媒体
+      // 转述无文书引用，仍归无出处(1)，不虚抬）。
+
       // [v3.10] claim.source === 'SEC EDGAR' 也归本档：v3.10 起 SEC 备案
       // 桶进商业辨别候选池，备案里的句子（"Google Cloud saw a continued
       // increase in customer demand as revenues increased 48% to $17.7
@@ -471,7 +541,19 @@ const REASONING_CHECKS = [
   { id: 'has-comparison', label: '给出对照（和谁比/和什么时候比）',
     test: (t) => /(compared to|versus|vs\.?|up from|down from|year[\s-]over[\s-]year|yoy|qoq|against|relative to|than (?:last|previous))/i.test(t) },
   { id: 'has-counterexample', label: '承认反例（什么情况下不成立）',
-    test: (t) => /(however|but|although|despite|yet|while|except|unless|if not|conversely|on the other hand|不过|但是|尽管|除非)/i.test(t) },
+    // [v3.21 精度修复] 补 \b 词边界——live 实证（本轮 IPO 夹具）：
+    // "Anthropic officially files for its public debut" 的 "debut" 含
+    // "but" 子串，无边界时被当成反例标记，主张的推理分从 0/3 虚抬到
+    // 1/3（corr-2026-024 Apollo/poll、v3.1.1 demo/democracy 同型第三
+    // 次实证：短词无边界子串匹配）。全池另实测 debut/distributed/
+    // contribute/debugging/distribution/attribute 11 条候选误报面。
+    // [v3.21 精度修复] 补 \b 词边界——live 实证（本轮 IPO 夹具）：
+    // "Anthropic officially files for its public debut" 的 "debut" 含
+    // "but" 子串，无边界时被当成反例标记，主张的推理分从 0/3 虚抬到
+    // 1/3（corr-2026-024 Apollo/poll、v3.1.1 demo/democracy 同型第三
+    // 次实证：短词无边界子串匹配）。全池另实测 debut/distributed/
+    // contribute/debugging/distribution/attribute 11 条候选误报面。
+    test: (t) => /\b(?:however|but|although|despite|yet|while|except|unless|if not|conversely|on the other hand)\b|不过|但是|尽管|除非/i.test(t) },
 ];
 
 /**
@@ -509,7 +591,13 @@ function discriminateCommercial(claim, opts = {}) {
   // thin-reasoning，不因豁免抬成 well-formed）；ma 事件型表单证伪性判据
   // 同型不一致（仍被 no-quantity 命中）登记 corr-2026-025，下轮统一，
   // 本轮不改旧维度已文档化已测试的判定行为。
-  if (matchedPatterns.some(p => p.kind === 'regulatory-action')) {
+  // [v3.21] 豁免范围扩到 ipo（IPO/上市过程主张）——同型论证：IPO 过程
+  // 主张的证伪靠「S-1 是否在 EDGAR 查到/是否撤回/是否挂牌」可观测事件，
+  // 「Goldman Sachs to Lead Anthropic IPO」无数字但不是不可证伪。
+  // [v3.21] 豁免范围扩到 ipo（IPO/上市过程主张）——同型论证：IPO 过程
+  // 主张的证伪靠「S-1 是否在 EDGAR 查到/是否撤回/是否挂牌」可观测事件，
+  // 「Goldman Sachs to Lead Anthropic IPO」无数字但不是不可证伪。
+  if (matchedPatterns.some(p => p.kind === 'regulatory-action' || p.kind === 'ipo')) {
     for (let i = problems.length - 1; i >= 0; i--) {
       if (problems[i].id === 'no-quantity') problems.splice(i, 1);
     }
@@ -633,6 +721,17 @@ function buildFalsification(patterns, text) {
     // agreements 未签署）未转化为实际建设」。结算点是可观测事件
     // （并网/交付/许可），不等财报。
     'compute-infra': '观察到第三方算力/电力跟踪（并网容量、GPU 交付、出口许可记录）显示交付进度或规模与主张值不符，该基建未按主张时点落地（开工延期/许可被撤/资本承诺撤回或缩水），或「承诺」实为未签署最终协议（subject to definitive agreements）的意向书、未转化为实际建设',
+    // [v3.21] IPO/上市过程主张的证伪路径：过程类主张最常见的裂缝是
+    // 「备案不存在或被撤回（EDGAR 查无该 S-1 或公司撤回申请）」「定价
+    // 区间/时间表与主张情形不符」「挂牌后披露的财务数据与 S-1 主张
+    // 矛盾」。结算点是可观测事件（备案/定价/挂牌），与 regulatory-action
+    // （提案→最终规则）、ma（探索→交割）同构，不等财报。
+    // [v3.21] IPO/上市过程主张的证伪路径：过程类主张最常见的裂缝是
+    // 「备案不存在或被撤回（EDGAR 查无该 S-1 或公司撤回申请）」「定价
+    // 区间/时间表与主张情形不符」「挂牌后披露的财务数据与 S-1 主张
+    // 矛盾」。结算点是可观测事件（备案/定价/挂牌），与 regulatory-action
+    // （提案→最终规则）、ma（探索→交割）同构，不等财报。
+    'ipo': '观察到该 S-1 在 SEC EDGAR 查无实据或备案被撤回、定价区间/挂牌时间表与主张情形不符，或挂牌后公开披露的财务数据与 S-1 主张情形矛盾',
     'unclassified': '无明确证伪路径——这本身就是问题',
   };
   return FALSIFICATION_BY_KIND[kind] || FALSIFICATION_BY_KIND.unclassified;
@@ -662,6 +761,13 @@ function inferCommercialCategory(text, patterns) {
       // [v3.12] 算力基建承诺是供给侧市场事实，归市场主张域（兜底类目
       // 同为 market_claims——行为断言抓不到摘除，测试走源级）
       'compute-infra': 'market_claims',
+      // [v3.21] IPO/上市过程是资本事件，归资本与商业模式域（与 ma/
+      // funding/valuation 同域；兜底类目 market_claims 不同值，行为
+      // 断言可抓摘除）
+      // [v3.21] IPO/上市过程是资本事件，归资本与商业模式域（与 ma/
+      // funding/valuation 同域；兜底类目 market_claims 不同值，行为
+      // 断言可抓摘除）
+      'ipo': 'capital_flow',
       // [v3.3] 交易过程是资本事件，归资本与商业模式域
       ma: 'capital_flow',
       funding: 'capital_flow', valuation: 'capital_flow', 'capital-signal': 'capital_flow',

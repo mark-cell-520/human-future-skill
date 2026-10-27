@@ -413,6 +413,16 @@
       "title": "扩库轮的测量必须覆盖「已命中公司」的全部段落——形态命中数>0 ≠ 该公司覆盖完整",
       "what": "v3.19 轮全池过堂（corr-2026-038 纪律）问了「哪些公司没指引」，补了 AVGO/DELL/PLTR 的 form E/F/G——但没过「已命中公司的其它段落还有没有漏」的堂。2026-10-27 v3.20 轮全池测量 live 实证：PLTR 三份在窗 8-K 的 Outlook 段**季度指引 bullet 整个在库外**——「For Q1 2026, we expect: • Revenue of between $1.532 - $1.536 billion. • Adjusted income from operations of between $870 - $874 million.」（02-02 备案）、「For Q2 2026, we expect: • Revenue of between $1.797 – $1.801 billion.」（05-04）、「For Q3 2026, we expect: • Revenue of between $2.160 – $2.164 billion.」（08-03）——expect+冒号+bullet 列表结构，form A 要 is/are expected to be、form B/D 要动词与名词紧邻、form E/F/G 都不管这个语序，Q1/Q2/Q3 营收与 adjusted income 指引全部漏采，corr-2026-032「在窗公司≠采到的指引」同型第四波。且实际值侧同型：PLTR 三份备案 actuals 全为 0——「• Revenue grew 85% year-over-year and 16% quarter-over-quarter to $1.633 billion」四个旧营收形态全部不命中（无 of/was/were、无冒号、无 increased）。",
       "lesson": "扩库轮的测量必须是「逐公司过全部 outlook 段」不是「逐形态过全池」：同一公司的不同段落可以用完全不同句式（PLTR：raising 式全年指引 + colon-bullet 季度指引 + grew-to 实际值陈述，三种句式三种形态），形态命中数>0 只证明「该公司有至少一种句式被覆盖」。纪律：① 每轮扩库后对在窗公司逐家输出「该公司全部段落 vs 已命中形态」的覆盖矩阵，未命中段落逐段过堂；② 新形态的 lookbehind/守卫要做「夹具必须触达被测分支」的反向验证——本轮两个实测：in-excess 负向断言第一版被 live 句的 \"U.S.\" 前缀挡在前面（断言空转，补无前缀夹具后才精确失败）、截断残值守卫被 V8 lookbehind 的两迭代失败挡在前面（职责错配，改 [^:] 隔段结构后才回到数值守卫）；③ 指引侧与实际值侧要同轮配套——只收指引不收实际值，到期结算链照样断（v3.13「卡点在实际值侧」同型）。"
+    },
+    {
+      "id": "corr-2026-040",
+      "date": "2026-10-27",
+      "version": "3.21.0",
+      "severity": "medium",
+      "title": "否定式覆盖决议必须随每轮全池测量刷新——「某形态已被另一形态覆盖」不是永久事实",
+      "what": "v3.3 把 IPO 整体排除在商业主张模式库外，理由「估值形态已覆盖该条」——该否定式覆盖决议未经全池测量，腐烂了三个版本。2026-10-27 v3.21 轮全池过堂（corr-2026-028/039 纪律）live 实证：2026-10-26 一天内 **7 条** Anthropic S-1/IPO 过程主张整个在库外（TechCrunch「Anthropic's IPO filing reveals its strategy for keeping enterprise customers hooked」「Anthropic officially files for its public debut」、The Information「Anthropic S-1 Highlights Rising Payment Costs」「Anthropic's S-1 Takeaways: From Giant Compute Commitments to Complex Lock-Ups」「Anthropic Publicly Files S-1 for Its Planned IPO」「Goldman Sachs to Lead Anthropic IPO」与 Transformer News 简报内句「reportedly planning to publicly file for an IPO as early as today」）。估值形态要 $估值额，S-1 备案过程主张无数值，一条也覆盖不到。同型第四次实证：corr-2026-032「在窗公司≠采到的指引」/corr-2026-038「SKILL.md 状态描述腐烂」/corr-2026-039「扩库轮测量必须覆盖已命中公司的全部段落」。",
+      "right": "v3.21 轮新增 ipo-claim 形态（三族：备案动作 files/filed/submits+S-1/IPO/public debut；文书主体 S-1/IPO+filing/takeaways/highlights 名词形态；承销牵头 lead/underwrites+[^.!?]{0,40}+IPO/offering/listing/debut）+ 事件型 no-quantity 豁免（v3.8 regulatory-action 同型：证伪靠备案/定价/挂牌可观测事件）+ public-filing 证据档 \\bS-1\\b 窄标记（S-1 是 SEC 公开备案文书与 10-K/10-Q 同族，裸 IPO 名词不虚抬）+ 专属证伪路径（EDGAR 查无/撤回/定价时间表不符/挂牌后披露矛盾）+ capital_flow 类目 + KIND_CN 双处（报告+注入）。live 端到端：7 条进辨别（byKind ipo:7），模式库 22→23。",
+      "lesson": "「X 已被 Y 覆盖」与「某公司没有 X」一样是否定式活结论，必须随每轮全池测量刷新，不能当永久事实引用三个版本。扩库/覆盖决议的判据是「被覆盖方主张的全池命中数>0」，不是「覆盖方存在」。同轮附带两个 precision 发现：① competitive 动词族裸 leads? 两条 live 命中全是误报（团队管理/承销牵头）0 条真正命中，摘除（「leads the market」无 live 实证留已知边界）；② has-counterexample 的 but 无 \\b 词边界，「debut」子串把 IPO 主张的推理分从 0/3 虚抬到 1/3（corr-2026-024 Apollo/poll 同型第三次实证——本轮 live 夹具暴露，latent 缺陷又是被新维度放行的文本触发的）。"
     }
   ]
 }
