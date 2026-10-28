@@ -344,7 +344,7 @@ class ProjectionEngine {
     }
     const report = {
       meta: {
-        version: '3.21.1',
+        version: '3.22.0',
         heartflowVersion: this.analysis.engineVersion,
         timestamp: this.timestamp,
         modulesLoaded: this.analysis.modulesLoaded,
@@ -2074,11 +2074,12 @@ class ProjectionEngine {
     // 还因 2/3 推理分被判成★决策相关）、ConnectWise 安全新闻全部混入。
     // 它们根本不是商业主张，辨别它们产出的是噪音。
     //
-    // 门直接用辨别器自己的 COMMERCIAL_CLAIM_PATTERNS（23 种主张形态，
+    // 门直接用辨别器自己的 COMMERCIAL_CLAIM_PATTERNS（24 种主张形态，
     // v3.2 起含产能/供给约束；v3.3 起含并购/交易过程；v3.6 起含成本/
     // 价格信号；v3.7 起含专家/机构判断；v3.8 起含监管行动；v3.9 起含
     // 价格下调；v3.10 起含部署规模；v3.11 起含用量/牵引度指标；
-    // v3.12 起含算力基建承诺/规模；[v3.21] 起含 IPO/上市过程
+    // v3.12 起含算力基建承诺/规模；[v3.21] 起含 IPO/上市过程；
+    // [v3.22] 起含执法/诉讼行动
     // （v3.3 计数纠错：
     // v3.0.0c-v3.1.1 文档写「14 种」而实际只有 13 种——与 v3.1 修正的
     // 「17 个源」同型文档计数错误，按代码实测改正），
@@ -2087,8 +2088,9 @@ class ProjectionEngine {
     // 代价如实记录：模式库外的真实主张句式会漏（v3.2 起 "AWS Largely Sold Out
     // Of Capacity Into 2028" 产能主张已进模式库；v3.3 起 "Instacart Is
     // Exploring a Sale" 交易过程主张已进模式库；v3.21 起 Anthropic S-1/IPO
-    // 过程主张已进模式库；市场反应/产品发布/导航
-    // boilerplate 仍不在库）。
+    // 过程主张已进模式库；v3.22 起 "Parents sue OpenAI" 与 "Malaysian
+    // Authorities Seize $12M" 执法/诉讼行动主张已进模式库；市场反应/
+    // 产品发布/导航 boilerplate 仍不在库）。
     const isClaimForm = (t) => COMMERCIAL_CLAIM_PATTERNS
       .some(p => { try { return p.re.test(t); } catch (_) { return false; } });
     // [v3.10] forward-looking 免责声明守卫。live 实证（2026-10-26 轮，SEC
@@ -2136,7 +2138,7 @@ class ProjectionEngine {
       return {
         available: false,
         reason: `本期 ${this.signals.items.length} 条 live 信号中（商业辨别候选池 business/sec_filings/frontier_models/economy 四桶）未抽到命中商业主张形态的条目`,
-        note: '只辨别命中商业主张形态（采用/部署规模/用量指标/算力基建/需求/替代/市场规模/成本价格/价格下调/产能供给/并购交易/专家判断/监管行动/融资/估值/竞品/合规/信任/IPO 上市过程共 23 种模式）的条目；'
+        note: '只辨别命中商业主张形态（采用/部署规模/用量指标/算力基建/需求/替代/市场规模/成本价格/价格下调/产能供给/并购交易/专家判断/监管行动/融资/估值/竞品/合规/信任/IPO 上市过程/执法诉讼行动共 24 种模式）的条目；'
           + 'v3.0.0c 起候选题句必须命中模式库，Fed 公告/播客/促销页脚等非主张文本不再进入辨别。',
       };
     }
@@ -2178,8 +2180,8 @@ class ProjectionEngine {
       results: results.slice(0, 30),
       note: '本段只辨别商业主张的表述与证据质量（可证伪性/证据等级/推理有效性/证伪条件），'
         + '不判断主张内容真假，也不生成「心虫应该怎么做」的商业建议。'
-        + 'v3.0.0c 起候选题句必须命中商业主张形态库（23 种模式，v3.2 新增产能/供给约束，'
-        + 'v3.3 新增并购/交易过程，v3.6 新增成本/价格信号，v3.7 新增专家/机构判断，v3.8 新增监管行动，v3.9 新增价格下调，v3.10 新增部署规模，v3.11 新增用量/牵引度指标，v3.12 新增算力基建承诺/规模，v3.21 新增 IPO/上市过程），非主张文本（公告/播客/促销页脚/免责声明）不进辨别。'
+        + 'v3.0.0c 起候选题句必须命中商业主张形态库（24 种模式，v3.2 新增产能/供给约束，'
+        + 'v3.3 新增并购/交易过程，v3.6 新增成本/价格信号，v3.7 新增专家/机构判断，v3.8 新增监管行动，v3.9 新增价格下调，v3.10 新增部署规模，v3.11 新增用量/牵引度指标，v3.12 新增算力基建承诺/规模，v3.21 新增 IPO/上市过程，v3.22 新增执法/诉讼行动），非主张文本（公告/播客/促销页脚/免责声明）不进辨别。'
         + 'v3.10 起候选池含一手信源桶（SEC 备案 + 厂商一手公告）。'
         + '证据等级：独立验证(4) > 第三方调查/公开财报(3) > 厂商自述/媒体报道(2) > 无出处(1)。',
     };
@@ -2909,6 +2911,13 @@ function formatReport(report) {
       // planning to publicly file for an IPO」——v3.3「估值形态已覆盖
       // IPO」的覆盖决议腐烂，S-1 备案过程主张无数值、估值形态覆盖不到）
       'ipo': 'IPO/上市过程主张',
+      // [v3.22] 执法/诉讼行动主张（live 实证：TechCrunch「Parents sue
+      // OpenAI, alleging GPT-4o coached their daughter off seizure
+      // medication」与 The Information「Malaysian Authorities Seize
+      // $12 Million Worth of AI Chips in Smuggling Crackdown」——
+      // v3.8 已知边界「执法行动无工具名词」的 live 实证补库，证伪靠
+      // 司法/行政程序结局（驳回/撤诉/和解/改判）不靠数字）
+      'legal-action': '执法/诉讼行动',
     };
     // [v3.10] 12→20：与 buildCommercialDiscrimination 的 results.slice(0, 20)
     // 对齐——扩池后辨别条数变多，渲染上限不跟着涨会把一手信源主张切掉。

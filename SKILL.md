@@ -1,45 +1,106 @@
 ---
 name: human-future-v2
-title: "人类未来 · 文明推演引擎 v3.21.1"
-version: "3.21.1"
+title: "人类未来 · 文明推演引擎 v3.22.0"
+version: "3.22.0"
 description: |-
-  人类未来 v3.21.1 - 维护级（末位补丁，非新辨别维度）：corr-2026-025
-  结案（ma 事件型主张 no-quantity 豁免统一）+ usage-metric 名词族扩
-  (monthly|weekly|daily) calls（live 实证）+ 本机注入脚本补齐 v3.14-v3.21
-  内容（真实断链修复）——① v3.8 给 regulatory-action 加「证伪靠规则落地
-  事件不靠量化基数」的 no-quantity 豁免时登记 ma 同型不一致「留待下轮
-  统一」，挂满十三个补丁轮（v3.8→v3.21.1）后本轮统一：并购/交易过程的
-  证伪结构同样是事件不是数字（当事方确认/谈判破裂/监管否决/交割条款）。
-  判定行为变化如实记录（实测口径不是预期）：标题-only ma 条
-  unfalsifiable → weak-evidence（evidence=1 ≤2 档在 thin-reasoning 之前
-  命中，推理 0-1/3 与 decisionRelevant=false 不变，不虚抬纪律保持）；
-  evidence≥3 的 ma 条 → thin-reasoning + decisionRelevant=true（v3.8
-  Treasury 条同型路径）；regulatory-action/ipo 逐字段不变。变化核心是
-  证伪性判据归位：不再对同一条主张同时打印「不可证伪: 无量化」与专属
-  证伪条件两行自相矛盾的输出。② usage-metric 扩库（live 实证
-  frontier_models 桶「Retell uses OpenAI models to help power 100M monthly
-  calls」）：名词族补 (monthly|weekly|daily) calls、动词族补 uses...to
-  (help) power、单位组补单字母 m/b——三处齐修才命中（100M 的 M 不被
-  million|mn 匹配）；精度回归 6 句（conference call/judgment calls/good
-  call/Open Calls/Call of Duty/earnings call 全不命中），v3.11 三条真命中
-  与 subscribers/速率上限排除不回归；模式库计数 23 不变（扩名词族不加
-  kind）。③ 本机 hf-cron-fetch.sh 补齐 v3.14-v3.21 注入内容（forecast
-  分组渲染 + EDGAR/RSS 截断披露 + [v3.15/16/17] 结算口径限定 + ipo
-  标签）——本机注入脚本停在 v3.13，6 个源级断言由红转绿；顺修 v3.21
-  重复粘贴的 ipo 注释。测试 420→429 项；4 轮反向验证全部精确失败。
-  历史：v3.21.0 IPO/上市过程主张进库（新辨别维度：v3.3「估值形态已覆盖 IPO」的否定式覆盖决议腐烂，corr-2026-038/039 同型第四次实证）——2026-10-27 全池过堂（corr-2026-028 纪律）live 实证 2026-10-26 一天内 7 条 Anthropic S-1/IPO 过程主张整个在库外（估值形态要 $估值额，S-1 备案过程主张无数值一条也覆盖不到）：TechCrunch AI「Anthropic's IPO filing reveals its strategy for keeping enterprise customers hooked」「Anthropic officially files for its public debut」、The Information「Anthropic S-1 Highlights Rising Payment Costs」「Anthropic's S-1 Takeaways: From Giant Compute Commitments to Complex Lock-Ups」「Anthropic Publicly Files S-1 for Its Planned IPO」「Goldman Sachs to Lead Anthropic IPO」与 Transformer News 简报内句「Anthropic is reportedly planning to publicly file for an IPO as early as today」：① ipo-claim 三形态（备案动作 files/filed/filing/submits+S-1/IPO/public debut；文书主体 S-1/IPO+filing/takeaways/highlights 名词形态——动词形态无 live 实证不进库，MIT TR 修辞疑问句 "Will the IPO reveal…" 实测收紧；承销牵头 lead/leads/led/leading/underwrites+[^.!?]{0,40}+IPO/offering/listing/debut）——不认裸 IPO 名词（ahead of IPO 归估值地盘、pre-IPO round 不收），不抢融资/并购地盘（$40B GPU financing deal、DoorDash-Instacart $17B 零误命中）；② 事件型 no-quantity 豁免扩到 ipo（v3.8 regulatory-action 同型：IPO 主张的证伪靠「S-1 是否在 EDGAR 查到/是否撤回/是否挂牌」可观测事件，不靠量化基数；豁免只摘 no-quantity，推理三要素独立计分）；③ public-filing 证据档补 \bS-1\b 窄标记（S-1 是 SEC 公开备案文书与 10-K/10-Q 同族，v3.8 政府文书/v3.10 SEC EDGAR 来源同型扩展；不认裸 IPO 名词，Goldman 承销转述留无出处(1) 不虚抬）；④ 专属证伪路径（S-1 在 EDGAR 查无实据或被撤回/定价区间挂牌时间表与主张情形不符/挂牌后披露财务数据与 S-1 矛盾）+ capital_flow 类目 + KIND_CN 双处（报告+注入）。同轮精度修复（维护级）：⑤ competitive 动词族摘除裸 leads?——live 实证 2 条命中全是误报（"who leads OpenAI's enterprise product team" 团队管理、"Goldman Sachs to Lead Anthropic IPO" 承销牵头）0 条真正命中，「leads the market」无 live 实证留已知边界；⑥ has-counterexample 补 \b 词边界——本轮 live 夹具暴露的 latent 缺陷："files for its public debut" 的 debut 含 but 子串，把 IPO 主张推理分从 0/3 虚抬到 1/3（corr-2026-024 Apollo/poll 同型第三次实证；全池另实测 debut/distributed/contribute/debugging/distribution/attribute 11 条候选误报面）。live 端到端（EDGAR 缓存先删再跑）：pipeline exit 0、商业辨别段 22→26 条含 ipo:7（business 6 + frontier_models 1，byKind 新增 ipo:7；S-1 句归公开财报/公告(3) 判 thin-reasoning+决策相关，无文书引用/简报转述句留无出处(1)/媒体报道(2) 判 weak-evidence 不虚抬）；两条 competitive live 误报精确消除（Embiricos 团队管理句整条出池、Goldman 承销句改判 ipo），Artificial Analysis 真命中（ahead of GPT-6 Astra）保留；模式库计数 22→23；渲染/注入上限 30 未触顶零切尾。测试 404→420 项；11 轮反向验证全部精确失败（摘除 ipo 模式→组 1/2/4 多条/摘除 S-1 标记/摘除 ipo 豁免/摘除证伪条件/摘除类目映射/摘除报告 KIND_CN/摘除注入 KIND_CN/competitive 恢复 leads?→2/has-counterexample 去 \b→debut 虚抬回归/计数漂移/版本漂移）。登记 corr-2026-040（否定式覆盖决议必须随每轮全池测量刷新——「X 已被 Y 覆盖」不是永久事实，判据是「被覆盖方主张的全池命中数>0」不是「覆盖方存在」；同型：corr-2026-032/038/039）；登记簿 38→39 条。历史：v3.20 PLTR 冒号+bullet 期望式指引形态进库；v3.19 AVGO/DELL/PLTR 书面数值指引形态进库；v3.18 RSS 前瞻主张独立额度；v3.17 表格式全年 capex 实际值抽取；v3.16 GOOGL FY2026 capex 残废条目修复；v3.15 全年实际值抽取+annual key 配对；v3.14 META CFO 评论式指引形态进库；v3.13 财报指引结算指标扩展；v3.12 算力基建承诺/规模主张（新辨别维度）；v3.11 用量/牵引度指标主张+引号切分修复；v3.10 一手信源桶接入+部署规模主张；v3.9 价格下调主张；v3.8 监管行动主张；v3.7 专家/机构判断主张；v3.6 成本/价格信号主张；v3.5.1 结算链路修复（维护）；v3.5 财报指引自动结算；v3.4 财报指引+SEC EDGAR；v3.3.1 survey-finding 精度修复（维护）；v3.3 并购/交易过程主张；v3.2.2/3.2.1 断链修复；v3.2 产能/供给约束主张；v3.1.1 口径错位精度修复；v3.1 接入 self-correction-ledger；v3.0.0c 商业段断链修复；v2.17 接入 GJOpen；v2.16 基准概率断链修复；v2.15 参考文本单列；v2.13 停止假推演。
+  人类未来 v3.22.0 - 新辨别维度：执法/诉讼行动主张进库（legal-action，v3.8 已知边界
+  「执法行动 fined/sued/charged 无工具名词」的 live 实证补库）——2026-10-28 全池过堂
+  （corr-2026-028 纪律：288 条 live 池 262 条未命中逐条过堂；改动后端到端复跑 312 条池）live 实证 business
+  桶两条执法/诉讼主张整个在库外：TechCrunch AI「Parents sue OpenAI, alleging GPT-4o
+  coached their daughter off seizure medication」与 The Information「Malaysian
+  Authorities Seize $12 Million Worth of AI Chips in Smuggling Crackdown」——v3.8 给
+  regulatory-action 立库时白纸黑字记着「执法行动无 live 实证不进库」，本轮证据到齐：
+  执法/诉讼行动与规则事件是两类信号，规则事件的证伪靠最终规则文本，执法/诉讼行动的
+  证伪靠司法/行政程序结局（驳回/撤诉/和解/改判/撤销），漏掉它商业辨别对合规需求域
+  「规则之后发生什么」失明（罚款、扣押、诉讼正是规则落地的可观测证据）。① legal-action
+  两形态（全部 live 实证驱动）：A 诉讼动作 sue/sues/sued/suing + capitalized target
+  （容忍 ≤2 个短小写间隔词）；B 执法动作 执法主体（authorities/government/regulators/
+  police/customs/prosecutors/attorneys general/DOJ/SEC/FTC/treasury/EU/White House/
+  ministry/Congress…）+ [^.!?]{0,40} + 执法动词（seize/fined/penalize/indict/
+  confiscate…）。② 精度设计（漏报比误报诚实、没有实证不扩模式）：动词族只收无名词
+  歧义形态——fined/fining 收而 fines（名词 impose fines）不收、seize（动词）收而
+  seizure（名词，live 实证 seizure medication 医疗场景）不收、indicts/indicted 收而
+  indictment 名词不匹配；charge/charged 有意不进动词族（live 实证 sec_filings 桶
+  会计 charges：restructuring/compensation/impairment charges、free of charge、
+  in charge、charged with explaining 四类全部不命中）；不抢 regulatory-action 地盘
+  （Treasury Proposes/Trump lifts 规则句整条不命中）；无 live 实证形态不进库
+  （lawsuit against 名词句/settles with 和解句/被动语态/charged 名词歧义）。③ 事件型
+  no-quantity 豁免扩展到 legal-action（v3.8/v3.21/v3.21.1 同型第四次：诉讼/执法主张
+  的证伪靠程序结局不靠数字，标题-only 无数字条不判「不可证伪: 无量化」，豁免只摘
+  no-quantity 不抬推理分）。④ 专属证伪路径（诉讼被驳回/撤诉/和解且条款不符、执法
+  行动被上诉推翻/金额改判撤销、指控被撤回）+ compliance_demand 类目 + KIND_CN 双处
+  （报告+注入）。live 端到端（EDGAR 缓存先删再跑）：pipeline exit 0、312 条 live
+  信号；商业辨别段 audited 22 条含 legal-action:2（business 桶两条 live 实证——Parents
+  条判 weak-evidence/无出处(1)/推理 0/3、Malaysia 条判 weak-evidence/无出处(1)/
+  推理 1/3（has-sample=$12M），均 decisionRelevant=false 不虚抬：标题-only 媒体转述
+  无法院文书引用）；其余 kind 计数逐一不变（competitive:1→0 与 adoption:2→3 经核对
+  是 RSS 池轮换——该 competitive 条目已不在 run2 信号池、现判别仍为 competitive 不
+  串台）；forecast 辨别 69 条与结算段逐条 diff 零漂移（结算幂等 0 新结算/跳过 6/
+  pending 60，ledger brier 0.2377/样本 16 不变；本轮会话第一次 live 跑（改动前基线）
+  结算 5 条到期义务——META FY2026Q2 带内/DELL FY2027Q1/Q2 beat/PLTR FY2026Q1/Q2
+  beat，与 SKILL.md v3.14/v3.19/v3.20 记载的结算结果一致，系运行期台账文件在本会话
+  前已回卷到 10-26 状态（gitignore 的运行产物），非本轮改动引起、未手工补造）；
+  模式库计数 23→24；渲染/注入上限 30 未触顶。测试 429→439 项；12 轮反向验证全部
+  精确失败（摘除 legal-action 模式整块→8/摘除 sue 形态→2/摘除执法族→2/摘除
+  no-quantity 豁免→2/摘除证伪条件→1/摘除类目映射→3/摘除报告 KIND_CN→1/摘除注入
+  KIND_CN→1/动词族加回 fines 名词→1（impose fines 误命中）/动词族加回 seizure
+  名词→1（执法主体+seizure 医学语义边界句误命中——第一版夹具用无主体的医疗句、
+  走不到 Form B 分支、断言空转报 0 失败，补带执法主体的边界句后精确失败，
+  corr-2026-029/037 同型第三次实证）/计数文档漂移→3/版本漂移→多处）。登记
+  corr-2026-041（已知边界的修法预设可能与实证所需形态不同——v3.8 边界字面写「扩
+  工具名词」，live 实证（Authorities Seize）需要的是主体+执法动词两段式；过堂已知
+  边界时要按实证句子的结构修，不按边界记录的修法修）；登记簿 39→40 条。同轮维护
+  （不单独涨号）：去重三处 v3.21 重复粘贴的注释（S-1 证据档/has-counterexample/ipo
+  证伪条件与类目）；31+ 处历史版本断言硬编码 3.21.1 全量同步 3.22.0（corr-2026-026
+  纪律）；豁免源级断言随第四次扩展同步。
+  历史：v3.21.1 corr-2026-025 结案（ma 事件型 no-quantity 豁免统一）+ usage-metric
+  扩 (monthly|weekly|daily) calls（live 实证）+ 本机注入脚本补齐 v3.14-v3.21 内容
+  （真实断链修复）——维护级（末位补丁，非新辨别维度）；v3.21.0 IPO/上市过程主张
+  进库（新辨别维度）；v3.20 PLTR 冒号+bullet 期望式指引形态；v3.19 AVGO/DELL/PLTR
+  书面数值指引形态；v3.18 RSS 前瞻主张独立额度；v3.17 表格式全年 capex 实际值抽取；
+  v3.16 GOOGL FY2026 capex 残废条目修复；v3.15 全年实际值抽取+annual key 配对；
+  v3.14 META CFO 评论式指引形态；v3.13 财报指引自动结算指标扩展；v3.12 算力基建
+  承诺/规模主张（新辨别维度）；v3.11 用量/牵引度指标主张+引号切分修复；v3.10 一手
+  信源桶接入+部署规模主张；v3.9 价格下调主张；v3.8 监管行动主张；v3.7 专家/机构
+  判断主张；v3.6 成本/价格信号主张；v3.5.1 结算链路修复（维护）；v3.5 财报指引
+  自动结算；v3.4 财报指引+SEC EDGAR；v3.3.1 survey-finding 精度修复（维护）；
+  v3.3 并购/交易过程主张；v3.2.2/3.2.1 断链修复；v3.2 产能/供给约束主张；v3.1.1
+  口径错位精度修复；v3.1 接入 self-correction-ledger；v3.0.0c 商业段断链修复；
+  v2.17 接入 GJOpen；v2.16 基准概率断链修复；v2.15 参考文本单列；v2.14 sitemap
+  真实发布时间；v2.13 停止假推演。
+---
 ---
 
-# 人类未来 · 文明推演引擎 v3.21.1
+# 人类未来 · 文明推演引擎 v3.22.0
 
 > 数据采集（RSS 真联网 + 可选正文增强 + 外部预测基准 GJOpen）→ 心虫 stateless 检查器 → 三年推演引擎。
 > 当前状态与实测数字见下一节，历史版本记录见 references/upgrade-history.md。
 
 ---
 
-## 当前状态（v3.21.1 实测）
+## 当前状态（v3.22.0 实测）
 
 以下数字全部来自 2026-10-28 的 `FETCH=1 FETCH_BODY=1 node scripts/run-pipeline.js` 实跑
+（v3.22.0 轮：pipeline exit 0、312 条 live 信号（business 48 + economy 46 +
+frontier_models 142 + sec_filings 42 + tech 22 + humanities 12）；执法/诉讼行动
+主张进库（legal-action，新辨别维度）的 live 端到端——全池测量（corr-2026-028
+纪律「未命中条目过堂」：当日较早的 288 条池 262 条未命中逐条过堂，business
+桶唯一新 kind 候选是两条执法/诉讼主张（v3.8 已知边界「执法行动无工具名词」的
+live 实证；扩库后复跑的本轮 312 条池精确命中该 2 条、0 误报）：TechCrunch
+AI「Parents sue OpenAI, alleging GPT-4o coached their daughter off seizure
+medication」与 The Information「Malaysian Authorities Seize $12 Million Worth
+of AI Chips in Smuggling Crackdown」——扩容前 23 种形态全部不命中。legal-action
+两形态（诉讼动作 sue/sued/suing+目标；执法动作 执法主体+执法动词）进库后全池
+复测精确命中 2 条（即该两条、0 误报——会计 charges/in charge/charged with/
+医疗 seizure/Fed-ECB/播客/规则提案 26 句精度回归全部不命中），其余 kind 计数
+逐一不变；两条 live 实证进商业辨别段均判 weak-evidence/无出处(1)（标题-only
+媒体转述无法院文书引用，不虚抬）/推理 0-1/3（Malaysia 条 has-sample=$12M）/
+decisionRelevant=false；事件型 no-quantity 豁免第四次扩展到 legal-action
+（无数字诉讼句不判「不可证伪: 无量化」，豁免不抬推理分）；forecast 辨别 69 条
+与结算段逐条 diff 零漂移（结算幂等 0 新结算/跳过 6/pending 60、ledger brier
+0.2377/样本 16 不变）；商业辨别段 audited 22 条含 legal-action:2（v3.21.1 轮
+19 条是 v3.21.1 池，波动如实记录，本轮未触顶 30 上限）。同轮维护（不单独涨号）：
+去重三处 v3.21 重复粘贴注释；历史版本断言全量同步 3.22.0。
 （v3.21.1 轮：pipeline exit 0、288 条 live 信号；ma 事件型 no-quantity
 豁免统一（corr-2026-025 结案）+ usage-metric 扩 (monthly|weekly|daily)
 calls 的 live 端到端——全池测量（corr-2026-028 纪律「未命中条目过堂」）
@@ -985,7 +1046,11 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   商业辨别段 8→10 条，byKind 新增 regulatory-action:2。
 - 仍在库外的监管句式：执法行动（fined/sued/charged，无工具名词——AP 原文
   "Treasury issued a $200,000 fine against a U.S.-based company" 因无工具
-  名词不命中，如实记录为漏报）、「SEC's new disclosure rules」类所有格形态、
+  名词不命中，如实记录为漏报）**[v3.22 已结案：legal-action 新维度进库，
+  live 实证「Malaysian Authorities Seize $12 Million Worth of AI Chips in
+  Smuggling Crackdown」与「Parents sue OpenAI」——见 [v3.22] 章节； AP 原文
+  该句因动词 base-form "fine" 有名词歧义仍不进库，留已知边界]**、
+  「SEC's new disclosure rules」类所有格形态、
   州层立法主体（california 等）——等有 live 实证再扩。
 
 **[v3.9] 价格下调主张（price-cut，新辨别维度）**
@@ -1245,6 +1310,68 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   同型），claim 文本窗仍含后 2 句（"under construction … commercial
   launch Q3 2027" 与 "500 megawatts"），结算相关信息不丢。
 
+**[v3.22] 执法/诉讼行动主张（legal-action，新辨别维度）**
+- 定位：合规需求域自 v3.8 起只有 regulatory-action（真实规则事件：提案/签发/
+  加宽/解除限制），**执法/诉讼行动**（罚款/扣押/起诉/查封）一条都看不见——而
+  v3.8 立库时白纸黑字记着已知边界「执法行动（fined/sued/charged，无工具名词）
+  无 live 实证不进库」。2026-10-28 全池过堂（corr-2026-028 纪律，312 条池
+  262 条未命中逐条过堂）live 实证该边界可以结案：business 桶两条执法/诉讼
+  主张整个在库外——TechCrunch AI「Parents sue OpenAI, alleging GPT-4o coached
+  their daughter off seizure medication」与 The Information「Malaysian
+  Authorities Seize $12 Million Worth of AI Chips in Smuggling Crackdown」
+  （扩容前 23 种形态全部不命中）。执法/诉讼行动与规则事件是两类信号：规则
+  事件的证伪靠最终规则文本，执法/诉讼行动的证伪靠司法/行政程序结局（驳回/
+  撤诉/和解/改判/撤销）——罚款、扣押、诉讼正是规则落地的可观测证据
+  （Malaysia 扣押 AI 芯片是出口管制/走私执法的一阶信号，Parents v. OpenAI
+  是产品责任风险的一阶信号），漏掉它商业辨别对合规需求域「规则之后发生
+  什么」失明。
+- 形态族（两族，全部 live 实证驱动）：① 诉讼动作（sue/sues/sued/suing +
+  capitalized target，容忍 ≤2 个短小写间隔词——"A family is suing OpenAI"/
+  "sued OpenAI in federal court"）；② 执法动作（执法主体 authorities/
+  government/regulators/police/customs/prosecutors/attorneys general/DOJ/
+  SEC/FTC/treasury/EU/White House/ministry/Congress… + [^.!?]{0,40} + 执法
+  动词 seize/fined/penalize/indict/confiscate…）。
+- 精度设计（v3.0.0c/v3.2/v3.3/v3.6/v3.7/v3.9/v3.10/v3.11/v3.12/v3.21 教训：
+  漏报比误报诚实、没有实证不扩模式）：① 动词族只收无名词歧义的形态——
+  fined/fining 收而 fines（名词：impose fines）不收；seize（动词）收而
+  seizure（名词，live 实证 "seizure medication" 是医疗场景）不收；
+  indicts/indicted 收而 indictment 名词不匹配；charge/charged 有意不进
+  动词族（live 实证 sec_filings 桶的会计 "charges"：restructuring/
+  compensation/impairment charges、free of charge、in charge、charged with
+  explaining 四类全部不命中）；② 不抢 regulatory-action 地盘——规则提案/
+  签署/加宽句（Treasury Proposes to Widen…/Trump lifts restrictions…）不含
+  执法动词，整条不命中；③ 事件型 no-quantity 豁免扩展到本 kind（v3.8/v3.21/
+  v3.21.1 同型第四次）：诉讼/执法主张的证伪靠程序结局不靠数字，标题-only
+  无数字条不判「不可证伪: 无量化」，豁免只摘 no-quantity、推理三要素仍独立
+  计分；④ 无 live 实证的形态不进库：bare "lawsuit against" 名词句、
+  "settles with" 和解句、被动语态（"OpenAI sued by parents"）、
+  "charged/faced charges"（名词歧义）、base-form "fine"（名词歧义）——等有
+  live 实证再扩。live 全池实测（312 条）：精确命中 2 条（即上述两条），
+  26 句精度回归 0 误报。
+- 判别结果（live 实测）：Parents 条判 证据不足 / 无出处(1) / 推理 0/3、
+  decisionRelevant=false（标题+媒体转述，无法院文书引用）；Malaysia 条判
+  证据不足 / 无出处(1) / 推理 1/3（has-sample=$12 Million）、
+  decisionRelevant=false——标题-only 不虚抬纪律保持（与 v3.8 LWiAI 条/
+  v3.10 Uber 条同型）。证伪条件走 legal-action 专属路径（诉讼被法院驳回/
+  撤诉/和解且条款与主张情形不符，或执法行动被上诉推翻、处罚/扣押金额被
+  改判撤销，或相关指控被主管机关撤回）。类目归 compliance_demand。
+- 端到端：引擎候选门（isClaimForm 用同一个模式库）→ discriminateCommercial
+  → formatReport KIND_CN「执法/诉讼行动」→ cron 注入第 6 段同标签。live
+  实测商业辨别段 audited 22 条，byKind 新增 legal-action:2；其余 kind 计数
+  逐一不变（零串台零丢失）。
+- 同轮维护（不单独涨号）：① 去重三处 v3.21 重复粘贴的注释（S-1 证据档/
+  has-counterexample/ipo 证伪条件与类目映射——v3.21.1 声称顺修过但漏了
+  这三处，本轮实测发现并去重）；② 豁免源级断言与 124 处历史版本断言随
+  涨号全量同步 3.22.0（corr-2026-026 纪律）；③ v3.3/v3.21/v3.21.1 三处
+  模式库计数断言 23→24 同步（v3.2 计数纠错同型纪律）。
+- 仍在库外的执法/诉讼句式：bare "lawsuit against" 名词句、"settles with"
+  和解句、被动语态（"OpenAI sued by parents"）、"charged/faced charges"
+  （名词歧义）、base-form "fine"（名词歧义）、州层立法主体（v3.8 已登记的
+  同类边界）——等有 live 实证再扩。登记 corr-2026-041（已知边界的修法预设
+  可能与实证所需形态不同——v3.8 边界字面写「扩工具名词」，live 实证需要的是
+  「执法主体+执法动词」两段式新维度；过堂已知边界时要按实证句子的结构修，
+  不按边界记录的修法修）。
+
 **[v3.21] IPO/上市过程主张（ipo-claim，新辨别维度）**
 - 定位：资本与商业模式域的覆盖缺口，且是一次「否定式覆盖决议腐烂」——
   v3.3 曾把 IPO 整体排除在模式库外，理由「估值形态已覆盖该条」，该决议
@@ -1322,11 +1449,20 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   严格过滤，漏掉数据里 2 条 critical（都是「整段推演作废」级的假能力审计），
   接入后会少报高危数（说 4 实际 6）。改为按等级表比较（critical > high >
   medium > low），critical 排最前。这是修 bug，不算升级——升级点是接入本身。
-- 边界（如实声明）：登记簿 39 条（v3.13 轮新增 corr-2026-030/031、v3.14 轮
+- 边界（如实声明）：登记簿 40 条（v3.13 轮新增 corr-2026-030/031、v3.14 轮
   新增 corr-2026-032/033、v3.15 轮新增 corr-2026-034、v3.16 轮新增
-  corr-2026-035、v3.17 轮新增 corr-2026-036、v3.18 轮新增 corr-2026-037 后：
-  critical 4 / high 17 / medium 15（含 corr-2026-024/025 两条前轮手写条目
-  未设 severity、按 medium 计）——corr-2026-037 记的是「同型缺陷分路径
+  corr-2026-035、v3.17 轮新增 corr-2026-036、v3.18 轮新增 corr-2026-037、
+  v3.19 轮新增 corr-2026-038、v3.20 轮新增 corr-2026-039、v3.21 轮新增
+  corr-2026-040、v3.22 轮新增 corr-2026-041 后：
+  critical 4 / high 17 / medium 19（含 corr-2026-024/025 两条前轮手写条目
+  未设 severity、按 medium 计）——corr-2026-041 记的是「已知边界的修法预设
+  可能与实证所需形态不同」——v3.8 边界字面写「执法行动扩工具名词」，
+  2026-10-28 live 实证（Malaysia Authorities Seize）需要的是「执法主体+
+  执法动词」两段式新维度，按边界字面修法扩库一条也修不好；过堂已知边界时
+  要按实证句子的结构修，不按边界记录的修法修（同型：corr-2026-032「在窗
+  公司≠采到的指引」——边界记录的是现象，修法必须从现象句子本身推）；
+  corr-2026-040 记的是「否定式覆盖决议必须随每轮全池测量刷新」；
+  corr-2026-037 记的是「同型缺陷分路径
   各修各的 + 没有触发机会不等于没有问题」——商业辨别路径 v3.10 早有
   forward-looking 免责声明守卫，forecast 路径从来没有；RSS 路径被共享
   断点饿死时 boilerplate 句压根进不了辨别，该分支的缺陷因此沉睡四个
@@ -1468,8 +1604,12 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   "Late fees for delayed GPU deliveries exceed $2M"（名词后接长修饰语，
   v3.6 实测放宽间隔会误命中 2 句，保持相邻收紧）、rates/tariffs 等宏观
   看价名词（无 live 实证不进库）、监管执法行动（"Treasury issued a
-  $200,000 fine against a U.S.-based company"——无工具名词，v3.8 实测
-  漏报如实记录）、「SEC's new disclosure rules」类所有格形态、州层立法
+  $200,000 fine against a U.S.-based company"——v3.8 实测漏报如实记录）
+  **[v3.22 已结案：legal-action 新维度进库，live 实证「Malaysian Authorities
+  Seize $12 Million Worth of AI Chips in Smuggling Crackdown」与「Parents sue
+  OpenAI」两条进辨别；该 AP 原句因 base-form "fine" 有名词歧义（impose
+  fines）仍不进库，与 "settles with" 和解句/被动语态/charged 名词歧义同留
+  已知边界]**、「SEC's new disclosure rules」类所有格形态、州层立法
   主体（california 等）（均无 live 实证不进库）、无幅度降价谈论
   （"Opus 5.5 with lower prices"——v3.9 按 v3.6 同型纪律留作已知边界
   漏报，等有 live 实证再议）、无量化范围的部署谈话（"brings ChatGPT Work
@@ -1503,7 +1643,7 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   引擎不代劳——这是心虫铁律，不是能力缺失。
 
 **测试**
-- `npm test`：**429 项断言**（实测各 section 汇总；v3.4 的 230 + v3.5 新增 11 + v3.5.1 新增 9 + v3.6 新增 8 + v3.7 新增 9 + v3.8 新增 11 + v3.9 新增 8 + v3.10 新增 13 + v3.11 新增 15 + v3.12 新增 14 + v3.13 新增 13 + v3.14 新增 9 + v3.15 新增 10 + v3.16 新增 11 + v3.17 新增 10 + v3.18 新增 6 + v3.19 新增 9 + v3.20 新增 8 + v3.21 新增 16 + v3.21.1 新增 9：
+- `npm test`：**439 项断言**（实测各 section 汇总；v3.4 的 230 + v3.5 新增 11 + v3.5.1 新增 9 + v3.6 新增 8 + v3.7 新增 9 + v3.8 新增 11 + v3.9 新增 8 + v3.10 新增 13 + v3.11 新增 15 + v3.12 新增 14 + v3.13 新增 13 + v3.14 新增 9 + v3.15 新增 10 + v3.16 新增 11 + v3.17 新增 10 + v3.18 新增 6 + v3.19 新增 9 + v3.20 新增 8 + v3.21 新增 16 + v3.21.1 新增 9 + v3.22 新增 10：
   2 项纯结算函数（settleGuidance 单位感知容差：相对/绝对/bps/百分点/区间/无容差
   跳过，含区分相对vs绝对的边界用例 / normalizeMetric+parseMetricValue 单位解析）+
   3 项实际值抽取（extractActuals 营收+毛利率+标题期间 / GAAP/非GAAP 不同值抽出
@@ -1988,6 +2128,46 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   uses-to-power 动词族→1（Retell live 实证）；单位组去单字母 m/b→1
   （Retell 100M）；名词族去 (monthly|weekly|daily) calls→1（Retell）。
   每轮基线全绿、摘除后断言必生效、还原 diff 校验一致、收尾基线全绿（429/0）。
+  v3.22 新增 10（2 项 live 实证命中（TechCrunch「Parents sue OpenAI,
+  alleging GPT-4o coached their daughter off seizure medication」→ kind=
+  legal-action，判 证据不足/无出处(1)/推理 0/3/weak-evidence/decisionRelevant
+  =false 不虚抬+专属证伪路径+compliance_demand 类目；The Information
+  「Malaysian Authorities Seize $12 Million Worth of AI Chips in Smuggling
+  Crackdown」→ 同 kind，has-sample=$12M 推理 1/3、同判不虚抬）
+  + 1 项形态族召回两族九形（sue/sued/suing+目标含 is 间隔词；authorities/
+  government/regulators/customs/DOJ/EU + seize/fined/penalize/indict/
+  confiscate）
+  + 1 项精度回归 16 句模式级+行为级双钉（会计 charges 三形/free of charge/
+  in charge/charged with explaining/假设 criminal charges/医疗 seizure/
+  impose fines 名词/Fed-ECB/播客/规则提案/IPO/并购/机制假设句全部不命中）
+  + 1 项 no-quantity 豁免精确性（无数字诉讼句不判不可证伪+豁免不抬推理分+
+  非事件型照旧判 unfalsifiable）
+  + 1 项不串台（regulatory-action Treasury/Trump 与 ipo Goldman 三条 live
+  原句判定与 kinds 不变）
+  + 1 项专属证伪条件与类目映射（行为+源级双钉）
+  + 1 项引擎端到端（两条 live 条目进辨别+byKind legal-action:2+formatReport
+  渲染「类型: 执法/诉讼行动 | 来源:」行——只认渲染行）
+  + 1 项 cron 注入源级（读 ~/.hermes/scripts/hf-cron-fetch.sh 验 legal-action
+  中文标签）
+  + 1 项模式库计数 24 + 版本号一致性（五处对齐 3.22.0））。
+  v3.22 十二轮反向验证全部精确失败（摘除 legal-action 模式整块→8（v3.22 节
+  8 + 三处计数断言）/摘除 sue 形态→4/摘除执法主体+动词族→4/摘除 no-quantity
+  豁免→2（v3.22 节 1 + v3.21.1 源级断言 1）/摘除证伪条件→1/摘除类目映射→3/
+  摘除报告 KIND_CN→1/摘除注入 KIND_CN→1/动词族加回 fines 名词→1（impose
+  fines 误命中）/动词族加回 seizure 名词→1（执法主体+seizure 医学语义边界句
+  误命中）/计数文档漂移 24→23→3/版本漂移→多处）。每轮基线全绿、摘除后断言
+  必生效、还原 diff 校验一致、收尾基线全绿（439/0）。
+  实测教训（均已修）：① 反向验证判定标准必须以**全文件 ✗ 标记总数**为准
+  （R4 摘除豁免的失败一条在 v3.22 节、一条在 v3.21.1 节——只数本节汇总行
+  会把跨 section 的精确失败误判为「未达预期」；第一版脚本因此被 kill 重跑，
+  与 v3.21「前台超时 SIGKILL 留半成品」同型：反向验证脚本必须后台跑）；
+  ② R10 第一版断言空转——seizure 名词排除的精度夹具用了无执法主体的医疗句
+  （"her doctors told her to keep taking her seizure medication"），Form B 要求
+  「执法主体+动词」两段共现，无主体句压根走不到被测分支，加回名词也误命中
+  不了、反向验证报 0 失败（corr-2026-029/037 同型第三次实证）；补「EU
+  regulators studied the seizure risk」构造边界句（主体+名词、非执法语义）
+  后才精确失败。纪律：精度夹具必须让「摘除修复后会误命中的那个结构」真的
+  出现在句子里。
   同轮维护（不单独涨号）：本机 hf-cron-fetch.sh 补齐 v3.14-v3.21 注入
   内容（forecast 分组渲染+EDGAR/RSS 截断披露+[v3.15/16/17] 结算口径
   限定+ipo 标签）——本机注入脚本停在 v3.13 导致 6 个源级断言失败
@@ -2143,7 +2323,8 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   **商业主张辨别（v3.0.0c 补入，第 6 段；KIND_CN 标签随形态库扩充：
   v3.2 产能/供给约束、v3.3 并购/交易过程、v3.6 成本/价格信号、v3.7 专家/机构
   判断、v3.8 监管行动、v3.9 价格下调、v3.10 部署规模、v3.11 用量/牵引度
-  指标、v3.12 算力基建承诺/规模、v3.21 IPO/上市过程，注入与报告同标签；
+  指标、v3.12 算力基建承诺/规模、v3.21 IPO/上市过程、v3.22 执法/诉讼行动，
+  注入与报告同标签；
   v3.10 起渲染上限 12→20 / cron 10→16——候选池扩到四桶后辨别条数变多，
   切掉尾部等于「辨别了但看不见」；[v3.11] 20→25 / 16→25 并加截断披露
   （usage-metric 新维度+切分修复后 audited 23 超旧上限，超出时明确写
