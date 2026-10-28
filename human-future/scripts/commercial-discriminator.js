@@ -437,6 +437,53 @@ const COMMERCIAL_CLAIM_PATTERNS = [
   { id: 'ipo-claim',
     re: /(?:\b(?:files?|filed|filing|submits?|submitted|submitting)\s+(?:for\s+)?(?:an?\s+|its\s+|the\s+|their\s+|planned\s+|initial\s+|public\s+)?(?:S-1|IPO|public\s+debut)\b|\b(?:S-1|IPO)\s+(?:filing|takeaways?|highlights?)\b|\b(?:lead|leads|led|leading|underwrites?|to\s+lead)\b[^.!?]{0,40}?\b(?:IPO|offering|listing|debut)\b)/i,
     kind: 'ipo', label: 'IPO/上市过程主张' },
+  // ── 执法/诉讼行动类 ──
+  // [v3.22] 2026-10-28 轮 live 实证的新漏检：TechCrunch AI「Parents sue
+  // OpenAI, alleging GPT-4o coached their daughter off seizure
+  // medication」与 The Information「Malaysian Authorities Seize $12
+  // Million Worth of AI Chips in Smuggling Crackdown」——扩容前 23 种
+  // 形态全部不命中，整条不进辨别。v3.8 给 regulatory-action 立库时
+  // 白纸黑字记着已知边界「执法行动（fined/sued/charged，无工具名词）
+  // 无 live 实证不进库」——执法/诉讼行动与规则事件是两类信号：规则
+  // 事件的证伪靠最终规则文本，执法/诉讼行动的证伪靠司法/行政程序
+  // 结局（驳回/撤诉/和解/改判/撤销）。漏掉它，商业辨别对合规需求域
+  // 「规则之后发生什么」失明——而罚款、扣押、诉讼正是规则落地的
+  // 可观测证据（Malaysia 扣押 AI 芯片是出口管制/走私执法的一阶信号，
+  // Parents v. OpenAI 是产品责任风险的一阶信号），且与引擎「辨别+
+  // 跟踪结算」定位同构（程序结局是可观测结算点）。
+  // 形态族（两族，全部 live 实证驱动）：
+  //   A 诉讼动作：sue/sues/sued/suing +  capitalized target（容忍
+  //     ≤2 个短小写间隔词——"A family is suing OpenAI"/"sued OpenAI
+  //     in federal court"）；
+  //   B 执法动作：执法主体（authorities/government/regulators/
+  //     police/customs/prosecutors/attorneys general/DOJ/SEC/FTC/
+  //     treasury/EU/White House/ministry/Congress…）+ [^.!?]{0,40}
+  //     + 执法动词（seize/fined/penalize/indict/confiscate…）。
+  // 精度设计（v3.0.0c/v3.2/v3.3/v3.6/v3.7/v3.9/v3.10/v3.11/v3.12/
+  // v3.21 教训：漏报比误报诚实、没有实证不扩模式）：
+  //   ① 动词族只收无名词歧义的形态——fined/fining 收而 fines（名词：
+  //     impose fines）不收；seize（动词）收而 seizure（名词，且 live
+  //     实证 "seizure medication" 是医疗场景）不收；indicts/indicted
+  //     收而 indictment 名词不匹配。live 实证 sec_filings 桶的会计
+  //     "charges"（restructuring/compensation/impairment charges）、
+  //     "free of charge"、"in charge"、"charged with explaining"
+  //     全部不命中（charge/charged 有意不进动词族）；
+  //   ② 不抢 regulatory-action 地盘——规则提案/签署/加宽句
+  //     （Treasury Proposes to Widen…/Trump lifts restrictions…）
+  //     不含执法动词，整条不命中；
+  //   ③ 事件型 no-quantity 豁免同轮扩展到本 kind（v3.8/v3.21/
+  //     v3.21.1 同型）：诉讼/执法主张的证伪靠程序结局不靠数字，
+  //     标题-only 无数字条不判「不可证伪: 无量化」；
+  //   ④ 无 live 实证的形态不进库：bare "lawsuit against" 名词句、
+  //     "settles with" 和解句、被动语态（"OpenAI sued by
+  //     parents"）、"charged/faced charges"（名词歧义）——等有
+  //     live 实证再扩。
+  // live 全池实测（288 条池）：精确命中 2 条（即上述两条），精度
+  // 回归 0 误报（会计 charges/in charge/charged with/医疗 seizure/
+  // Fed-ECB 公告/播客/规则提案/其它形态库句式全部不命中）。
+  { id: 'legal-action',
+    re: /(?:\b(?:sues?|sued|suing)\s+(?:[a-z]{1,12}\s+){0,2}?[A-Z][A-Za-z0-9&.-]*|\b(?:authorities|government|regulators?|police|customs|prosecutors?|attorneys?\s+general|doj|department\s+of\s+justice|sec|securities\s+and\s+exchange\s+commission|ftc|federal\s+trade\s+commission|treasury|eu|european\s+commission|white\s+house|ministry|ministers?|congress|parliament|lawmakers?)\b[^.!?]{0,40}?\b(?:seizes?|seized|seizing|fined|fining|penaliz(?:e|ed|ing)|penalis(?:e|ed|ing)|indicts?|indicted|indicting|confiscate[sd]?|confiscating)\b)/i,
+    kind: 'legal-action', label: '执法/诉讼行动主张' },
 ];
 
 /** 不可证伪的商业措辞：无主体、无量化、纯修辞 */
@@ -503,13 +550,6 @@ const UNFALSIFIABLE_COMMERCIAL_PATTERNS = [
       // 不认裸 IPO 名词（"Goldman Sachs to Lead Anthropic IPO" 是媒体
       // 转述无文书引用，仍归无出处(1)，不虚抬）。
       || /\bS-1\b/i.test(t)
-      // [v3.21] S-1 标记（IPO 过程主张的证据基础）：S-1 是 SEC 公开备案
-      // 文书，与 10-K/10-Q 同族（v3.8 政府机构一手文书/v3.10 SEC EDGAR
-      // 采集源同型扩展）——IPO 主张的证据档就是 S-1 本身，不认则每条
-      // S-1 主张都掉到「无出处(1)」。窄标记：只认 \bS-1\b 文书编号，
-      // 不认裸 IPO 名词（"Goldman Sachs to Lead Anthropic IPO" 是媒体
-      // 转述无文书引用，仍归无出处(1)，不虚抬）。
-
       // [v3.10] claim.source === 'SEC EDGAR' 也归本档：v3.10 起 SEC 备案
       // 桶进商业辨别候选池，备案里的句子（"Google Cloud saw a continued
       // increase in customer demand as revenues increased 48% to $17.7
@@ -541,12 +581,6 @@ const REASONING_CHECKS = [
   { id: 'has-comparison', label: '给出对照（和谁比/和什么时候比）',
     test: (t) => /(compared to|versus|vs\.?|up from|down from|year[\s-]over[\s-]year|yoy|qoq|against|relative to|than (?:last|previous))/i.test(t) },
   { id: 'has-counterexample', label: '承认反例（什么情况下不成立）',
-    // [v3.21 精度修复] 补 \b 词边界——live 实证（本轮 IPO 夹具）：
-    // "Anthropic officially files for its public debut" 的 "debut" 含
-    // "but" 子串，无边界时被当成反例标记，主张的推理分从 0/3 虚抬到
-    // 1/3（corr-2026-024 Apollo/poll、v3.1.1 demo/democracy 同型第三
-    // 次实证：短词无边界子串匹配）。全池另实测 debut/distributed/
-    // contribute/debugging/distribution/attribute 11 条候选误报面。
     // [v3.21 精度修复] 补 \b 词边界——live 实证（本轮 IPO 夹具）：
     // "Anthropic officially files for its public debut" 的 "debut" 含
     // "but" 子串，无边界时被当成反例标记，主张的推理分从 0/3 虚抬到
@@ -604,8 +638,12 @@ function discriminateCommercial(claim, opts = {}) {
   // thin-reasoning + decisionRelevant=true（v3.8 Treasury 条同型路径）。
   // 变化核心是证伪性判据归位：不再对同一条主张同时打印「不可证伪: 无量化」
   // 与专属证伪条件两行自相矛盾的输出。
+  // [v3.22] 豁免范围扩到 legal-action（执法/诉讼行动）——同型论证：
+  // 「Parents sue OpenAI」无数字但不是不可证伪（诉讼是否被驳回/和解
+  // 是可观测程序事件）；「Malaysian Authorities Seize $12 Million」
+  // 自带金额不走豁免路径。豁免只摘 no-quantity，推理三要素仍独立计分。
   // 同轮顺修：v3.21 的 ipo 注释被重复粘贴了两遍（复制粘贴缺陷），去重。
-  if (matchedPatterns.some(p => p.kind === 'regulatory-action' || p.kind === 'ipo' || p.kind === 'ma')) {
+  if (matchedPatterns.some(p => p.kind === 'regulatory-action' || p.kind === 'ipo' || p.kind === 'ma' || p.kind === 'legal-action')) {
     for (let i = problems.length - 1; i >= 0; i--) {
       if (problems[i].id === 'no-quantity') problems.splice(i, 1);
     }
@@ -734,12 +772,13 @@ function buildFalsification(patterns, text) {
     // 区间/时间表与主张情形不符」「挂牌后披露的财务数据与 S-1 主张
     // 矛盾」。结算点是可观测事件（备案/定价/挂牌），与 regulatory-action
     // （提案→最终规则）、ma（探索→交割）同构，不等财报。
-    // [v3.21] IPO/上市过程主张的证伪路径：过程类主张最常见的裂缝是
-    // 「备案不存在或被撤回（EDGAR 查无该 S-1 或公司撤回申请）」「定价
-    // 区间/时间表与主张情形不符」「挂牌后披露的财务数据与 S-1 主张
-    // 矛盾」。结算点是可观测事件（备案/定价/挂牌），与 regulatory-action
-    // （提案→最终规则）、ma（探索→交割）同构，不等财报。
     'ipo': '观察到该 S-1 在 SEC EDGAR 查无实据或备案被撤回、定价区间/挂牌时间表与主张情形不符，或挂牌后公开披露的财务数据与 S-1 主张情形矛盾',
+    // [v3.22] 执法/诉讼行动主张的证伪路径：程序类主张最常见的裂缝是
+    // 「司法/行政程序结局与主张情形不符（驳回/撤诉/和解/改判/撤销）」
+    // 「处罚或扣押金额被改判」。结算点是可观测的程序事件（判决/裁定/
+    // 行政裁决），与 regulatory-action（提案→最终规则）、ma（探索→
+    // 交割）、ipo（备案→挂牌）同构，不等财报。
+    'legal-action': '观察到该诉讼被法院驳回、撤诉或和解且条款与主张情形不符，或该执法行动被上诉推翻、处罚/扣押金额被改判撤销，或相关指控被主管机关撤回',
     'unclassified': '无明确证伪路径——这本身就是问题',
   };
   return FALSIFICATION_BY_KIND[kind] || FALSIFICATION_BY_KIND.unclassified;
@@ -772,10 +811,11 @@ function inferCommercialCategory(text, patterns) {
       // [v3.21] IPO/上市过程是资本事件，归资本与商业模式域（与 ma/
       // funding/valuation 同域；兜底类目 market_claims 不同值，行为
       // 断言可抓摘除）
-      // [v3.21] IPO/上市过程是资本事件，归资本与商业模式域（与 ma/
-      // funding/valuation 同域；兜底类目 market_claims 不同值，行为
-      // 断言可抓摘除）
       'ipo': 'capital_flow',
+      // [v3.22] 执法/诉讼行动是合规需求域最具体的 instantiation（与
+      // regulatory-action/compliance 同域；兜底类目 market_claims
+      // 不同值，行为断言可抓摘除）
+      'legal-action': 'compliance_demand',
       // [v3.3] 交易过程是资本事件，归资本与商业模式域
       ma: 'capital_flow',
       funding: 'capital_flow', valuation: 'capital_flow', 'capital-signal': 'capital_flow',
