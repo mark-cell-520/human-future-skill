@@ -760,12 +760,21 @@ function discriminateCommercial(claim, opts = {}) {
     // 验证(4)）；matched 非空而 upgraded=false = 文书主体/承销牵头形态
     // 的上下文记录（不抬档）；matched 为空 = 窗口内未匹配（公司名匹配
     // 为启发式，不等于已证伪）；reason = 查询失败/无候选/预算用尽。
+    // [v3.24] events = submissions 登记记录里的 RW/424B4 流程事件（同一
+    // CIK、同一 365 天窗口）——只作可观测上下文：不抬证据档、不改
+    // verdict、不改推理分。撤回是「IPO 在办」类主张证伪路径的可观测
+    // 条件、定价是流程推进的可观测事件，但备案动作主张的事实核心
+    // （备案是否存在）由 S-1 记录验证，事件不推翻已发生的备案；解读
+    // （结合主张时点判断是否证伪）由下游 agent 做，引擎不代判。
+    // eventsUnavailableReason = 事件查询失败/预算用尽（S-1 结论不受影响）。
     edgarIpoCheck: (matchedPatterns.some(p => p.kind === 'ipo') && edgarVerification) ? {
       checked: edgarVerification.checked || [],
       matched: edgarVerification.matched || null,
       filingAction: ipoFilingAction,
       upgraded: edgarUpgraded,
       reason: edgarVerification.reason || null,
+      events: edgarVerification.events || null,
+      eventsUnavailableReason: edgarVerification.eventsUnavailableReason || null,
     } : null,
     // 是否值得心虫关注：证据等级 >=3 或推理 >=2 的商业主张才有决策价值
     decisionRelevant: (evidence.weight >= 3 || reasoningScore >= 2)

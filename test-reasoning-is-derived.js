@@ -4240,11 +4240,11 @@ c34('cron 注入脚本渲染财报指引（VERDICT_CN/汇总/结构行）', (() 
 
 // ── 组 4：版本号（corr-2026-014 同型：banner 腐烂四个补丁轮）─────
 // [v3.6] 版本推进到 3.6.0（新辨别维度：成本/价格信号），本断言跟着当前版本走。
-c34('版本号一致性：banner 与 VERSION 对齐（3.23.0）', (() => {
+c34('版本号一致性：banner 与 VERSION 对齐（3.24.0）', (() => {
   const fs2 = require('fs');
   const version = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return version === '3.23.0' && rp.includes('文明推演引擎 v3.23.0');
+  return version === '3.24.0' && rp.includes('文明推演引擎 v3.24.0');
 })(), 'run-pipeline banner 必须与 VERSION 一致（v3.1 修过 banner/meta 同型后又腐烂）');
 
 // ── v3.4 汇总 ──
@@ -4438,15 +4438,15 @@ c35('cron 注入脚本渲染财报指引结算段', (() => {
 
 // ── 组 6：版本号一致性（corr-2026-014 同型，四处对齐）──────────
 // [v3.6] 推进到 3.6.0（新辨别维度），断言跟当前版本走。
-c35('版本号一致性：VERSION/package.json/projection meta/banner 对齐 3.23.0', (() => {
+c35('版本号一致性：VERSION/package.json/projection meta/banner 对齐 3.24.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.23.0'
-    && /3\.23\.0/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.23.0');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.23.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.24.0'
+    && /3\.24\.0/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.24.0');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.24.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.5 汇总 ──
 (async () => {
@@ -4673,15 +4673,15 @@ c351('结算证据来源是提供实际值的备案（actualPeriod 匹配）', (
 
 // ── 组 4：版本号一致性（corr-2026-014 同型）────────────────────
 // [v3.6] 推进到 3.6.0（新辨别维度：成本/价格信号）。
-c351('版本号一致性：VERSION/package.json/banner 对齐 3.23.0', (() => {
+c351('版本号一致性：VERSION/package.json/banner 对齐 3.24.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.23.0'
-    && /3\.23\.0/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.23.0');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.23.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.24.0'
+    && /3\.24\.0/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.24.0');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.24.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.5.1 汇总 ──
 (async () => {
@@ -4876,15 +4876,15 @@ c36('精度门未破：非主张文本仍被挡在辨别外', (() => {
 })(), 'Fed 公告与播客不得因 cost-signal 新模式进入辨别');
 
 // ── 组 5：版本号一致性（corr-2026-014 同型）────────────────────
-c36('版本号一致性：VERSION/package.json/banner 对齐 3.23.0', (() => {
+c36('版本号一致性：VERSION/package.json/banner 对齐 3.24.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.23.0'
-    && /3\.23\.0/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.23.0');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.23.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.24.0'
+    && /3\.24\.0/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.24.0');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.24.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.6 汇总 ──
 (async () => {
@@ -5120,15 +5120,15 @@ c37('精度门未破：非主张文本仍被挡在辨别外', (() => {
 })(), 'Fed 公告与播客不得因 expert-judgment 新模式进入辨别');
 
 // ── 组 5：版本号一致性（corr-2026-014 同型）────────────────────
-c37('版本号一致性：VERSION/package.json/banner 对齐 3.23.0', (() => {
+c37('版本号一致性：VERSION/package.json/banner 对齐 3.24.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.23.0'
-    && /3\.23\.0/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.23.0');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.23.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.24.0'
+    && /3\.24\.0/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.24.0');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.24.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.7 汇总 ──
 (async () => {
@@ -5419,15 +5419,15 @@ c38('精度门未破：非主张文本仍被挡在辨别外', (() => {
 })(), 'Fed 公告/播客/官员言论不得因 regulatory-action 新模式进入辨别');
 
 // ── 组 5：版本号一致性（corr-2026-014 同型）────────────────────
-c38('版本号一致性：VERSION/package.json/banner 对齐 3.23.0', (() => {
+c38('版本号一致性：VERSION/package.json/banner 对齐 3.24.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.23.0'
-    && /3\.23\.0/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.23.0');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.23.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.24.0'
+    && /3\.24\.0/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.24.0');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.24.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.8 汇总 ──
 (async () => {
@@ -5648,18 +5648,18 @@ c39('精度门未破：非主张文本与无幅度价格谈论仍被挡在辨别
 })(), 'Fed 公告/播客/无幅度降价谈论/TCO 效率句/官员言论不得因 price-cut 新模式进入辨别');
 
 // ── 组 5：版本号一致性（corr-2026-014 同型）────────────────────
-c39('版本号一致性：五处对齐 3.23.0', (() => {
+c39('版本号一致性：五处对齐 3.24.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs2.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.23.0'
-    && pkg.version === '3.23.0'
-    && rp.includes('文明推演引擎 v3.23.0')      // banner
-    && /version: '3\.23\.0'/.test(pf)          // projection meta
-    && /version: '3\.23\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.23.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.24.0'
+    && pkg.version === '3.24.0'
+    && rp.includes('文明推演引擎 v3.24.0')      // banner
+    && /version: '3\.24\.0'/.test(pf)          // projection meta
+    && /version: '3\.24\.0'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.24.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.9 汇总 ──
 (async () => {
@@ -6021,18 +6021,18 @@ c310('精度门未破：扩桶后非主张文本仍被挡在辨别外', (() => {
 })(), 'Fed 公告/播客/无数量部署谈话/合作公告/免责声明/泛指交易假设句/官员言论不得因扩池与新模式进入辨别');
 
 // ── 组 7：版本号一致性（corr-2026-014 同型）────────────────────
-c310('版本号一致性：五处对齐 3.23.0', (() => {
+c310('版本号一致性：五处对齐 3.24.0', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs2.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.23.0'
-    && pkg.version === '3.23.0'
-    && rp.includes('文明推演引擎 v3.23.0')      // banner
-    && /version: '3\.23\.0'/.test(pf)          // projection meta
-    && /version: '3\.23\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.23.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.24.0'
+    && pkg.version === '3.24.0'
+    && rp.includes('文明推演引擎 v3.24.0')      // banner
+    && /version: '3\.24\.0'/.test(pf)          // projection meta
+    && /version: '3\.24\.0'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.24.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.10 汇总 ──
 (async () => {
@@ -6364,18 +6364,18 @@ c3111('精度门未破：非主张文本不因新形态进入辨别', (() => {
 })(), 'Fed 公告/播客/订阅总量/速率上限/无数量部署谈话/合作公告不得因 usage-metric 进辨别');
 
 // ── 组 7：版本号一致性（corr-2026-014 同型）────────────────────
-c3111('版本号一致性：五处对齐 3.23.0', (() => {
+c3111('版本号一致性：五处对齐 3.24.0', (() => {
   const fs311 = require('fs');
   const VERSION = fs311.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs311.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs311.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs311.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.23.0'
-    && pkg.version === '3.23.0'
-    && rp.includes('文明推演引擎 v3.23.0')      // banner
-    && /version: '3\.23\.0'/.test(pf)          // projection meta
-    && /version: '3\.23\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.23.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.24.0'
+    && pkg.version === '3.24.0'
+    && rp.includes('文明推演引擎 v3.24.0')      // banner
+    && /version: '3\.24\.0'/.test(pf)          // projection meta
+    && /version: '3\.24\.0'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.24.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.11 汇总 ──
 (async () => {
@@ -6669,18 +6669,18 @@ c312('精度门未破：营收/工程 scaling/政府资助/无数量规模级句
 })(), '营收句/工程 scaling/政府资助/无数量规模级句/Fed 公告/播客不得因 compute-infra 进辨别');
 
 // ── 组 7：版本号一致性（corr-2026-014 同型）────────────────────
-c312('版本号一致性：五处对齐 3.23.0', (() => {
+c312('版本号一致性：五处对齐 3.24.0', (() => {
   const fs312 = require('fs');
   const VERSION = fs312.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs312.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs312.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs312.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.23.0'
-    && pkg.version === '3.23.0'
-    && rp.includes('文明推演引擎 v3.23.0')      // banner
-    && /version: '3\.23\.0'/.test(pf)          // projection meta
-    && /version: '3\.23\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.23.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.24.0'
+    && pkg.version === '3.24.0'
+    && rp.includes('文明推演引擎 v3.24.0')      // banner
+    && /version: '3\.24\.0'/.test(pf)          // projection meta
+    && /version: '3\.24\.0'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.24.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.12 汇总 ──
 (async () => {
@@ -6999,18 +6999,18 @@ c313('cron 注入源级：口径一致才配对措辞进注入脚本', (() => {
 })(), 'hf-cron-fetch.sh 必须含口径配对限定与歧义新措辞——引擎产出了但注入脚本不读＝agent 看不到（同型断链纪律）');
 
 // 13. 版本号一致性（五处对齐 3.19.0）
-c313('版本号一致性：五处对齐 3.23.0', (() => {
+c313('版本号一致性：五处对齐 3.24.0', (() => {
   const fs313 = require('fs');
   const VERSION = fs313.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs313.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs313.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs313.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.23.0'
-    && pkg.version === '3.23.0'
-    && rp.includes('文明推演引擎 v3.23.0')      // banner
-    && /version: '3\.23\.0'/.test(pf)          // projection meta
-    && /version: '3\.23\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.23.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.24.0'
+    && pkg.version === '3.24.0'
+    && rp.includes('文明推演引擎 v3.24.0')      // banner
+    && /version: '3\.24\.0'/.test(pf)          // projection meta
+    && /version: '3\.24\.0'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.24.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.13 汇总 ──
 (async () => {
@@ -7274,18 +7274,18 @@ c314('精度回归：无区间标记期望句不进库 + 旧形态夹具逐一�
 })(), 'form D 间隔词≥1 与 form B 零重叠（点值区间句不重复抽取）；无区间标记的期望句不是可证伪主张；NVDA 02-25 旧夹具期间从 FY27Q1 纠正为 FY27 全年');
 
 // 8. 版本号一致性（五处对齐 3.19.0）
-c314('版本号一致性：五处对齐 3.23.0', (() => {
+c314('版本号一致性：五处对齐 3.24.0', (() => {
   const fs314 = require('fs');
   const VERSION = fs314.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs314.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs314.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs314.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.23.0'
-    && pkg.version === '3.23.0'
-    && rp.includes('文明推演引擎 v3.23.0')      // banner
-    && /version: '3\.23\.0'/.test(pf)          // projection meta
-    && /version: '3\.23\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.23.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.24.0'
+    && pkg.version === '3.24.0'
+    && rp.includes('文明推演引擎 v3.24.0')      // banner
+    && /version: '3\.24\.0'/.test(pf)          // projection meta
+    && /version: '3\.24\.0'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.24.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.14 汇总 ──
 (async () => {
@@ -7549,18 +7549,18 @@ c315('cron 注入脚本渲染全年结算口径限定', (() => {
 })(), '全年结算语义（annual key/双值句取全年值/年份必须等于标题财年）必须随结算段进注入脚本，否则 agent 看不到限定');
 
 // 10. 版本号一致性（五处对齐 3.19.0）
-c315('版本号一致性：五处对齐 3.23.0', (() => {
+c315('版本号一致性：五处对齐 3.24.0', (() => {
   const fs315 = require('fs');
   const VERSION = fs315.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs315.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs315.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs315.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.23.0'
-    && pkg.version === '3.23.0'
-    && rp.includes('文明推演引擎 v3.23.0')      // banner
-    && /version: '3\.23\.0'/.test(pf)          // projection meta
-    && /version: '3\.23\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.23.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.24.0'
+    && pkg.version === '3.24.0'
+    && rp.includes('文明推演引擎 v3.24.0')      // banner
+    && /version: '3\.24\.0'/.test(pf)          // projection meta
+    && /version: '3\.24\.0'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.24.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.15 汇总 ──
 (async () => {
@@ -7794,18 +7794,18 @@ c316('guidanceStruct 透传 isRange：登记时区间指引不再退化成点值
 })(), '旧代码 guidanceStruct 从 v3.4 起不漏 isRange——登记时 isRange: !!r.guidance.isRange 恒为 false，区间指引（META 费用/capex×6/NVDA 税率×3/AMZN/MRVL/GOOGL）的持久化 settlement 把区间值当点值存；备案滑出采集窗口后（句子索引失效、回落持久化分支）guidanceBand 判「无容差/区间的点值指引」跳过，区间指引到期永远无法结算');
 
 // 11. 版本号一致性（五处对齐 3.19.0）
-c316('版本号一致性：五处对齐 3.23.0', (() => {
+c316('版本号一致性：五处对齐 3.24.0', (() => {
   const fs316 = require('fs');
   const VERSION = fs316.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs316.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs316.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs316.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.23.0'
-    && pkg.version === '3.23.0'
-    && rp.includes('文明推演引擎 v3.23.0')      // banner
-    && /version: '3\.23\.0'/.test(pf)          // projection meta
-    && /version: '3\.23\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.23.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.24.0'
+    && pkg.version === '3.24.0'
+    && rp.includes('文明推演引擎 v3.24.0')      // banner
+    && /version: '3\.24\.0'/.test(pf)          // projection meta
+    && /version: '3\.24\.0'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.24.0，防 corr-2026-014 版本漂移复发');
 
 // 10. forecast 段渲染截断披露（v3.10/v3.11 同型纪律：辨别了但看不见=没交付）
 c316('forecast 渲染上限 30 + 超限披露「另有 N 条未显示」', (() => {
@@ -8038,18 +8038,18 @@ c317('cron 注入脚本渲染 v3.17 表格式 capex 口径限定', (() => {
 })(), '表格式抽取语义（报表标题锚/仅 Q4 备案的期间守卫/YTD 与 TTM 列拒收/叙事口径优先）必须随结算段进注入脚本，否则 agent 看不到限定');
 
 // 10. 版本号一致性（五处对齐 3.19.0）
-c317('版本号一致性：五处对齐 3.23.0', (() => {
+c317('版本号一致性：五处对齐 3.24.0', (() => {
   const fs317 = require('fs');
   const VERSION = fs317.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs317.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs317.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs317.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.23.0'
-    && pkg.version === '3.23.0'
-    && rp.includes('文明推演引擎 v3.23.0')      // banner
-    && /version: '3\.23\.0'/.test(pf)          // projection meta
-    && /version: '3\.23\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.23.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.24.0'
+    && pkg.version === '3.24.0'
+    && rp.includes('文明推演引擎 v3.24.0')      // banner
+    && /version: '3\.24\.0'/.test(pf)          // projection meta
+    && /version: '3\.24\.0'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.24.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.17 汇总 ──
 (async () => {
@@ -8300,18 +8300,18 @@ c318('cron 注入脚本渲染 v3.18 RSS 独立额度口径限定与分组', (() 
 })(), '解锁额度必须同时让 agent 看见（v3.0.0c/v3.2.1 断链纪律）：rssClaimsTruncation 披露 + 分组渲染（各 10 条）进注入脚本；共享 breakpoint 整个拆除，不是加个例外分支');
 
 // 6. 版本号一致性（五处对齐 3.19.0）
-c318('版本号一致性：五处对齐 3.23.0', (() => {
+c318('版本号一致性：五处对齐 3.24.0', (() => {
   const fs318 = require('fs');
   const VERSION = fs318.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs318.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs318.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs318.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.23.0'
-    && pkg.version === '3.23.0'
-    && rp.includes('文明推演引擎 v3.23.0')      // banner
-    && /version: '3\.23\.0'/.test(pf)          // projection meta
-    && /version: '3\.23\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.23.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.24.0'
+    && pkg.version === '3.24.0'
+    && rp.includes('文明推演引擎 v3.24.0')      // banner
+    && /version: '3\.24\.0'/.test(pf)          // projection meta
+    && /version: '3\.24\.0'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.24.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.18 汇总 ──
 (async () => {
@@ -8557,18 +8557,18 @@ c319('引擎端到端：AVGO/DELL/PLTR 新指引进辨别+登记，EDGAR 额度 
 })(), '三家新指全部以 earnings-guidance verdict 进辨别并登记（带期间元数据）；额度 80 落在代码里（v3.19 live：77 条 ≤ 80 零切尾）');
 
 // 9. 版本号一致性（五处对齐 3.19.0）
-c319('版本号一致性：五处对齐 3.23.0', (() => {
+c319('版本号一致性：五处对齐 3.24.0', (() => {
   const fs = require('fs');
   const VERSION = fs.readFileSync(path.join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs.readFileSync(path.join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs.readFileSync(path.join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.23.0'
-    && pkg.version === '3.23.0'
-    && rp.includes('文明推演引擎 v3.23.0')      // banner
-    && /version: '3\.23\.0'/.test(pf)          // projection meta
-    && /version: '3\.23\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.23.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.24.0'
+    && pkg.version === '3.24.0'
+    && rp.includes('文明推演引擎 v3.24.0')      // banner
+    && /version: '3\.24\.0'/.test(pf)          // projection meta
+    && /version: '3\.24\.0'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.24.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.19 汇总 ──
 (async () => {
@@ -8822,19 +8822,19 @@ c320('引擎端到端：PLTR colon-bullet 指引进辨别+登记，EDGAR 额度 
   }
 })(), '三条 colon-bullet 指引全部以 earnings-guidance verdict 进辨别并登记（带期间元数据）；额度 90 落在代码里（v3.20 live：84 条 ≤ 90 零切尾——80 会砍掉 ticker 序尾部 4 条 PLTR）');
 
-// 8. 版本号一致性（五处对齐 3.23.0）
-c320('版本号一致性：五处对齐 3.23.0', (() => {
+// 8. 版本号一致性（五处对齐 3.24.0）
+c320('版本号一致性：五处对齐 3.24.0', (() => {
   const fs = require('fs');
   const VERSION = fs.readFileSync(path.join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs.readFileSync(path.join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs.readFileSync(path.join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.23.0'
-    && pkg.version === '3.23.0'
-    && rp.includes('文明推演引擎 v3.23.0')      // banner
-    && /version: '3\.23\.0'/.test(pf)          // projection meta
-    && /version: '3\.23\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.23.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.24.0'
+    && pkg.version === '3.24.0'
+    && rp.includes('文明推演引擎 v3.24.0')      // banner
+    && /version: '3\.24\.0'/.test(pf)          // projection meta
+    && /version: '3\.24\.0'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.24.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.20 汇总 ──
 (async () => {
@@ -9142,19 +9142,19 @@ c3210('模式库计数：24 种（ipo-claim 仍在库；v3.22 legal-action 进�
     && /共 24 种模式/.test(pf);
 })(), '模式库 23→24（v3.22 legal-action 进库），ipo-claim 仍唯一且计数与文档一致');
 
-// 15. 版本号一致性（五处对齐 3.23.0）
-c3210('版本号一致性：五处对齐 3.23.0', (() => {
+// 15. 版本号一致性（五处对齐 3.24.0）
+c3210('版本号一致性：五处对齐 3.24.0', (() => {
   const fs = require('fs');
   const VERSION = fs.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.23.0'
-    && pkg.version === '3.23.0'
-    && rp.includes('文明推演引擎 v3.23.0')      // banner
-    && /version: '3\.23\.0'/.test(pf)          // projection meta
-    && /version: '3\.23\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.23.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.24.0'
+    && pkg.version === '3.24.0'
+    && rp.includes('文明推演引擎 v3.24.0')      // banner
+    && /version: '3\.24\.0'/.test(pf)          // projection meta
+    && /version: '3\.24\.0'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.24.0，防 corr-2026-014 版本漂移复发');
 
 
 // ════════════════════════════════════════════════════════════════════
@@ -9267,19 +9267,19 @@ c3211('模式库计数 24（v3.21.1 时 23 不变；v3.22 legal-action 进库 +1
   return COMMERCIAL_CLAIM_PATTERNS.length === 24;
 })(), 'v3.21.1 扩名词族不涨计数（彼时 23）；v3.22 新增 legal-action 维度，计数 23→24');
 
-// 9. 版本号一致性（五处对齐 3.23.0）
-c3211('版本号一致性：五处对齐 3.23.0', (() => {
+// 9. 版本号一致性（五处对齐 3.24.0）
+c3211('版本号一致性：五处对齐 3.24.0', (() => {
   const fs3211 = require('fs');
   const VERSION = fs3211.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs3211.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs3211.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs3211.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.23.0'
-    && pkg.version === '3.23.0'
-    && rp.includes('文明推演引擎 v3.23.0')      // banner
-    && /version: '3\.23\.0'/.test(pf)          // projection meta
-    && /version: '3\.23\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.23.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.24.0'
+    && pkg.version === '3.24.0'
+    && rp.includes('文明推演引擎 v3.24.0')      // banner
+    && /version: '3\.24\.0'/.test(pf)          // projection meta
+    && /version: '3\.24\.0'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.24.0，防 corr-2026-014 版本漂移复发');
 
 // ── v3.21.1 汇总 ──
 (async () => {
@@ -9500,7 +9500,7 @@ c3220('引擎端到端：两条 live 执法/诉讼条目进辨别+渲染「类�
   if (!cd.available) return false;
   const rows = cd.results.filter(r => r.kind === 'legal-action');
   const md = formatReport({
-    meta: { timestamp: '2026-10-28T12:00:00Z', version: '3.23.0' },
+    meta: { timestamp: '2026-10-28T12:00:00Z', version: '3.24.0' },
     summary: { verdict: '继续观察', score: 0.5, keyMessage: 'TEST', topDomains: ['business'] },
     commercialDiscrimination: cd,
     stages: [], turningPoints: [], risks: [], opportunities: [], recommendations: [],
@@ -9520,8 +9520,8 @@ c3220('cron 注入源级：KIND_CN 含 legal-action 中文标签', (() => {
   return /'legal-action': '执法\/诉讼行动'/.test(sh);
 })(), '注入脚本 KIND_CN 必须含 legal-action，否则 agent 看到英文 kind（v3.0.0c 同型断链的复发防护）');
 
-// 10. 模式库计数 24 + 版本号一致性（五处对齐 3.23.0）
-c3220('模式库计数 24 + 版本号一致性：五处对齐 3.23.0', (() => {
+// 10. 模式库计数 24 + 版本号一致性（五处对齐 3.24.0）
+c3220('模式库计数 24 + 版本号一致性：五处对齐 3.24.0', (() => {
   const fs = require('fs');
   const { COMMERCIAL_CLAIM_PATTERNS } = require('./human-future/scripts/commercial-discriminator.js');
   const VERSION = fs.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
@@ -9531,12 +9531,12 @@ c3220('模式库计数 24 + 版本号一致性：五处对齐 3.23.0', (() => {
   return COMMERCIAL_CLAIM_PATTERNS.length === 24
     && COMMERCIAL_CLAIM_PATTERNS.filter(p => p.kind === 'legal-action').length === 1
     && /共 24 种模式/.test(pf)
-    && VERSION === '3.23.0'
-    && pkg.version === '3.23.0'
-    && rp.includes('文明推演引擎 v3.23.0')      // banner
-    && /version: '3\.23\.0'/.test(pf)          // projection meta
-    && /version: '3\.23\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'legal-action 唯一且模式库 23→24；VERSION/package.json/banner/projection meta/run-pipeline meta 五处对齐 3.23.0（corr-2026-014 防腐烂）');
+    && VERSION === '3.24.0'
+    && pkg.version === '3.24.0'
+    && rp.includes('文明推演引擎 v3.24.0')      // banner
+    && /version: '3\.24\.0'/.test(pf)          // projection meta
+    && /version: '3\.24\.0'/.test(rp);         // run-pipeline fullReport meta
+})(), 'legal-action 唯一且模式库 23→24；VERSION/package.json/banner/projection meta/run-pipeline meta 五处对齐 3.24.0（corr-2026-014 防腐烂）');
 
 // ── v3.22 汇总 ──
 (async () => {
@@ -9557,7 +9557,7 @@ c3220('模式库计数 24 + 版本号一致性：五处对齐 3.23.0', (() => {
 })();
 
 // ════════════════════════════════════════════════════════════════
-// v3.23.0 测试组：商业辨别候选池白名单漏桶修复（corr-2026-027 同型）
+// v3.24.0 测试组：商业辨别候选池白名单漏桶修复（corr-2026-027 同型）
 // + has-counterexample 的 yet 时间副词精度修复（corr-2026-024 家族第四次）
 //
 // 背景（2026-10-29 全池测量，312 条 live 池逐桶过形态门，corr-2026-028
@@ -9718,7 +9718,7 @@ c3221('引擎端到端：两条 tech live 条目进辨别+渲染行（business �
   const ars = cd.results.find(r => r.source === 'Ars Technica - Technology Lab');
   // formatReport 需要 meta/summary 等最小字段（与 v3.21 夹具同型）
   const md = formatReport({
-    meta: { timestamp: '2026-10-29T12:00:00Z', version: '3.23.0' },
+    meta: { timestamp: '2026-10-29T12:00:00Z', version: '3.24.0' },
     summary: { verdict: '继续观察', score: 0.5, keyMessage: 'TEST', topDomains: ['frontier_models'] },
     commercialDiscrimination: cd,
     stages: [], turningPoints: [], risks: [], opportunities: [], recommendations: [],
@@ -9789,8 +9789,8 @@ c3221('cron 注入源级：候选池描述含 tech/humanities', (() => {
 })(), '注入脚本的候选池描述必须同步六桶，否则 agent 看到的池范围与实际不符');
 
 // 10. 模式库计数 24 不变（扩桶不加模式，v3.21.1 同型纪律）+
-//     版本号一致性五处对齐 3.23.0
-c3221('模式库计数 24 不变 + 版本号一致性：五处对齐 3.23.0', (() => {
+//     版本号一致性五处对齐 3.24.0
+c3221('模式库计数 24 不变 + 版本号一致性：五处对齐 3.24.0', (() => {
   const { COMMERCIAL_CLAIM_PATTERNS } = require('./human-future/scripts/commercial-discriminator.js');
   const fs = require('fs');
   const VERSION = fs.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
@@ -9798,14 +9798,14 @@ c3221('模式库计数 24 不变 + 版本号一致性：五处对齐 3.23.0', ((
   const rp = fs.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
   return COMMERCIAL_CLAIM_PATTERNS.length === 24        // 扩桶不加 kind
-    && VERSION === '3.23.0'
-    && pkg.version === '3.23.0'
-    && rp.includes('文明推演引擎 v3.23.0')
-    && /version: '3\.23\.0'/.test(pf)
-    && /version: '3\.23\.0'/.test(rp);
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.23.0；模式库计数不随扩桶变化');
+    && VERSION === '3.24.0'
+    && pkg.version === '3.24.0'
+    && rp.includes('文明推演引擎 v3.24.0')
+    && /version: '3\.24\.0'/.test(pf)
+    && /version: '3\.24\.0'/.test(rp);
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.24.0；模式库计数不随扩桶变化');
 
-// ── v3.23.0 汇总 ──
+// ── v3.24.0 汇总 ──
 (async () => {
   const results = await Promise.all(v3221.map(c => Promise.resolve(c.ok)));
   let f = 0;
@@ -10231,7 +10231,7 @@ c3230('引擎端到端：核查后 summary 重算 + 报告渲染 EDGAR ✅ 行�
     const drCount = cd2.results.filter(r => r.decisionRelevant).length;
     const ivCount = Object.entries(cd2.summary.byEvidence).filter(([k]) => k === '独立验证').reduce((s, [, v]) => s + v, 0);
     const md = formatReport({
-      meta: { timestamp: '2026-10-29T12:00:00Z', version: '3.23.0' },
+      meta: { timestamp: '2026-10-29T12:00:00Z', version: '3.24.0' },
       summary: { verdict: '继续观察', score: 0.5, keyMessage: 'TEST', topDomains: ['frontier_models'] },
       commercialDiscrimination: cd2,
       stages: [], turningPoints: [], risks: [], opportunities: [], recommendations: [],
@@ -10274,7 +10274,7 @@ c3230('降级：EDGAR 查询抛错 → 整体不可用且判定不变', (() => {
     const cd2 = await verifyIpoClaims(cd, { http: http.fn, now: '2026-10-29T12:00:00Z', gapMs: 0 });
     const r = cd2.results[0];
     const md = formatReport({
-      meta: { timestamp: '2026-10-29T12:00:00Z', version: '3.23.0' },
+      meta: { timestamp: '2026-10-29T12:00:00Z', version: '3.24.0' },
       summary: { verdict: '继续观察', score: 0.5, keyMessage: 'TEST', topDomains: ['frontier_models'] },
       commercialDiscrimination: cd2,
       stages: [], turningPoints: [], risks: [], opportunities: [], recommendations: [],
@@ -10347,8 +10347,8 @@ c3230('cron 注入源级：hf-cron-fetch.sh 渲染 EDGAR 核查与 ipoVerificati
 })(), '注入脚本必须渲染四种 EDGAR 核查结果与汇总行，否则 agent 看不到核查数据');
 
 // 13. 模式库计数 24 不变（加数据源不加 kind）+ 备案动作子形态与 ipo-claim
-//     主正则同源（拆常量不漂移）+ 版本号一致性五处对齐 3.23.0。
-c3230('模式库计数 24 不变 + 子形态同源 + 版本号五处对齐 3.23.0', (() => {
+//     主正则同源（拆常量不漂移）+ 版本号一致性五处对齐 3.24.0。
+c3230('模式库计数 24 不变 + 子形态同源 + 版本号五处对齐 3.24.0', (() => {
   const { COMMERCIAL_CLAIM_PATTERNS, IPO_FILING_ACTION_RE } = require('./human-future/scripts/commercial-discriminator.js');
   const fs = require('fs');
   const VERSION = fs.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
@@ -10358,12 +10358,12 @@ c3230('模式库计数 24 不变 + 子形态同源 + 版本号五处对齐 3.23.
   const ipo = COMMERCIAL_CLAIM_PATTERNS.find(p => p.id === 'ipo-claim');
   return COMMERCIAL_CLAIM_PATTERNS.length === 24            // 加数据源不加 kind
     && ipo && ipo.re.source.includes(IPO_FILING_ACTION_RE.source)   // 子形态是主正则的组成部分（同源不漂移）
-    && VERSION === '3.23.0'
-    && pkg.version === '3.23.0'
-    && rp.includes('文明推演引擎 v3.23.0')
-    && /version: '3\.23\.0'/.test(pf)
-    && /version: '3\.23\.0'/.test(rp);
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 五处对齐 3.23.0；模式库计数不随新数据源变化；备案动作子形态必须与 ipo-claim 主正则同源');
+    && VERSION === '3.24.0'
+    && pkg.version === '3.24.0'
+    && rp.includes('文明推演引擎 v3.24.0')
+    && /version: '3\.24\.0'/.test(pf)
+    && /version: '3\.24\.0'/.test(rp);
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 五处对齐 3.24.0；模式库计数不随新数据源变化；备案动作子形态必须与 ipo-claim 主正则同源');
 
 // ── v3.23 汇总 ──
 (async () => {
@@ -10380,5 +10380,465 @@ c3230('模式库计数 24 不变 + 子形态同源 + 版本号五处对齐 3.23.
     process.exitCode = 1;
   } else {
     console.log('结论：EDGAR S-1/IPO 备案核查接上真数据（v3.21 证伪路径「EDGAR 查无/在案」第一条落地）——MIT TR 备案动作主张经 Anthropic, PBC 的 S-1 记录验证升独立验证(4)（该档首次被真实数据触发）；承销牵头/文书主体只记上下文不虚抬；未匹配≠已证伪；查询失败整体降级。模式库计数 24 不变（新数据源不加 kind）。');
+  }
+})();
+
+// ════════════════════════════════════════════════════════════════
+// v3.24 测试组：ipo 证伪路径第二、三条接真数据（撤回 RW + 定价 424B4）
+//
+// 背景：v3.21 给 ipo-claim 立库时写下专属证伪路径「EDGAR 查无/撤回/定价
+// 时间表不符/挂牌后披露矛盾」四条；v3.23 只接了第一条（备案存在性核查，
+// browse-edgar type=S-1），并把其余三条整批列为「不做也不假装做、留人工
+// 执行」。但 browse-edgar 的 type=S-1 只是 SEC 的一个端点——同一公司的
+// submissions API（data.sec.gov）一次查询即返回全表单族的登记记录，撤回
+// （RW）与定价（424B4）都是可观测的公开登记事件（live 实测：Chobani
+// S-1 2021-11-17 之后 RW 2022-09-02、Cerebras S-1 2024-09-30 之后 RW
+// 2025-10-03 之后再备案 2026-04-17 之后 424B4 2026-05-14、Mobileye
+// Global S-1 2023-06-05 之后 424B4 2023-06-08）。登记 corr-2026-044：
+// 「引擎不能执行」≠「没有数据支撑」——写已知边界时要区分「没有数据源」
+// 与「没接数据源」，接新数据源时要扫该机构的其它端点。
+//
+// 精度纪律：① 事件只作可观测上下文——不抬证据档、不改 verdict、不改
+//   推理分（备案动作主张的事实核心由 S-1 记录验证，事件不推翻已发生
+//   的备案；证伪解读由下游 agent 结合主张时点做，引擎不代判）；
+//   ② 按 CIK 查保证与 S-1 匹配同一实体（live 实证：同名不同 type 在
+//   browse-edgar 会解析到不同公司——Mobileye+type=S-1 解析到 Mobileye
+//   Global Inc.（CIK 0001910139），+type=RW 解析到 Mobileye B.V.
+//   （CIK 0001607310））；③ 「查了但没有事件」与「查不到」分开；
+//   ④ 窗口纪律与 S-1 一致：365 天外的历史登记不算在办事件。
+//
+// 反向验证：摘除 verifyIpoClaims 的事件查询段→T1/T2/T8/T11 失败；摘除
+// pickRecentByForm 窗口过滤→T5 失败（2018 年 RW 误匹配）；摘除辨别器
+// events 透传→T1/T2/T3/T4 失败；摘除 formatReport 事件后缀渲染→T8
+// 失败；摘除 cron 注入事件行→T12 失败；摘除 eventsUnavailable 降级
+// 分支→T9 失败；摘除 CIK memo→T11 失败；版本漂移→多处。
+// ════════════════════════════════════════════════════════════════
+const v3240 = [];
+function c3240(name, ok, detail) { v3240.push({ name, ok, detail }); }
+
+// live 夹具：browse-edgar atom（2026-10-29 实抓逐字）
+const ATOM_CHOBANI = "<?xml version=\"1.0\" encoding=\"ISO-8859-1\" ?>\n  <feed xmlns=\"http://www.w3.org/2005/Atom\">\n    <author>\n      <email>webmaster@sec.gov</email>\n      <name>Webmaster</name>\n    </author>\n    <company-info>\n      <addresses>\n        <address type=\"mailing\">\n          <city>NEW BERLIN</city>\n          <state>NY</state>\n          <street1>669 COUNTY ROAD 25</street1>\n          <zip>13411</zip>\n        </address>\n        <address type=\"business\">\n          <city>NEW BERLIN</city>\n          <phone>6078477413</phone>\n          <state>NY</state>\n          <street1>669 COUNTY ROAD 25</street1>\n          <zip>13411</zip>\n        </address>\n      </addresses>\n      <assigned-sic>2000</assigned-sic>\n      <assigned-sic-desc>FOOD &amp;amp; KINDRED PRODUCTS</assigned-sic-desc>\n      <assigned-sic-href>https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;SIC=2000&amp;owner=include&amp;count=10</assigned-sic-href>\n      <cik>0001869113</cik>\n      <cik-href>https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001869113&amp;owner=include&amp;count=10</cik-href>\n      <conformed-name>Chobani Inc.</conformed-name>\n      <fiscal-year-end>1225</fiscal-year-end>\n      <state-location>NY</state-location>\n      <state-location-href>https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;State=NY&amp;owner=include&amp;count=10</state-location-href>\n      <state-of-incorporation>DE</state-of-incorporation>\n    </company-info>\n    <entry>\n      <category label=\"form type\" scheme=\"https://www.sec.gov/\" term=\"S-1\" />\n      <content type=\"text/xml\">\n        <accession-number>0001193125-21-332196</accession-number>\n        <act>33</act>\n        <file-number>333-261146</file-number>\n        <file-number-href>https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;filenum=333-261146&amp;owner=include&amp;count=10</file-number-href>\n        <filing-date>2021-11-17</filing-date>\n        <filing-href>https://www.sec.gov/Archives/edgar/data/1869113/000119312521332196/0001193125-21-332196-index.htm</filing-href>\n        <filing-type>S-1</filing-type>\n        <film-number>211419832</film-number>\n        <form-name>General form for registration of securities under the Securities Act of 1933</form-name>\n        <size>13 MB</size>\n      </content>\n      <id>urn:tag:sec.gov,2008:accession-number=0001193125-21-332196</id>\n      <link href=\"https://www.sec.gov/Archives/edgar/data/1869113/000119312521332196/0001193125-21-332196-index.htm\" rel=\"alternate\" type=\"text/html\" />\n      <summary type=\"html\"> &lt;b&gt;Filed:&lt;/b&gt; 2021-11-17 &lt;b&gt;AccNo:&lt;/b&gt; 0001193125-21-332196 &lt;b&gt;Size:&lt;/b&gt; 13 MB</summary>\n      <title>S-1  - General form for registration of securities under the Securities Act of 1933</title>\n      <updated>2021-11-17T13:16:29-05:00</updated>\n    </entry>\n    <id>https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001869113</id>\n    <link href=\"https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;company=Chobani&amp;type=S-1&amp;owner=include&amp;start=0&amp;count=10\" rel=\"alternate\" type=\"text/html\" />\n    <link href=\"https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;company=Chobani&amp;type=S-1&amp;owner=include&amp;start=0&amp;count=10&amp;output=atom\" rel=\"self\" type=\"application/atom+xml\" />\n    <title>Chobani Inc.  (0001869113)</title>\n    <updated>2026-10-28T18:31:32-04:00</updated>\n  </feed>\n";
+const ATOM_CEREBRAS = "<?xml version=\"1.0\" encoding=\"ISO-8859-1\" ?>\n  <feed xmlns=\"http://www.w3.org/2005/Atom\">\n    <author>\n      <email>webmaster@sec.gov</email>\n      <name>Webmaster</name>\n    </author>\n    <company-info>\n      <addresses>\n        <address type=\"mailing\">\n          <city>SUNNYVALE</city>\n          <state>CA</state>\n          <street1>1237 E. ARQUES AVE.</street1>\n          <zip>94085</zip>\n        </address>\n        <address type=\"business\">\n          <city>SUNNYVALE</city>\n          <phone>(650) 933-4890</phone>\n          <state>CA</state>\n          <street1>1237 E. ARQUES AVE.</street1>\n          <zip>94085</zip>\n        </address>\n      </addresses>\n      <assigned-sic>3674</assigned-sic>\n      <assigned-sic-desc>SEMICONDUCTORS &amp;amp; RELATED DEVICES</assigned-sic-desc>\n      <assigned-sic-href>https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;SIC=3674&amp;owner=include&amp;count=10</assigned-sic-href>\n      <cik>0002021728</cik>\n      <cik-href>https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0002021728&amp;owner=include&amp;count=10</cik-href>\n      <conformed-name>Cerebras Systems Inc.</conformed-name>\n      <fiscal-year-end>1231</fiscal-year-end>\n      <state-location>CA</state-location>\n      <state-location-href>https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;State=CA&amp;owner=include&amp;count=10</state-location-href>\n      <state-of-incorporation>DE</state-of-incorporation>\n    </company-info>\n    <entry>\n      <category label=\"form type\" scheme=\"https://www.sec.gov/\" term=\"S-1/A\" />\n      <content type=\"text/xml\">\n        <accession-number>0001628280-26-033143</accession-number>\n        <act>33</act>\n        <amend>[Amend]</amend>\n        <file-number>333-295145</file-number>\n        <file-number-href>https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;filenum=333-295145&amp;owner=include&amp;count=10</file-number-href>\n        <filing-date>2026-05-11</filing-date>\n        <filing-href>https://www.sec.gov/Archives/edgar/data/2021728/000162828026033143/0001628280-26-033143-index.htm</filing-href>\n        <filing-type>S-1/A</filing-type>\n        <film-number>26960949</film-number>\n        <form-name>General form for registration of securities under the Securities Act of 1933</form-name>\n        <size>96 MB</size>\n        <xbrl_href>https://www.sec.gov/cgi-bin/viewer?action=view&amp;cik=2021728&amp;accession_number=0001628280-26-033143&amp;xbrl_type=v</xbrl_href>\n      </content>\n      <id>urn:tag:sec.gov,2008:accession-number=0001628280-26-033143</id>\n      <link href=\"https://www.sec.gov/Archives/edgar/data/2021728/000162828026033143/0001628280-26-033143-index.htm\" rel=\"alternate\" type=\"text/html\" />\n      <summary type=\"html\"> &lt;b&gt;Filed:&lt;/b&gt; 2026-05-11 &lt;b&gt;AccNo:&lt;/b&gt; 0001628280-26-033143 &lt;b&gt;Size:&lt;/b&gt; 96 MB</summary>\n      <title>S-1/A [Amend]  - General form for registration of securities under the Securities Act of 1933</title>\n      <updated>2026-05-11T08:04:58-04:00</updated>\n    </entry>\n    <entry>\n      <category label=\"form type\" scheme=\"https://www.sec.gov/\" term=\"S-1/A\" />\n      <content type=\"text/xml\">\n        <accession-number>0001628280-26-029503</accession-number>\n        <act>33</act>\n        <amend>[Amend]</amend>\n        <file-number>333-295145</file-number>\n        <file-number-href>https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;filenum=333-295145&amp;owner=include&amp;count=10</file-number-href>\n        <filing-date>2026-05-04</filing-date>\n        <filing-href>https://www.sec.gov/Archives/edgar/data/2021728/000162828026029503/0001628280-26-029503-index.htm</filing-href>\n        <filing-type>S-1/A</filing-type>\n        <film-number>26934499</film-number>\n        <form-name>General form for registration of securities under the Securities Act of 1933</form-name>\n        <size>97 MB</size>\n        <xbrl_href>https://www.sec.gov/cgi-bin/viewer?action=view&amp;cik=2021728&amp;accession_number=0001628280-26-029503&amp;xbrl_type=v</xbrl_href>\n      </content>\n      <id>urn:tag:sec.gov,2008:accession-number=0001628280-26-029503</id>\n      <link href=\"https://www.sec.gov/Archives/edgar/data/2021728/000162828026029503/0001628280-26-029503-index.htm\" rel=\"alternate\" type=\"text/html\" />\n      <summary type=\"html\"> &lt;b&gt;Filed:&lt;/b&gt; 2026-05-04 &lt;b&gt;AccNo:&lt;/b&gt; 0001628280-26-029503 &lt;b&gt;Size:&lt;/b&gt; 97 MB</summary>\n      <title>S-1/A [Amend]  - General form for registration of securities under the Securities Act of 1933</title>\n      <updated>2026-05-04T06:03:58-04:00</updated>\n    </entry>\n    <entry>\n      <category label=\"form type\" scheme=\"https://www.sec.gov/\" term=\"S-1\" />\n      <content type=\"text/xml\">\n        <accession-number>0001628280-26-025762</accession-number>\n        <act>33</act>\n        <file-number>333-295145</file-number>\n        <file-number-href>https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;filenum=333-295145&amp;owner=include&amp;count=10</file-number-href>\n        <filing-date>2026-04-17</filing-date>\n        <filing-href>https://www.sec.gov/Archives/edgar/data/2021728/000162828026025762/0001628280-26-025762-index.htm</filing-href>\n        <filing-type>S-1</filing-type>\n        <film-number>26871884</film-number>\n        <form-name>General form for registration of securities under the Securities Act of 1933</form-name>\n        <size>107 MB</size>\n        <xbrl_href>https://www.sec.gov/cgi-bin/viewer?action=view&amp;cik=2021728&amp;accession_number=0001628280-26-025762&amp;xbrl_type=v</xbrl_href>\n      </content>\n      <id>urn:tag:sec.gov,2008:accession-number=0001628280-26-025762</id>\n      <link href=\"https://www.sec.gov/Archives/edgar/data/2021728/000162828026025762/0001628280-26-025762-index.htm\" rel=\"alternate\" type=\"text/html\" />\n      <summary type=\"html\"> &lt;b&gt;Filed:&lt;/b&gt; 2026-04-17 &lt;b&gt;AccNo:&lt;/b&gt; 0001628280-26-025762 &lt;b&gt;Size:&lt;/b&gt; 107 MB</summary>\n      <title>S-1  - General form for registration of securities under the Securities Act of 1933</title>\n      <updated>2026-04-17T16:22:05-04:00</updated>\n    </entry>\n    <entry>\n      <category label=\"form type\" scheme=\"https://www.sec.gov/\" term=\"S-1\" />\n      <content type=\"text/xml\">\n        <accession-number>0001628280-24-041596</accession-number>\n        <act>33</act>\n        <file-number>333-282418</file-number>\n        <file-number-href>https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;filenum=333-282418&amp;owner=include&amp;count=10</file-number-href>\n        <filing-date>2024-09-30</filing-date>\n        <filing-href>https://www.sec.gov/Archives/edgar/data/2021728/000162828024041596/0001628280-24-041596-index.htm</filing-href>\n        <filing-type>S-1</filing-type>\n        <film-number>241340088</film-number>\n        <form-name>General form for registration of securities under the Securities Act of 1933</form-name>\n        <size>26 MB</size>\n      </content>\n      <id>urn:tag:sec.gov,2008:accession-number=0001628280-24-041596</id>\n      <link href=\"https://www.sec.gov/Archives/edgar/data/2021728/000162828024041596/0001628280-24-041596-index.htm\" rel=\"alternate\" type=\"text/html\" />\n      <summary type=\"html\"> &lt;b&gt;Filed:&lt;/b&gt; 2024-09-30 &lt;b&gt;AccNo:&lt;/b&gt; 0001628280-24-041596 &lt;b&gt;Size:&lt;/b&gt; 26 MB</summary>\n      <title>S-1  - General form for registration of securities under the Securities Act of 1933</title>\n      <updated>2024-09-30T16:49:32-04:00</updated>\n    </entry>\n    <id>https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0002021728</id>\n    <link href=\"https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;company=Cerebras&amp;type=S-1&amp;owner=include&amp;start=0&amp;count=10\" rel=\"alternate\" type=\"text/html\" />\n    <link href=\"https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;company=Cerebras&amp;type=S-1&amp;owner=include&amp;start=0&amp;count=10&amp;output=atom\" rel=\"self\" type=\"application/atom+xml\" />\n    <title>Cerebras Systems Inc.  (0002021728)</title>\n    <updated>2026-10-28T18:31:33-04:00</updated>\n  </feed>\n";
+const ATOM_MOBILEYE_BV = "<?xml version=\"1.0\" encoding=\"ISO-8859-1\" ?>\n  <feed xmlns=\"http://www.w3.org/2005/Atom\">\n    <author>\n      <email>webmaster@sec.gov</email>\n      <name>Webmaster</name>\n    </author>\n    <company-info>\n      <addresses>\n        <address type=\"mailing\">\n          <city>JERUSALEM</city>\n          <state>L3</state>\n          <street1>HAR HOTZVIM, 13 HARTOM STREET</street1>\n          <street2>NO. 45157</street2>\n          <zip>97775</zip>\n        </address>\n        <address type=\"business\">\n          <city>JERUSALEM</city>\n          <phone>972-2-541-7333</phone>\n          <state>L3</state>\n          <street1>HAR HOTZVIM, 13 HARTOM STREET</street1>\n          <street2>NO. 45157</street2>\n          <zip>97775</zip>\n        </address>\n      </addresses>\n      <assigned-sic>7372</assigned-sic>\n      <assigned-sic-desc>SERVICES-PREPACKAGED SOFTWARE</assigned-sic-desc>\n      <assigned-sic-href>https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;SIC=7372&amp;owner=include&amp;count=10</assigned-sic-href>\n      <cik>0001607310</cik>\n      <cik-href>https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001607310&amp;owner=include&amp;count=10</cik-href>\n      <conformed-name>Mobileye B.V.</conformed-name>\n      <fiscal-year-end>1231</fiscal-year-end>\n      <formerly-names count=\"1\">\n        <names>\n          <date>2017-09-28</date>\n          <name>Mobileye N.V.</name>\n        </names>\n      </formerly-names>\n      <state-location>L3</state-location>\n      <state-location-href>https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;State=L3&amp;owner=include&amp;count=10</state-location-href>\n      <state-of-incorporation>P7</state-of-incorporation>\n    </company-info>\n    <entry>\n      <category label=\"form type\" scheme=\"https://www.sec.gov/\" term=\"RW\" />\n      <content type=\"text/xml\">\n        <accession-number>0001144204-18-006358</accession-number>\n        <act>NE</act>\n        <file-number>333-206573</file-number>\n        <file-number-href>https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;filenum=333-206573&amp;owner=include&amp;count=10</file-number-href>\n        <filing-date>2018-02-07</filing-date>\n        <filing-href>https://www.sec.gov/Archives/edgar/data/1607310/000114420418006358/0001144204-18-006358-index.htm</filing-href>\n        <filing-type>RW</filing-type>\n        <film-number>18582006</film-number>\n        <form-name>Registration Withdrawal Request</form-name>\n        <size>10 KB</size>\n      </content>\n      <id>urn:tag:sec.gov,2008:accession-number=0001144204-18-006358</id>\n      <link href=\"https://www.sec.gov/Archives/edgar/data/1607310/000114420418006358/0001144204-18-006358-index.htm\" rel=\"alternate\" type=\"text/html\" />\n      <summary type=\"html\"> &lt;b&gt;Filed:&lt;/b&gt; 2018-02-07 &lt;b&gt;AccNo:&lt;/b&gt; 0001144204-18-006358 &lt;b&gt;Size:&lt;/b&gt; 10 KB</summary>\n      <title>RW  - Registration Withdrawal Request</title>\n      <updated>2018-02-07T17:22:37-05:00</updated>\n    </entry>\n    <id>https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001607310</id>\n    <link href=\"https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;company=Mobileye&amp;type=RW&amp;owner=include&amp;start=0&amp;count=10\" rel=\"alternate\" type=\"text/html\" />\n    <link href=\"https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;company=Mobileye&amp;type=RW&amp;owner=include&amp;start=0&amp;count=10&amp;output=atom\" rel=\"self\" type=\"application/atom+xml\" />\n    <title>Mobileye B.V.  (0001607310)</title>\n    <updated>2026-10-28T18:30:19-04:00</updated>\n  </feed>\n";
+
+// live 夹具：data.sec.gov submissions JSON（实抓提炼真实行）
+const SUB_CHOBANI = JSON.stringify({
+  name: 'Chobani Inc.',
+  filings: { recent: {
+    form: ['RW', 'S-1'],
+    filingDate: ['2022-09-02', '2021-11-17'],
+    accessionNumber: ['0001193125-22-237850', '0001193125-21-332196'],
+    primaryDocument: ['tm2223274d1_rw.htm', 'tm2131657d1_s1.htm'],
+  } },
+});
+const SUB_CEREBRAS = JSON.stringify({
+  name: 'Cerebras Systems Inc.',
+  filings: { recent: {
+    form: ['424B4', 'S-1/A', 'S-1/A', 'S-1', 'RW', 'S-1'],
+    filingDate: ['2026-05-14', '2026-05-11', '2026-05-04', '2026-04-17', '2025-10-03', '2024-09-30'],
+    accessionNumber: ['0001628280-26-035214', '0001628280-26-033143', '0001628280-26-029503', '0001628280-26-025762', '0001193125-25-230382', '0001628280-24-041596'],
+    primaryDocument: ['', '', '', '', '', ''],
+  } },
+});
+const SUB_MOBILEYE_BV = JSON.stringify({
+  name: 'Mobileye B.V.',
+  filings: { recent: {
+    form: ['RW', '424B4', '424B4'],
+    filingDate: ['2018-02-07', '2015-03-18', '2014-08-01'],
+    accessionNumber: ['0001144204-18-006358', '0001571049-15-002026', '0001571049-14-003550'],
+    primaryDocument: ['tv485145_rw.htm', '', ''],
+  } },
+});
+
+// mock http（v3.24 版）：company= 名字路由 browse-edgar atom；CIK 路由
+// submissions JSON。记录 urls 供 CIK 归属/memo 断言。
+function mkMockHttp324(map) {
+  const state = { calls: 0, urls: [] };
+  state.fn = async (url) => {
+    state.calls++;
+    state.urls.push(url);
+    const name = decodeURIComponent((url.match(/company=([^&]+)/) || [])[1] || '').toLowerCase();
+    if (name) {
+      if (map[name] === 'THROW') throw new Error('mock network down');
+      if (map[name] === 'HTTP500') return { status: 500, body: 'error' };
+      return { status: 200, body: map[name] || ATOM_NOTFOUND };
+    }
+    const cik = (url.match(/CIK(\d+)\.json/) || [])[1];
+    if (cik) {
+      if (map['cik:' + cik] === 'THROW') throw new Error('mock submissions down');
+      if (map['cik:' + cik] === 'HTTP500') return { status: 500, body: 'error' };
+      return { status: 200, body: map['cik:' + cik] || '{}' };
+    }
+    return { status: 404, body: '' };
+  };
+  return state;
+}
+// Chobani live 主张（2021-11 时点；browse-edgar/submissions 均真实在案）
+const CHOBANI_TEXT = 'Chobani has filed for an IPO, according to people familiar with the matter. The yogurt maker confidentially submitted its registration statement earlier this year and could price as soon as next month.';
+const CHOBANI_SENT = 'Chobani has filed for an IPO';
+
+// 组 1：live 实证 + 纯函数
+// 1. live 实证（撤回）：Chobani 备案动作主张 → S-1 2021-11-17 匹配升
+//    独立验证(4)，同时 RW 2022-09-02 撤回事件在案（withdrawn=1）。
+c3240('live 实证（撤回）：Chobani 备案动作主张 S-1 匹配 + RW 撤回事件在案', (() => {
+  const { discriminateCommercial } = require('./human-future/scripts/commercial-discriminator.js');
+  const { verifyIpoClaims } = require('./human-future/scripts/edgar-ipo-collector.js');
+  return (async () => {
+    const http = mkMockHttp324({ chobani: ATOM_CHOBANI, 'cik:0001869113': SUB_CHOBANI });
+    const cd = {
+      available: true, audited: 1, summary: {},
+      results: [discriminateCommercial({
+        text: CHOBANI_TEXT, claimSentence: CHOBANI_SENT,
+        source: 'TechCrunch AI', date: 'Mon, 22 Nov 2021 12:00:00 +0000',
+      })],
+    };
+    const out = await verifyIpoClaims(cd, { http: http.fn, now: '2022-10-01T12:00:00Z', gapMs: 0 });
+    const r = out.results[0];
+    const c = r.edgarIpoCheck;
+    return r.kind === 'ipo'
+      && r.evidence.id === 'independent-verification' && r.evidence.weight === 4
+      && r.verdict === 'thin-reasoning' && r.reasoning.score === 0
+      && c && c.upgraded === true && c.filingAction === true
+      && c.matched.company === 'Chobani Inc.' && c.matched.cik === '0001869113'
+      && c.matched.form === 'S-1' && c.matched.filedAt === '2021-11-17'
+      && c.matched.accession === '0001193125-21-332196'
+      && c.events && c.events.withdrawal && c.events.withdrawal.form === 'RW'
+      && c.events.withdrawal.filedAt === '2022-09-02'
+      && c.events.withdrawal.accession === '0001193125-22-237850'
+      && c.events.pricing === null
+      && out.ipoVerification.withdrawn === 1 && out.ipoVerification.priced === 0
+      && out.ipoVerification.eventsQueries === 1 && out.ipoVerification.eventsAvailable === true
+      && out.ipoVerification.queries === 2;
+  })();
+})(), 'S-1 验证逻辑不变（v3.23 行为不回退）；RW 撤回事件带 form/日期/accession 记录并进汇总计数');
+
+// 2. live 实证（定价）：Cerebras（now=2026-10-29）→ S-1/A 2026-05-11
+//    匹配 + 424B4 2026-05-14 定价事件在案；RW 2025-10-03 距 now 391 天
+//    超 365 天窗口 → 不算撤回事件（窗口纪律三种事件一致）。
+c3240('live 实证（定价）：Cerebras S-1/A 匹配 + 424B4 定价事件在案；RW 超窗(391天)不算撤回', (() => {
+  const { discriminateCommercial } = require('./human-future/scripts/commercial-discriminator.js');
+  const { verifyIpoClaims } = require('./human-future/scripts/edgar-ipo-collector.js');
+  return (async () => {
+    const http = mkMockHttp324({ cerebras: ATOM_CEREBRAS, 'cik:0002021728': SUB_CEREBRAS });
+    const cd = {
+      available: true, audited: 1, summary: {},
+      results: [discriminateCommercial({
+        text: 'Cerebras officially files for its public debut after refiling its registration statement with the SEC, setting up a long-awaited market debut.',
+        claimSentence: 'Cerebras officially files for its public debut',
+        source: 'TechCrunch AI', date: 'Mon, 18 May 2026 12:00:00 +0000',
+      })],
+    };
+    const out = await verifyIpoClaims(cd, { http: http.fn, now: '2026-10-29T12:00:00Z', gapMs: 0 });
+    const r = out.results[0];
+    const c = r.edgarIpoCheck;
+    return r.kind === 'ipo' && c.upgraded === true
+      && c.matched.company === 'Cerebras Systems Inc.' && c.matched.cik === '0002021728'
+      && c.matched.form === 'S-1/A' && c.matched.filedAt === '2026-05-11'
+      && c.events && c.events.withdrawal === null
+      && c.events.pricing && c.events.pricing.form === '424B4'
+      && c.events.pricing.filedAt === '2026-05-14'
+      && c.events.pricing.accession === '0001628280-26-035214'
+      && out.ipoVerification.withdrawn === 0 && out.ipoVerification.priced === 1;
+  })();
+})(), '定价事件（424B4）在案即记录；365 天窗口外的 RW（2025-10-03 距 2026-10-29 为 391 天）不算撤回');
+
+// 3. 事件只作上下文不改判定：同一条主张带 events 与不带 events，
+//    证据档/verdict/推理分/decisionRelevant 逐字段一致。
+c3240('事件不改判定：带 events 与不带 events 的判定逐字段一致', (() => {
+  const { discriminateCommercial } = require('./human-future/scripts/commercial-discriminator.js');
+  const base = {
+    text: CHOBANI_TEXT, claimSentence: CHOBANI_SENT,
+    source: 'TechCrunch AI', date: 'Mon, 22 Nov 2021 12:00:00 +0000',
+  };
+  const matched = { candidate: 'Chobani', company: 'Chobani Inc.', cik: '0001869113', form: 'S-1', filedAt: '2021-11-17', accession: '0001193125-21-332196', href: 'https://www.sec.gov/Archives/edgar/data/1869113/000119312521332196/0001193125-21-332196-index.htm' };
+  const rA = discriminateCommercial(Object.assign({}, base, {
+    edgarVerification: { matched, checked: ['Chobani'], reason: null },
+  }));
+  const rB = discriminateCommercial(Object.assign({}, base, {
+    edgarVerification: {
+      matched, checked: ['Chobani'], reason: null,
+      events: {
+        company: 'Chobani Inc.', cik: '0001869113',
+        withdrawal: { form: 'RW', filedAt: '2022-09-02', accession: '0001193125-22-237850' },
+        pricing: null,
+      },
+    },
+  }));
+  return rA.evidence.id === rB.evidence.id && rA.evidence.weight === rB.evidence.weight
+    && rA.verdict === rB.verdict && rA.reasoning.score === rB.reasoning.score
+    && rA.decisionRelevant === rB.decisionRelevant
+    && rA.edgarIpoCheck.upgraded === rB.edgarIpoCheck.upgraded
+    && rA.edgarIpoCheck.events === null && rB.edgarIpoCheck.events !== null;
+})(), 'RW/424B4 事件不抬证据档、不降档、不改推理分——只作可观测上下文（证伪解读由下游 agent 做）');
+
+// 4. 无 S-1 匹配 + RW 撤回上下文：Mobileye B.V.（now=2018-03-01，RW 在
+//    窗、无在窗 S-1）→ matched=null 不抬级，撤回事件仍记录为上下文。
+c3240('无 S-1 匹配 + RW 撤回上下文：Mobileye B.V. 不抬级，撤回事件记录在案', (() => {
+  const { discriminateCommercial } = require('./human-future/scripts/commercial-discriminator.js');
+  const { verifyIpoClaims } = require('./human-future/scripts/edgar-ipo-collector.js');
+  return (async () => {
+    const http = mkMockHttp324({ mobileye: ATOM_MOBILEYE_BV, 'cik:0001607310': SUB_MOBILEYE_BV });
+    const cd = {
+      available: true, audited: 1, summary: {},
+      results: [discriminateCommercial({
+        text: 'Mobileye has filed for its public debut, according to a regulatory filing reviewed by reporters.',
+        claimSentence: 'Mobileye has filed for its public debut',
+        source: 'TechCrunch AI', date: 'Wed, 07 Feb 2018 12:00:00 +0000',
+      })],
+    };
+    const out = await verifyIpoClaims(cd, { http: http.fn, now: '2018-03-01T12:00:00Z', gapMs: 0 });
+    const r = out.results[0];
+    const c = r.edgarIpoCheck;
+    return r.kind === 'ipo' && c
+      && c.matched === null && c.upgraded === false
+      && c.events && c.events.withdrawal && c.events.withdrawal.filedAt === '2018-02-07'
+      && c.events.withdrawal.accession === '0001144204-18-006358'
+      && c.events.pricing === null
+      && out.ipoVerification.unmatched === 1 && out.ipoVerification.withdrawn === 1;
+  })();
+})(), '窗口内无 S-1 不匹配不抬级（未匹配≠已证伪），但同一公司的 RW 撤回事件作为可观测上下文记录');
+
+// 5. 窗口过滤：同一 Mobileye B.V. 夹具 now=2026 → RW 2018 超窗 →
+//    events 空但 eventsAvailable=true（查了没有事件≠查不到）。
+c3240('窗口过滤：RW 2018-02-07 在 now=2026 不算撤回事件（空事件≠不可用）', (() => {
+  const { discriminateCommercial } = require('./human-future/scripts/commercial-discriminator.js');
+  const { verifyIpoClaims } = require('./human-future/scripts/edgar-ipo-collector.js');
+  return (async () => {
+    const http = mkMockHttp324({ mobileye: ATOM_MOBILEYE_BV, 'cik:0001607310': SUB_MOBILEYE_BV });
+    const cd = {
+      available: true, audited: 1, summary: {},
+      results: [discriminateCommercial({
+        text: 'Mobileye has filed for its public debut, according to a regulatory filing reviewed by reporters.',
+        claimSentence: 'Mobileye has filed for its public debut',
+        source: 'TechCrunch AI', date: 'Thu, 29 Oct 2026 12:00:00 +0000',
+      })],
+    };
+    const out = await verifyIpoClaims(cd, { http: http.fn, now: '2026-10-29T12:00:00Z', gapMs: 0 });
+    const c = out.results[0].edgarIpoCheck;
+    return c.events !== null && c.events.withdrawal === null && c.events.pricing === null
+      && out.ipoVerification.eventsAvailable === true
+      && out.ipoVerification.withdrawn === 0 && out.ipoVerification.priced === 0;
+  })();
+})(), '365 天窗口外的历史登记不算在办事件；查询成功但无窗口内事件时 eventsAvailable 保持 true');
+
+// 6. 纯函数：parseSubmissionEvents + pickRecentByForm。
+c3240('submissions 解析与窗口挑选纯函数（Cerebras 六事件真实行）', (() => {
+  const { parseSubmissionEvents, pickRecentByForm, RW_FORM_RE, PRICING_FORM_RE, S1_FORM_RE } = require('./human-future/scripts/edgar-ipo-collector.js');
+  const p = parseSubmissionEvents(SUB_CEREBRAS);
+  const rwNow = pickRecentByForm(p.events, RW_FORM_RE, { now: '2026-10-29T12:00:00Z' });
+  const rw2025 = pickRecentByForm(p.events, RW_FORM_RE, { now: '2025-11-01T12:00:00Z' });
+  const p424 = pickRecentByForm(p.events, PRICING_FORM_RE, { now: '2026-10-29T12:00:00Z' });
+  const s1 = pickRecentByForm(p.events, S1_FORM_RE, { now: '2026-10-29T12:00:00Z' });
+  const bad = parseSubmissionEvents('not json at all');
+  const empty = parseSubmissionEvents('{}');
+  return p.company === 'Cerebras Systems Inc.' && p.events.length === 6
+    && p.events[0].form === '424B4' && p.events[0].filedAt === '2026-05-14'
+    && p.events[0].accession === '0001628280-26-035214'
+    && rwNow === null
+    && rw2025 && rw2025.filedAt === '2025-10-03'
+    && p424 && p424.filedAt === '2026-05-14'
+    && s1 && s1.filedAt === '2026-05-11'
+    && bad.company === '' && bad.events.length === 0
+    && empty.company === '' && empty.events.length === 0;
+})(), 'submissions JSON 只取 S-1/RW/424B4 族；窗口挑选最近优先；坏 JSON 不抛错降级为空');
+
+// 7. submissions URL 纯函数：CIK 补零 10 位 + 非数字清洗。
+c3240('submissions URL：CIK 补零 10 位 + 非数字字符清洗', (() => {
+  const { SUBMISSIONS_URL } = require('./human-future/scripts/edgar-ipo-collector.js');
+  return SUBMISSIONS_URL('1869113') === 'https://data.sec.gov/submissions/CIK0001869113.json'
+    && SUBMISSIONS_URL('0001869113') === 'https://data.sec.gov/submissions/CIK0001869113.json'
+    && SUBMISSIONS_URL('CIK 0002021728') === 'https://data.sec.gov/submissions/CIK0002021728.json';
+})(), '事件查询必须锚定 S-1 匹配公司的 CIK（browse-edgar 同名不同 type 会解析到不同公司）');
+
+// 组 2：编排端到端 + 降级
+// 8. 引擎端到端：Chobani 主张（business 桶）+ 对照条 → 核查 → summary
+//    重算 → formatReport 渲染 ✅ 行带 RW 撤回上下文 + 汇总行带流程
+//    事件计数；对照条（legal-action）判定不受影响。
+c3240('引擎端到端：核查后报告渲染 ✅ 行带 RW 撤回上下文 + 汇总行带流程事件计数', (() => {
+  const { ProjectionEngine, formatReport } = require('./scripts/project-future.js');
+  const { verifyIpoClaims } = require('./human-future/scripts/edgar-ipo-collector.js');
+  return (async () => {
+    const mk = (title, desc, source, bucket) => ({
+      title, description: desc, body: '', source, bucket,
+      pubDate: 'Mon, 22 Nov 2021 17:45:43 +0000', domains: ['capital_flow'],
+      link: 'https://example.com/x', origin: 'live',
+    });
+    const items = [
+      mk('Chobani has filed for an IPO, according to people familiar with the matter',
+        'Chobani has filed for an IPO, according to people familiar with the matter. The yogurt maker confidentially submitted its registration statement earlier this year.',
+        'TechCrunch AI', 'business'),
+      mk('Parents sue OpenAI, alleging GPT-4o coached their daughter off seizure medication',
+        'A family is suing OpenAI, saying ChatGPT coached their daughter to quietly taper off her seizure medication.',
+        'TechCrunch AI', 'business'),
+    ];
+    const inst = new ProjectionEngine({});
+    inst.signals = { totalItems: items.length, domains: [], undomained: 0, dateRange: null, items };
+    const cd = inst.buildCommercialDiscrimination();
+    const http = mkMockHttp324({ chobani: ATOM_CHOBANI, 'cik:0001869113': SUB_CHOBANI });
+    const cd2 = await verifyIpoClaims(cd, { http: http.fn, now: '2022-10-01T12:00:00Z', gapMs: 0 });
+    const chobani = cd2.results.find(r => /Chobani/.test(r.claimSentence || r.text));
+    const control = cd2.results.find(r => /Parents sue/.test(r.claimSentence || r.text));
+    const md = formatReport({
+      meta: { timestamp: '2022-10-01T12:00:00Z', version: '3.24.0' },
+      summary: { verdict: '继续观察', score: 0.5, keyMessage: 'TEST', topDomains: ['frontier_models'] },
+      commercialDiscrimination: cd2,
+      stages: [], turningPoints: [], risks: [], opportunities: [], recommendations: [],
+      confidence: { score: 0.5, level: 'medium', note: 'TEST', factors: { baseScore: 0.5, logicQuality: '中等', signalScore: 0.5, coverageScore: 0.5, undomainedRatio: 0.1, adjustment: 0 } },
+      trendClassification: { available: false },
+    });
+    const lines = md.split('\n');
+    const drCount = cd2.results.filter(r => r.decisionRelevant).length;
+    return cd2.audited === 2
+      && chobani && chobani.evidence.weight === 4 && chobani.decisionRelevant === true
+      && control && control.kind === 'legal-action' && control.evidence.weight === 1
+      && cd2.summary.decisionRelevantCount === drCount
+      && lines.some(l => l.includes('EDGAR 核查: ✅ Chobani Inc.（CIK 0001869113）2021-11-17 提交 S-1（0001193125-21-332196）')
+        && l.includes('RW 撤回备案 2022-09-02 在案（IPO 已撤回）'))
+      && lines.some(l => l.includes('IPO 主张 EDGAR 核查: 1 条 ipo 主张 → 验证 1（独立验证(4)）')
+        && l.includes('流程事件 1 次 submissions 查询（撤回 1 / 定价 0）'));
+  })();
+})(), '事件上下文必须端到端到达报告产物：✅ 行后缀 + 汇总行流程事件计数；同池其它主张判定零扰动');
+
+// 9. 降级：S-1 匹配但 submissions 查询抛错 → events=null + 原因写明，
+//    S-1 结论（独立验证(4)）不受影响 + 报告渲染「EDGAR 事件: 不可用」。
+c3240('降级：submissions 查询抛错 → 事件不可用但 S-1 结论不受影响', (() => {
+  const { ProjectionEngine, formatReport } = require('./scripts/project-future.js');
+  const { verifyIpoClaims } = require('./human-future/scripts/edgar-ipo-collector.js');
+  return (async () => {
+    const mk = (title, desc, source, bucket) => ({
+      title, description: desc, body: '', source, bucket,
+      pubDate: 'Mon, 22 Nov 2021 17:45:43 +0000', domains: ['capital_flow'],
+      link: 'https://example.com/x', origin: 'live',
+    });
+    const inst = new ProjectionEngine({});
+    inst.signals = {
+      totalItems: 1, domains: [], undomained: 0, dateRange: null,
+      items: [mk('Chobani has filed for an IPO, according to people familiar with the matter',
+        'Chobani has filed for an IPO, according to people familiar with the matter. The yogurt maker submitted its registration statement.',
+        'TechCrunch AI', 'business')],
+    };
+    const cd = inst.buildCommercialDiscrimination();
+    const http = mkMockHttp324({ chobani: ATOM_CHOBANI, 'cik:0001869113': 'THROW' });
+    const cd2 = await verifyIpoClaims(cd, { http: http.fn, now: '2022-10-01T12:00:00Z', gapMs: 0 });
+    const r = cd2.results[0];
+    const c = r.edgarIpoCheck;
+    const md = formatReport({
+      meta: { timestamp: '2022-10-01T12:00:00Z', version: '3.24.0' },
+      summary: { verdict: '继续观察', score: 0.5, keyMessage: 'TEST', topDomains: ['frontier_models'] },
+      commercialDiscrimination: cd2,
+      stages: [], turningPoints: [], risks: [], opportunities: [], recommendations: [],
+      confidence: { score: 0.5, level: 'medium', note: 'TEST', factors: { baseScore: 0.5, logicQuality: '中等', signalScore: 0.5, coverageScore: 0.5, undomainedRatio: 0.1, adjustment: 0 } },
+      trendClassification: { available: false },
+    });
+    return c.upgraded === true && r.evidence.id === 'independent-verification'
+      && c.events === null && /submissions/.test(c.eventsUnavailableReason || '')
+      && cd2.ipoVerification.available === true
+      && cd2.ipoVerification.eventsAvailable === false
+      && /EDGAR submissions 查询失败/.test(cd2.ipoVerification.eventsReason || '')
+      && md.split('\n').some(l => l.includes('EDGAR 事件: 不可用——'));
+  })();
+})(), '事件查询失败不连坐 S-1 核查结论（available 不变），但必须如实记 eventsAvailable=false 并渲染不可用行');
+
+// 10. 非 live 模式：live:false 不发起任何查询（browse-edgar 与
+//     submissions 都为 0 次）。
+c3240('非 live 模式不发起任何 EDGAR 查询（含 submissions）', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const { verifyIpoClaims } = require('./human-future/scripts/edgar-ipo-collector.js');
+  return (async () => {
+    const inst = new ProjectionEngine({});
+    inst.signals = {
+      totalItems: 1, domains: [], undomained: 0, dateRange: null,
+      items: [{
+        title: 'Chobani has filed for an IPO, according to people familiar with the matter',
+        description: 'Chobani has filed for an IPO, according to people familiar with the matter.',
+        body: '', source: 'TechCrunch AI', bucket: 'business',
+        pubDate: 'Mon, 22 Nov 2021 17:45:43 +0000', domains: ['capital_flow'],
+        link: 'https://example.com/x', origin: 'live',
+      }],
+    };
+    const cd = inst.buildCommercialDiscrimination();
+    const http = mkMockHttp324({ chobani: ATOM_CHOBANI, 'cik:0001869113': SUB_CHOBANI });
+    const cd2 = await verifyIpoClaims(cd, { http: http.fn, now: '2022-10-01T12:00:00Z', gapMs: 0, live: false });
+    return http.calls === 0
+      && cd2.ipoVerification.available === false
+      && /非 live 模式/.test(cd2.ipoVerification.reason || '')
+      && cd2.results[0].evidence.weight === 2 && cd2.results[0].verdict === 'weak-evidence';
+  })();
+})(), '非 live 模式不得发起网络查询（与 v3.23/benchmark 采集器同纪律），ipo 主张按原证据档判定');
+
+// 11. CIK 归属 + memo 去重：两条 Chobani 主张 → browse-edgar 查 1 次、
+//     submissions 按 CIK 只查 1 次（memo），URL 锚定 matched 的 CIK。
+c3240('CIK 归属与 memo：两条同公司主张 → submissions 按 CIK 只查一次', (() => {
+  const { discriminateCommercial } = require('./human-future/scripts/commercial-discriminator.js');
+  const { verifyIpoClaims } = require('./human-future/scripts/edgar-ipo-collector.js');
+  return (async () => {
+    const http = mkMockHttp324({ chobani: ATOM_CHOBANI, 'cik:0001869113': SUB_CHOBANI });
+    const mkClaim = (sent) => discriminateCommercial({
+      text: CHOBANI_TEXT + ' ' + sent, claimSentence: sent,
+      source: 'TechCrunch AI', date: 'Mon, 22 Nov 2021 12:00:00 +0000',
+    });
+    const cd = {
+      available: true, audited: 2, summary: {},
+      results: [mkClaim(CHOBANI_SENT), mkClaim('Chobani has filed for an IPO, according to the filing')],
+    };
+    const out = await verifyIpoClaims(cd, { http: http.fn, now: '2022-10-01T12:00:00Z', gapMs: 0 });
+    const subUrls = http.urls.filter(u => /submissions/.test(u));
+    return out.ipoVerification.queries === 2
+      && subUrls.length === 1
+      && subUrls[0] === 'https://data.sec.gov/submissions/CIK0001869113.json'
+      && out.ipoVerification.withdrawn === 2
+      && out.results.every(r => r.edgarIpoCheck && r.edgarIpoCheck.upgraded === true);
+  })();
+})(), '事件查询锚定 S-1 匹配公司的 CIK；run 内按 CIK memo 去重，不重复查 SEC');
+
+// 组 3：源级接线 + 计数 + 版本号
+// 12. cron 注入源级：注入脚本渲染事件后缀、「EDGAR 事件: 不可用」行与
+//     汇总行流程事件计数（端到端最后一环）。
+c3240('cron 注入源级：hf-cron-fetch.sh 渲染事件后缀/事件不可用行/汇总流程事件计数', (() => {
+  const fs = require('fs');
+  const sh = fs.readFileSync(require('os').homedir() + '/.hermes/scripts/hf-cron-fetch.sh', 'utf-8');
+  return sh.includes('RW 撤回备案 ${ev.withdrawal.filedAt} 在案（IPO 已撤回）')
+    && sh.includes('424B4 定价备案 ${ev.pricing.filedAt} 在案（IPO 已定价）')
+    && sh.includes('EDGAR 事件: 不可用——${c.eventsUnavailableReason}')
+    && sh.includes('流程事件 ${iv.eventsQueries} 次 submissions 查询（撤回 ${iv.withdrawn} / 定价 ${iv.priced}）');
+})(), '注入脚本必须渲染事件上下文 + 事件不可用行 + 汇总事件计数，否则 agent 看不到流程事件');
+
+// 13. 源级接线 + 模式库计数 24 不变 + 版本号五处对齐 3.24.0。
+c3240('源级接线 + 模式库计数 24 不变 + 版本号五处对齐 3.24.0', (() => {
+  const { COMMERCIAL_CLAIM_PATTERNS } = require('./human-future/scripts/commercial-discriminator.js');
+  const fs = require('fs');
+  const VERSION = fs.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
+  const pkg = JSON.parse(fs.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
+  const rp = fs.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
+  const pf = fs.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
+  const col = fs.readFileSync(require('path').join(__dirname, 'human-future/scripts/edgar-ipo-collector.js'), 'utf-8');
+  const disc = fs.readFileSync(require('path').join(__dirname, 'human-future/scripts/commercial-discriminator.js'), 'utf-8');
+  return col.includes('await lookupCompanyEvents(')
+    && col.includes('const SUBMISSIONS_URL')
+    && disc.includes('edgarVerification.events')
+    && pf.includes('RW 撤回备案')
+    && COMMERCIAL_CLAIM_PATTERNS.length === 24
+    && VERSION === '3.24.0'
+    && pkg.version === '3.24.0'
+    && rp.includes('文明推演引擎 v3.24.0')
+    && /version: '3\.24\.0'/.test(pf)
+    && /version: '3\.24\.0'/.test(rp);
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 五处对齐 3.24.0；模式库计数不随新数据源变化；事件查询/透传/渲染三处接线都在代码里');
+
+// v3.24 汇总
+(async () => {
+  const results = await Promise.all(v3240.map(c => Promise.resolve(c.ok)));
+  let f = 0;
+  v3240.forEach((c, i) => {
+    const ok = results[i];
+    if (!ok) f++;
+    console.log(`${ok ? '✓' : '✗'} ${c.name}${ok ? '' : '  —— ' + c.detail}`);
+  });
+  console.log(`\nv3.24: ${v3240.length - f} 通过, ${f} 失败, 共 ${v3240.length} 个`);
+  if (f > 0) {
+    console.log('结论：ipo 证伪路径第二、三条（撤回 RW/定价 424B4）接线、精度条制、端到端渲染或降级有缺。');
+    process.exitCode = 1;
+  } else {
+    console.log('结论：ipo 证伪路径第二、三条接上真数据——撤回（RW）与定价（424B4）经 submissions 登记记录观测（Chobani S-1 2021-11-17 之后 RW 2022-09-02、Cerebras S-1/A 2026-05-11 加 424B4 2026-05-14 均为 live 实证）；事件只作可观测上下文（不抬证据档/不改判定/不改推理分）；按 CIK 锁定同一实体（同名不同 type 在 browse-edgar 解析到不同公司）；「查了没有事件」与「查不到」分开；挂牌后披露矛盾仍待人工/下游核对。模式库计数 24 不变（新数据源不加 kind）。');
   }
 })();

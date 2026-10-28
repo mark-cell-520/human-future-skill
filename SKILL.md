@@ -1,13 +1,39 @@
 ---
 name: human-future-v2
-title: "人类未来 · 文明推演引擎 v3.23.0"
-version: "3.23.0"
+title: "人类未来 · 文明推演引擎 v3.24.0"
+version: "3.24.0"
 description: |-
 description: |-
-  人类未来 v3.23.0 - 新数据源：EDGAR S-1/IPO 备案核查（ipo 主张独立验证）——v3.21
-  给 ipo-claim 立库时写下的证伪路径「EDGAR 查无/撤回/定价时间表不符/挂牌后披露
-  矛盾」四条里没有任何一条有数据支撑（EDGAR 采集层自 v3.4 起只收 8-K Item 2.02，
-  从不查 S-1；登记 corr-2026-043「证伪路径写成可观测条件 ≠ 引擎能执行该检查」）。
+  人类未来 v3.24.0 - 新认知能力：ipo 证伪路径第二、三条接真数据（撤回 RW +
+  定价 424B4，EDGAR submissions 登记记录）——v3.21 给 ipo-claim 立库时写下
+  证伪路径「EDGAR 查无/撤回/定价时间表不符/挂牌后披露矛盾」四条，v3.23 只接了
+  第一条（browse-edgar S-1 备案存在性核查）并把其余三条整批列为「由人工/下游
+  agent 执行」；但 browse-edgar 的 type=S-1 只是 SEC 的一个端点——同一公司的
+  submissions API（data.sec.gov）一次查询即返回全表单族登记记录，撤回（RW）与
+  定价（424B4）都是可观测的公开登记事件（登记 corr-2026-044：「引擎不能执行」
+  ≠「没有数据支撑」）。live 实证：Chobani S-1 2021-11-17 之后 RW 2022-09-02、
+  Cerebras S-1 2024-09-30 之后 RW 2025-10-03 之后再备案 2026-04-17 之后 424B4
+  2026-05-14、Mobileye Global S-1 2023-06-05 之后 424B4 2023-06-08。本轮
+  edgar-ipo-collector 对匹配到（无匹配时首个过守卫）的公司按 CIK 查 submissions，
+  取 365 天窗口内 RW/424B4 事件。精度纪律（不虚抬）：① 事件只作可观测上下文——
+  不抬证据档、不改 verdict、不改推理分（备案动作主张的事实核心由 S-1 记录验证，
+  事件不推翻已发生的备案；证伪解读由下游 agent 结合主张时点做）；② 按 CIK 查
+  保证与 S-1 匹配同一实体（live 实证同名不同 type 在 browse-edgar 会解析到不同
+  公司：Mobileye+type=S-1 → Mobileye Global Inc. CIK 0001910139，+type=RW →
+  Mobileye B.V. CIK 0001607310）；③「查了但没有事件」与「查不到」分开（前者
+  eventsAvailable=true 空事件，后者整体降级写明原因）；④ 窗口纪律与 S-1 一致
+  （365 天外历史登记不算在办事件）。端到端：报告与 cron 注入的「EDGAR 核查」行
+  带事件后缀（RW 撤回备案/424B4 定价备案在案）+「EDGAR 事件: 不可用」降级行 +
+  汇总行流程事件计数（撤回 N / 定价 M）。live 端到端（312 条池）：1 条 ipo 主张
+  核查、2 次 SEC 查询（1 browse-edgar + 1 submissions）、Anthropic S-1 在案且
+  窗口内无 RW/424B4（无事件≠不可用）；零漂移 diff vs v3.23 基线：商业辨别段
+  audited 22 条、byKind 逐一不变、byEvidence 与 decisionRelevant 14 条不变、
+  MIT TR 条仍独立验证(4)/thin-reasoning；forecast 辨别 106 条与结算段（0 新
+  结算/跳过 6、ledger brier 0.2377/样本 16）逐条零漂移。剩余边界（如实）：
+  挂牌后披露矛盾仍无数据支撑，由人工/下游核对。测试 462→475 项；8 轮反向验证
+  全部精确失败。登记簿 42→43 条（corr-2026-044）。
+  历史：v3.23.0 新数据源 EDGAR S-1/IPO 备案核查（ipo 主张独立验证，v3.21 证伪
+  路径第一条「EDGAR 查无/在案」落地）——
   2026-10-29 live 实证后果：MIT Tech Review「After weeks of frenzied speculation,
   Anthropic has filed its IPO prospectus.」被判 weak-evidence/无出处(1)——而
   Anthropic, PBC（CIK 0002130357）确实于 2026-10-26 向 SEC 提交了 S-1（accession
@@ -46,16 +72,50 @@ description: |-
 ---
 ---
 
-# 人类未来 · 文明推演引擎 v3.23.0
+# 人类未来 · 文明推演引擎 v3.24.0
 
 > 数据采集（RSS 真联网 + 可选正文增强 + 外部预测基准 GJOpen）→ 心虫 stateless 检查器 → 三年推演引擎。
 > 当前状态与实测数字见下一节，历史版本记录见 references/upgrade-history.md。
 
 ---
 
-## 当前状态（v3.23.0 实测）
+## 当前状态（v3.24.0 实测）
 
 以下数字全部来自 2026-10-29 的 `FETCH=1 FETCH_BODY=1 node scripts/run-pipeline.js` 实跑
+（v3.24.0 轮：pipeline exit 0、312 条 live 信号（business 48 + economy 46 +
+frontier_models 142 + sec_filings 42 + tech 22 + humanities 12）；**新认知能力：
+ipo 证伪路径第二、三条接真数据**（撤回 RW + 定价 424B4，EDGAR submissions
+登记记录）——v3.23 立档时把「撤回/定价/挂牌后披露」整批列为「由人工/下游
+agent 执行」，但 browse-edgar 的 type=S-1 只是 SEC 的一个端点：同一公司的
+submissions API（data.sec.gov）按 CIK 一次查询即返回全表单族登记记录
+（登记 corr-2026-044「引擎不能执行 ≠ 没有数据支撑」——写已知边界时要区分
+「没有数据源」与「没接数据源」）。live 实证（browse-edgar + data.sec.gov
+实抓逐字）：Chobani Inc. S-1 2021-11-17 → RW 2022-09-02（289 天内同在
+365 天窗口）、Cerebras Systems S-1 2024-09-30 → RW 2025-10-03 → 再备案
+2026-04-17 → 424B4 2026-05-14、Mobileye Global S-1 2023-06-05 → 424B4
+2023-06-08、Mobileye B.V. RW 2018-02-07（窗口过滤负例）。edgar-ipo-collector
+对匹配到（无匹配时首个过守卫）的公司按 CIK 查 submissions，取 365 天窗口内
+RW/424B4 事件。精度纪律（不虚抬）：① 事件只作可观测上下文——不抬证据档、
+不改 verdict、不改推理分（备案动作主张的事实核心由 S-1 记录验证，事件不
+推翻已发生的备案；证伪解读由下游 agent 结合主张时点做，引擎不代判）；
+② 按 CIK 查锚定 S-1 匹配到的同一实体（live 实证同名不同 type 在 browse-edgar
+会解析到不同公司：Mobileye+type=S-1 → Mobileye Global Inc. CIK 0001910139、
++type=RW → Mobileye B.V. CIK 0001607310）；③「查了但没有事件」与「查不到」
+分开（前者 eventsAvailable=true 的空事件，后者整体降级写明原因）；
+④ 窗口纪律与 S-1 一致（365 天外历史登记不算在办事件）。端到端：报告与
+cron 注入的「EDGAR 核查」行带事件后缀（RW 撤回备案/424B4 定价备案在案）+
+「EDGAR 事件: 不可用」降级行 + 汇总行流程事件计数（撤回 N / 定价 M）。
+live 端到端（312 条池）：1 条 ipo 主张核查、2 次 SEC 查询（1 browse-edgar
++ 1 submissions）、Anthropic, PBC S-1 在案且窗口内无 RW/424B4（无事件≠
+不可用，eventsAvailable=true）；零漂移 diff vs v3.23 基线：312 池各桶逐一
+不变、商业辨别段 audited 22 条、byKind 逐一不变（expert-judgment:1/ma:1/
+funding:4/price-cut:1/regulatory-action:1/compute-infra:3/usage-metric:3/
+demand:3/adoption:4/ipo:1）、byEvidence 与 decisionRelevant 14 条不变、
+MIT TR 条仍独立验证(4)/thin-reasoning；forecast 辨别 106 条与结算段
+（0 新结算/跳过 6、ledger brier 0.2377/样本 16）逐条零漂移。剩余边界
+（如实）：挂牌后披露矛盾（挂牌后定期报告与 S-1 主张逐条对账）仍无数据
+支撑，由人工/下游 agent 执行。测试 462→475 项；8 轮反向验证全部精确失败。
+登记簿 42→43 条（corr-2026-044，medium）。
 （v3.23.0 轮：pipeline exit 0、312 条 live 信号（business 48 + economy 46 +
 frontier_models 142 + sec_filings 42 + tech 22 + humanities 12）；**新数据源：
 EDGAR S-1/IPO 备案核查**（v3.21 立库 ipo-claim 时写下的证伪路径「EDGAR 查无/
@@ -653,6 +713,13 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   edgar-ipo-collector.js）——与 8-K 采集层分工：8-K 层采「业绩发布正文」
   （指引/实际值抽取），S-1 层查「备案存在性」（ipo 主张的独立验证）。
   见 [v3.23] 章节
+- [v3.24] 同一数据源的第二个端点：data.sec.gov submissions（按 CIK 查全表单族
+  登记记录）——撤回（RW）/定价（424B4）流程事件观测（ipo 证伪路径第二、三条，
+  v3.23 曾整批列为人工执行）。选它而不是 browse-edgar 的 type=RW/424B4 的原因
+  （全部 live 实证）：① browse-edgar 的 type 参数只生效第一个（type=S-1&type=RW
+  与 type=S-1 返回完全相同）；② 同名不同 type 会解析到不同公司（Mobileye
+  +type=S-1 → Mobileye Global Inc.，+type=RW → Mobileye B.V.），事件必须锚定
+  S-1 匹配到的同一 CIK；③ 一个 CIK 查询覆盖全部表单族。见 [v3.24] 章节
 - 公司名单：14 家境内备案人（NVDA/AMD/AVGO/MRVL/MU/MSFT/GOOGL/AMZN/META/
   ORCL/CRWV/IBM/DELL/PLTR），ticker→CIK 走 company_tickers.json 权威映射
 - 采集对象：8-K Item 2.02（业绩发布）最近 3 次/公司（v3.5 从 2→3，见下）+ EX-99
@@ -1481,13 +1548,80 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   IPO_FILING_ACTION_RE 并导出——备案动作子形态的单一事实来源（辨别器与
   核查器共用，防两处正则漂移，corr-2026-013/026 同型纪律），正则源文本与
   v3.21 立库时逐字一致（拆常量不改行为，15 条用例实证）。
-- 仍在库外的 ipo 证伪条件（如实）：撤回（RW 备案）、定价区间（424B4）、
-  挂牌后披露矛盾三条仍无数据支撑，由人工/下游 agent 执行；公司名匹配是
-  启发式（单 token 候选可能匹配到无关公司），matched 记录带公司与
+- 仍在库外的 ipo 证伪条件（如实）：撤回（RW 备案）与定价（424B4）**[v3.24 已接
+  真数据：submissions 登记记录观测，见 [v3.24] 章节]**；剩余挂牌后披露矛盾
+  （挂牌后定期报告与 S-1 主张逐条对账）仍无数据支撑，由人工/下游 agent 执行；
+  公司名匹配是启发式（单 token 候选可能匹配到无关公司），matched 记录带公司与
   accession 供逐条复核。
 - 版本号理由：新数据源 + 新认知能力（ipo 主张独立验证，独立验证(4) 档首次
   被真实数据触发）且用户可感知（报告与注入首次出现「EDGAR 核查」行与
   「独立验证(4)」证据档）= x.0。
+
+**[v3.24] ipo 证伪路径第二、三条：撤回 RW / 定价 424B4（新认知能力，submissions 登记记录）**
+- 定位：v3.23 立档时把「撤回（RW 备案）、定价区间（424B4）、挂牌后披露矛盾」
+  整批列为「不做也不假装做、留人工执行」——但 browse-edgar 的 type=S-1 只是
+  SEC 的一个端点。同一公司的 submissions API（data.sec.gov，按 CIK）一次查询
+  即返回全表单族的登记记录，撤回与定价都是可观测的公开登记事件（登记
+  corr-2026-044：「引擎不能执行」≠「没有数据支撑」——写已知边界时要区分
+  「没有数据源」与「没接数据源」，接新数据源时要扫该机构的其它端点）。
+  live 实证（2026-10-29 browse-edgar + data.sec.gov 实抓逐字）：Chobani Inc.
+  （CIK 0001869113）S-1 2021-11-17 → RW 2022-09-02（相隔 289 天，同在 365 天
+  窗口——IPO 撤回的可观测形态）；Cerebras Systems Inc.（CIK 0002021728）
+  S-1 2024-09-30 → RW 2025-10-03（撤回）→ 再备案 S-1 2026-04-17 → 424B4
+  2026-05-14（定价）——撤回过又再来的完整过程；Mobileye Global Inc.（CIK
+  0001910139）S-1 2023-06-05 → 424B4 2023-06-08；Mobileye B.V.（CIK 0001607310）
+  RW 2018-02-07（窗口过滤负例）。
+- 数据源与选型（全部 live 实证，不用 browse-edgar 的 type=RW/424B4 的原因）：
+  ① browse-edgar 的 type 参数**只生效第一个**——type=S-1&type=RW&type=424B4 与
+  type=S-1 返回完全相同（Mobileye 组合查询只有 S-1 族）；② 同名不同 type 会
+  解析到不同公司——「Mobileye」+type=S-1 解析到 Mobileye Global Inc.（CIK
+  0001910139），+type=RW 解析到 Mobileye B.V.（CIK 0001607310），事件必须锚定
+  S-1 匹配到的同一 CIK 才是同一实体；③ 一个 CIK 查询覆盖全部表单族，比按表单
+  类型多次查询省请求数（单轮预算 12 次内：live 每条约 2 次查询）。
+- 流程（edgar-ipo-collector.js）：逐条 ipo 主张 → 公司候选查 browse-edgar
+  （type=S-1，v3.23 逻辑不变）→ 匹配到（或首个过包含守卫）的公司按 CIK 查
+  submissions → parseSubmissionEvents 取 S-1/RW/424B4 族登记记录 →
+  pickRecentByForm 取 365 天窗口内最近的 RW/424B4 → events 挂回 claim 重跑
+  辨别器（只透传，不代判）。run 内 memo 两级：候选名 → S-1 结果、CIK →
+  submissions 结果。
+- 精度设计（不虚抬，全部有断言）：① 事件只作可观测上下文——不抬证据档、
+  不改 verdict、不改推理分：备案动作主张的事实核心（备案是否存在）由 S-1
+  记录验证，事件不推翻已发生的备案；撤回是「IPO 在办」类主张证伪路径的
+  可观测条件、定价是流程推进的可观测事件，但结合主张时点判断是否证伪由
+  下游 agent 做，引擎不代判（MIT TR 条抬档后若公司撤回，报告同时显示
+  「独立验证(4)」与「RW 撤回备案在案」两个事实，不互相掩盖）；② 按 CIK
+  查锚定同一实体（Mobileye 双公司 live 实证）；③「查了但没有事件」与
+  「查不到」分开——前者 eventsAvailable=true 的空事件（Anthropic live
+  实证：S-1 在案、窗口内无 RW/424B4），后者 eventsAvailable=false + reason
+  且 S-1 核查结论不受影响（available 不变）；④ 窗口纪律与 S-1 一致：365 天
+  外的历史登记不算在办事件（Mobileye B.V. RW 2018-02-07、Cerebras RW
+  2025-10-03 距 live 时点 391 天均不算撤回）；⑤ 非 live 模式不发起任何
+  查询（含 submissions）。
+- 端到端：formatReport 的「EDGAR 核查」四种形态行带事件后缀（✅/·/○ 行尾
+  追加「；RW 撤回备案 YYYY-MM-DD 在案（IPO 已撤回）/；424B4 定价备案
+  YYYY-MM-DD 在案（IPO 已定价）」）+ 事件查询失败时单独渲染「EDGAR 事件:
+  不可用——原因」行（不把「事件查不到」静默成「窗口内无事件」）+ 汇总行
+  「流程事件 N 次 submissions 查询（撤回 X / 定价 Y）」；cron 注入第 6 段
+  同措辞同步（四形态 + 事件后缀 + 事件不可用行 + 汇总计数）。
+- 判别结果（live 实测）：本期 1 条 ipo 主张（MIT TR/Anthropic）核查、2 次
+  SEC 查询（1 browse-edgar + 1 submissions）：S-1 在案升独立验证(4)（v3.23
+  行为不回退），窗口内无 RW/424B4（eventsAvailable=true，撤回 0/定价 0——
+  无事件≠不可用）。夹具驱动的真实案例判定：Chobani 备案动作主张 matched
+  S-1 + withdrawal 事件、Cerebras matched S-1/A + pricing 事件（RW 超窗不算）、
+  Mobileye B.V. 无 S-1 匹配 + withdrawal 上下文（不抬级）。
+- 同轮维护（不单独涨号）：辨别器 edgarIpoCheck 透传 events/eventsUnavailable
+  Reason 两字段；run-pipeline 与 project-future main 块的控制台输出带流程
+  事件计数。
+- 仍在库外的 ipo 证伪条件（如实）：只剩挂牌后披露矛盾（挂牌后定期报告与
+  S-1 主张逐条对账）无数据支撑，由人工/下游 agent 执行；公司名匹配是启发式
+  （单 token 候选可能匹配到无关公司），matched 与事件记录都带公司/CIK/
+  accession 供逐条复核。
+- 测试 462→475 项（v3.24 新增 13：live 撤回实证/live 定价实证+窗口/事件
+  不改判定/无 S-1 匹配+RW 上下文/窗口过滤/纯函数/URL 纯函数/引擎端到端/
+  事件降级/非 live/CIK 归属 memo/注入源级/源级+计数+版本）。
+- 版本号理由：新认知能力（ipo 证伪路径四条中第二条、第三条接上真数据，
+  引擎从「只能查备案存在性」扩展到「能观测撤回与定价事件」）且用户可感知
+  （报告与注入首次出现事件后缀行与流程事件计数）= x.0。
 
 **[v3.22.1] 商业辨别候选池白名单漏桶修复（断链修复，维护级，非新辨别维度）**
 - 定位：候选池白名单是逐桶的活结论——corr-2026-027（v3.10「候选池桶白名单
@@ -1615,14 +1749,23 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   严格过滤，漏掉数据里 2 条 critical（都是「整段推演作废」级的假能力审计），
   接入后会少报高危数（说 4 实际 6）。改为按等级表比较（critical > high >
   medium > low），critical 排最前。这是修 bug，不算升级——升级点是接入本身。
-- 边界（如实声明）：登记簿 42 条（v3.13 轮新增 corr-2026-030/031、v3.14 轮
+- 边界（如实声明）：登记簿 43 条（v3.13 轮新增 corr-2026-030/031、v3.14 轮
   新增 corr-2026-032/033、v3.15 轮新增 corr-2026-034、v3.16 轮新增
   corr-2026-035、v3.17 轮新增 corr-2026-036、v3.18 轮新增 corr-2026-037、
   v3.19 轮新增 corr-2026-038、v3.20 轮新增 corr-2026-039、v3.21 轮新增
   corr-2026-040、v3.22 轮新增 corr-2026-041、v3.22.1 轮新增 corr-2026-042、
-  v3.23 轮新增 corr-2026-043 后：
-  critical 4 / high 18 / medium 20（含 corr-2026-024/025 两条前轮手写条目
-  未设 severity、按 medium 计）——corr-2026-043 记的是「证伪路径写成可观测
+  v3.23 轮新增 corr-2026-043、v3.24 轮新增 corr-2026-044 后：
+  critical 4 / high 18 / medium 21（含 corr-2026-024/025 两条前轮手写条目
+  未设 severity、按 medium 计）——corr-2026-044 记的是「引擎不能执行 ≠
+  没有数据支撑」——v3.23 把 ipo 证伪路径的「撤回（RW）/定价（424B4）」整批
+  列为「由人工/下游 agent 执行」，但 browse-edgar 的 type=S-1 只是 SEC 的一个
+  端点：同一公司的 submissions API（data.sec.gov）按 CIK 一次查询即返回全表单
+  族登记记录，撤回与定价都是可观测的公开登记事件（live 实证 Chobani
+  S-1 2021-11-17→RW 2022-09-02、Cerebras S-1→RW→再备案→424B4 全过程）；
+  写已知边界时要区分「没有数据源」与「没接数据源」，接新数据源（或给能力
+  写证伪路径）时要扫该机构的其它端点，不能因第一个端点只覆盖一类表单就
+  判定其余需人工；
+  corr-2026-043 记的是「证伪路径写成可观测
   条件 ≠ 引擎能执行该检查」——v3.21 立库 ipo-claim 时写下证伪路径「EDGAR
   查无/撤回/定价时间表不符/挂牌后披露矛盾」，但四条里没有任何一条有数据
   支撑（EDGAR 采集层只收 8-K，从不查 S-1），live 实证 MIT TR「Anthropic
@@ -1824,7 +1967,7 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   引擎不代劳——这是心虫铁律，不是能力缺失。
 
 **测试**
-- `npm test`：**462 项断言**（实测各 section 汇总；v3.4 的 230 + v3.5 新增 11 + v3.5.1 新增 9 + v3.6 新增 8 + v3.7 新增 9 + v3.8 新增 11 + v3.9 新增 8 + v3.10 新增 13 + v3.11 新增 15 + v3.12 新增 14 + v3.13 新增 13 + v3.14 新增 9 + v3.15 新增 10 + v3.16 新增 11 + v3.17 新增 10 + v3.18 新增 6 + v3.19 新增 9 + v3.20 新增 8 + v3.21 新增 16 + v3.21.1 新增 9 + v3.22 新增 10 + v3.22.1 新增 10 + v3.23 新增 13：
+- `npm test`：**475 项断言**（实测各 section 汇总；v3.4 的 230 + v3.5 新增 11 + v3.5.1 新增 9 + v3.6 新增 8 + v3.7 新增 9 + v3.8 新增 11 + v3.9 新增 8 + v3.10 新增 13 + v3.11 新增 15 + v3.12 新增 14 + v3.13 新增 13 + v3.14 新增 9 + v3.15 新增 10 + v3.16 新增 11 + v3.17 新增 10 + v3.18 新增 6 + v3.19 新增 9 + v3.20 新增 8 + v3.21 新增 16 + v3.21.1 新增 9 + v3.22 新增 10 + v3.22.1 新增 10 + v3.23 新增 13 + v3.24 新增 13：
   2 项纯结算函数（settleGuidance 单位感知容差：相对/绝对/bps/百分点/区间/无容差
   跳过，含区分相对vs绝对的边界用例 / normalizeMetric+parseMetricValue 单位解析）+
   3 项实际值抽取（extractActuals 营收+毛利率+标题期间 / GAAP/非GAAP 不同值抽出
@@ -2389,6 +2532,37 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   ipoVerification 汇总）
   + 1 项模式库计数 24 不变（新数据源不加 kind）+ 备案动作子形态与 ipo-claim
   主正则同源 + 版本号一致性五处对齐 3.23.0）。
+  v3.24 新增 13（1 项 live 实证撤回（Chobani 备案动作主张 + browse-edgar
+  S-1 2021-11-17 夹具 + submissions RW 2022-09-02 夹具：S-1 匹配升独立
+  验证(4) 不回退 + events.withdrawal 带 form/日期/accession + withdrawn=1）
+  + 1 项 live 实证定价（Cerebras S-1/A 2026-05-11 匹配 + 424B4 2026-05-14
+  事件在案；RW 2025-10-03 距 live 时点 391 天超窗不算撤回）
+  + 1 项事件不改判定（带 events 与不带 events 判定逐字段一致，只有
+  edgarIpoCheck.events 从 null 变非空）
+  + 1 项无 S-1 匹配 + RW 撤回上下文（Mobileye B.V. now=2018-03-01：
+  matched=null 不抬级，撤回事件记录在案）
+  + 1 项窗口过滤（RW 2018 在 now=2026 不算事件——空事件≠不可用，
+  eventsAvailable=true）
+  + 1 项 submissions 解析与窗口挑选纯函数（事件族抽取 + 最近优先 + 窗口外
+  null + 坏 JSON 降级）
+  + 1 项 submissions URL 纯函数（CIK 补零 10 位 + 非数字清洗）
+  + 1 项引擎端到端（formatReport 渲染 ✅ 行带 RW 撤回上下文后缀 + 汇总行
+  流程事件计数；同池 legal-action 对照条零扰动；summary 与逐条一致）
+  + 1 项降级（submissions 抛错 → events=null + eventsUnavailableReason +
+  eventsAvailable=false，S-1 结论（独立验证(4)）不受影响 + 渲染「EDGAR
+  事件: 不可用」行）
+  + 1 项非 live 不查询（live:false → http 0 次含 submissions）
+  + 1 项 CIK 归属与 memo（两条同公司主张 → submissions 按 CIK 只查 1 次，
+  URL 锚定 matched 的 CIK）
+  + 1 项 cron 注入源级（事件后缀/事件不可用行/汇总流程事件计数）
+  + 1 项源级接线 + 模式库计数 24 不变 + 版本号五处对齐 3.24.0）。
+  v3.24 八轮反向验证全部精确失败（摘除 verifyIpoClaims 事件查询段→live
+  撤回/定价实证+引擎端到端+CIK memo/摘除 pickRecentByForm 窗口过滤→窗口
+  过滤断言（2018 年 RW 误匹配）/摘除辨别器 events 透传→四条 live 实证/
+  摘除 formatReport 事件后缀→端到端渲染/摘除 cron 注入事件行→注入源级/
+  摘除 eventsUnavailable 降级分支→降级断言/摘除 CIK memo→CIK 归属断言/
+  版本漂移→多处）。每轮基线全绿、摘除后断言必生效、还原 cmp 字节校验
+  一致、收尾基线全绿（475/0）。
   v3.23 九轮反向验证全部精确失败（摘除 edgarUpgraded 抬级 override→live
   实证+无验证不虚抬+引擎端到端/摘除 filingAction 门→承销牵头虚抬回归/
   摘除 365 天窗口过滤→Mistral 2008 误匹配/摘除 atom entry 块切分→解析断言/
@@ -2579,7 +2753,11 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   六桶（+tech 6 / +humanities 4，business 第一优先不变，排在 economy 之后）
   后 audited 22→24（live 实证 tech 桶 MIT TR IPO prospectus 与 Ars Technica
   调查两条首次进辨别），上限 30 未触顶；注入脚本的候选池描述同轮同步为
-  「business/economy/tech/humanities 媒体 + SEC 备案/厂商一手公告」）** /
+  「business/economy/tech/humanities 媒体 + SEC 备案/厂商一手公告」；
+  [v3.23] ipo 主张的「EDGAR 核查: ✅/·/○/不可用」四形态行与汇总行进注入；
+  [v3.24] 事件后缀（RW 撤回备案/424B4 定价备案在案）+「EDGAR 事件: 不可用」
+  行 + 汇总行流程事件计数（撤回 N / 定价 M）同轮同步——四形态+事件+汇总
+  都注入，否则 agent 看不到流程事件（v3.0.0c 同型断链不能再犯））** /
   **口径错位检测（v3.1.1 补入，第 6.5 段，含触发句与口径限定——此前引擎产出+
   报告渲染都有，注入脚本从未读，第五次同型断链）** /
   **外部预测基准（v2.17 新增，第 7 段）** /

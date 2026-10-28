@@ -27,7 +27,7 @@ const path = require('path');
  */
 async function main() {
   console.log('═══════════════════════════════════════════');
-  console.log('🚀 人类未来 · 文明推演引擎 v3.23.0');
+  console.log('🚀 人类未来 · 文明推演引擎 v3.24.0');
   console.log('❤️  心虫 v6.7.69 驱动');
   console.log('═══════════════════════════════════════════\n');
 
@@ -96,7 +96,9 @@ async function main() {
       const iv = projection.commercialDiscrimination.ipoVerification;
       if (iv && iv.available) {
         console.log(`  [ipo-edgar] 核查 ${iv.checkedClaims} 条 ipo 主张：验证 ${iv.verified}`
-          + ` / 上下文 ${iv.contextOnly} / 未匹配 ${iv.unmatched}（${iv.queries} 次 SEC 查询）`);
+          + ` / 上下文 ${iv.contextOnly} / 未匹配 ${iv.unmatched}（${iv.queries} 次 SEC 查询）`
+          // [v3.24] 流程事件计数（RW 撤回/424B4 定价，submissions 登记记录）
+          + (iv.eventsQueries > 0 ? `；流程事件：撤回 ${iv.withdrawn} / 定价 ${iv.priced}` : ''));
       } else {
         console.log(`  [ipo-edgar] 不可用: ${(iv && iv.reason) || '(未说明原因)'}`
           + '（ipo 主张按原证据档判定）');
@@ -118,7 +120,7 @@ async function main() {
 
     const fullReport = {
       meta: {
-        version: '3.23.0',
+        version: '3.24.0',
         timestamp: new Date().toISOString(),
         heartflowVersion: analysis.engineVersion,
         modulesLoaded: analysis.modulesLoaded

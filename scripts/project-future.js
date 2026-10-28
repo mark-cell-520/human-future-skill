@@ -344,7 +344,7 @@ class ProjectionEngine {
     }
     const report = {
       meta: {
-        version: '3.23.0',
+        version: '3.24.0',
         heartflowVersion: this.analysis.engineVersion,
         timestamp: this.timestamp,
         modulesLoaded: this.analysis.modulesLoaded,
@@ -2945,16 +2945,29 @@ function formatReport(report) {
       // （内容/承销商身份要 424B4 核对，本轮不采）；未匹配=窗口内没有
       // （公司名匹配是启发式，不等于已证伪——v3.21 证伪路径的「EDGAR
       // 查无」是人工/下游可执行的条件，引擎不据未匹配判假）。
+      // [v3.24] 流程事件后缀：RW 撤回/424B4 定价经 submissions 登记
+      // 记录观测（同一 CIK、同一 365 天窗口），只作可观测上下文——
+      // 不抬证据档、不改判定；撤回/定价的证伪含义由下游 agent 结合
+      // 主张时点解读（引擎不代判）。事件查询失败时单独一行「不可用」，
+      // 不把「事件查不到」静默成「窗口内无事件」。
       if (r.edgarIpoCheck) {
         const c = r.edgarIpoCheck;
+        const ev = c.events || null;
+        const evParts = [];
+        if (ev && ev.withdrawal) evParts.push(`RW 撤回备案 ${ev.withdrawal.filedAt} 在案（IPO 已撤回）`);
+        if (ev && ev.pricing) evParts.push(`424B4 定价备案 ${ev.pricing.filedAt} 在案（IPO 已定价）`);
+        const evSuffix = evParts.length ? `；${evParts.join('；')}` : '';
         if (c.reason) {
           lines.push(`    EDGAR 核查: 不可用——${c.reason}`);
         } else if (c.upgraded && c.matched) {
-          lines.push(`    EDGAR 核查: ✅ ${c.matched.company}（CIK ${c.matched.cik}）${c.matched.filedAt} 提交 ${c.matched.form}（${c.matched.accession}）——备案动作主张经 SEC 一手登记记录验证，证据档升独立验证(4)`);
+          lines.push(`    EDGAR 核查: ✅ ${c.matched.company}（CIK ${c.matched.cik}）${c.matched.filedAt} 提交 ${c.matched.form}（${c.matched.accession}）——备案动作主张经 SEC 一手登记记录验证，证据档升独立验证(4)${evSuffix}`);
         } else if (c.matched) {
-          lines.push(`    EDGAR 核查: · ${c.matched.company} ${c.matched.filedAt} 提交 ${c.matched.form}（${c.matched.accession}）在案——本主张非备案动作形态，记录为上下文、不抬证据档`);
+          lines.push(`    EDGAR 核查: · ${c.matched.company} ${c.matched.filedAt} 提交 ${c.matched.form}（${c.matched.accession}）在案——本主张非备案动作形态，记录为上下文、不抬证据档${evSuffix}`);
         } else {
-          lines.push(`    EDGAR 核查: ○ 365 天窗口内未匹配到 S-1 备案（公司名匹配为启发式；「EDGAR 查无」是本类主张的证伪条件之一，不等于已证伪）`);
+          lines.push(`    EDGAR 核查: ○ 365 天窗口内未匹配到 S-1 备案（公司名匹配为启发式；「EDGAR 查无」是本类主张的证伪条件之一，不等于已证伪）${evSuffix}`);
+        }
+        if (!c.reason && c.eventsUnavailableReason) {
+          lines.push(`    EDGAR 事件: 不可用——${c.eventsUnavailableReason}`);
         }
       }
       lines.push(`    证伪条件: ${r.falsification}`);
@@ -2963,11 +2976,15 @@ function formatReport(report) {
       lines.push(`> 另有 ${cdsc.results.length - 30} 条辨别结果超出渲染上限未显示（不静默切尾）`);
     }
     // [v3.23] IPO 主张的 EDGAR 核查汇总（新数据源 v3.23 的端到端回显）。
+    // [v3.24] 汇总行带流程事件计数（撤回/定价）与事件可用性。
     if (cdsc.ipoVerification) {
       const iv = cdsc.ipoVerification;
       if (iv.available) {
         lines.push(`  IPO 主张 EDGAR 核查: ${iv.checkedClaims} 条 ipo 主张 → 验证 ${iv.verified}（独立验证(4)）`
-          + ` / 上下文 ${iv.contextOnly} / 未匹配 ${iv.unmatched}；${iv.queries} 次 SEC 查询（S-1 窗口 ${iv.windowDays} 天）`);
+          + ` / 上下文 ${iv.contextOnly} / 未匹配 ${iv.unmatched}；${iv.queries} 次 SEC 查询（S-1 窗口 ${iv.windowDays} 天）`
+          + (iv.eventsQueries > 0
+            ? `；流程事件 ${iv.eventsQueries} 次 submissions 查询（撤回 ${iv.withdrawn} / 定价 ${iv.priced}）${iv.eventsAvailable ? '' : '——事件不可用: ' + (iv.eventsReason || '')}`
+            : ''));
       } else {
         lines.push(`  IPO 主张 EDGAR 核查: 不可用——${iv.reason}（ipo 主张按原证据档判定）`);
       }
@@ -3129,7 +3146,8 @@ async function main() {
         report.commercialDiscrimination, { live: process.env.FETCH === '1' });
       const iv = report.commercialDiscrimination.ipoVerification;
       console.log(iv && iv.available
-        ? `[ipo-edgar] 核查 ${iv.checkedClaims} 条 ipo 主张：验证 ${iv.verified} / 上下文 ${iv.contextOnly} / 未匹配 ${iv.unmatched}\n`
+        ? `[ipo-edgar] 核查 ${iv.checkedClaims} 条 ipo 主张：验证 ${iv.verified} / 上下文 ${iv.contextOnly} / 未匹配 ${iv.unmatched}`
+          + (iv.eventsQueries > 0 ? `；流程事件：撤回 ${iv.withdrawn} / 定价 ${iv.priced}` : '') + '\n'
         : `[ipo-edgar] 不可用: ${(iv && iv.reason) || '(未说明原因)'}（ipo 主张按原证据档判定）\n`);
     } catch (e) {
       console.log(`[ipo-edgar] 核查抛错，ipo 主张按原证据档判定: ${e.message}\n`);

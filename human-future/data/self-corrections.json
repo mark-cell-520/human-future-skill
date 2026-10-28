@@ -1,5 +1,5 @@
 {
-  "version": "3.22.1",
+  "version": "3.24.0",
   "corrections": [
     {
       "id": "corr-2026-007",
@@ -455,6 +455,16 @@
       "what": "v3.21 给商业辨别器立 ipo-claim（IPO/上市过程主张）时写下专属证伪路径「EDGAR 查无/撤回/定价时间表不符/挂牌后披露矛盾」，并称「备案文件在 EDGAR 可查……撤回事例可证伪」——但四条证伪条件里没有任何一条有数据支撑：EDGAR 采集层自 v3.4 起只收 14 家公司的 8-K Item 2.02，从来不去查任何 S-1。后果（v3.22.1 轮 live 实证）：MIT Tech Review「After weeks of frenzied speculation, Anthropic has filed its IPO prospectus.」被判 证据不足/无出处(1)/weak-evidence/decisionRelevant=false——而 Anthropic, PBC（CIK 0002130357）确实于 2026-10-26 向 SEC 提交了 S-1（accession 0001628280-26-067168，2026-10-29 browse-edgar 实测），主张的事实核心经一手登记记录完全成立，引擎却没有能力知道。连带事实：独立验证(4) 证据档自 v3.0.0c 起只认文本里的「independently verified by X」标记，立库 22 个版本从未被真实数据触发过。同型：corr-2026-037「没有触发机会不等于没有问题」——ipo 主张的 EDGAR 核查分支连代码都没有，比「没触发」更底一层。",
       "right": "v3.23 接入新数据源 edgar-ipo-collector（browse-edgar 公司检索 + atom 解析 + 365 天在办窗口 + 公司名 token 包含守卫 + 120ms 间隔 + 单轮查询预算）：对每条 ipo 主张提取公司名候选查 EDGAR，备案动作形态（files/filed/filing/submits + S-1/IPO/public debut）且窗口内真匹配到 S-1 族备案的，证据档升独立验证(4)——live 端到端 MIT TR 条 weak-evidence/无出处(1) → thin-reasoning/独立验证(4)/decisionRelevant=true，matched 记录带公司/CIK/表单/日期/accession 可逐条复核。精度纪律（不虚抬）：文书主体（「S-1 Takeaways」类内容主张）与承销牵头（「Goldman to Lead IPO」类）只记 EDGAR 在案作上下文不抬档；未匹配≠已证伪（公司名匹配是启发式）；网络失败整体降级 available=false，不把「查不到」扮成「查无」。撤回（RW）/定价区间（424B4）/挂牌后披露三条证伪条件仍无数据支撑，如实留在已知边界。",
       "lesson": "「证伪路径可观测」是给读者/下游的条件陈述，「引擎能执行该检查」是能力——两者差一个数据源。新辨别维度立库时的检查项：把证伪路径逐条分成「引擎现在有数据能查」与「需人工/下游执行」两类，前者当轮接数据或明确记待接，后者在 SKILL.md 标注执行者。另：v3.22.1 同轮修掉的汇总口径（verifyIpoClaims 重跑结果后必须用同一个 summarizeCommercial 重算汇总，否则报告头部计数与逐条结果自相矛盾）也是这条教训的副产品——辨别后的任何重判都要连带汇总。"
+    },
+    {
+      "id": "corr-2026-044",
+      "reportVersion": "v3.23",
+      "wrongClaim": "v3.23 给 edgar-ipo-collector 立档时写下「不做也不假装做：撤回（RW）、定价区间（424B4）、挂牌后披露的自动核查——这三轮不进库，留在 SKILL.md 已知边界（v3.21 证伪路径的其余三条仍由人工/下游 agent 执行，引擎不代劳）」——把「引擎不能执行」直接当成了「没有数据支撑」。",
+      "rightClaim": "2026-10-29 live 实证（browse-edgar + data.sec.gov 实抓）：browse-edgar 的 type=S-1 只是 SEC 的一个端点，同一公司的 submissions API（data.sec.gov/submissions/CIK##########.json）按 CIK 一次查询即返回全表单族的登记记录，撤回（RW）与定价（424B4）都是可观测的公开登记事件——Chobani Inc.（CIK 0001869113）S-1 2021-11-17 之后 RW 2022-09-02、Cerebras Systems Inc.（CIK 0002021728）S-1 2024-09-30 之后 RW 2025-10-03 之后再备案 S-1 2026-04-17 之后 424B4 2026-05-14、Mobileye Global Inc.（CIK 0001910139）S-1 2023-06-05 之后 424B4 2023-06-08。「引擎不能执行」与「没有数据支撑」是两件事，v3.23 的边界判定把前者当成了后者。",
+      "evidence": "live 探针：data.sec.gov/submissions/CIK0001869113.json / CIK0002021728.json / CIK0001910139.json / CIK0001607310.json 均 200，filings.recent 数组含 form/filingDate/accessionNumber 全字段；S-1/RW/424B4 族登记记录逐条可读（accession 如 0001193125-22-237850、0001628280-26-035214）。v3.24 接入后 npm test 475/0（新增 13 项），live 端到端 Anthropic 案例 2 次 SEC 查询、零漂移 diff vs v3.23 基线。",
+      "lesson": "写已知边界（或给能力写证伪路径）时要区分「没有数据源」与「没接数据源」——接新数据源时要扫该机构的其它端点，不能因第一个端点只覆盖一类表单就判定其余需人工。同型纪律：browse-edgar 的 type 参数只生效第一个（multi-type 查询实测无效）、同名不同 type 会解析到不同公司（Mobileye+type=S-1 → Mobileye Global Inc. CIK 0001910139 vs +type=RW → Mobileye B.V. CIK 0001607310）——跨表单查询必须锚定同一 CIK。另：事件类可观测数据只作上下文，不抬证据档、不改判定——「备案动作主张的事实核心由 S-1 记录验证，事件不推翻已发生的备案」，证伪解读（结合主张时点）由下游 agent 做，引擎不代判。",
+      "severity": "medium",
+      "fixedIn": "v3.24"
     }
   ]
 }
