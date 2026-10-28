@@ -587,7 +587,19 @@ const REASONING_CHECKS = [
     // 1/3（corr-2026-024 Apollo/poll、v3.1.1 demo/democracy 同型第三
     // 次实证：短词无边界子串匹配）。全池另实测 debut/distributed/
     // contribute/debugging/distribution/attribute 11 条候选误报面。
-    test: (t) => /\b(?:however|but|although|despite|yet|while|except|unless|if not|conversely|on the other hand)\b|不过|但是|尽管|除非/i.test(t) },
+    // [v3.22.1 精度修复] yet 只认让步位（句首或标点后）——live 实证
+    // （本轮 tech 桶修复暴露）：MIT TR「Anthropic has filed its IPO
+    // prospectus. The document offers the clearest picture yet of…」
+    // 与 ORCL funding 条「We have not yet initiated the at-the-market
+    // equity portion」的 yet 全是时间副词（「迄今」），不是反例让步，
+    // 却把两条主张的推理分各自虚抬 1 分（corr-2026-024 短词歧义家族
+    // 第四次实证：Apollo/poll → demo/democracy → debut/but → yet）。
+    // 修法：yet 必须出现在句首或子句标点之后（"Yet the company
+    // denies…" / "…complete, yet questions remain" 仍算反例）；
+    // "not yet initiated" / "picture yet of" / "yet to be seen" 等
+    // 时间副词语义不命中（漏报比误报诚实——真反例常由 however/but
+    // 等无歧义词承担）。
+    test: (t) => /\b(?:however|but|although|despite|while|except|unless|if not|conversely|on the other hand)\b|不过|但是|尽管|除非|(?:^|[.,;:!?]\s+)yet\b/i.test(t) },
 ];
 
 /**

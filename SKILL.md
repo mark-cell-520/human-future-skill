@@ -1,86 +1,94 @@
 ---
 name: human-future-v2
-title: "人类未来 · 文明推演引擎 v3.22.0"
-version: "3.22.0"
+title: "人类未来 · 文明推演引擎 v3.22.1"
+version: "3.22.1"
 description: |-
-  人类未来 v3.22.0 - 新辨别维度：执法/诉讼行动主张进库（legal-action，v3.8 已知边界
-  「执法行动 fined/sued/charged 无工具名词」的 live 实证补库）——2026-10-28 全池过堂
-  （corr-2026-028 纪律：288 条 live 池 262 条未命中逐条过堂；改动后端到端复跑 312 条池）live 实证 business
-  桶两条执法/诉讼主张整个在库外：TechCrunch AI「Parents sue OpenAI, alleging GPT-4o
-  coached their daughter off seizure medication」与 The Information「Malaysian
-  Authorities Seize $12 Million Worth of AI Chips in Smuggling Crackdown」——v3.8 给
-  regulatory-action 立库时白纸黑字记着「执法行动无 live 实证不进库」，本轮证据到齐：
-  执法/诉讼行动与规则事件是两类信号，规则事件的证伪靠最终规则文本，执法/诉讼行动的
-  证伪靠司法/行政程序结局（驳回/撤诉/和解/改判/撤销），漏掉它商业辨别对合规需求域
-  「规则之后发生什么」失明（罚款、扣押、诉讼正是规则落地的可观测证据）。① legal-action
-  两形态（全部 live 实证驱动）：A 诉讼动作 sue/sues/sued/suing + capitalized target
-  （容忍 ≤2 个短小写间隔词）；B 执法动作 执法主体（authorities/government/regulators/
-  police/customs/prosecutors/attorneys general/DOJ/SEC/FTC/treasury/EU/White House/
-  ministry/Congress…）+ [^.!?]{0,40} + 执法动词（seize/fined/penalize/indict/
-  confiscate…）。② 精度设计（漏报比误报诚实、没有实证不扩模式）：动词族只收无名词
-  歧义形态——fined/fining 收而 fines（名词 impose fines）不收、seize（动词）收而
-  seizure（名词，live 实证 seizure medication 医疗场景）不收、indicts/indicted 收而
-  indictment 名词不匹配；charge/charged 有意不进动词族（live 实证 sec_filings 桶
-  会计 charges：restructuring/compensation/impairment charges、free of charge、
-  in charge、charged with explaining 四类全部不命中）；不抢 regulatory-action 地盘
-  （Treasury Proposes/Trump lifts 规则句整条不命中）；无 live 实证形态不进库
-  （lawsuit against 名词句/settles with 和解句/被动语态/charged 名词歧义）。③ 事件型
-  no-quantity 豁免扩展到 legal-action（v3.8/v3.21/v3.21.1 同型第四次：诉讼/执法主张
-  的证伪靠程序结局不靠数字，标题-only 无数字条不判「不可证伪: 无量化」，豁免只摘
-  no-quantity 不抬推理分）。④ 专属证伪路径（诉讼被驳回/撤诉/和解且条款不符、执法
-  行动被上诉推翻/金额改判撤销、指控被撤回）+ compliance_demand 类目 + KIND_CN 双处
-  （报告+注入）。live 端到端（EDGAR 缓存先删再跑）：pipeline exit 0、312 条 live
-  信号；商业辨别段 audited 22 条含 legal-action:2（business 桶两条 live 实证——Parents
-  条判 weak-evidence/无出处(1)/推理 0/3、Malaysia 条判 weak-evidence/无出处(1)/
-  推理 1/3（has-sample=$12M），均 decisionRelevant=false 不虚抬：标题-only 媒体转述
-  无法院文书引用）；其余 kind 计数逐一不变（competitive:1→0 与 adoption:2→3 经核对
-  是 RSS 池轮换——该 competitive 条目已不在 run2 信号池、现判别仍为 competitive 不
-  串台）；forecast 辨别 69 条与结算段逐条 diff 零漂移（结算幂等 0 新结算/跳过 6/
-  pending 60，ledger brier 0.2377/样本 16 不变；本轮会话第一次 live 跑（改动前基线）
-  结算 5 条到期义务——META FY2026Q2 带内/DELL FY2027Q1/Q2 beat/PLTR FY2026Q1/Q2
-  beat，与 SKILL.md v3.14/v3.19/v3.20 记载的结算结果一致，系运行期台账文件在本会话
-  前已回卷到 10-26 状态（gitignore 的运行产物），非本轮改动引起、未手工补造）；
-  模式库计数 23→24；渲染/注入上限 30 未触顶。测试 429→439 项；12 轮反向验证全部
-  精确失败（摘除 legal-action 模式整块→8/摘除 sue 形态→2/摘除执法族→2/摘除
-  no-quantity 豁免→2/摘除证伪条件→1/摘除类目映射→3/摘除报告 KIND_CN→1/摘除注入
-  KIND_CN→1/动词族加回 fines 名词→1（impose fines 误命中）/动词族加回 seizure
-  名词→1（执法主体+seizure 医学语义边界句误命中——第一版夹具用无主体的医疗句、
-  走不到 Form B 分支、断言空转报 0 失败，补带执法主体的边界句后精确失败，
-  corr-2026-029/037 同型第三次实证）/计数文档漂移→3/版本漂移→多处）。登记
-  corr-2026-041（已知边界的修法预设可能与实证所需形态不同——v3.8 边界字面写「扩
-  工具名词」，live 实证（Authorities Seize）需要的是主体+执法动词两段式；过堂已知
-  边界时要按实证句子的结构修，不按边界记录的修法修）；登记簿 39→40 条。同轮维护
-  （不单独涨号）：去重三处 v3.21 重复粘贴的注释（S-1 证据档/has-counterexample/ipo
-  证伪条件与类目）；31+ 处历史版本断言硬编码 3.21.1 全量同步 3.22.0（corr-2026-026
-  纪律）；豁免源级断言随第四次扩展同步。
-  历史：v3.21.1 corr-2026-025 结案（ma 事件型 no-quantity 豁免统一）+ usage-metric
-  扩 (monthly|weekly|daily) calls（live 实证）+ 本机注入脚本补齐 v3.14-v3.21 内容
-  （真实断链修复）——维护级（末位补丁，非新辨别维度）；v3.21.0 IPO/上市过程主张
-  进库（新辨别维度）；v3.20 PLTR 冒号+bullet 期望式指引形态；v3.19 AVGO/DELL/PLTR
-  书面数值指引形态；v3.18 RSS 前瞻主张独立额度；v3.17 表格式全年 capex 实际值抽取；
-  v3.16 GOOGL FY2026 capex 残废条目修复；v3.15 全年实际值抽取+annual key 配对；
-  v3.14 META CFO 评论式指引形态；v3.13 财报指引自动结算指标扩展；v3.12 算力基建
-  承诺/规模主张（新辨别维度）；v3.11 用量/牵引度指标主张+引号切分修复；v3.10 一手
-  信源桶接入+部署规模主张；v3.9 价格下调主张；v3.8 监管行动主张；v3.7 专家/机构
-  判断主张；v3.6 成本/价格信号主张；v3.5.1 结算链路修复（维护）；v3.5 财报指引
-  自动结算；v3.4 财报指引+SEC EDGAR；v3.3.1 survey-finding 精度修复（维护）；
-  v3.3 并购/交易过程主张；v3.2.2/3.2.1 断链修复；v3.2 产能/供给约束主张；v3.1.1
-  口径错位精度修复；v3.1 接入 self-correction-ledger；v3.0.0c 商业段断链修复；
-  v2.17 接入 GJOpen；v2.16 基准概率断链修复；v2.15 参考文本单列；v2.14 sitemap
-  真实发布时间；v2.13 停止假推演。
+description: |-
+  人类未来 v3.22.1 - 断链修复（维护级，非新辨别维度）：商业辨别候选池白名单漏桶
+  （corr-2026-027 同型第五波「采集了但辨别器从不看」）——2026-10-29 全池测量
+  （corr-2026-028 纪律：312 条 live 池逐桶过形态门，候选桶未命中 256 条逐条过堂）
+  live 实证 tech 桶 2 条真实商业主张整个在四桶白名单外：MIT Tech Review「After weeks
+  of frenzied speculation, Anthropic has filed its IPO prospectus.」（ipo-claim 形态：
+  filed + IPO prospectus——v3.21 立库时只过了 business/frontier_models 两桶的堂，
+  没过「全部 live 桶」的堂）与 Ars Technica「Survey of 2,018 IT heads at big firms」
+  （adoption + 第三方调查(3)）。PICK_BUCKETS 四桶→六桶（+tech 6 / +humanities 4，
+  排在 economy 之后，business 第一优先纪律不变；humanities 本轮 0 命中同型补齐防
+  漏桶），live 端到端商业辨别段 audited 22→24 条含 ipo:1/adoption 新条目（MIT TR 条
+  weak-evidence/无出处(1)/推理 0/3 不虚抬；Ars 条 thin-reasoning/第三方调查(3)/
+  推理 0/3/decisionRelevant），其余 kind 计数逐一不变。同轮精度修复（维护级，被桶
+  修复暴露的 live 实证）：has-counterexample 的 yet 只认让步位（句首/标点后）——MIT TR
+  主张上下文「the clearest picture yet of…」与 ORCL funding 条「We have not yet
+  initiated the at-the-market equity portion」的时间副词 yet（「迄今」）被当成反例
+  标记，两条主张推理分各虚抬 1 分（corr-2026-024 短词歧义家族第四次实证：Apollo/poll
+  → demo/democracy → debut/but → yet）；修复后 ORCL 条推理 2/3→1/3（verdict 仍
+  factual）、MIT TR 条 1/3→0/3 不虚抬。forecast 辨别 106 条与结算段逐条 diff 零漂移；
+  模式库计数 24 不变（扩桶不加 kind）。测试 439→449 项；5 轮反向验证全部精确失败
+  （摘除 tech 桶→引擎级/源级/渲染多条/摘除 humanities 桶→源级（精度门负向断言抓不到摘桶）/摘除 yet 让步位
+  约束→live 实证+三形态+ORCL 影响面/摘除注入池描述→注入源级/版本漂移→多处）。登记
+  corr-2026-042（候选池白名单是逐桶的活结论——每轮全池测量必须输出全部六桶的形态门
+  命中分布，不只当轮新形态的桶；v3.10 修 sec_filings/frontier_models 漏桶时同型只过了
+  四桶的堂）；登记簿 40→41 条。同轮维护：102 处历史版本断言硬编码 3.22.0 全量同步
+  3.22.1（corr-2026-026 纪律）。版本号理由：断链修复+精度修复=末位补丁（维护级，
+  非新辨别维度）。历史：v3.22.0 执法/诉讼行动主张进库（新辨别维度 legal-action）；
+  v3.21.1 corr-2026-025 结案（ma 豁免统一）+ usage-metric 扩 calls + 本机注入脚本补齐
+  v3.14-v3.21；v3.21.0 IPO/上市过程主张进库（新辨别维度）；v3.20 PLTR 冒号+bullet
+  期望式指引形态；v3.19 AVGO/DELL/PLTR 书面数值指引形态；v3.18 RSS 前瞻主张独立额度；
+  v3.17 表格式全年 capex 实际值抽取；v3.16 GOOGL FY2026 capex 残废条目修复；v3.15
+  全年实际值抽取+annual key 配对；v3.14 META CFO 评论式指引形态；v3.13 财报指引结算
+  指标扩展；v3.12 算力基建承诺/规模主张（新辨别维度）；v3.11 用量/牵引度指标主张+引号
+  切分修复；v3.10 一手信源桶接入+部署规模主张；v3.9 价格下调主张；v3.8 监管行动主张；
+  v3.7 专家/机构判断主张；v3.6 成本/价格信号主张；v3.5.1 结算链路修复（维护）；v3.5
+  财报指引自动结算；v3.4 财报指引+SEC EDGAR；v3.3.1 survey-finding 精度修复（维护）；
+  v3.3 并购/交易过程主张；v3.2.2/3.2.1 断链修复；v3.2 产能/供给约束主张；v3.1.1 口径
+  错位精度修复；v3.1 接入 self-correction-ledger；v3.0.0c 商业段断链修复；v2.17 接入
+  GJOpen；v2.13 停止假推演。
 ---
 ---
 
-# 人类未来 · 文明推演引擎 v3.22.0
+# 人类未来 · 文明推演引擎 v3.22.1
 
 > 数据采集（RSS 真联网 + 可选正文增强 + 外部预测基准 GJOpen）→ 心虫 stateless 检查器 → 三年推演引擎。
 > 当前状态与实测数字见下一节，历史版本记录见 references/upgrade-history.md。
 
 ---
 
-## 当前状态（v3.22.0 实测）
+## 当前状态（v3.22.1 实测）
 
-以下数字全部来自 2026-10-28 的 `FETCH=1 FETCH_BODY=1 node scripts/run-pipeline.js` 实跑
+以下数字全部来自 2026-10-29 的 `FETCH=1 FETCH_BODY=1 node scripts/run-pipeline.js` 实跑
+（v3.22.1 轮：pipeline exit 0、312 条 live 信号（business 48 + economy 46 +
+frontier_models 142 + sec_filings 42 + tech 22 + humanities 12）；商业辨别
+候选池白名单漏桶修复（corr-2026-027 同型断链：tech/humanities 采集了但辨别器
+从不看）的 live 端到端——全池测量（corr-2026-028 纪律「未命中条目过堂」：
+312 条池逐桶过形态门，候选桶未命中 256 条逐条过堂）live 实证 tech 桶 22 条里
+**2 条真实商业主张**被四桶白名单挡在辨别外：MIT Tech Review「After weeks of
+frenzied speculation, Anthropic has filed its IPO prospectus.」（ipo-claim
+形态：filed + IPO prospectus——v3.21 立库时只过了 business/frontier_models
+两桶的堂，没过「全部 live 桶」的堂）与 Ars Technica「Enterprises keep buying
+software upgrades that IT thinks will make things worse  Survey of 2,018 IT
+heads at big firms…」（adoption + 第三方调查(3)）；PICK_BUCKETS 四桶→六桶
+（+tech 6 / +humanities 4，排在 economy 之后，business 第一优先纪律不变；
+humanities 12 条本轮 0 命中、同型补齐防同类漏桶）后全池复测：商业辨别段
+audited 22→24 条含 ipo:1/adoption 新条目（MIT TR 条判 weak-evidence/无出处(1)/
+推理 0/3/decisionRelevant=false 不虚抬——科技媒体转述无 S-1 文书引用；Ars 条判
+thin-reasoning/第三方调查(3)/推理 0/3/decisionRelevant——有描述有调查口径，
+与标题-only 条不同级），其余 kind 计数逐一不变（零串台零丢失），渲染/注入
+上限 30 未触顶。同轮精度修复（维护级，被桶修复暴露的 live 实证）：
+has-counterexample 的 yet 只认让步位（句首/标点后）——MIT TR 主张上下文
+「the clearest picture yet of…」与 ORCL funding 条「We have not yet initiated
+the at-the-market equity portion」的 yet 是时间副词（「迄今」）不是反例
+让步，却把两条主张的推理分各自虚抬 1 分（corr-2026-024 短词歧义家族第四次
+实证：Apollo/poll → demo/democracy → debut/but → yet）；修复后 ORCL 条
+推理 2/3→1/3（verdict 仍 factual——证据档先行于推理分）、MIT TR 条 1/3→0/3
+不虚抬；forecast 辨别 106 条与结算段逐条 diff 零漂移（结算幂等 0 新结算/
+跳过 6/pending 60、ledger brier 0.2377/样本 16 不变）；模式库计数 24 不变
+（扩桶不加 kind）。测试 439→449 项；5 轮反向验证全部精确失败（摘除 tech 桶
+→引擎级/源级/渲染多条/摘除 humanities 桶→源级（精度门是负向断言，摘桶后负例「更真」抓不到，源级断言才是它的钉子）/摘除 yet 让步位约束
+→live 实证+时间副词三形态+ORCL 影响面/摘除注入脚本池描述更新→注入源级/
+版本漂移→多处）。登记 corr-2026-042（候选池白名单是逐桶的活结论——每轮
+全池测量必须输出全部六桶的形态门命中分布，不只当轮新形态的桶；v3.10 修
+sec_filings/frontier_models 漏桶时同型只过了四桶的堂）；登记簿 40→41 条。
+版本号理由：断链修复+同轮精度修复=末位补丁（维护级，非新辨别维度——
+用户铁律「修 bug 算维护」，不拿断链修复报升级）。
 （v3.22.0 轮：pipeline exit 0、312 条 live 信号（business 48 + economy 46 +
 frontier_models 142 + sec_filings 42 + tech 22 + humanities 12）；执法/诉讼行动
 主张进库（legal-action，新辨别维度）的 live 端到端——全池测量（corr-2026-028
@@ -642,6 +650,11 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   SEC 备案与厂商一手公告里的量化主张从不进辨别（见「商业主张辨别」层 v3.10 段）
   [v3.12] sec_filings 8→10：算力基建承诺主张进池后 sec_filings 候选增至 10 条，
   8 会把尾部的 $64B server orders 与 PLTR 营收增长主张静默切掉
+  [v3.22.1] 候选池四桶→六桶：+tech 6 / +humanities 4（排在 economy 之后，
+  business 第一优先不变）——全池测量 live 实证 tech 桶 2 条真实商业主张
+  （MIT TR「Anthropic has filed its IPO prospectus」ipo 形态、Ars Technica
+  「Survey of 2,018 IT heads」调查主张）被白名单挡在辨别外（corr-2026-027
+  同型断链：采集了但辨别器从不看；humanities 本轮 0 命中，同型补齐防漏桶）
 
 **外部预测基准层（v2.17 新增）**
 - 来源：Good Judgment Open（gjopen.com），专业预测平台；`/questions?q=<词>` 公开可抓
@@ -1372,6 +1385,55 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   「执法主体+执法动词」两段式新维度；过堂已知边界时要按实证句子的结构修，
   不按边界记录的修法修）。
 
+**[v3.22.1] 商业辨别候选池白名单漏桶修复（断链修复，维护级，非新辨别维度）**
+- 定位：候选池白名单是逐桶的活结论——corr-2026-027（v3.10「候选池桶白名单
+  是另一种断链：采集了但辨别器从不看」）同型第五波。2026-10-29 全池测量
+  （corr-2026-028 纪律：312 条 live 池逐桶过形态门，候选桶未命中 256 条
+  逐条过堂）live 实证 tech 与 humanities 两桶采集了（tech 22 + humanities
+  12）但商业辨别候选池自 v3.10 起只有四桶白名单（business/sec_filings/
+  frontier_models/economy）——tech 桶 22 条里 2 条真实商业主张整个在
+  辨别外：MIT Tech Review「After weeks of frenzied speculation, Anthropic
+  has filed its IPO prospectus.」（ipo-claim 形态：filed + IPO prospectus
+  ——v3.21 立库时只过了 business/frontier_models 两桶的堂，7 条 Anthropic
+  IPO 集群 live 实证全来自这两桶，没过「全部已采集桶」的堂）与 Ars
+  Technica「Enterprises keep buying software upgrades that IT thinks will
+  make things worse  Survey of 2,018 IT heads at big firms…」（adoption +
+  第三方调查(3)）。候选池差集审计（projection 字段 vs 注入脚本）抓不到这种
+  断链——两头都「没有」这个字段，只有逐桶过形态门的全池测量能抓到。
+- 修复：PICK_BUCKETS 四桶→六桶（+tech 6 / +humanities 4，排在 economy
+  之后，business 第一优先纪律不变、v3.10 断言钉住；humanities 12 条本轮
+  0 命中、无 live 实证，同型补齐防同类漏桶、cap 兜底今天不加条目）。
+  live 端到端：商业辨别段 audited 22→24 条含 ipo:1/adoption 新条目
+  （MIT TR 条判 weak-evidence/无出处(1)/推理 0/3/decisionRelevant=false
+  不虚抬——科技媒体转述无 S-1 文书引用标记；Ars 条判 thin-reasoning/
+  第三方调查(3)/推理 0/3/decisionRelevant——有描述有调查口径，与标题-only
+  条不同级，v3.7 Apollo 条同型路径）；其余 kind 计数逐一不变（零串台零丢失），
+  渲染/注入上限 30 未触顶；forecast 辨别 106 条与结算段（幂等 0 新结算/
+  跳过 6/pending 60、ledger brier 0.2377/样本 16 不变）逐条 diff 零漂移；
+  模式库计数 24 不变（扩桶不加 kind，v3.21.1 同型纪律）。
+- 同轮精度修复（维护级，被桶修复暴露的 live 实证）：has-counterexample
+  的 yet 只认让步位（句首或标点后）——MIT TR 主张上下文「the clearest
+  picture yet of…」与 ORCL funding 条「We have not yet initiated the
+  at-the-market equity portion」的 yet 是时间副词（「迄今」）不是反例
+  让步，却把两条主张的推理分各自虚抬 1 分（corr-2026-024 短词歧义家族
+  第四次实证：Apollo/poll → demo/democracy → debut/but → yet；全池另实测
+  debut/distributed/contribute 等 11 条候选误报面的同族方法：按位置分工）。
+  修复后 ORCL 条推理 2/3→1/3（verdict 仍 factual——证据档先行于推理分，
+  事实判定不变）、MIT TR 条 1/3→0/3 不虚抬；让步形态（句首 Yet / 逗号
+  yet）仍算反例，修复只摘时间副词不打穿真反例。
+- 端到端：引擎候选门（六桶）→ discriminateCommercial → formatReport
+  KIND_CN「IPO/上市过程主张」「采用主张」→ cron 注入第 6 段（候选池描述
+  同轮同步为「business/economy/tech/humanities 媒体 + SEC 备案/厂商一手
+  公告」——本机注入脚本不在版本控制，改前备份 .bak-20261029）。
+- 测试 439→449 项；5 轮反向验证全部精确失败（摘除 tech 桶→引擎级/源级/
+  渲染多条/摘除 humanities 桶→源级（精度门是负向断言，摘桶后负例「更真」抓不到，源级断言才是它的钉子）/摘除 yet 让步位约束→live 实证
+  +时间副词三形态+ORCL 影响面/摘除注入池描述更新→注入源级/版本漂移→多处）。
+  登记 corr-2026-042（候选池白名单是逐桶的活结论——每轮全池测量必须输出
+  全部已采集桶的形态门命中分布，不只当轮新形态的桶）；登记簿 40→41 条。
+- 版本号理由：断链修复+同轮精度修复=末位补丁（3.22.1）。用户铁律「修 bug
+  算维护，禁止拿维护报升级」——本轮无新辨别维度/新数据源/0 调用模块接入，
+  不涨 x.0。
+
 **[v3.21] IPO/上市过程主张（ipo-claim，新辨别维度）**
 - 定位：资本与商业模式域的覆盖缺口，且是一次「否定式覆盖决议腐烂」——
   v3.3 曾把 IPO 整体排除在模式库外，理由「估值形态已覆盖该条」，该决议
@@ -1449,13 +1511,19 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   严格过滤，漏掉数据里 2 条 critical（都是「整段推演作废」级的假能力审计），
   接入后会少报高危数（说 4 实际 6）。改为按等级表比较（critical > high >
   medium > low），critical 排最前。这是修 bug，不算升级——升级点是接入本身。
-- 边界（如实声明）：登记簿 40 条（v3.13 轮新增 corr-2026-030/031、v3.14 轮
+- 边界（如实声明）：登记簿 41 条（v3.13 轮新增 corr-2026-030/031、v3.14 轮
   新增 corr-2026-032/033、v3.15 轮新增 corr-2026-034、v3.16 轮新增
   corr-2026-035、v3.17 轮新增 corr-2026-036、v3.18 轮新增 corr-2026-037、
   v3.19 轮新增 corr-2026-038、v3.20 轮新增 corr-2026-039、v3.21 轮新增
-  corr-2026-040、v3.22 轮新增 corr-2026-041 后：
-  critical 4 / high 17 / medium 19（含 corr-2026-024/025 两条前轮手写条目
-  未设 severity、按 medium 计）——corr-2026-041 记的是「已知边界的修法预设
+  corr-2026-040、v3.22 轮新增 corr-2026-041、v3.22.1 轮新增 corr-2026-042 后：
+  critical 4 / high 18 / medium 19（含 corr-2026-024/025 两条前轮手写条目
+  未设 severity、按 medium 计）——corr-2026-042 记的是「候选池白名单是逐桶的
+  活结论」——tech/humanities 两桶采集了但辨别器从不看（corr-2026-027 同型
+  第五波），2026-10-29 全池测量 live 实证 tech 桶 2 条真实商业主张（MIT TR
+  IPO prospectus / Ars Technica 调查）被白名单挡在辨别外；每轮全池测量必须
+  输出全部已采集桶的形态门命中分布，不只当轮新形态的桶，候选池差集审计
+  （projection vs 注入脚本）抓不到这种断链——两头都「没有」这个字段；
+  corr-2026-041 记的是「已知边界的修法预设
   可能与实证所需形态不同」——v3.8 边界字面写「执法行动扩工具名词」，
   2026-10-28 live 实证（Malaysia Authorities Seize）需要的是「执法主体+
   执法动词」两段式新维度，按边界字面修法扩库一条也修不好；过堂已知边界时
@@ -1643,7 +1711,7 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   引擎不代劳——这是心虫铁律，不是能力缺失。
 
 **测试**
-- `npm test`：**439 项断言**（实测各 section 汇总；v3.4 的 230 + v3.5 新增 11 + v3.5.1 新增 9 + v3.6 新增 8 + v3.7 新增 9 + v3.8 新增 11 + v3.9 新增 8 + v3.10 新增 13 + v3.11 新增 15 + v3.12 新增 14 + v3.13 新增 13 + v3.14 新增 9 + v3.15 新增 10 + v3.16 新增 11 + v3.17 新增 10 + v3.18 新增 6 + v3.19 新增 9 + v3.20 新增 8 + v3.21 新增 16 + v3.21.1 新增 9 + v3.22 新增 10：
+- `npm test`：**449 项断言**（实测各 section 汇总；v3.4 的 230 + v3.5 新增 11 + v3.5.1 新增 9 + v3.6 新增 8 + v3.7 新增 9 + v3.8 新增 11 + v3.9 新增 8 + v3.10 新增 13 + v3.11 新增 15 + v3.12 新增 14 + v3.13 新增 13 + v3.14 新增 9 + v3.15 新增 10 + v3.16 新增 11 + v3.17 新增 10 + v3.18 新增 6 + v3.19 新增 9 + v3.20 新增 8 + v3.21 新增 16 + v3.21.1 新增 9 + v3.22 新增 10 + v3.22.1 新增 10：
   2 项纯结算函数（settleGuidance 单位感知容差：相对/绝对/bps/百分点/区间/无容差
   跳过，含区分相对vs绝对的边界用例 / normalizeMetric+parseMetricValue 单位解析）+
   3 项实际值抽取（extractActuals 营收+毛利率+标题期间 / GAAP/非GAAP 不同值抽出
@@ -2150,6 +2218,37 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   + 1 项 cron 注入源级（读 ~/.hermes/scripts/hf-cron-fetch.sh 验 legal-action
   中文标签）
   + 1 项模式库计数 24 + 版本号一致性（五处对齐 3.22.0））。
+  v3.22.1 新增 10（2 项 live 实证命中（MIT Tech Review「After weeks of
+  frenzied speculation, Anthropic has filed its IPO prospectus.」→ kind=ipo，
+  判 证据不足/无出处(1)/推理 0/3/weak-evidence/decisionRelevant=false 不虚抬
+  +事件型豁免生效+capital_flow 类目——修复前整条不进辨别（tech 桶不在候选池），
+  且 yet 修复后上下文「clearest picture yet」不再充当反例标记；Ars Technica
+  「Survey of 2,018 IT heads at big firms」→ kind=adoption，第三方调查(3)/
+  推理 0/3/thin-reasoning/decisionRelevant——有描述有调查口径，与标题-only
+  条不同级）
+  + 1 项 yet 让步位约束（句首 Yet/逗号 yet 两种让步形态仍算反例——修复只摘
+  时间副词不打穿真反例）
+  + 1 项 yet 时间副词三形态不命中（not yet initiated/picture yet of/yet to
+  be priced——恢复裸 yet 即精确失败）
+  + 1 项 yet 修复的 live 影响面（ORCL funding 条推理 2/3→1/3、verdict 仍
+  factual——证据档先行于推理分，修正只摘虚抬反例分）
+  + 1 项引擎端到端（business+两条 tech live 条目进辨别，audited 3、
+  byKind ipo:1/adoption:1、business 第一优先、formatReport 渲染「类型:
+  IPO/上市过程主张 | 来源: MIT Tech Review - AI」行——只认渲染行）
+  + 1 项源级（PICK_BUCKETS 六桶顺序 + tech/humanities 排 economy 之后 +
+  BUCKET_CAP 新桶容量 + byBucket 初始化同步）
+  + 1 项精度门未破（EU AI Act 指南页/NIST 资助授予/人文条目/Fed 公告/播客
+  在六桶下全部不进辨别——新桶是重点盯守对象）
+  + 1 项 cron 注入源级（候选池描述含 tech/humanities）
+  + 1 项模式库计数 24 不变（扩桶不加 kind）+ 版本号一致性（五处对齐
+  3.22.1））。
+  v3.22.1 五轮反向验证全部精确失败（摘除 tech 桶→引擎级/源级/渲染多条/
+  摘除 humanities 桶→源级（精度门是负向断言，摘桶后负例「更真」抓不到，源级断言才是它的钉子）/摘除 yet 让步位约束（恢复裸 yet）→live
+  实证+时间副词三形态+ORCL 影响面/摘除注入脚本池描述更新→注入源级/版本
+  漂移→多处）。每轮基线全绿、摘除后断言必生效、还原 diff 校验一致、收尾
+  基线全绿（449/0）。同轮维护（不单独涨号）：102 处历史版本断言硬编码
+  3.22.0 全量同步 3.22.1（corr-2026-026 纪律，含 35 处正则转义形态
+  /3\.22\.0/——sed 字面替换碰不到转义反斜杠，第二轮专项替换才同步）。
   v3.22 十二轮反向验证全部精确失败（摘除 legal-action 模式整块→8（v3.22 节
   8 + 三处计数断言）/摘除 sue 形态→4/摘除执法主体+动词族→4/摘除 no-quantity
   豁免→2（v3.22 节 1 + v3.21.1 源级断言 1）/摘除证伪条件→1/摘除类目映射→3/
@@ -2329,7 +2428,11 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   切掉尾部等于「辨别了但看不见」；[v3.11] 20→25 / 16→25 并加截断披露
   （usage-metric 新维度+切分修复后 audited 23 超旧上限，超出时明确写
   「另有 N 条未显示」）；[v3.12] 25→30 / 25→30（算力基建承诺新维度后
-  audited 27 超旧上限，上限与 formatReport 同步））** /
+  audited 27 超旧上限，上限与 formatReport 同步）；[v3.22.1] 候选池四桶→
+  六桶（+tech 6 / +humanities 4，business 第一优先不变，排在 economy 之后）
+  后 audited 22→24（live 实证 tech 桶 MIT TR IPO prospectus 与 Ars Technica
+  调查两条首次进辨别），上限 30 未触顶；注入脚本的候选池描述同轮同步为
+  「business/economy/tech/humanities 媒体 + SEC 备案/厂商一手公告」）** /
   **口径错位检测（v3.1.1 补入，第 6.5 段，含触发句与口径限定——此前引擎产出+
   报告渲染都有，注入脚本从未读，第五次同型断链）** /
   **外部预测基准（v2.17 新增，第 7 段）** /

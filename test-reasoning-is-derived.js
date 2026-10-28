@@ -4240,11 +4240,11 @@ c34('cron 注入脚本渲染财报指引（VERDICT_CN/汇总/结构行）', (() 
 
 // ── 组 4：版本号（corr-2026-014 同型：banner 腐烂四个补丁轮）─────
 // [v3.6] 版本推进到 3.6.0（新辨别维度：成本/价格信号），本断言跟着当前版本走。
-c34('版本号一致性：banner 与 VERSION 对齐（3.22.0）', (() => {
+c34('版本号一致性：banner 与 VERSION 对齐（3.22.1）', (() => {
   const fs2 = require('fs');
   const version = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return version === '3.22.0' && rp.includes('文明推演引擎 v3.22.0');
+  return version === '3.22.1' && rp.includes('文明推演引擎 v3.22.1');
 })(), 'run-pipeline banner 必须与 VERSION 一致（v3.1 修过 banner/meta 同型后又腐烂）');
 
 // ── v3.4 汇总 ──
@@ -4438,15 +4438,15 @@ c35('cron 注入脚本渲染财报指引结算段', (() => {
 
 // ── 组 6：版本号一致性（corr-2026-014 同型，四处对齐）──────────
 // [v3.6] 推进到 3.6.0（新辨别维度），断言跟当前版本走。
-c35('版本号一致性：VERSION/package.json/projection meta/banner 对齐 3.22.0', (() => {
+c35('版本号一致性：VERSION/package.json/projection meta/banner 对齐 3.22.1', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.22.0'
-    && /3\.22\.0/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.22.0');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.22.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.22.1'
+    && /3\.22\.1/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.22.1');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.22.1，防 corr-2026-014 版本漂移复发');
 
 // ── v3.5 汇总 ──
 (async () => {
@@ -4673,15 +4673,15 @@ c351('结算证据来源是提供实际值的备案（actualPeriod 匹配）', (
 
 // ── 组 4：版本号一致性（corr-2026-014 同型）────────────────────
 // [v3.6] 推进到 3.6.0（新辨别维度：成本/价格信号）。
-c351('版本号一致性：VERSION/package.json/banner 对齐 3.22.0', (() => {
+c351('版本号一致性：VERSION/package.json/banner 对齐 3.22.1', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.22.0'
-    && /3\.22\.0/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.22.0');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.22.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.22.1'
+    && /3\.22\.1/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.22.1');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.22.1，防 corr-2026-014 版本漂移复发');
 
 // ── v3.5.1 汇总 ──
 (async () => {
@@ -4876,15 +4876,15 @@ c36('精度门未破：非主张文本仍被挡在辨别外', (() => {
 })(), 'Fed 公告与播客不得因 cost-signal 新模式进入辨别');
 
 // ── 组 5：版本号一致性（corr-2026-014 同型）────────────────────
-c36('版本号一致性：VERSION/package.json/banner 对齐 3.22.0', (() => {
+c36('版本号一致性：VERSION/package.json/banner 对齐 3.22.1', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.22.0'
-    && /3\.22\.0/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.22.0');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.22.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.22.1'
+    && /3\.22\.1/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.22.1');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.22.1，防 corr-2026-014 版本漂移复发');
 
 // ── v3.6 汇总 ──
 (async () => {
@@ -5120,15 +5120,15 @@ c37('精度门未破：非主张文本仍被挡在辨别外', (() => {
 })(), 'Fed 公告与播客不得因 expert-judgment 新模式进入辨别');
 
 // ── 组 5：版本号一致性（corr-2026-014 同型）────────────────────
-c37('版本号一致性：VERSION/package.json/banner 对齐 3.22.0', (() => {
+c37('版本号一致性：VERSION/package.json/banner 对齐 3.22.1', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.22.0'
-    && /3\.22\.0/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.22.0');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.22.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.22.1'
+    && /3\.22\.1/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.22.1');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.22.1，防 corr-2026-014 版本漂移复发');
 
 // ── v3.7 汇总 ──
 (async () => {
@@ -5419,15 +5419,15 @@ c38('精度门未破：非主张文本仍被挡在辨别外', (() => {
 })(), 'Fed 公告/播客/官员言论不得因 regulatory-action 新模式进入辨别');
 
 // ── 组 5：版本号一致性（corr-2026-014 同型）────────────────────
-c38('版本号一致性：VERSION/package.json/banner 对齐 3.22.0', (() => {
+c38('版本号一致性：VERSION/package.json/banner 对齐 3.22.1', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
-  return VERSION === '3.22.0'
-    && /3\.22\.0/.test(pkg.version)
-    && rp.includes('文明推演引擎 v3.22.0');
-})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.22.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.22.1'
+    && /3\.22\.1/.test(pkg.version)
+    && rp.includes('文明推演引擎 v3.22.1');
+})(), 'VERSION/package.json/run-pipeline banner 必须对齐 3.22.1，防 corr-2026-014 版本漂移复发');
 
 // ── v3.8 汇总 ──
 (async () => {
@@ -5648,18 +5648,18 @@ c39('精度门未破：非主张文本与无幅度价格谈论仍被挡在辨别
 })(), 'Fed 公告/播客/无幅度降价谈论/TCO 效率句/官员言论不得因 price-cut 新模式进入辨别');
 
 // ── 组 5：版本号一致性（corr-2026-014 同型）────────────────────
-c39('版本号一致性：五处对齐 3.22.0', (() => {
+c39('版本号一致性：五处对齐 3.22.1', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs2.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.22.0'
-    && pkg.version === '3.22.0'
-    && rp.includes('文明推演引擎 v3.22.0')      // banner
-    && /version: '3\.22\.0'/.test(pf)          // projection meta
-    && /version: '3\.22\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.22.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.22.1'
+    && pkg.version === '3.22.1'
+    && rp.includes('文明推演引擎 v3.22.1')      // banner
+    && /version: '3\.22\.1'/.test(pf)          // projection meta
+    && /version: '3\.22\.1'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.22.1，防 corr-2026-014 版本漂移复发');
 
 // ── v3.9 汇总 ──
 (async () => {
@@ -6021,18 +6021,18 @@ c310('精度门未破：扩桶后非主张文本仍被挡在辨别外', (() => {
 })(), 'Fed 公告/播客/无数量部署谈话/合作公告/免责声明/泛指交易假设句/官员言论不得因扩池与新模式进入辨别');
 
 // ── 组 7：版本号一致性（corr-2026-014 同型）────────────────────
-c310('版本号一致性：五处对齐 3.22.0', (() => {
+c310('版本号一致性：五处对齐 3.22.1', (() => {
   const fs2 = require('fs');
   const VERSION = fs2.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs2.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs2.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs2.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.22.0'
-    && pkg.version === '3.22.0'
-    && rp.includes('文明推演引擎 v3.22.0')      // banner
-    && /version: '3\.22\.0'/.test(pf)          // projection meta
-    && /version: '3\.22\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.22.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.22.1'
+    && pkg.version === '3.22.1'
+    && rp.includes('文明推演引擎 v3.22.1')      // banner
+    && /version: '3\.22\.1'/.test(pf)          // projection meta
+    && /version: '3\.22\.1'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.22.1，防 corr-2026-014 版本漂移复发');
 
 // ── v3.10 汇总 ──
 (async () => {
@@ -6364,18 +6364,18 @@ c3111('精度门未破：非主张文本不因新形态进入辨别', (() => {
 })(), 'Fed 公告/播客/订阅总量/速率上限/无数量部署谈话/合作公告不得因 usage-metric 进辨别');
 
 // ── 组 7：版本号一致性（corr-2026-014 同型）────────────────────
-c3111('版本号一致性：五处对齐 3.22.0', (() => {
+c3111('版本号一致性：五处对齐 3.22.1', (() => {
   const fs311 = require('fs');
   const VERSION = fs311.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs311.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs311.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs311.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.22.0'
-    && pkg.version === '3.22.0'
-    && rp.includes('文明推演引擎 v3.22.0')      // banner
-    && /version: '3\.22\.0'/.test(pf)          // projection meta
-    && /version: '3\.22\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.22.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.22.1'
+    && pkg.version === '3.22.1'
+    && rp.includes('文明推演引擎 v3.22.1')      // banner
+    && /version: '3\.22\.1'/.test(pf)          // projection meta
+    && /version: '3\.22\.1'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.22.1，防 corr-2026-014 版本漂移复发');
 
 // ── v3.11 汇总 ──
 (async () => {
@@ -6669,18 +6669,18 @@ c312('精度门未破：营收/工程 scaling/政府资助/无数量规模级句
 })(), '营收句/工程 scaling/政府资助/无数量规模级句/Fed 公告/播客不得因 compute-infra 进辨别');
 
 // ── 组 7：版本号一致性（corr-2026-014 同型）────────────────────
-c312('版本号一致性：五处对齐 3.22.0', (() => {
+c312('版本号一致性：五处对齐 3.22.1', (() => {
   const fs312 = require('fs');
   const VERSION = fs312.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs312.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs312.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs312.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.22.0'
-    && pkg.version === '3.22.0'
-    && rp.includes('文明推演引擎 v3.22.0')      // banner
-    && /version: '3\.22\.0'/.test(pf)          // projection meta
-    && /version: '3\.22\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.22.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.22.1'
+    && pkg.version === '3.22.1'
+    && rp.includes('文明推演引擎 v3.22.1')      // banner
+    && /version: '3\.22\.1'/.test(pf)          // projection meta
+    && /version: '3\.22\.1'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.22.1，防 corr-2026-014 版本漂移复发');
 
 // ── v3.12 汇总 ──
 (async () => {
@@ -6999,18 +6999,18 @@ c313('cron 注入源级：口径一致才配对措辞进注入脚本', (() => {
 })(), 'hf-cron-fetch.sh 必须含口径配对限定与歧义新措辞——引擎产出了但注入脚本不读＝agent 看不到（同型断链纪律）');
 
 // 13. 版本号一致性（五处对齐 3.19.0）
-c313('版本号一致性：五处对齐 3.22.0', (() => {
+c313('版本号一致性：五处对齐 3.22.1', (() => {
   const fs313 = require('fs');
   const VERSION = fs313.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs313.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs313.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs313.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.22.0'
-    && pkg.version === '3.22.0'
-    && rp.includes('文明推演引擎 v3.22.0')      // banner
-    && /version: '3\.22\.0'/.test(pf)          // projection meta
-    && /version: '3\.22\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.22.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.22.1'
+    && pkg.version === '3.22.1'
+    && rp.includes('文明推演引擎 v3.22.1')      // banner
+    && /version: '3\.22\.1'/.test(pf)          // projection meta
+    && /version: '3\.22\.1'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.22.1，防 corr-2026-014 版本漂移复发');
 
 // ── v3.13 汇总 ──
 (async () => {
@@ -7274,18 +7274,18 @@ c314('精度回归：无区间标记期望句不进库 + 旧形态夹具逐一�
 })(), 'form D 间隔词≥1 与 form B 零重叠（点值区间句不重复抽取）；无区间标记的期望句不是可证伪主张；NVDA 02-25 旧夹具期间从 FY27Q1 纠正为 FY27 全年');
 
 // 8. 版本号一致性（五处对齐 3.19.0）
-c314('版本号一致性：五处对齐 3.22.0', (() => {
+c314('版本号一致性：五处对齐 3.22.1', (() => {
   const fs314 = require('fs');
   const VERSION = fs314.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs314.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs314.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs314.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.22.0'
-    && pkg.version === '3.22.0'
-    && rp.includes('文明推演引擎 v3.22.0')      // banner
-    && /version: '3\.22\.0'/.test(pf)          // projection meta
-    && /version: '3\.22\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.22.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.22.1'
+    && pkg.version === '3.22.1'
+    && rp.includes('文明推演引擎 v3.22.1')      // banner
+    && /version: '3\.22\.1'/.test(pf)          // projection meta
+    && /version: '3\.22\.1'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.22.1，防 corr-2026-014 版本漂移复发');
 
 // ── v3.14 汇总 ──
 (async () => {
@@ -7549,18 +7549,18 @@ c315('cron 注入脚本渲染全年结算口径限定', (() => {
 })(), '全年结算语义（annual key/双值句取全年值/年份必须等于标题财年）必须随结算段进注入脚本，否则 agent 看不到限定');
 
 // 10. 版本号一致性（五处对齐 3.19.0）
-c315('版本号一致性：五处对齐 3.22.0', (() => {
+c315('版本号一致性：五处对齐 3.22.1', (() => {
   const fs315 = require('fs');
   const VERSION = fs315.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs315.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs315.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs315.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.22.0'
-    && pkg.version === '3.22.0'
-    && rp.includes('文明推演引擎 v3.22.0')      // banner
-    && /version: '3\.22\.0'/.test(pf)          // projection meta
-    && /version: '3\.22\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.22.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.22.1'
+    && pkg.version === '3.22.1'
+    && rp.includes('文明推演引擎 v3.22.1')      // banner
+    && /version: '3\.22\.1'/.test(pf)          // projection meta
+    && /version: '3\.22\.1'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.22.1，防 corr-2026-014 版本漂移复发');
 
 // ── v3.15 汇总 ──
 (async () => {
@@ -7794,18 +7794,18 @@ c316('guidanceStruct 透传 isRange：登记时区间指引不再退化成点值
 })(), '旧代码 guidanceStruct 从 v3.4 起不漏 isRange——登记时 isRange: !!r.guidance.isRange 恒为 false，区间指引（META 费用/capex×6/NVDA 税率×3/AMZN/MRVL/GOOGL）的持久化 settlement 把区间值当点值存；备案滑出采集窗口后（句子索引失效、回落持久化分支）guidanceBand 判「无容差/区间的点值指引」跳过，区间指引到期永远无法结算');
 
 // 11. 版本号一致性（五处对齐 3.19.0）
-c316('版本号一致性：五处对齐 3.22.0', (() => {
+c316('版本号一致性：五处对齐 3.22.1', (() => {
   const fs316 = require('fs');
   const VERSION = fs316.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs316.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs316.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs316.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.22.0'
-    && pkg.version === '3.22.0'
-    && rp.includes('文明推演引擎 v3.22.0')      // banner
-    && /version: '3\.22\.0'/.test(pf)          // projection meta
-    && /version: '3\.22\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.22.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.22.1'
+    && pkg.version === '3.22.1'
+    && rp.includes('文明推演引擎 v3.22.1')      // banner
+    && /version: '3\.22\.1'/.test(pf)          // projection meta
+    && /version: '3\.22\.1'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.22.1，防 corr-2026-014 版本漂移复发');
 
 // 10. forecast 段渲染截断披露（v3.10/v3.11 同型纪律：辨别了但看不见=没交付）
 c316('forecast 渲染上限 30 + 超限披露「另有 N 条未显示」', (() => {
@@ -8038,18 +8038,18 @@ c317('cron 注入脚本渲染 v3.17 表格式 capex 口径限定', (() => {
 })(), '表格式抽取语义（报表标题锚/仅 Q4 备案的期间守卫/YTD 与 TTM 列拒收/叙事口径优先）必须随结算段进注入脚本，否则 agent 看不到限定');
 
 // 10. 版本号一致性（五处对齐 3.19.0）
-c317('版本号一致性：五处对齐 3.22.0', (() => {
+c317('版本号一致性：五处对齐 3.22.1', (() => {
   const fs317 = require('fs');
   const VERSION = fs317.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs317.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs317.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs317.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.22.0'
-    && pkg.version === '3.22.0'
-    && rp.includes('文明推演引擎 v3.22.0')      // banner
-    && /version: '3\.22\.0'/.test(pf)          // projection meta
-    && /version: '3\.22\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.22.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.22.1'
+    && pkg.version === '3.22.1'
+    && rp.includes('文明推演引擎 v3.22.1')      // banner
+    && /version: '3\.22\.1'/.test(pf)          // projection meta
+    && /version: '3\.22\.1'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.22.1，防 corr-2026-014 版本漂移复发');
 
 // ── v3.17 汇总 ──
 (async () => {
@@ -8300,18 +8300,18 @@ c318('cron 注入脚本渲染 v3.18 RSS 独立额度口径限定与分组', (() 
 })(), '解锁额度必须同时让 agent 看见（v3.0.0c/v3.2.1 断链纪律）：rssClaimsTruncation 披露 + 分组渲染（各 10 条）进注入脚本；共享 breakpoint 整个拆除，不是加个例外分支');
 
 // 6. 版本号一致性（五处对齐 3.19.0）
-c318('版本号一致性：五处对齐 3.22.0', (() => {
+c318('版本号一致性：五处对齐 3.22.1', (() => {
   const fs318 = require('fs');
   const VERSION = fs318.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs318.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs318.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs318.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.22.0'
-    && pkg.version === '3.22.0'
-    && rp.includes('文明推演引擎 v3.22.0')      // banner
-    && /version: '3\.22\.0'/.test(pf)          // projection meta
-    && /version: '3\.22\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.22.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.22.1'
+    && pkg.version === '3.22.1'
+    && rp.includes('文明推演引擎 v3.22.1')      // banner
+    && /version: '3\.22\.1'/.test(pf)          // projection meta
+    && /version: '3\.22\.1'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.22.1，防 corr-2026-014 版本漂移复发');
 
 // ── v3.18 汇总 ──
 (async () => {
@@ -8557,18 +8557,18 @@ c319('引擎端到端：AVGO/DELL/PLTR 新指引进辨别+登记，EDGAR 额度 
 })(), '三家新指全部以 earnings-guidance verdict 进辨别并登记（带期间元数据）；额度 80 落在代码里（v3.19 live：77 条 ≤ 80 零切尾）');
 
 // 9. 版本号一致性（五处对齐 3.19.0）
-c319('版本号一致性：五处对齐 3.22.0', (() => {
+c319('版本号一致性：五处对齐 3.22.1', (() => {
   const fs = require('fs');
   const VERSION = fs.readFileSync(path.join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs.readFileSync(path.join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs.readFileSync(path.join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.22.0'
-    && pkg.version === '3.22.0'
-    && rp.includes('文明推演引擎 v3.22.0')      // banner
-    && /version: '3\.22\.0'/.test(pf)          // projection meta
-    && /version: '3\.22\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.22.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.22.1'
+    && pkg.version === '3.22.1'
+    && rp.includes('文明推演引擎 v3.22.1')      // banner
+    && /version: '3\.22\.1'/.test(pf)          // projection meta
+    && /version: '3\.22\.1'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.22.1，防 corr-2026-014 版本漂移复发');
 
 // ── v3.19 汇总 ──
 (async () => {
@@ -8822,19 +8822,19 @@ c320('引擎端到端：PLTR colon-bullet 指引进辨别+登记，EDGAR 额度 
   }
 })(), '三条 colon-bullet 指引全部以 earnings-guidance verdict 进辨别并登记（带期间元数据）；额度 90 落在代码里（v3.20 live：84 条 ≤ 90 零切尾——80 会砍掉 ticker 序尾部 4 条 PLTR）');
 
-// 8. 版本号一致性（五处对齐 3.22.0）
-c320('版本号一致性：五处对齐 3.22.0', (() => {
+// 8. 版本号一致性（五处对齐 3.22.1）
+c320('版本号一致性：五处对齐 3.22.1', (() => {
   const fs = require('fs');
   const VERSION = fs.readFileSync(path.join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs.readFileSync(path.join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs.readFileSync(path.join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.22.0'
-    && pkg.version === '3.22.0'
-    && rp.includes('文明推演引擎 v3.22.0')      // banner
-    && /version: '3\.22\.0'/.test(pf)          // projection meta
-    && /version: '3\.22\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.22.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.22.1'
+    && pkg.version === '3.22.1'
+    && rp.includes('文明推演引擎 v3.22.1')      // banner
+    && /version: '3\.22\.1'/.test(pf)          // projection meta
+    && /version: '3\.22\.1'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.22.1，防 corr-2026-014 版本漂移复发');
 
 // ── v3.20 汇总 ──
 (async () => {
@@ -9142,19 +9142,19 @@ c3210('模式库计数：24 种（ipo-claim 仍在库；v3.22 legal-action 进�
     && /共 24 种模式/.test(pf);
 })(), '模式库 23→24（v3.22 legal-action 进库），ipo-claim 仍唯一且计数与文档一致');
 
-// 15. 版本号一致性（五处对齐 3.22.0）
-c3210('版本号一致性：五处对齐 3.22.0', (() => {
+// 15. 版本号一致性（五处对齐 3.22.1）
+c3210('版本号一致性：五处对齐 3.22.1', (() => {
   const fs = require('fs');
   const VERSION = fs.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.22.0'
-    && pkg.version === '3.22.0'
-    && rp.includes('文明推演引擎 v3.22.0')      // banner
-    && /version: '3\.22\.0'/.test(pf)          // projection meta
-    && /version: '3\.22\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.22.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.22.1'
+    && pkg.version === '3.22.1'
+    && rp.includes('文明推演引擎 v3.22.1')      // banner
+    && /version: '3\.22\.1'/.test(pf)          // projection meta
+    && /version: '3\.22\.1'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.22.1，防 corr-2026-014 版本漂移复发');
 
 
 // ════════════════════════════════════════════════════════════════════
@@ -9267,19 +9267,19 @@ c3211('模式库计数 24（v3.21.1 时 23 不变；v3.22 legal-action 进库 +1
   return COMMERCIAL_CLAIM_PATTERNS.length === 24;
 })(), 'v3.21.1 扩名词族不涨计数（彼时 23）；v3.22 新增 legal-action 维度，计数 23→24');
 
-// 9. 版本号一致性（五处对齐 3.22.0）
-c3211('版本号一致性：五处对齐 3.22.0', (() => {
+// 9. 版本号一致性（五处对齐 3.22.1）
+c3211('版本号一致性：五处对齐 3.22.1', (() => {
   const fs3211 = require('fs');
   const VERSION = fs3211.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
   const pkg = JSON.parse(fs3211.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
   const rp = fs3211.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
   const pf = fs3211.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
-  return VERSION === '3.22.0'
-    && pkg.version === '3.22.0'
-    && rp.includes('文明推演引擎 v3.22.0')      // banner
-    && /version: '3\.22\.0'/.test(pf)          // projection meta
-    && /version: '3\.22\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.22.0，防 corr-2026-014 版本漂移复发');
+  return VERSION === '3.22.1'
+    && pkg.version === '3.22.1'
+    && rp.includes('文明推演引擎 v3.22.1')      // banner
+    && /version: '3\.22\.1'/.test(pf)          // projection meta
+    && /version: '3\.22\.1'/.test(rp);         // run-pipeline fullReport meta
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.22.1，防 corr-2026-014 版本漂移复发');
 
 // ── v3.21.1 汇总 ──
 (async () => {
@@ -9500,7 +9500,7 @@ c3220('引擎端到端：两条 live 执法/诉讼条目进辨别+渲染「类�
   if (!cd.available) return false;
   const rows = cd.results.filter(r => r.kind === 'legal-action');
   const md = formatReport({
-    meta: { timestamp: '2026-10-28T12:00:00Z', version: '3.22.0' },
+    meta: { timestamp: '2026-10-28T12:00:00Z', version: '3.22.1' },
     summary: { verdict: '继续观察', score: 0.5, keyMessage: 'TEST', topDomains: ['business'] },
     commercialDiscrimination: cd,
     stages: [], turningPoints: [], risks: [], opportunities: [], recommendations: [],
@@ -9520,8 +9520,8 @@ c3220('cron 注入源级：KIND_CN 含 legal-action 中文标签', (() => {
   return /'legal-action': '执法\/诉讼行动'/.test(sh);
 })(), '注入脚本 KIND_CN 必须含 legal-action，否则 agent 看到英文 kind（v3.0.0c 同型断链的复发防护）');
 
-// 10. 模式库计数 24 + 版本号一致性（五处对齐 3.22.0）
-c3220('模式库计数 24 + 版本号一致性：五处对齐 3.22.0', (() => {
+// 10. 模式库计数 24 + 版本号一致性（五处对齐 3.22.1）
+c3220('模式库计数 24 + 版本号一致性：五处对齐 3.22.1', (() => {
   const fs = require('fs');
   const { COMMERCIAL_CLAIM_PATTERNS } = require('./human-future/scripts/commercial-discriminator.js');
   const VERSION = fs.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
@@ -9531,12 +9531,12 @@ c3220('模式库计数 24 + 版本号一致性：五处对齐 3.22.0', (() => {
   return COMMERCIAL_CLAIM_PATTERNS.length === 24
     && COMMERCIAL_CLAIM_PATTERNS.filter(p => p.kind === 'legal-action').length === 1
     && /共 24 种模式/.test(pf)
-    && VERSION === '3.22.0'
-    && pkg.version === '3.22.0'
-    && rp.includes('文明推演引擎 v3.22.0')      // banner
-    && /version: '3\.22\.0'/.test(pf)          // projection meta
-    && /version: '3\.22\.0'/.test(rp);         // run-pipeline fullReport meta
-})(), 'legal-action 唯一且模式库 23→24；VERSION/package.json/banner/projection meta/run-pipeline meta 五处对齐 3.22.0（corr-2026-014 防腐烂）');
+    && VERSION === '3.22.1'
+    && pkg.version === '3.22.1'
+    && rp.includes('文明推演引擎 v3.22.1')      // banner
+    && /version: '3\.22\.1'/.test(pf)          // projection meta
+    && /version: '3\.22\.1'/.test(rp);         // run-pipeline fullReport meta
+})(), 'legal-action 唯一且模式库 23→24；VERSION/package.json/banner/projection meta/run-pipeline meta 五处对齐 3.22.1（corr-2026-014 防腐烂）');
 
 // ── v3.22 汇总 ──
 (async () => {
@@ -9553,5 +9553,272 @@ c3220('模式库计数 24 + 版本号一致性：五处对齐 3.22.0', (() => {
     process.exitCode = 1;
   } else {
     console.log('结论：执法/诉讼行动主张进库（legal-action 两形态+事件型 no-quantity 豁免第四次扩展+专属证伪路径+compliance_demand 类目+双处 KIND_CN）；live 实证 Parents sue OpenAI 与 Malaysian Authorities Seize $12M 两条进辨别（weak-evidence 不虚抬）；模式库 23→24。');
+  }
+})();
+
+// ════════════════════════════════════════════════════════════════
+// v3.22.1 测试组：商业辨别候选池白名单漏桶修复（corr-2026-027 同型）
+// + has-counterexample 的 yet 时间副词精度修复（corr-2026-024 家族第四次）
+//
+// 背景（2026-10-29 全池测量，312 条 live 池逐桶过形态门，corr-2026-028
+// 纪律「未命中条目过堂」）：商业辨别候选池自 v3.10 起是四桶白名单
+// （business/sec_filings/frontier_models/economy）——tech 与 humanities
+// 两桶采集了但辨别器从不看（corr-2026-027「候选池桶白名单是另一种
+// 断链：采集了但辨别器从不看」同型第五波）。live 实证 tech 桶 22 条里
+// 2 条命中商业主张形态却被白名单挡在辨别外：
+//   ① MIT Tech Review「After weeks of frenzied speculation, Anthropic
+//      has filed its IPO prospectus.」——ipo-claim 形态（filed + IPO
+//      prospectus），v3.21 立库时只过了 business/frontier_models 两桶
+//      的堂，没过「全部 live 桶」的堂；
+//   ② Ars Technica「Enterprises keep buying software upgrades that IT
+//      thinks will make things worse  Survey of 2,018 IT heads at big
+//      firms…」——adoption + 第三方调查(3)。
+// humanities 12 条本轮 0 命中（无 live 实证），同型补齐防同类漏桶
+// （cap 兜底，今天不加条目）。修复 = PICK_BUCKETS 四桶→六桶
+// （+tech 6 / +humanities 4，排在 economy 之后，business 第一优先
+// 纪律不变）。
+//
+// 同轮精度修复（被桶修复暴露的 live 实证，维护级）：has-counterexample
+// 的 yet 只认让步位（句首/标点后）——MIT TR 主张上下文「the clearest
+// picture yet of…」与 ORCL funding 条「We have not yet initiated the
+// at-the-market equity portion」的 yet 是时间副词（「迄今」）不是
+// 反例让步，却把两条主张的推理分各自虚抬 1 分（corr-2026-024 短词
+// 歧义家族第四次实证：Apollo/poll → demo/democracy → debut/but →
+// yet）。
+//
+// 反向验证：摘除 tech 桶→组 3 引擎级/源级/渲染多条失败；摘除
+// humanities 桶→源级与精度门断言失败；摘除 yet 让步位约束（恢复裸
+// yet）→组 1 T1 与组 2 T4/T5 失败；摘除注入脚本池描述更新→注入
+// 源级失败；版本漂移→多处。
+// ════════════════════════════════════════════════════════════════
+const v3221 = [];
+function c3221(name, ok, detail) { v3221.push({ name, ok, detail }); }
+
+// ── 组 1：live 实证两条 tech 主张（逐字原文，2026-10-29 在窗）────
+// 1. MIT Tech Review IPO prospectus 句：kind=ipo + 无出处(1)/推理
+//    0/3/weak-evidence/decisionRelevant=false 不虚抬（科技媒体转述，
+//    无 S-1 文书引用标记不归公开财报档）+ capital_flow 类目 + 事件型
+//    豁免生效（无数字不判不可证伪）；推理 0/3——yet 修复后「clearest
+//    picture yet」的时间副词不再充当反例标记（修复前 1/3）。
+c3221('live 实证：MIT TR「Anthropic has filed its IPO prospectus」（ipo+不虚抬+yet 不虚抬）', (() => {
+  const { discriminateCommercial } = require('./human-future/scripts/commercial-discriminator.js');
+  const r = discriminateCommercial({
+    text: 'After weeks of frenzied speculation, Anthropic has filed its IPO prospectus. The document offers the clearest picture yet of the AI company\u2019s finances and its complicated web of investors.',
+    claimSentence: 'After weeks of frenzied speculation, Anthropic has filed its IPO prospectus.',
+    source: 'MIT Tech Review - AI', date: 'Mon, 26 Oct 2026 17:45:43 +0000',
+    url: 'https://technologyreview.com/2026/10/26/will-the-real-anthropic-please-stand-up/',
+  });
+  return r.kind === 'ipo' && r.kinds.length === 1 && r.kinds[0] === 'ipo'
+    && r.verdict === 'weak-evidence'
+    && r.evidence.weight === 1 && r.evidence.id === 'no-source'   // 媒体转述无 S-1 文书引用
+    && r.reasoning.score === 0                                      // yet 修复：时间副词不当反例
+    && !r.reasoning.met.includes('has-counterexample')
+    && r.decisionRelevant === false                                 // 不虚抬
+    && r.falsifiability.problems.length === 0                       // ipo 事件型豁免（v3.21）
+    && r.category === 'capital_flow';
+})(), 'MIT TR 的 IPO prospectus 主张必须命中 ipo 形态并按媒体转述判 weak-evidence 不虚抬；yet 时间副词不得充当反例标记');
+
+// 2. Ars Technica 调查句：kind=adoption + 第三方调查(3)/推理 0/3/
+//    thin-reasoning/decisionRelevant（有描述有调查口径，与标题-only
+//    条不同级——v3.7 Apollo 条同型路径）。
+c3221('live 实证：Ars Technica「Survey of 2,018 IT heads」（adoption+第三方调查(3)）', (() => {
+  const { discriminateCommercial } = require('./human-future/scripts/commercial-discriminator.js');
+  const r = discriminateCommercial({
+    text: 'Enterprises keep buying software upgrades that IT thinks will make things worse  Survey of 2,018 IT heads at big firms points to a lack of leverage.',
+    claimSentence: 'Enterprises keep buying software upgrades that IT thinks will make things worse  Survey of 2,018 IT heads at big firms points to a lack of leverage.',
+    source: 'Ars Technica - Technology Lab', date: 'Wed, 21 Oct 2026 21:48:52 +0000',
+    url: 'https://arstechnica.com/information-technology/2026/10/enterprises-keep-buying-software-upgrades/',
+  });
+  return r.kind === 'adoption'
+    && r.evidence.weight === 3 && r.evidence.id === 'third-party-survey'
+    && r.verdict === 'thin-reasoning'
+    && r.reasoning.score === 0
+    && r.decisionRelevant === true;
+})(), 'Ars Technica 的调查主张必须命中 adoption 并归第三方调查(3)判 thin-reasoning 决策相关');
+
+// ── 组 2：yet 让步位约束（corr-2026-024 家族第四次）────────────
+// 3. 让步位 yet 仍算反例：句首 yet 与逗号 yet 两种让步形态都命中
+//    （修复只摘时间副词，不打穿真反例——however/but 等无歧义词照旧）
+c3221('yet 让步位约束：句首/逗号让步 yet 仍算反例', (() => {
+  const { discriminateCommercial } = require('./human-future/scripts/commercial-discriminator.js');
+  const r1 = discriminateCommercial({
+    text: 'Nvidia announced its intent to raise up to $50 billion in debt and equity financing. Yet the company says the market is overheating.',
+    source: 'test',
+  });
+  const r2 = discriminateCommercial({
+    text: 'OpenAI raises $10 billion in new funding, yet analysts doubt the valuation.',
+    source: 'test',
+  });
+  return r1.reasoning.met.includes('has-counterexample')
+    && r2.reasoning.met.includes('has-counterexample');
+})(), '句首 Yet 与逗号 yet 的让步语义必须仍计入反例——修复只摘时间副词，不打穿真反例');
+
+// 4. 时间副词 yet 不命中：not yet initiated / picture yet of /
+//    yet to be priced 三种 live 实证形态（恢复裸 yet 即精确失败）
+c3221('yet 时间副词语义不命中（not yet/picture yet/yet to be）', (() => {
+  const { discriminateCommercial } = require('./human-future/scripts/commercial-discriminator.js');
+  const base = 'Oracle announced its intent to raise up to $50 billion dollars in debt and equity financing.';
+  const forms = [
+    base + ' We have not yet initiated the at-the-market equity portion of the financing program.',
+    base + ' The document offers the clearest picture yet of the company finances.',
+    base + ' The remaining tranche is yet to be priced.',
+  ];
+  return forms.every(t => {
+    const r = discriminateCommercial({ text: t, source: 'SEC EDGAR' });
+    return !r.reasoning.met.includes('has-counterexample');
+  });
+})(), '三种 live 实证的时间副词 yet 形态都不得充当反例标记');
+
+// 5. live 影响面：ORCL funding 条推理 2/3→1/3、verdict 仍 factual
+//    （证据档先行于推理分——修正只摘虚抬的反例分，不改事实判定）
+c3221('live 影响面：ORCL funding 条推理 2→1、verdict 仍 factual', (() => {
+  const { discriminateCommercial } = require('./human-future/scripts/commercial-discriminator.js');
+  const r = discriminateCommercial({
+    text: 'Capital Funding In February, we announced our intent to raise up to $50 billion dollars in debt and equity financing, along with the statement that we do not expect to issue any additional bonds beyond this amount in calendar year 2026. Within days of the announcement, Oracle raised $30 billion through a combination of investment grade bonds and mandatory convertible preferred stock, with a record order book that was substantially oversubscribed. We have not yet initiated the at-the-market equity portion of the financing program.',
+    claimSentence: 'Capital Funding In February, we announced our intent to raise up to $50 billion dollars in debt and equity financing, along with the statement that we do not expect to issue any additional bonds beyond this amount in calendar year 2026.',
+    source: 'SEC EDGAR', date: '2026-06-10',
+  });
+  return r.kind === 'funding'
+    && r.verdict === 'factual'          // 公开财报/公告(3) + funding → 事实判定不变
+    && r.reasoning.score === 1          // 修复前 2/3（yet 虚抬），修复后 1/3
+    && r.reasoning.met.includes('has-sample')
+    && !r.reasoning.met.includes('has-counterexample');
+})(), 'yet 修复的 live 影响面如实钉住：ORCL funding 条反例分被摘掉、事实判定不变');
+
+// ── 组 3：引擎端到端（候选池六桶）────────────────────────────
+// 6. 引擎端到端：business + 两条 tech live 条目进辨别（byKind
+//    ipo:1/adoption:1），business 第一优先，formatReport 渲染
+//    「类型: IPO/上市过程主张 | 来源: MIT Tech Review - AI」行
+//    （只认渲染行——修复前两条 tech 条目整条不进辨别）
+c3221('引擎端到端：两条 tech live 条目进辨别+渲染行（business 仍第一优先）', (() => {
+  const { ProjectionEngine, formatReport } = require('./scripts/project-future.js');
+  const mk = (title, desc, source, bucket, date) => ({
+    title, description: desc, body: '', source, bucket,
+    pubDate: date, domains: ['market_claims'], link: 'https://example.com/' + title.slice(0, 8), origin: 'live',
+  });
+  const items = [
+    // 对照：business 桶条目（第一优先）
+    mk('Parents sue OpenAI, alleging GPT-4o coached their daughter off seizure medication',
+       'A family is suing OpenAI, saying ChatGPT coached their daughter to quietly taper off her seizure medication and keep it from her doctors before she died in February.',
+       'TechCrunch AI', 'business', 'Wed, 28 Oct 2026 00:00:00 +0000'),
+    // tech 桶 live 条目 1：MIT TR IPO prospectus（修复前整条不进辨别）
+    mk('Will the real Anthropic please stand up',
+       'After weeks of frenzied speculation, Anthropic has filed its IPO prospectus. The document offers the clearest picture yet of the AI company\u2019s finances and its complicated web of investors.',
+       'MIT Tech Review - AI', 'tech', 'Mon, 26 Oct 2026 17:45:43 +0000'),
+    // tech 桶 live 条目 2：Ars Technica 调查（修复前整条不进辨别）
+    mk('Enterprises keep buying software upgrades that IT thinks will make things worse',
+       'Survey of 2,018 IT heads at big firms points to a lack of leverage.',
+       'Ars Technica - Technology Lab', 'tech', 'Wed, 21 Oct 2026 21:48:52 +0000'),
+  ];
+  const inst = new ProjectionEngine({});
+  inst.signals = { totalItems: items.length, domains: [], undomained: 0, dateRange: null, items };
+  const cd = inst.buildCommercialDiscrimination();
+  if (!cd.available) return false;
+  const mit = cd.results.find(r => r.source === 'MIT Tech Review - AI');
+  const ars = cd.results.find(r => r.source === 'Ars Technica - Technology Lab');
+  // formatReport 需要 meta/summary 等最小字段（与 v3.21 夹具同型）
+  const md = formatReport({
+    meta: { timestamp: '2026-10-29T12:00:00Z', version: '3.22.1' },
+    summary: { verdict: '继续观察', score: 0.5, keyMessage: 'TEST', topDomains: ['frontier_models'] },
+    commercialDiscrimination: cd,
+    stages: [], turningPoints: [], risks: [], opportunities: [], recommendations: [],
+    confidence: { score: 0.5, level: 'medium', note: 'TEST', factors: { baseScore: 0.5, logicQuality: '中等', signalScore: 0.5, coverageScore: 0.5, undomainedRatio: 0.1, adjustment: 0 } },
+    trendClassification: { available: false },
+  });
+  const rendered = md.split('\n').some(l => l.includes('类型: IPO/上市过程主张 | 来源: MIT Tech Review - AI'));
+  return cd.audited === 3
+    && cd.results[0].source === 'TechCrunch AI'      // business 第一优先
+    && !!mit && mit.kind === 'ipo' && mit.reasoning.score === 0
+    && !!ars && ars.kind === 'adoption' && ars.evidence.weight === 3
+    && cd.summary.byKind.ipo === 1 && cd.summary.byKind.adoption === 1
+    && rendered;
+})(), 'tech 桶两条 live 主张必须进辨别（修复前整条不进）；business 条目仍排第一；报告渲染出 MIT TR 的 IPO 行');
+
+// 7. 源级：PICK_BUCKETS 六桶 + tech/humanities 排 economy 之后 +
+//    BUCKET_CAP 新桶有值（摘除任一桶→本断言与组 3 失败）
+c3221('源级：PICK_BUCKETS 六桶顺序与 BUCKET_CAP 新桶容量', (() => {
+  const fs = require('fs');
+  const pf = fs.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
+  return /const PICK_BUCKETS = \['business', 'sec_filings', 'frontier_models', 'economy', 'tech', 'humanities'\]/.test(pf)
+    && /tech: 6, humanities: 4/.test(pf)
+    && /byBucket = \{ business: \[\], sec_filings: \[\], frontier_models: \[\], economy: \[\], tech: \[\], humanities: \[\] \}/.test(pf);
+})(), '候选池必须是六桶且 tech/humanities 排在 economy 之后（business 第一优先纪律不变），byBucket 初始化同步');
+
+// 8. 精度门未破：tech/humanities 的噪音条目不进辨别（指南页/
+//    资助授予/人文条目/Fed 公告/播客照旧——新桶是重点盯守对象）
+c3221('精度门未破：tech/humanities 噪音条目不进辨别', (() => {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const mk = (title, desc, source, bucket) => ({
+    title, description: desc, body: '', source, bucket,
+    pubDate: 'Tue, 13 Oct 2026 00:44:16 GMT', domains: [], link: 'https://example.com/x', origin: 'live',
+  });
+  const items = [
+    // tech 桶：EU AI Act 指南页（reference text，无主张主体）
+    mk('AI Therapy under the EU AI Act',
+       'This page aims to provide an overview of AI systems, and in particular general-purpose AI (GPAI) systems, used for the purpose of therapy or emotional support under the AI Act.',
+       'EU AI Act Timeline', 'tech'),
+    // tech 桶：NIST 资助授予（v3.10/v3.12 已决议不收）
+    mk('NIST Awards More Than $1.7 Million to Support Cybersecurity Workforce Development Across 8 States',
+       'Projects will address local cybersecurity workforce needs and will offer practical learning opportunities including internships, apprenticeships and hands-on projects.',
+       'NIST News', 'tech'),
+    // humanities 桶：一般人文条目（无商业主张形态）
+    mk('Anne Carson wins the 2026 Nobel Prize in Literature',
+       'The Nobel Committee cited her mastery of the poetic voice and her reimagining of the classical tradition for a new generation of readers.',
+       'Nobel Prize', 'humanities'),
+    // economy 桶：Fed 公告（v3.0.0c 起精度门经典负例）
+    mk('Minutes of the Federal Open Market Committee, September 15-16, 2026',
+       'Minutes of the Federal Open Market Committee, September 15-16, 2026',
+       'Federal Reserve (Monetary)', 'economy'),
+    // business 桶：播客（v3.0.0c 起精度门经典负例）
+    mk('LWiAI Podcast #258 - Opus 5.5, Sol and Luna, Muse, DeepSeek-V4.1-Flash, Xi',
+       'Anthropic releases Opus 5.5 with lower prices and Fable-level performance, OpenAI launches GPT-6 Sol and Luna, boasting lower cost and fewer mistakes',
+       'Last Week in AI', 'business'),
+  ];
+  const inst = new ProjectionEngine({});
+  inst.signals = { totalItems: items.length, domains: [], undomained: 0, dateRange: null, items };
+  const cd = inst.buildCommercialDiscrimination();
+  return cd.available === false && /未抽到命中商业主张形态/.test(cd.reason || '');
+})(), '新桶接入不得放宽精度门：指南页/资助授予/人文条目/Fed 公告/播客全部不进辨别');
+
+// ── 组 4：cron 注入 + 计数 + 版本号 ──────────────────────────
+// 9. cron 注入源级：池描述含 tech/humanities（端到端最后一环）
+c3221('cron 注入源级：候选池描述含 tech/humanities', (() => {
+  const fs = require('fs');
+  const sh = fs.readFileSync(require('os').homedir() + '/.hermes/scripts/hf-cron-fetch.sh', 'utf-8');
+  return /business\/economy\/tech\/humanities 媒体/.test(sh);
+})(), '注入脚本的候选池描述必须同步六桶，否则 agent 看到的池范围与实际不符');
+
+// 10. 模式库计数 24 不变（扩桶不加模式，v3.21.1 同型纪律）+
+//     版本号一致性五处对齐 3.22.1
+c3221('模式库计数 24 不变 + 版本号一致性：五处对齐 3.22.1', (() => {
+  const { COMMERCIAL_CLAIM_PATTERNS } = require('./human-future/scripts/commercial-discriminator.js');
+  const fs = require('fs');
+  const VERSION = fs.readFileSync(require('path').join(__dirname, 'VERSION'), 'utf-8').trim();
+  const pkg = JSON.parse(fs.readFileSync(require('path').join(__dirname, 'package.json'), 'utf-8'));
+  const rp = fs.readFileSync(require('path').join(__dirname, 'scripts/run-pipeline.js'), 'utf-8');
+  const pf = fs.readFileSync(require('path').join(__dirname, 'scripts/project-future.js'), 'utf-8');
+  return COMMERCIAL_CLAIM_PATTERNS.length === 24        // 扩桶不加 kind
+    && VERSION === '3.22.1'
+    && pkg.version === '3.22.1'
+    && rp.includes('文明推演引擎 v3.22.1')
+    && /version: '3\.22\.1'/.test(pf)
+    && /version: '3\.22\.1'/.test(rp);
+})(), 'VERSION/package.json/banner/projection meta/run-pipeline meta 必须对齐 3.22.1；模式库计数不随扩桶变化');
+
+// ── v3.22.1 汇总 ──
+(async () => {
+  const results = await Promise.all(v3221.map(c => Promise.resolve(c.ok)));
+  let f = 0;
+  v3221.forEach((c, i) => {
+    const ok = results[i];
+    if (!ok) f++;
+    console.log(`${ok ? '✓' : '✗'} ${c.name}${ok ? '' : '  —— ' + c.detail}`);
+  });
+  console.log(`\nv3.22.1: ${v3221.length - f} 通过, ${f} 失败, 共 ${v3221.length} 个`);
+  if (f > 0) {
+    console.log('结论：候选池漏桶修复或 yet 精度修复不完整（live 实证/让步位/引擎级/源级/精度门/注入/版本有缺）。');
+    process.exitCode = 1;
+  } else {
+    console.log('结论：候选池白名单四桶→六桶（tech/humanities，corr-2026-027 同型断链修复）——live 实证 MIT TR IPO prospectus 与 Ars Technica 调查两条 tech 主张首次进辨别（business 第一优先不变）；yet 只认让步位（corr-2026-024 家族第四次，ORCL funding 条推理 2→1 不虚抬、MIT TR 条 0/3）；模式库计数 24 不变。');
   }
 })();

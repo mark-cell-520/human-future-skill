@@ -1,5 +1,5 @@
 {
-  "version": "3.22.0",
+  "version": "3.22.1",
   "corrections": [
     {
       "id": "corr-2026-007",
@@ -435,6 +435,16 @@
       "what": "v3.8 给 regulatory-action 立库时把「执法行动（fined/sued/charged，无工具名词）」记成已知边界，字面修法预设是「扩规制工具名词」——2026-10-28 v3.22 轮全池过堂（corr-2026-028 纪律，288 条 live 池 262 条未命中逐条过堂）live 实证该预设与实证所需形态是两回事：business 桶两条执法/诉讼主张（TechCrunch「Parents sue OpenAI, alleging GPT-4o coached their daughter off seizure medication」与 The Information「Malaysian Authorities Seize $12 Million Worth of AI Chips in Smuggling Crackdown」）扩容前 23 种形态全部不命中。按边界字面扩工具名词（把 fine/lawsuit/charge 加进 regulatory-action 的第三段）一条也修不好：Malaysia 句的主体是「Authorities」（不在 regulatory-action 政府主体库）、动词是「Seize」（不在规制动词表）；Parents 句的主体是私人诉讼人（Parents），整个三段式结构不适用。真正需要的是「执法主体+执法动词」两段式新维度（legal-action）。同型参考：corr-2026-032「在窗公司≠采到的指引」——边界记录的是现象，修法必须从现象句子本身推。",
       "right": "v3.22 轮新增 legal-action 维度（两形态：A 诉讼动作 sue/sues/sued/suing + capitalized target，容忍 ≤2 个短小写间隔词；B 执法动作 执法主体 authorities/government/regulators/police/customs/prosecutors/attorneys general/DOJ/SEC/FTC/treasury/EU/White House/ministry/Congress… + [^.!?]{0,40} + 执法动词 seize/fined/penalize/indict/confiscate…）+ 事件型 no-quantity 豁免扩展到本 kind（v3.8/v3.21/v3.21.1 同型第四次）+ 专属证伪路径（诉讼被驳回/撤诉/和解且条款不符、执法行动被上诉推翻/金额改判撤销、指控被撤回）+ compliance_demand 类目 + KIND_CN 双处。精度纪律：动词族只收无名词歧义形态（fined/fining 收而 fines 名词不收、seize 动词收而 seizure 名词不收——live 实证 seizure medication 医疗场景、sec_filings 桶会计 charges/in charge/charged with explaining 四类全部不命中）。live 端到端两条进辨别均判 weak-evidence/无出处(1)/推理 0-1/3、decisionRelevant=false 不虚抬（标题-only 媒体转述无法院文书引用）。",
       "lesson": "已知边界（「X 形态无 live 实证不进库」）登记的是现象不是修法——过堂边界时先拿实证句子比对现有判据结构，确认要修的是「同维度扩模式」还是「新维度」；按边界字面预设的修法扩库可能整体无效（v3.8 字面预设「扩工具名词」对 Malaysia/Parents 两句一条也不命中）。另：事件型 kind 的 no-quantity 豁免已扩到第四类（regulatory-action/ipo/ma/legal-action），豁免条件与源级断言必须同轮同步，否则旧断言会因正则不匹配而红（本轮实测）。"
+    },
+    {
+      "id": "corr-2026-042",
+      "date": "2026-10-29",
+      "version": "3.22.1",
+      "severity": "high",
+      "title": "候选池白名单是逐桶的活结论——每轮全池测量必须输出全部桶的形态门命中分布，不只当轮新形态的桶",
+      "what": "商业辨别候选池自 v3.10 起是四桶白名单（business/sec_filings/frontier_models/economy），tech 与 humanities 两桶采集了（312 条 live 池里 tech 22 + humanities 12）但辨别器从不看。2026-10-29 v3.22.1 轮全池测量（corr-2026-028 纪律「未命中条目过堂」：312 条池逐桶过形态门，候选桶未命中 256 条逐条过堂）live 实证 tech 桶 2 条真实商业主张被白名单挡在辨别外：MIT Tech Review「After weeks of frenzied speculation, Anthropic has filed its IPO prospectus.」（ipo-claim 形态：filed + IPO prospectus）与 Ars Technica「Enterprises keep buying software upgrades that IT thinks will make things worse  Survey of 2,018 IT heads at big firms…」（adoption + 第三方调查(3)）。同型第五次实证：corr-2026-027（v3.10 修 sec_filings/frontier_models 漏桶）时只过了「新维度从哪个桶进来」的堂，没过「全部已采集桶还有没有命中被漏」的堂——v3.21 给 ipo-claim 立库时同样只过了 business/frontier_models 两桶的堂（7 条 Anthropic IPO 集群的 live 实证全来自这两桶），tech 桶的 MIT TR IPO 报道因此又漏了一个版本。候选池差集审计（projection vs 注入脚本）抓不到这种断链——两头都「没有」这个字段，只有逐桶过形态门的全池测量能抓到。",
+      "right": "PICK_BUCKETS 四桶→六桶（+tech 6 / +humanities 4，排在 economy 之后，business 第一优先纪律不变，v3.10 断言钉住；humanities 12 条本轮 0 命中，同型补齐防同类漏桶、cap 兜底）。live 端到端：商业辨别段 audited 22→24 条含 ipo:1/adoption 新条目（MIT TR 条 weak-evidence/无出处(1)/推理 0/3/decisionRelevant=false 不虚抬；Ars 条 thin-reasoning/第三方调查(3)/推理 0/3/decisionRelevant），其余 kind 计数逐一不变，渲染/注入上限 30 未触顶；精度门未破（EU AI Act 指南页/NIST 资助授予/人文条目/Fed 公告/播客在六桶下全部不进辨别，测试钉住）。同轮精度修复（被桶修复暴露的 live 实证，维护级）：has-counterexample 的 yet 只认让步位（句首/标点后）——MIT TR 主张上下文「the clearest picture yet of…」与 ORCL funding 条「We have not yet initiated the at-the-market equity portion」的时间副词 yet（「迄今」）被当成反例让步，两条主张推理分各虚抬 1 分（corr-2026-024 短词歧义家族第四次实证：Apollo/poll → demo/democracy → debut/but → yet）；修复后 ORCL 条推理 2/3→1/3（verdict 仍 factual——证据档先行于推理分）、MIT TR 条 1/3→0/3 不虚抬。",
+      "lesson": "候选池/桶白名单和已知边界一样是逐桶的活结论：每轮全池测量的输出必须是「全部已采集桶过形态门的命中分布 + 未命中条目过堂」，不是只测当轮新形态进化的那个桶——白名单外的桶有命中就是断链候选（v3.10 配方固化为每轮动作）。另：短词歧义家族（corr-2026-024）第四次实证——yet 的时间副词语义（not yet/picture yet/yet to be）与让步语义（句首 Yet/逗号 yet）共用一词，反例标记这类推理判据对短词要按位置/语义分工，不能无歧义收编；且精度缺陷会在新桶接入时集中暴露（本轮 yet 两条 live 误报全在 tech 桶修复后才进辨别），扩池轮的精度回归必须覆盖新桶的全部命中。"
     }
   ]
 }
