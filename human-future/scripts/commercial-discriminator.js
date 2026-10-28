@@ -30,6 +30,16 @@
  */
 
 /** 商业主张的形态：用于识别「这句是在做市场陈述」 */
+// [v3.23] ipo-claim 的三子形态（正则源文本与 v3.21 立库时逐字一致，
+// 拆常量的理由见该 pattern 处注释：备案动作子形态要被 edgar-ipo-collector
+// 的独立验证复用，必须单一事实来源）。导出 IPO_FILING_ACTION_RE 供
+// 辨别器自己判定「本主张是否断言备案动作」——只有这类主张的 EDGAR
+// 在案记录才抬证据档（文书主体/承销牵头只记上下文，不虚抬）。
+const IPO_FORM_FILING_ACTION = '\\b(?:files?|filed|filing|submits?|submitted|submitting)\\s+(?:for\\s+)?(?:an?\\s+|its\\s+|the\\s+|their\\s+|planned\\s+|initial\\s+|public\\s+)?(?:S-1|IPO|public\\s+debut)\\b';
+const IPO_FORM_DOC_SUBJECT = '\\b(?:S-1|IPO)\\s+(?:filing|takeaways?|highlights?)\\b';
+const IPO_FORM_UNDERWRITING = '\\b(?:lead|leads|led|leading|underwrites?|to\\s+lead)\\b[^.!?]{0,40}?\\b(?:IPO|offering|listing|debut)\\b';
+const IPO_FILING_ACTION_RE = new RegExp(IPO_FORM_FILING_ACTION, 'i');
+
 const COMMERCIAL_CLAIM_PATTERNS = [
   // ── 市场采用类 ──
   { id: 'adoption-claim', re: /(enterprises?|companies|businesses?|firms?|organizations?)\s+(are|is|have been|has been)?\s*(adopting|deploying|using|rolling out|embracing|buying|purchasing)/i,
@@ -434,8 +444,15 @@ const COMMERCIAL_CLAIM_PATTERNS = [
   // live 全池实测（300 条池）：精确命中 7 条（business 6 + frontier_models
   // 1），精度回归 0 误报（修辞疑问句/估值 ahead-of-IPO/融资交易/并购/
   // 裁员/Fed 公告/播客全部不命中）。
+  //
+  // [v3.23] 三形态拆为命名常量再组合——不是为了重构，是为了让「备案
+  // 动作」子形态有单一事实来源：edgar-ipo-collector 的独立验证只抬
+  // 「备案动作」主张的证据档（文书主体/承销牵头只记 EDGAR 在案作上下
+  // 文，不虚抬——见该模块诚实性约束 1）。若把子形态复制一份到验证
+  // 侧，两处正则迟早漂移（corr-2026-013/026 文档计数与版本断言腐烂
+  // 同型）。正则源文本与 v3.21 立库时逐字一致（拆常量不改行为）。
   { id: 'ipo-claim',
-    re: /(?:\b(?:files?|filed|filing|submits?|submitted|submitting)\s+(?:for\s+)?(?:an?\s+|its\s+|the\s+|their\s+|planned\s+|initial\s+|public\s+)?(?:S-1|IPO|public\s+debut)\b|\b(?:S-1|IPO)\s+(?:filing|takeaways?|highlights?)\b|\b(?:lead|leads|led|leading|underwrites?|to\s+lead)\b[^.!?]{0,40}?\b(?:IPO|offering|listing|debut)\b)/i,
+    re: new RegExp(`(?:${IPO_FORM_FILING_ACTION}|${IPO_FORM_DOC_SUBJECT}|${IPO_FORM_UNDERWRITING})`, 'i'),
     kind: 'ipo', label: 'IPO/上市过程主张' },
   // ── 执法/诉讼行动类 ──
   // [v3.22] 2026-10-28 轮 live 实证的新漏检：TechCrunch AI「Parents sue
@@ -668,6 +685,26 @@ function discriminateCommercial(claim, opts = {}) {
     try { if (t.test(text, claim)) { evidence = t; break; } } catch (_) { /* 同上 */ }
   }
 
+  // [v3.23] EDGAR S-1 独立验证（新数据源，见 edgar-ipo-collector.js）：
+  // claim.edgarVerification 由采集侧编排层挂上来（含 matched 备案记录）。
+  // **只有断言备案动作的主张**（IPO_FILING_ACTION_RE）且 EDGAR 窗口内
+  // 真的匹配到 S-1 族备案，证据档才升独立验证(4)——SEC 登记记录是
+  // 「备案是否存在」的一手权威源，MIT TR「Anthropic has filed its IPO
+  // prospectus」这类主张的事实核心由此可验（live 实证 2026-10-29：
+  // Anthropic, PBC CIK 0002130357 于 2026-10-26 提交 S-1）。
+  // 纪律（不虚抬）：① 文书主体/承销牵头形态只记 EDGAR 在案作上下文，
+  // 不抬档（内容与承销商身份要 424B4/备案正文核对，本轮不采）；
+  // ② 抬档只发生在有 matched 记录时——「查无」不构成反向抬级也不
+  // 降级（公司名匹配是启发式，未匹配≠已证伪，报告口径见渲染层）；
+  // ③ 推理三要素独立计分，抬档不改推理分（0/3 仍是 0/3）。
+  const ipoFilingAction = matchedPatterns.some(p => p.kind === 'ipo')
+    && IPO_FILING_ACTION_RE.test(text);
+  const edgarVerification = claim.edgarVerification || null;
+  const edgarUpgraded = !!(edgarVerification && edgarVerification.matched && ipoFilingAction);
+  if (edgarUpgraded) {
+    evidence = EVIDENCE_TIERS.find(t => t.id === 'independent-verification') || evidence;
+  }
+
   // 4. 推理有效性
   const met = [];
   const missing = [];
@@ -718,6 +755,18 @@ function discriminateCommercial(claim, opts = {}) {
     evidence: { id: evidence.id, label: evidence.label, weight: evidence.weight },
     reasoning: { met, missing, score: reasoningScore },
     falsification,
+    // [v3.23] ipo 主张的 EDGAR 备案核查记录（无核查时为 null）：
+    // upgraded=备案动作主张+窗口内匹配到 S-1 族备案（证据档已升独立
+    // 验证(4)）；matched 非空而 upgraded=false = 文书主体/承销牵头形态
+    // 的上下文记录（不抬档）；matched 为空 = 窗口内未匹配（公司名匹配
+    // 为启发式，不等于已证伪）；reason = 查询失败/无候选/预算用尽。
+    edgarIpoCheck: (matchedPatterns.some(p => p.kind === 'ipo') && edgarVerification) ? {
+      checked: edgarVerification.checked || [],
+      matched: edgarVerification.matched || null,
+      filingAction: ipoFilingAction,
+      upgraded: edgarUpgraded,
+      reason: edgarVerification.reason || null,
+    } : null,
     // 是否值得心虫关注：证据等级 >=3 或推理 >=2 的商业主张才有决策价值
     decisionRelevant: (evidence.weight >= 3 || reasoningScore >= 2)
       && verdict !== 'unfalsifiable',
@@ -838,10 +887,41 @@ function inferCommercialCategory(text, patterns) {
   return 'market_claims';
 }
 
+/**
+ * [v3.23] 商业辨别结果的汇总计数（单一事实来源）。
+ * 为什么抽出来：v3.23 的 EDGAR 核查会在辨别之后重跑部分结果（证据档
+ * 抬升），汇总必须在重跑后重算——否则报告头部「决策相关 N 条/证据等级
+ * 分布」与下面逐条结果自相矛盾（正是引擎自己要抓的口径错位）。buildCommercial
+ * Discrimination 与 edgar-ipo-collector.verifyIpoClaims 共用本函数。
+ */
+function summarizeCommercial(results) {
+  const byVerdict = {};
+  for (const r of results) byVerdict[r.verdict] = (byVerdict[r.verdict] || 0) + 1;
+  const byEvidence = {};
+  for (const r of results) byEvidence[r.evidence.label] = (byEvidence[r.evidence.label] || 0) + 1;
+  const byKind = {};
+  for (const r of results) if (r.kind !== 'unclassified') byKind[r.kind] = (byKind[r.kind] || 0) + 1;
+  const decisionRelevant = results.filter(r => r.decisionRelevant);
+  return {
+    audited: results.length,
+    byVerdict,
+    byEvidence,
+    byKind,
+    decisionRelevantCount: decisionRelevant.length,
+    factualCount: byVerdict.factual || 0,
+    unfalsifiableCount: byVerdict.unfalsifiable || 0,
+    wellFormedCount: byVerdict['well-formed'] || 0,
+  };
+}
+
 module.exports = {
   discriminateCommercial,
+  summarizeCommercial,
   COMMERCIAL_CLAIM_PATTERNS,
   UNFALSIFIABLE_COMMERCIAL_PATTERNS,
   EVIDENCE_TIERS,
   REASONING_CHECKS,
+  // [v3.23] ipo-claim 的备案动作子形态（单一事实来源，edgar-ipo-collector
+  // 与辨别器共用）：只有断言备案动作的主张，其 EDGAR 在案记录才抬证据档。
+  IPO_FILING_ACTION_RE,
 };

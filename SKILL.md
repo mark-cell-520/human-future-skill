@@ -1,60 +1,93 @@
 ---
 name: human-future-v2
-title: "人类未来 · 文明推演引擎 v3.22.1"
-version: "3.22.1"
+title: "人类未来 · 文明推演引擎 v3.23.0"
+version: "3.23.0"
 description: |-
 description: |-
-  人类未来 v3.22.1 - 断链修复（维护级，非新辨别维度）：商业辨别候选池白名单漏桶
-  （corr-2026-027 同型第五波「采集了但辨别器从不看」）——2026-10-29 全池测量
-  （corr-2026-028 纪律：312 条 live 池逐桶过形态门，候选桶未命中 256 条逐条过堂）
-  live 实证 tech 桶 2 条真实商业主张整个在四桶白名单外：MIT Tech Review「After weeks
-  of frenzied speculation, Anthropic has filed its IPO prospectus.」（ipo-claim 形态：
-  filed + IPO prospectus——v3.21 立库时只过了 business/frontier_models 两桶的堂，
-  没过「全部 live 桶」的堂）与 Ars Technica「Survey of 2,018 IT heads at big firms」
-  （adoption + 第三方调查(3)）。PICK_BUCKETS 四桶→六桶（+tech 6 / +humanities 4，
-  排在 economy 之后，business 第一优先纪律不变；humanities 本轮 0 命中同型补齐防
-  漏桶），live 端到端商业辨别段 audited 22→24 条含 ipo:1/adoption 新条目（MIT TR 条
-  weak-evidence/无出处(1)/推理 0/3 不虚抬；Ars 条 thin-reasoning/第三方调查(3)/
-  推理 0/3/decisionRelevant），其余 kind 计数逐一不变。同轮精度修复（维护级，被桶
-  修复暴露的 live 实证）：has-counterexample 的 yet 只认让步位（句首/标点后）——MIT TR
-  主张上下文「the clearest picture yet of…」与 ORCL funding 条「We have not yet
-  initiated the at-the-market equity portion」的时间副词 yet（「迄今」）被当成反例
-  标记，两条主张推理分各虚抬 1 分（corr-2026-024 短词歧义家族第四次实证：Apollo/poll
-  → demo/democracy → debut/but → yet）；修复后 ORCL 条推理 2/3→1/3（verdict 仍
-  factual）、MIT TR 条 1/3→0/3 不虚抬。forecast 辨别 106 条与结算段逐条 diff 零漂移；
-  模式库计数 24 不变（扩桶不加 kind）。测试 439→449 项；5 轮反向验证全部精确失败
-  （摘除 tech 桶→引擎级/源级/渲染多条/摘除 humanities 桶→源级（精度门负向断言抓不到摘桶）/摘除 yet 让步位
-  约束→live 实证+三形态+ORCL 影响面/摘除注入池描述→注入源级/版本漂移→多处）。登记
-  corr-2026-042（候选池白名单是逐桶的活结论——每轮全池测量必须输出全部六桶的形态门
-  命中分布，不只当轮新形态的桶；v3.10 修 sec_filings/frontier_models 漏桶时同型只过了
-  四桶的堂）；登记簿 40→41 条。同轮维护：102 处历史版本断言硬编码 3.22.0 全量同步
-  3.22.1（corr-2026-026 纪律）。版本号理由：断链修复+精度修复=末位补丁（维护级，
-  非新辨别维度）。历史：v3.22.0 执法/诉讼行动主张进库（新辨别维度 legal-action）；
-  v3.21.1 corr-2026-025 结案（ma 豁免统一）+ usage-metric 扩 calls + 本机注入脚本补齐
-  v3.14-v3.21；v3.21.0 IPO/上市过程主张进库（新辨别维度）；v3.20 PLTR 冒号+bullet
-  期望式指引形态；v3.19 AVGO/DELL/PLTR 书面数值指引形态；v3.18 RSS 前瞻主张独立额度；
-  v3.17 表格式全年 capex 实际值抽取；v3.16 GOOGL FY2026 capex 残废条目修复；v3.15
-  全年实际值抽取+annual key 配对；v3.14 META CFO 评论式指引形态；v3.13 财报指引结算
-  指标扩展；v3.12 算力基建承诺/规模主张（新辨别维度）；v3.11 用量/牵引度指标主张+引号
-  切分修复；v3.10 一手信源桶接入+部署规模主张；v3.9 价格下调主张；v3.8 监管行动主张；
-  v3.7 专家/机构判断主张；v3.6 成本/价格信号主张；v3.5.1 结算链路修复（维护）；v3.5
-  财报指引自动结算；v3.4 财报指引+SEC EDGAR；v3.3.1 survey-finding 精度修复（维护）；
-  v3.3 并购/交易过程主张；v3.2.2/3.2.1 断链修复；v3.2 产能/供给约束主张；v3.1.1 口径
-  错位精度修复；v3.1 接入 self-correction-ledger；v3.0.0c 商业段断链修复；v2.17 接入
+  人类未来 v3.23.0 - 新数据源：EDGAR S-1/IPO 备案核查（ipo 主张独立验证）——v3.21
+  给 ipo-claim 立库时写下的证伪路径「EDGAR 查无/撤回/定价时间表不符/挂牌后披露
+  矛盾」四条里没有任何一条有数据支撑（EDGAR 采集层自 v3.4 起只收 8-K Item 2.02，
+  从不查 S-1；登记 corr-2026-043「证伪路径写成可观测条件 ≠ 引擎能执行该检查」）。
+  2026-10-29 live 实证后果：MIT Tech Review「After weeks of frenzied speculation,
+  Anthropic has filed its IPO prospectus.」被判 weak-evidence/无出处(1)——而
+  Anthropic, PBC（CIK 0002130357）确实于 2026-10-26 向 SEC 提交了 S-1（accession
+  0001628280-26-067168，browse-edgar 实测），主张的事实核心经一手登记记录完全
+  成立。本轮接入新数据源 edgar-ipo-collector（browse-edgar 公司检索 + atom 解析
+  + 365 天在办窗口 + 公司名 token 包含守卫 + 120ms 间隔 + 单轮查询预算）：对
+  ipo 主张提取公司名候选查 EDGAR，**备案动作形态**（files/filed/filing/submits +
+  S-1/IPO/public debut）且窗口内真匹配到 S-1 族备案的证据档升独立验证(4)——
+  该档自 v3.0.0c 起只认文本标记，立库 22 个版本首次被真实数据触发。live 端到端
+  （312 条池，零漂移 diff：商业辨别段 audited 22 条、byKind 逐一不变，唯一变化
+  即 MIT TR 条 无出处(1)/weak-evidence → 独立验证(4)/thin-reasoning/
+  decisionRelevant=true，matched 记录带公司/CIK/表单/日期/accession）：forecast
+  辨别 106 条与结算段（0 新结算/跳过 6、ledger brier 0.2377/样本 16）逐条 diff
+  零漂移；报告与 cron 注入渲染「EDGAR 核查: ✅」行与汇总行。精度纪律（不虚抬）：
+  文书主体（「S-1 Takeaways」类内容主张）与承销牵头（「Goldman to Lead IPO」类）
+  只记 EDGAR 在案作上下文不抬档（内容/承销商身份需 424B4 核对，本轮不采）；
+  未匹配≠已证伪（公司名匹配是启发式）；查询失败整体降级 available=false，不把
+  「查不到」扮成「查无」。撤回/定价/挂牌三条证伪条件仍无数据支撑，留已知边界。
+  同轮维护：汇总计数抽为 summarizeCommercial 单一事实来源（验证后重跑结果必须
+  重算汇总，否则报告头部与逐条自相矛盾）；报告池描述补六桶（v3.22.1 只改了注入
+  脚本漏改渲染层）。测试 449→462 项；9 轮反向验证全部精确失败。登记簿 41→42 条。
+  历史：v3.22.1 候选池白名单漏桶修复（维护级）；v3.22.0 执法/诉讼行动主张进库
+  （新辨别维度 legal-action）；v3.21.1 corr-2026-025 结案（ma 豁免统一）+
+  usage-metric 扩 calls；v3.21.0 IPO/上市过程主张进库（新辨别维度）；
+  v3.20 PLTR 冒号+bullet 期望式指引形态；v3.19 AVGO/DELL/PLTR 书面数值指引形态；
+  v3.18 RSS 前瞻主张独立额度；v3.17 表格式全年 capex 实际值抽取；v3.16 GOOGL
+  FY2026 capex 残废条目修复；v3.15 全年实际值抽取+annual key 配对；v3.14 META
+  CFO 评论式指引形态；v3.13 财报指引结算指标扩展；v3.12 算力基建承诺/规模主张
+  （新辨别维度）；v3.11 用量/牵引度指标主张+引号切分修复；v3.10 一手信源桶接入
+  +部署规模主张；v3.9 价格下调主张；v3.8 监管行动主张；v3.7 专家/机构判断主张；
+  v3.6 成本/价格信号主张；v3.5.1 结算链路修复（维护）；v3.5 财报指引自动结算；
+  v3.4 财报指引+SEC EDGAR；v3.3.1 survey-finding 精度修复（维护）；v3.3 并购/
+  交易过程主张；v3.2.2/3.2.1 断链修复；v3.2 产能/供给约束主张；v3.1.1 口径错位
+  精度修复；v3.1 接入 self-correction-ledger；v3.0.0c 商业段断链修复；v2.17 接入
   GJOpen；v2.13 停止假推演。
 ---
 ---
 
-# 人类未来 · 文明推演引擎 v3.22.1
+# 人类未来 · 文明推演引擎 v3.23.0
 
 > 数据采集（RSS 真联网 + 可选正文增强 + 外部预测基准 GJOpen）→ 心虫 stateless 检查器 → 三年推演引擎。
 > 当前状态与实测数字见下一节，历史版本记录见 references/upgrade-history.md。
 
 ---
 
-## 当前状态（v3.22.1 实测）
+## 当前状态（v3.23.0 实测）
 
 以下数字全部来自 2026-10-29 的 `FETCH=1 FETCH_BODY=1 node scripts/run-pipeline.js` 实跑
+（v3.23.0 轮：pipeline exit 0、312 条 live 信号（business 48 + economy 46 +
+frontier_models 142 + sec_filings 42 + tech 22 + humanities 12）；**新数据源：
+EDGAR S-1/IPO 备案核查**（v3.21 立库 ipo-claim 时写下的证伪路径「EDGAR 查无/
+撤回/定价时间表不符/挂牌后披露矛盾」四条里第一条接上真数据，登记 corr-2026-043
+「证伪路径写成可观测条件 ≠ 引擎能执行该检查」）——live 实证 v3.22.1 轮判
+weak-evidence/无出处(1) 的 MIT Tech Review「After weeks of frenzied speculation,
+Anthropic has filed its IPO prospectus.」，经 browse-edgar 公司检索匹配到
+**Anthropic, PBC（CIK 0002130357）2026-10-26 提交的 S-1**（accession
+0001628280-26-067168）：备案动作形态主张的证据档升**独立验证(4)**——该档自
+v3.0.0c 起只认文本里的「independently verified by X」标记，立库 22 个版本首次
+被真实数据触发；判定变 thin-reasoning/推理 0/3（抬档不抬推理分）/
+decisionRelevant=true，matched 记录（公司/CIK/表单/日期/accession）进报告与
+cron 注入的「EDGAR 核查: ✅」行。零漂移 diff（v3.22.1 基线 vs v3.23.0 实测）：
+商业辨别段 audited 22→22、byKind 逐一不变（legal-action:2/funding:4/ma:1/
+price-cut:1/regulatory-action:1/compute-infra:3/usage-metric:3/demand:3/
+adoption:3/ipo:1），证据等级分布唯一变化即 无出处 11→10 + 独立验证 0→1、
+decisionRelevant 11→12；forecast 辨别 106 条逐条一致、rssClaimsTruncation
+seen=21/cut=1/cap=20 一致；结算段 0 新结算/跳过 6、ledger brier 0.2377/样本 16/
+pending 77 零变化（核查不碰台账）。精度纪律：文书主体（「Anthropic S-1
+Highlights Rising Payment Costs」类）与承销牵头（「Goldman Sachs to Lead
+Anthropic IPO」类）主张同样匹配到 Anthropic 的 S-1，但只记「· 在案」上下文、
+**不抬证据档**（内容与承销商身份需 424B4/备案正文核对，本轮不采）；未匹配
+（如 OpenAI 无 EDGAR 备案）不抬级也不判假——「EDGAR 查无」是本类主张的证伪
+条件之一，公司名匹配是启发式，不等于已证伪；EDGAR 查询失败（网络/解析）整体
+降级 available=false 并写明原因，ipo 主张按原证据档判定，不把「查不到」扮成
+「查无」。同轮维护（不单独涨号）：汇总计数抽为 summarizeCommercial 单一事实
+来源（辨别后重跑结果必须重算汇总——否则报告头部「决策相关 N 条/证据等级分布」
+与逐条结果自相矛盾，正是引擎自己要抓的口径错位）；formatReport 的候选池描述
+补六桶（v3.22.1 只同步了注入脚本、漏了渲染层）；ipo-claim 正则拆出命名子形态
+IPO_FILING_ACTION_RE（备案动作子形态的单一事实来源，辨别器与核查器共用，
+防两处正则漂移）。测试 449→462 项；9 轮反向验证全部精确失败。登记簿 41→42 条
+（corr-2026-043，medium）。
 （v3.22.1 轮：pipeline exit 0、312 条 live 信号（business 48 + economy 46 +
 frontier_models 142 + sec_filings 42 + tech 22 + humanities 12）；商业辨别
 候选池白名单漏桶修复（corr-2026-027 同型断链：tech/humanities 采集了但辨别器
@@ -616,6 +649,10 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
 **SEC EDGAR 采集层（v3.4 新增）**
 - 来源：SEC EDGAR 公开 API（data.sec.gov submissions + Archives index.json），
   实测可达（2026-10-25：200/2.6s）；UA 声明身份 + 120ms 请求间隔（fair access）
+- [v3.23] 第二个 EDGAR 数据源：S-1/IPO 备案核查（browse-edgar 公司检索，
+  edgar-ipo-collector.js）——与 8-K 采集层分工：8-K 层采「业绩发布正文」
+  （指引/实际值抽取），S-1 层查「备案存在性」（ipo 主张的独立验证）。
+  见 [v3.23] 章节
 - 公司名单：14 家境内备案人（NVDA/AMD/AVGO/MRVL/MU/MSFT/GOOGL/AMZN/META/
   ORCL/CRWV/IBM/DELL/PLTR），ticker→CIK 走 company_tickers.json 权威映射
 - 采集对象：8-K Item 2.02（业绩发布）最近 3 次/公司（v3.5 从 2→3，见下）+ EX-99
@@ -655,6 +692,9 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   （MIT TR「Anthropic has filed its IPO prospectus」ipo 形态、Ars Technica
   「Survey of 2,018 IT heads」调查主张）被白名单挡在辨别外（corr-2026-027
   同型断链：采集了但辨别器从不看；humanities 本轮 0 命中，同型补齐防漏桶）
+  [v3.23] ipo 主张的 EDGAR 独立验证（新数据源，见 [v3.23] 章节）：辨别后的
+  ipo 主张按公司名查 browse-edgar，备案动作形态 + 窗口内 S-1 匹配 → 证据档
+  升独立验证(4)（该档首次被真实数据触发）；文书主体/承销牵头只记上下文
 
 **外部预测基准层（v2.17 新增）**
 - 来源：Good Judgment Open（gjopen.com），专业预测平台；`/questions?q=<词>` 公开可抓
@@ -1385,6 +1425,70 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   「执法主体+执法动词」两段式新维度；过堂已知边界时要按实证句子的结构修，
   不按边界记录的修法修）。
 
+**[v3.23] EDGAR S-1/IPO 备案核查（新数据源：ipo 主张独立验证）**
+- 定位：v3.21 给 ipo-claim 立库时写下专属证伪路径「EDGAR 查无/撤回/定价时间表
+  不符/挂牌后披露矛盾」，并称「备案文件在 EDGAR 可查……撤回事例可证伪」——但
+  四条证伪条件里没有任何一条有数据支撑：EDGAR 采集层自 v3.4 起只收 14 家公司
+  的 8-K Item 2.02，从来不去查任何 S-1（登记 corr-2026-043：「证伪路径写成
+  可观测条件」≠「引擎能执行该检查」——新维度立库时必须把证伪路径逐条分成
+  「引擎现在有数据能查」与「需人工/下游执行」两类）。live 实证的后果：
+  MIT Tech Review「After weeks of frenzied speculation, Anthropic has filed
+  its IPO prospectus.」（2026-10-26，tech 桶）在 v3.22.1 轮被判
+  weak-evidence/无出处(1)/decisionRelevant=false——而 Anthropic, PBC
+  （CIK 0002130357）确实于 2026-10-26 向 SEC 提交了 S-1（accession
+  0001628280-26-067168，2026-10-29 browse-edgar 实测），主张的事实核心经
+  一手登记记录完全成立。连带事实：独立验证(4) 证据档自 v3.0.0c 起只认文本里
+  的「independently verified by X / third-party audit」标记，立库 22 个版本
+  从未被真实数据触发过。
+- 数据源（edgar-ipo-collector.js，新模块）：browse-edgar 公司检索
+  （www.sec.gov/cgi-bin/browse-edgar，output=atom）——按公司名让 SEC 自己做
+  公司归一化（conformed-name + CIK），再取该公司的 S-1 族备案（type=S-1 覆盖
+  S-1 与 S-1/A）。选它而不是全文本检索（efts.sec.gov）的原因：ipo 主张的
+  证伪条件是**逐公司**的（「这家公司有没有备案」），全文本检索的召回取决于
+  查询措辞（实测 q="artificial intelligence" 30 天 99 条命中，前 15 条全是
+  空壳公司，Anthropic 反而不在头部），按公司名查才是证伪路径要的语义。
+  只做备案存在性核查，不采集、不估计任何非公开信息。
+- 流程（run-pipeline 阶段 3.5，generate 之后、formatReport 之前）：逐条 ipo
+  主张 → 提取公司名候选（claimSentence 优先；双空格切分+停用词修剪+首 token
+  补候选；来源名包含的候选跳过）→ 逐个查 browse-edgar（120ms 间隔 + 单轮
+  预算 12 次 + run 内 memo）→ 第一个「候选名通过 token 包含守卫 且 窗口内有
+  S-1 族备案」的公司即匹配 → edgarVerification 挂回 claim 重跑辨别器
+  （证据档/verdict/decisionRelevant 重算全在辨别器内，编排层不代判）。
+- 精度设计（不虚抬，全部有断言）：① 只升**备案动作形态**（IPO_FILING_ACTION_
+  RE：files/filed/filing/submits + S-1/IPO/public debut）且 matched 的主张
+  ——文书主体（「S-1 Takeaways」类内容主张）与承销牵头（「Goldman to Lead
+  IPO」类）匹配到同一份 S-1 也只记「· 在案」上下文，不抬档（内容与承销商
+  身份需 424B4/备案正文核对，本轮不采）；② 365 天在办窗口——live 实证
+  Mistral Acquisition CO 的 S-1/A 全是 2008 年，不过滤会把历史备案当成在办
+  IPO；③ 公司名 token 包含守卫（候选每个 token 都须出现在 SEC 归一化公司名
+  里，"Anthropic" ⊆ "Anthropic, PBC"）——防 SEC 模糊匹配把无关公司算成
+  主张主体（实测查询 "After"/"The" 返回 SEC 坏数据 name="ARRAY(0x...)"，
+  无 conformed-name 直接判 found=false）；④ 未匹配不抬级也不判假（「EDGAR
+  查无」是证伪条件之一，公司名匹配是启发式，不等于已证伪）；⑤ 推理三要素
+  独立计分，抬档不改推理分（MIT TR 条 0/3 仍是 0/3）；⑥ 查询失败（网络/
+  解析，区别于「查无此公司」）整体降级 available=false 并写明原因，不把
+  「查不到」扮成「查无」；⑦ 非 live 模式（FETCH!=1）不发起查询。
+- 端到端：引擎候选门（六桶）→ 辨别 → 阶段 3.5 EDGAR 核查 → formatReport
+  「EDGAR 核查: ✅/·/○/不可用」四形态行 + 「IPO 主张 EDGAR 核查」汇总行 →
+  cron 注入第 6 段同标签（四种形态与汇总都注入——引擎产出了但 agent 看不到
+  的同型断链不能再犯）。live 实测：1 条 ipo 主张核查、1 次 SEC 查询、
+  验证 1（独立验证(4)），零漂移 diff 见「当前状态」段。
+- 同轮维护（不单独涨号）：① 汇总计数抽为 summarizeCommercial（辨别器导出，
+  buildCommercialDiscrimination 与 verifyIpoClaims 共用）——辨别后重跑结果
+  必须重算汇总，否则报告头部「决策相关 12 条/证据等级分布」与逐条结果
+  自相矛盾（引擎自己要抓的口径错位）；② formatReport 候选池描述补六桶
+  （v3.22.1 只同步了注入脚本、漏改渲染层）；③ ipo-claim 正则拆出命名子形态
+  IPO_FILING_ACTION_RE 并导出——备案动作子形态的单一事实来源（辨别器与
+  核查器共用，防两处正则漂移，corr-2026-013/026 同型纪律），正则源文本与
+  v3.21 立库时逐字一致（拆常量不改行为，15 条用例实证）。
+- 仍在库外的 ipo 证伪条件（如实）：撤回（RW 备案）、定价区间（424B4）、
+  挂牌后披露矛盾三条仍无数据支撑，由人工/下游 agent 执行；公司名匹配是
+  启发式（单 token 候选可能匹配到无关公司），matched 记录带公司与
+  accession 供逐条复核。
+- 版本号理由：新数据源 + 新认知能力（ipo 主张独立验证，独立验证(4) 档首次
+  被真实数据触发）且用户可感知（报告与注入首次出现「EDGAR 核查」行与
+  「独立验证(4)」证据档）= x.0。
+
 **[v3.22.1] 商业辨别候选池白名单漏桶修复（断链修复，维护级，非新辨别维度）**
 - 定位：候选池白名单是逐桶的活结论——corr-2026-027（v3.10「候选池桶白名单
   是另一种断链：采集了但辨别器从不看」）同型第五波。2026-10-29 全池测量
@@ -1511,13 +1615,22 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   严格过滤，漏掉数据里 2 条 critical（都是「整段推演作废」级的假能力审计），
   接入后会少报高危数（说 4 实际 6）。改为按等级表比较（critical > high >
   medium > low），critical 排最前。这是修 bug，不算升级——升级点是接入本身。
-- 边界（如实声明）：登记簿 41 条（v3.13 轮新增 corr-2026-030/031、v3.14 轮
+- 边界（如实声明）：登记簿 42 条（v3.13 轮新增 corr-2026-030/031、v3.14 轮
   新增 corr-2026-032/033、v3.15 轮新增 corr-2026-034、v3.16 轮新增
   corr-2026-035、v3.17 轮新增 corr-2026-036、v3.18 轮新增 corr-2026-037、
   v3.19 轮新增 corr-2026-038、v3.20 轮新增 corr-2026-039、v3.21 轮新增
-  corr-2026-040、v3.22 轮新增 corr-2026-041、v3.22.1 轮新增 corr-2026-042 后：
-  critical 4 / high 18 / medium 19（含 corr-2026-024/025 两条前轮手写条目
-  未设 severity、按 medium 计）——corr-2026-042 记的是「候选池白名单是逐桶的
+  corr-2026-040、v3.22 轮新增 corr-2026-041、v3.22.1 轮新增 corr-2026-042、
+  v3.23 轮新增 corr-2026-043 后：
+  critical 4 / high 18 / medium 20（含 corr-2026-024/025 两条前轮手写条目
+  未设 severity、按 medium 计）——corr-2026-043 记的是「证伪路径写成可观测
+  条件 ≠ 引擎能执行该检查」——v3.21 立库 ipo-claim 时写下证伪路径「EDGAR
+  查无/撤回/定价时间表不符/挂牌后披露矛盾」，但四条里没有任何一条有数据
+  支撑（EDGAR 采集层只收 8-K，从不查 S-1），live 实证 MIT TR「Anthropic
+  has filed its IPO prospectus」被判无出处(1) 而 Anthropic PBC 的 S-1 确实
+  在案；新维度立库时必须把证伪路径逐条分成「引擎现在有数据能查」与「需人工/
+  下游执行」两类，前者当轮接数据或明确记待接；另：辨别后的任何重判都要连带
+  汇总重算（v3.23 抽出 summarizeCommercial 的起因）；
+  corr-2026-042 记的是「候选池白名单是逐桶的
   活结论」——tech/humanities 两桶采集了但辨别器从不看（corr-2026-027 同型
   第五波），2026-10-29 全池测量 live 实证 tech 桶 2 条真实商业主张（MIT TR
   IPO prospectus / Ars Technica 调查）被白名单挡在辨别外；每轮全池测量必须
@@ -1711,7 +1824,7 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   引擎不代劳——这是心虫铁律，不是能力缺失。
 
 **测试**
-- `npm test`：**449 项断言**（实测各 section 汇总；v3.4 的 230 + v3.5 新增 11 + v3.5.1 新增 9 + v3.6 新增 8 + v3.7 新增 9 + v3.8 新增 11 + v3.9 新增 8 + v3.10 新增 13 + v3.11 新增 15 + v3.12 新增 14 + v3.13 新增 13 + v3.14 新增 9 + v3.15 新增 10 + v3.16 新增 11 + v3.17 新增 10 + v3.18 新增 6 + v3.19 新增 9 + v3.20 新增 8 + v3.21 新增 16 + v3.21.1 新增 9 + v3.22 新增 10 + v3.22.1 新增 10：
+- `npm test`：**462 项断言**（实测各 section 汇总；v3.4 的 230 + v3.5 新增 11 + v3.5.1 新增 9 + v3.6 新增 8 + v3.7 新增 9 + v3.8 新增 11 + v3.9 新增 8 + v3.10 新增 13 + v3.11 新增 15 + v3.12 新增 14 + v3.13 新增 13 + v3.14 新增 9 + v3.15 新增 10 + v3.16 新增 11 + v3.17 新增 10 + v3.18 新增 6 + v3.19 新增 9 + v3.20 新增 8 + v3.21 新增 16 + v3.21.1 新增 9 + v3.22 新增 10 + v3.22.1 新增 10 + v3.23 新增 13：
   2 项纯结算函数（settleGuidance 单位感知容差：相对/绝对/bps/百分点/区间/无容差
   跳过，含区分相对vs绝对的边界用例 / normalizeMetric+parseMetricValue 单位解析）+
   3 项实际值抽取（extractActuals 营收+毛利率+标题期间 / GAAP/非GAAP 不同值抽出
@@ -2249,6 +2362,40 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   基线全绿（449/0）。同轮维护（不单独涨号）：102 处历史版本断言硬编码
   3.22.0 全量同步 3.22.1（corr-2026-026 纪律，含 35 处正则转义形态
   /3\.22\.0/——sed 字面替换碰不到转义反斜杠，第二轮专项替换才同步）。
+  v3.23 新增 13（1 项 live 实证（MIT Tech Review「Anthropic has filed its IPO
+  prospectus」+ browse-edgar 实抓 Anthropic, PBC S-1 夹具：备案动作主张经
+  EDGAR 一手登记记录验证升独立验证(4)/thin-reasoning/推理 0/3/
+  decisionRelevant=true，matched 带公司/CIK/表单/日期/accession）
+  + 1 项无验证不虚抬（同一条主张不带 edgarVerification → v3.22.1 行为逐字段
+  不回退：weak-evidence/无出处(1)/DR=false/edgarIpoCheck=null）
+  + 1 项承销牵头只记上下文不抬档（Goldman to Lead Anthropic IPO + matched：
+  filingAction=false、证据仍媒体报道(2)、upgraded=false）
+  + 1 项未匹配不抬级不判假（OpenAI files for IPO + notfound 夹具：
+  matched=null、reason=null、证据档不动）
+  + 1 项窗口过滤（Mistral 2008 年 S-1/A×3 不算在办——pickRecentFiling=null）
+  + 1 项 atom 解析纯函数（Anthropic 三字段 + href 实体解码 + notfound 的
+  found=false，逐 entry 块解析）
+  + 1 项公司候选提取（停用词/来源名过滤 + 双空格切分 + 停用词修剪 + 首 token
+  补候选——live 冒烟实测修订后的规则）
+  + 1 项引擎端到端（核查后 summary 用 summarizeCommercial 重算且与逐条一致
+  + formatReport 渲染「EDGAR 核查: ✅」行与「IPO 主张 EDGAR 核查」汇总行，
+  business 第一优先不变）
+  + 1 项降级（http 全抛错 → ipoVerification.available=false + reason + 判定
+  不变 + 报告渲染「不可用」行——不把查不到扮成查无）
+  + 1 项非 live 不查询（live:false → http 调用 0 次 + 降级原因）
+  + 1 项源级（run-pipeline 阶段 3.5 接线且位置在 formatReport 之前 +
+  project-future main 块同型）
+  + 1 项 cron 注入源级（hf-cron-fetch.sh 渲染 ✅/·/○/不可用四形态 +
+  ipoVerification 汇总）
+  + 1 项模式库计数 24 不变（新数据源不加 kind）+ 备案动作子形态与 ipo-claim
+  主正则同源 + 版本号一致性五处对齐 3.23.0）。
+  v3.23 九轮反向验证全部精确失败（摘除 edgarUpgraded 抬级 override→live
+  实证+无验证不虚抬+引擎端到端/摘除 filingAction 门→承销牵头虚抬回归/
+  摘除 365 天窗口过滤→Mistral 2008 误匹配/摘除 atom entry 块切分→解析断言/
+  摘除 run-pipeline 接线→源级/摘除 formatReport EDGAR 行→端到端渲染/
+  摘除 cron 注入行→注入源级/摘除降级分支→降级断言/版本漂移→多处）。
+  每轮基线全绿、摘除后断言必生效、还原 cmp 字节校验一致、收尾基线全绿
+  （462/0）。
   v3.22 十二轮反向验证全部精确失败（摘除 legal-action 模式整块→8（v3.22 节
   8 + 三处计数断言）/摘除 sue 形态→4/摘除执法主体+动词族→4/摘除 no-quantity
   豁免→2（v3.22 节 1 + v3.21.1 源级断言 1）/摘除证伪条件→1/摘除类目映射→3/

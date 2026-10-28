@@ -63,7 +63,7 @@ const { discriminateAll: discriminateForecasts } = require(path.join(HF, 'foreca
 // 与 forecast-discriminator 的分工：后者辨别「关于未来的预测」（要时点），
 // 前者辨别「关于市场的陈述」（要量化与证据等级）。商业推演面对的绝大多数
 // 主张是后者——"企业正在采用 AI agent"、"开源将杀死付费产品"这类。
-const { discriminateCommercial, COMMERCIAL_CLAIM_PATTERNS } = require(path.join(HF, 'commercial-discriminator.js'));
+const { discriminateCommercial, summarizeCommercial, COMMERCIAL_CLAIM_PATTERNS } = require(path.join(HF, 'commercial-discriminator.js'));
 // [v3.5] 财报指引自动结算：把台账里到期的 earnings_guidance 与「下一期财报
 // 实际值」配对，按容差/区间算命中并落账——兑现 v2.13「到期结算 Brier」对
 // 最硬预测类的承诺（v3.4 登记了 33 条、15 条到期、0 条结算）。纯函数在
@@ -344,7 +344,7 @@ class ProjectionEngine {
     }
     const report = {
       meta: {
-        version: '3.22.1',
+        version: '3.23.0',
         heartflowVersion: this.analysis.engineVersion,
         timestamp: this.timestamp,
         modulesLoaded: this.analysis.modulesLoaded,
@@ -2157,13 +2157,10 @@ class ProjectionEngine {
     }
     const results = candidates.map(c => discriminateCommercial(c));
 
-    // 按 verdict 汇总
-    const byVerdict = {};
-    for (const r of results) byVerdict[r.verdict] = (byVerdict[r.verdict] || 0) + 1;
-    const byEvidence = {};
-    for (const r of results) byEvidence[r.evidence.label] = (byEvidence[r.evidence.label] || 0) + 1;
-    const byKind = {};
-    for (const r of results) if (r.kind !== 'unclassified') byKind[r.kind] = (byKind[r.kind] || 0) + 1;
+    // [v3.23] 汇总走辨别器导出的 summarizeCommercial（单一事实来源）：
+    // EDGAR 核查会在辨别之后重跑部分结果并重算汇总，两处必须同一个函数，
+    // 否则报告头部计数与逐条结果口径不一致（引擎自己要抓的口径错位）。
+    const summary = summarizeCommercial(results);
 
     // 决策相关 = 证据等级 >=3 或推理 >=2，且非不可证伪
     const decisionRelevant = results.filter(r => r.decisionRelevant);
@@ -2171,16 +2168,7 @@ class ProjectionEngine {
     return {
       available: true,
       audited: results.length,
-      summary: {
-        audited: results.length,
-        byVerdict,
-        byEvidence,
-        byKind,
-        decisionRelevantCount: decisionRelevant.length,
-        factualCount: byVerdict.factual || 0,
-        unfalsifiableCount: byVerdict.unfalsifiable || 0,
-        wellFormedCount: byVerdict['well-formed'] || 0,
-      },
+      summary,
       // [v3.10] 16→20：候选池扩到四桶后单轮辨别条数增至 20 上下，切到 16
       // 会把一手信源的新主张（部署规模/备案量化句）切掉——段内渲染必须覆盖
       // 实际辨别结果，否则「辨别了但看不见」。
@@ -2858,7 +2846,7 @@ function formatReport(report) {
     lines.push(`> ${(cdsc && cdsc.note) || ''}`);
   } else {
     const s = cdsc.summary;
-    lines.push(`本期从商业域与一手信源桶（business/economy 媒体二手 + SEC 备案/厂商一手公告）抽到 ${cdsc.audited} 条命中商业主张形态的条目，逐条辨别：`);
+    lines.push(`本期从商业域与一手信源桶（business/economy/tech/humanities 媒体二手 + SEC 备案/厂商一手公告）抽到 ${cdsc.audited} 条命中商业主张形态的条目，逐条辨别：`);
     lines.push(`  决策相关 ${s.decisionRelevantCount} 条 | 有出处事实 ${s.factualCount} 条`
       + ` | 结构完整 ${s.wellFormedCount} 条 | 不可证伪 ${s.unfalsifiableCount} 条`);
     const ev = Object.entries(s.byEvidence).map(([k, v]) => `${k} ${v}`).join(' | ');
@@ -2951,10 +2939,38 @@ function formatReport(report) {
       if (r.falsifiability.problems.length) {
         lines.push(`    不可证伪: ${r.falsifiability.problems.map(p => p.label).join('；')}`);
       }
+      // [v3.23] EDGAR 备案核查行（仅 ipo 主张有）。三种结果分开措辞：
+      // upgraded=备案动作主张经 SEC 一手登记记录验证（证据档已升独立
+      // 验证(4)）；matched 非空而未抬档=文书主体/承销牵头形态的上下文
+      // （内容/承销商身份要 424B4 核对，本轮不采）；未匹配=窗口内没有
+      // （公司名匹配是启发式，不等于已证伪——v3.21 证伪路径的「EDGAR
+      // 查无」是人工/下游可执行的条件，引擎不据未匹配判假）。
+      if (r.edgarIpoCheck) {
+        const c = r.edgarIpoCheck;
+        if (c.reason) {
+          lines.push(`    EDGAR 核查: 不可用——${c.reason}`);
+        } else if (c.upgraded && c.matched) {
+          lines.push(`    EDGAR 核查: ✅ ${c.matched.company}（CIK ${c.matched.cik}）${c.matched.filedAt} 提交 ${c.matched.form}（${c.matched.accession}）——备案动作主张经 SEC 一手登记记录验证，证据档升独立验证(4)`);
+        } else if (c.matched) {
+          lines.push(`    EDGAR 核查: · ${c.matched.company} ${c.matched.filedAt} 提交 ${c.matched.form}（${c.matched.accession}）在案——本主张非备案动作形态，记录为上下文、不抬证据档`);
+        } else {
+          lines.push(`    EDGAR 核查: ○ 365 天窗口内未匹配到 S-1 备案（公司名匹配为启发式；「EDGAR 查无」是本类主张的证伪条件之一，不等于已证伪）`);
+        }
+      }
       lines.push(`    证伪条件: ${r.falsification}`);
     }
     if (cdsc.results.length > 30) {
       lines.push(`> 另有 ${cdsc.results.length - 30} 条辨别结果超出渲染上限未显示（不静默切尾）`);
+    }
+    // [v3.23] IPO 主张的 EDGAR 核查汇总（新数据源 v3.23 的端到端回显）。
+    if (cdsc.ipoVerification) {
+      const iv = cdsc.ipoVerification;
+      if (iv.available) {
+        lines.push(`  IPO 主张 EDGAR 核查: ${iv.checkedClaims} 条 ipo 主张 → 验证 ${iv.verified}（独立验证(4)）`
+          + ` / 上下文 ${iv.contextOnly} / 未匹配 ${iv.unmatched}；${iv.queries} 次 SEC 查询（S-1 窗口 ${iv.windowDays} 天）`);
+      } else {
+        lines.push(`  IPO 主张 EDGAR 核查: 不可用——${iv.reason}（ipo 主张按原证据档判定）`);
+      }
     }
     lines.push('');
     lines.push(`> ${cdsc.note}`);
@@ -3104,6 +3120,20 @@ async function main() {
 
     const engine = new ProjectionEngine(analysis, { benchmark });
     const report = engine.generate();
+
+    // [v3.23] ipo 主张 EDGAR 备案核查（与 run-pipeline.js 阶段 3.5 同型——
+    // 两处入口必须同步，否则 standalone 路径的报告缺核查结果）。
+    try {
+      const { verifyIpoClaims } = require('../human-future/scripts/edgar-ipo-collector.js');
+      report.commercialDiscrimination = await verifyIpoClaims(
+        report.commercialDiscrimination, { live: process.env.FETCH === '1' });
+      const iv = report.commercialDiscrimination.ipoVerification;
+      console.log(iv && iv.available
+        ? `[ipo-edgar] 核查 ${iv.checkedClaims} 条 ipo 主张：验证 ${iv.verified} / 上下文 ${iv.contextOnly} / 未匹配 ${iv.unmatched}\n`
+        : `[ipo-edgar] 不可用: ${(iv && iv.reason) || '(未说明原因)'}（ipo 主张按原证据档判定）\n`);
+    } catch (e) {
+      console.log(`[ipo-edgar] 核查抛错，ipo 主张按原证据档判定: ${e.message}\n`);
+    }
 
     const markdown = formatReport(report);
     console.log(markdown);

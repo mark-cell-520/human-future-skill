@@ -13,6 +13,12 @@ const { ProjectionEngine, formatReport } = require('./project-future.js');
 // collectAll() 全部落地之后——v2.14 git stash 对照实验的教训，新网络负载
 // 塞进现有源的 Promise.all 会挤掉慢源（ECB/NBER 8 秒超时窗口）。
 const { collectBenchmark } = require('../human-future/scripts/prediction-benchmark-collector.js');
+// [v3.23] EDGAR S-1/IPO 备案核查器（新数据源）：v3.21 给 ipo-claim 立库时
+// 写下的证伪路径「EDGAR 查无/撤回/定价时间表不符/挂牌后披露矛盾」四条里，
+// 只有「EDGAR 查无/在案」这一条本轮接上真数据——引擎从此能对 ipo 主张
+// 做备案存在性核查（MIT TR「Anthropic has filed its IPO prospectus」经
+// Anthropic, PBC 的 S-1 备案记录验证，live 实证 2026-10-29）。
+const { verifyIpoClaims } = require('../human-future/scripts/edgar-ipo-collector.js');
 const fs = require('fs');
 const path = require('path');
 
@@ -21,7 +27,7 @@ const path = require('path');
  */
 async function main() {
   console.log('═══════════════════════════════════════════');
-  console.log('🚀 人类未来 · 文明推演引擎 v3.22.1');
+  console.log('🚀 人类未来 · 文明推演引擎 v3.23.0');
   console.log('❤️  心虫 v6.7.69 驱动');
   console.log('═══════════════════════════════════════════\n');
 
@@ -79,6 +85,27 @@ async function main() {
     const engine = new ProjectionEngine(analysis, { benchmark });
     const projection = engine.generate();
 
+    // [v3.23] ipo 主张的 EDGAR 备案核查（阶段 3.5）。放在 generate() 之后、
+    // formatReport 之前：ipo 主张要先被辨别出来才知道要查哪些公司，
+    // 而核查结果（证据档抬升）必须进最终报告与 cron 注入——「引擎产出
+    // 了但 agent 看不到」的同型断链（v3.0.0c 起第七次）不能在这里再犯。
+    // 位置纪律同 v3.2.2：核查是限定性元数据，先于被限定者到达报告。
+    try {
+      projection.commercialDiscrimination = await verifyIpoClaims(
+        projection.commercialDiscrimination, { live: process.env.FETCH === '1' });
+      const iv = projection.commercialDiscrimination.ipoVerification;
+      if (iv && iv.available) {
+        console.log(`  [ipo-edgar] 核查 ${iv.checkedClaims} 条 ipo 主张：验证 ${iv.verified}`
+          + ` / 上下文 ${iv.contextOnly} / 未匹配 ${iv.unmatched}（${iv.queries} 次 SEC 查询）`);
+      } else {
+        console.log(`  [ipo-edgar] 不可用: ${(iv && iv.reason) || '(未说明原因)'}`
+          + '（ipo 主张按原证据档判定）');
+      }
+    } catch (e) {
+      // 核查抛错不该让整轮 pipeline 失败——ipo 段如实降级
+      console.log(`  [ipo-edgar] 核查抛错，ipo 主张按原证据档判定: ${e.message}`);
+    }
+
     // 格式化并输出推演报告
     const projectionReport = formatReport(projection);
     console.log(projectionReport);
@@ -91,7 +118,7 @@ async function main() {
 
     const fullReport = {
       meta: {
-        version: '3.22.1',
+        version: '3.23.0',
         timestamp: new Date().toISOString(),
         heartflowVersion: analysis.engineVersion,
         modulesLoaded: analysis.modulesLoaded
