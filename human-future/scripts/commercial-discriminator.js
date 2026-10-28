@@ -134,7 +134,7 @@ const COMMERCIAL_CLAIM_PATTERNS = [
   // GOOGL Gemini 950M/750M MAU、GOOGL 22B/10B tokens per minute），
   // 精度回归 0 误报（含 GOOGL 订阅总量句与 FLI/Suno subscribers 句）。
   { id: 'usage-metric',
-    re: /\b(?:now\s+)?(?:has|have|had|reach(?:ed|es|ing)?|grew|grown|exceed(?:s|ed|ing)?|surpass(?:es|ed|ing)?|top(?:s|ped|ping)?|process(?:es|ed|ing)?|stands?\s+at)\s+(?:to\s+)?(?:(?:nearly|almost|about|approximately|around|roughly|over|more\s+than|up\s+to|some)\s+)?\d[\d.,]*\s*(?:million|billion|thousand|mn|bn|k)?\s*(?:(?:monthly|weekly|daily)\s+active\s+users?|paid\s+seats?|(?:api\s+)?tokens?\s+per\s+(?:minute|second|hour|day)|api\s+calls?)\b/i,
+    re: /\b(?:now\s+)?(?:has|have|had|reach(?:ed|es|ing)?|grew|grown|exceed(?:s|ed|ing)?|surpass(?:es|ed|ing)?|top(?:s|ped|ping)?|process(?:es|ed|ing)?|stands?\s+at|uses?[^.!?]{0,60}?to\s+(?:help\s+)?power)\s+(?:to\s+)?(?:(?:nearly|almost|about|approximately|around|roughly|over|more\s+than|up\s+to|some)\s+)?\d[\d.,]*\s*(?:million|billion|thousand|mn|bn|k|m|b)?\s*(?:(?:monthly|weekly|daily)\s+active\s+users?|paid\s+seats?|(?:api\s+)?tokens?\s+per\s+(?:minute|second|hour|day)|api\s+calls?|(?:monthly|weekly|daily)\s+calls?)\b/i,
     kind: 'usage-metric', label: '用量/牵引度指标主张' },
   { id: 'market-demand-claim', re: /(market|demand|enterprises?|customers?|buyers?)\s+(want|needs?|demands?|is looking for|are looking for|requires?|is demanding)/i,
     kind: 'demand', label: '需求主张' },
@@ -537,7 +537,7 @@ const REASONING_CHECKS = [
     // 承诺主张的样本就是 GW/MW/GPU 数与资本额（"5 gigawatts"/"45,000
     // NVIDIA Grace Blackwell GPUs"/"500 megawatts"），不补则算力主张
     // 的推理分恒为 0（有数字却判不出样本，v3.10 同型）。
-    test: (t) => /(\d+\s*(?:companies|enterprises|firms|customers|users|developers|respondents|employees|seats|staff|countries|advertisers|deals|percent|%|million|billion)|\$[\d.]+|n\s*=\s*\d+|[\d,.]+\s+(?:[A-Za-z0-9.\-]+\s+){0,3}?(?:GW|MW|gigawatts?|megawatts?|GPUs?|accelerators?)\b)/i.test(t) },
+    test: (t) => /(\d+\s*(?:companies|enterprises|firms|customers|users|developers|respondents|employees|seats|staff|countries|advertisers|deals|percent|%|million|billion|mn|bn|m|b|calls?)|\$[\d.]+|n\s*=\s*\d+|[\d,.]+\s+(?:[A-Za-z0-9.\-]+\s+){0,3}?(?:GW|MW|gigawatts?|megawatts?|GPUs?|accelerators?)\b)/i.test(t) },
   { id: 'has-comparison', label: '给出对照（和谁比/和什么时候比）',
     test: (t) => /(compared to|versus|vs\.?|up from|down from|year[\s-]over[\s-]year|yoy|qoq|against|relative to|than (?:last|previous))/i.test(t) },
   { id: 'has-counterexample', label: '承认反例（什么情况下不成立）',
@@ -594,10 +594,18 @@ function discriminateCommercial(claim, opts = {}) {
   // [v3.21] 豁免范围扩到 ipo（IPO/上市过程主张）——同型论证：IPO 过程
   // 主张的证伪靠「S-1 是否在 EDGAR 查到/是否撤回/是否挂牌」可观测事件，
   // 「Goldman Sachs to Lead Anthropic IPO」无数字但不是不可证伪。
-  // [v3.21] 豁免范围扩到 ipo（IPO/上市过程主张）——同型论证：IPO 过程
-  // 主张的证伪靠「S-1 是否在 EDGAR 查到/是否撤回/是否挂牌」可观测事件，
-  // 「Goldman Sachs to Lead Anthropic IPO」无数字但不是不可证伪。
-  if (matchedPatterns.some(p => p.kind === 'regulatory-action' || p.kind === 'ipo')) {
+  // [v3.21.1] 豁免范围扩到 ma（并购/交易过程）——corr-2026-025 结案：
+  // v3.8 给 regulatory-action 加豁免时登记「ma 同型不一致留待下轮统一」，
+  // 挂满十三个补丁轮（v3.8→v3.21.1）后本轮统一。ma 的证伪结构同样是事件
+  // 不是数字（当事方确认/谈判破裂/监管否决/交割条款）。判定行为变化如实
+  // 记录（实测口径）：标题-only ma 条 unfalsifiable → weak-evidence
+  // （evidence=1 ≤2 档在 thin-reasoning 之前命中，推理 0-1/3 与
+  // decisionRelevant=false 不变，不虚抬纪律保持）；evidence≥3 的 ma 条 →
+  // thin-reasoning + decisionRelevant=true（v3.8 Treasury 条同型路径）。
+  // 变化核心是证伪性判据归位：不再对同一条主张同时打印「不可证伪: 无量化」
+  // 与专属证伪条件两行自相矛盾的输出。
+  // 同轮顺修：v3.21 的 ipo 注释被重复粘贴了两遍（复制粘贴缺陷），去重。
+  if (matchedPatterns.some(p => p.kind === 'regulatory-action' || p.kind === 'ipo' || p.kind === 'ma')) {
     for (let i = problems.length - 1; i >= 0; i--) {
       if (problems[i].id === 'no-quantity') problems.splice(i, 1);
     }

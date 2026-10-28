@@ -1,5 +1,5 @@
 {
-  "version": "3.17.0",
+  "version": "3.21.1",
   "corrections": [
     {
       "id": "corr-2026-007",
@@ -275,7 +275,9 @@
       "rightClaim": "no-quantity 的判据（「很多企业在用」没有基数，任何结果都能被说成应验）只对**量化型主张**成立，对**事件型主张**是类别错位：「Treasury Proposes to Widen Outbound Investment Restrictions」要么能在 Federal Register 查到要么不能，证伪性靠可观测事件不靠基数。v3.8 给新维度 regulatory-action 加了 no-quantity 豁免（不豁免则报告对同一条主张同时打印「不可证伪: 无量化」与「证伪条件: 观察到最终规则…」两行自相矛盾的输出）。同型的 ma 事件型主张（v3.3 进库）至今仍被 no-quantity 命中判 unfalsifiable——v3.3 的 SKILL.md 还把「均判 不可证伪（无量化）」当成「不虚抬」的保守性写进文档。两类事件型表单证伪性判据不一致，是真实遗留缺陷。",
       "evidence": "v3.8 实跑 discriminateCommercial：Treasury 标题-only 加豁免前 problems=[no-quantity]、verdict=unfalsifiable 且 decisionRelevant=false；豁免后 problems=[]、verdict=thin-reasoning（推理仍 0/3 不虚抬）、decisionRelevant=true。同期 smoke 实测「Instacart Is Exploring a Sale」仍 problems=[no-quantity]/unfalsifiable——两行自相矛盾输出在该条上复现。",
       "lesson": "通用判据（不可证伪/推理/证据）落到新形态上时要先问「这个判据对这个形态的证伪结构成立吗」——事件型主张的证伪在事件不在数字。本轮只修新维度、登记旧维度，是因为旧维度的判定行为已文档化已测试，静默改动会改写历史记录；但不登记就是知情不报。",
-      "date": "2026-10-26"
+      "date": "2026-10-26",
+      "resolvedAt": "2026-10-28T00:00:00.000Z",
+      "fix": "v3.21.1 统一：commercial-discriminator.js 的 no-quantity 事件型豁免条件从「regulatory-action || ipo」扩展为 || kind === 'ma'（v3.21 先行扩展到 ipo 的同型论证：并购/交易过程的证伪靠当事方确认/谈判破裂/监管否决/交割条款等可观测事件，无数字不是不可证伪）。判定行为变化如实记录（实测口径）：标题-only ma 条 unfalsifiable → weak-evidence（evidence=1 ≤2 档在 thin-reasoning 之前命中，推理 0-1/3 与 decisionRelevant=false 不变，不虚抬纪律保持）；evidence≥3 的 ma 条 → thin-reasoning + decisionRelevant=true（v3.8 Treasury 条同型路径）。regulatory-action/ipo 逐字段不变（有断言钉住）。同轮：usage-metric 扩 (monthly|weekly|daily) calls 名词族+uses-to-power 动词族+单字母 m/b 单位组（live 实证 Retell「uses OpenAI models to help power 100M monthly calls」），模式库计数 23 不变；v3.3 两条旧断言（c33 Instacart/Ramp）随豁免统一改口径；本地 hf-cron-fetch.sh 补齐 v3.14-v3.21 注入内容（forecast 分组渲染+EDGAR/RSS 截断披露+结算口径限定+ipo 标签，6 个源级断言由红转绿——本机注入脚本停在 v3.13 的真实断链修复）；顺修 v3.21 重复粘贴的 ipo 注释。测试 420→429 项。"
     },
     {
       "id": "corr-2026-026",
