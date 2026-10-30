@@ -63,8 +63,17 @@ const BODY_WINDOW_CHARS = 4000;      // 挂到条目 body 上的 outlook 窗口
 // 选样理由：半导体（NVDA/AMD/AVGO/MRVL/MU）+ 超大厂（MSFT/GOOGL/AMZN/META）
 // + 云与数据库（ORCL/CRWV/IBM/DELL）+ AI 应用（PLTR）。境外 6-K 备案人
 // （TSM/ARM/NBIS）不在内——见文件头边界第 5 条。
+// [v3.25] 六家新增（2026-10-30 live 实证：各 3 份 Item 2.02 业绩 8-K 在采集
+// 窗口内、18 份备案数值指引 0 条进台账——指引句式全部在库外，corr-2026-032
+// 「在窗公司≠采到的指引」同型第五波）：QCOM（表格行 B 单位区间 + Q4 FY26
+// 两位年份）、ANET（冒号+bullet 期望式 + between-and 无单位 + between
+// approximately）、CSCO（FY2027 Guidance 表格行 to 区间）、NOW（无单位
+// 表格行区间，单位在表头）、UBER（anticipate + of + to 区间）、SHOP
+// （expect + to be + X% to Y% 纯百分比区间）。选样覆盖半导体/网络设备/
+// 企业软件/平台经济四个子域。
 const DEFAULT_TICKERS = ['NVDA', 'AMD', 'AVGO', 'MRVL', 'MU', 'MSFT', 'GOOGL',
-  'AMZN', 'META', 'ORCL', 'CRWV', 'IBM', 'DELL', 'PLTR'];
+  'AMZN', 'META', 'ORCL', 'CRWV', 'IBM', 'DELL', 'PLTR',
+  'QCOM', 'ANET', 'CSCO', 'NOW', 'UBER', 'SHOP'];
 
 // ── 指引句式（四条 live 实证句式归纳，2026-10-25）──────────────────
 // ① NVIDIA 新闻稿：「Revenue is expected to be $108.0 billion, plus or minus 2%.」
@@ -87,7 +96,11 @@ const DEFAULT_TICKERS = ['NVDA', 'AMD', 'AVGO', 'MRVL', 'MU', 'MSFT', 'GOOGL',
 // 不加裸 expenses——裸 expenses 会从 "operating expenses" 尾部匹配，
 // 把 NVDA/MRVL 的 opex 指引指标名切成 expenses（settleMetric/
 // normalizeMetric 两侧口径被打穿）。
-const METRIC_NOUNS = '(?:net revenues?|revenues?|net sales|total revenue|total expenses|income|earnings|eps|diluted earnings per share|gross margins?|operating expenses|operating income|tax rates?|free cash flow|capital expenditures?|capex)';
+// [v3.25] 名词族补三个（六家新公司 live 实证，均不互套现有词——corr-2026-032
+// 纪律：进台账 id metric 维度的字段只能加不互套新词）：
+//   operating margin（ANET/CSCO/SHOP）、gross bookings（UBER）、
+//   adjusted ebitda（UBER）。
+const METRIC_NOUNS = '(?:net revenues?|revenues?|net sales|total revenue|total expenses|income|earnings|eps|diluted earnings per share|gross margins?|operating expenses|operating income|operating margin|tax rates?|free cash flow|capital expenditures?|capex|gross bookings|adjusted ebitda)';
 const NUM_OR_TERM = '(?:(?<=\\d)\\.(?=\\d)|[^.;•])';   // 仅数字间的小数点，不当句读
 // New Oracle" 的句点被当成小数的一部分，句子冲进下一节标题（实测 Oracle 指引
 const GUIDANCE_SENTENCE_RE = new RegExp(
@@ -234,10 +247,106 @@ const GUIDANCE_NOUN_OF_RE = new RegExp(
 // "full year 2026, we expect" 锚词在节头内，v3.19 已实测可用；
 // 季度形态 "Q1 2026" 就近取胜，ANNUAL_BARE_YEAR_RE 要 expect 紧接
 // 年份不命中，季度指引不会被抢成全年）。
+// [v3.25] 值部分泛化（ANET live 实证逐字）：
+//   「we expect: • Revenue of approximately $3.3 billion; • Non-GAAP
+//     operating margin of 48 - 49%; and • Non-GAAP diluted net income per
+//     share between $1.06 and $1.08.」
+// of 后容忍 approximately；新增尾 % 区间分支（of 48 - 49%——首值无 $）。
+// PLTR 既有命中（of between $1.532 - $1.536 billion）行为不变；in-excess
+// 指点值的负向断言保留（名词-of 间隔与 of 后双保险）。
 const GUIDANCE_COLON_BULLET_RE = new RegExp(
   `(?<=(?:expects?|anticipates?|projects?|forecasts?)\\s*:\\s*[^:]{0,300})` +
-  `(?:[A-Za-z][\\w-]*\\s+){0,2}?(?:${METRIC_NOUNS})\\b(?:(?!\\bin\\s+excess\\b)${NUM_OR_TERM}){0,40}?\\bof\\s+(?:between\\s+)?\\$\\s?[\\d.,]+` +
-  `(?:\\s*(?:million|billion|bn|tn|trillion)|\\s*[-\u2013\u2014]\\s*\\$?\\s?[\\d.,]+(?:\\s*(?:million|billion|bn|tn|trillion))?)${NUM_OR_TERM}{0,30}`, 'i');
+  `(?:[A-Za-z][\\w-]*\\s+){0,2}?(?:${METRIC_NOUNS})\\b(?:(?!\\bin\\s+excess\\b)${NUM_OR_TERM}){0,40}?\\bof\\s+(?:approximately\\s+)?(?:between\\s+)?` +
+  `(?:\\$\\s?[\\d.,]+(?:\\s*(?:million|billion|bn|tn|trillion)|\\s*[-\u2013\u2014]\\s*\\$?\\s?[\\d.,]+(?:\\s*(?:million|billion|bn|tn|trillion))?)` +
+  `|[\\d.]+\\s*[-\u2013\u2014]\\s*[\\d.]+\\s*%)${NUM_OR_TERM}{0,30}`, 'i');
+
+// [v3.25] 表格行/无动词区间指引（form J）。live 实证（2026-10-30 从 SEC
+// EDGAR 实抓六家新公司原文驱动，corr-2026-032 同型第五波）：
+//   QCOM：「Current Guidance Q4 FY26 Estimates 1 Revenues $9.7B - $10.5B」
+//   CSCO：「FY 2027 Guidance Revenue $18.0 billion to $18.2 billion」
+//   NOW：「Subscription revenues $4,245 - $4,255」（无单位，单位在表头）
+//   UBER：「we anticipate Gross Bookings of $58.25 billion to $60.25
+//     billion」「Non-GAAP EPS of $0.84 to $0.88」
+// 名词 + 可选 of/per share + 可选口径词 + 美元/百分号首值 + 区间符号
+// （-\u2013\u2014 或 to）+ 尾值。
+// 精度纪律（逐条有测试钉住）：
+// ① 首值必须紧跟名词（可选 of/per share/口径词）——"revenue to $4
+//    billion"（CSCO raising 句）、"revenue grew 22% YoY to $54.1
+//    billion"（UBER 实际值句）名词与首值之间有动词，不命中；
+// ② 区间符号必须紧跟首值（可隔一个单位）——财报 actuals 表格两列
+//    （"Revenue $ 17.3 billion $ 14.7 billion"）无区间符号，天然不命中；
+// ③ 无单位区间（NOW "$4,245 - $4,255"）抽取侧收句式、结算侧 parseRange
+//    不猜（单位在表头跨句不进 value 串，默认 billion 差 1000 倍）。
+// extendBack=40：期间短语在名词前（QCOM「Current Guidance Q4 FY26」在
+// 表格行上方、CSCO「Q1 FY 2027」在表格列头），扩到分句边界包进句子。
+const GUIDANCE_RANGE_ROW_RE = new RegExp(
+  `(?:${METRIC_NOUNS})\\s+(?:of\\s+|per\\s+share\\s+)?(?:GAAP\\s+|Non-GAAP\\s+|non-GAAP\\s+)?` +
+  `(?:\\$\\s?[\\d.,]+|[\\d.]+%)\\s*(?:billion|million|bn|B|M)?\\s*(?:[-\u2013\u2014]|\\bto\\b)\\s*\\$?\\s?[\\d.,]+\\s*(?:billion|million|bn|B|M|%)?`, 'i');
+
+// [v3.25] expect + 名词 + to be + X% to Y%（form K，SHOP live 实证逐字）：
+//   「For the third quarter of 2026, we expect Revenue to grow at a
+//     low-thirties percentage rate ... Operating expenses as a percentage
+//     of revenue to be 33% to 34% Stock-based compensation to be $150
+//     million and Free cash flow margin ...」
+// 精度纪律：① 只收纯 % 区间（无 $、无 between、无 in the range of）——
+//    "to be in the range of $73-76 billion"（META）值不以数字开头不命中
+//    （form D 地盘）；"to be approximately $13 billion"（AMD 点值）不是
+//    % 区间不命中（form B 地盘）；② "Revenue to grow at a low-thirties
+//    percentage rate" 是文字增长率（to grow at 不是 to be），天然不命中
+//    ——按 v3.6/v3.9「无幅度不是可证伪主张」纪律留作已知边界；
+//    ③ expect 到名词容忍最多 30 词（SHOP 的 operating expenses 句距
+//    expect 约 25 词——bullet 间无句点连成一段）。
+// extendBack=0：期间在句首（"For the third quarter of 2026, we expect"）。
+// [v3.25] 匹配起点在名词：expect 动词门退到 lookbehind（与 form H 同款
+// 变长 lookbehind 结构）。原写法 m[0] 从动词起、跨多个 bullet——SHOP live
+// 实证「we expect Revenue to grow at ... Operating expenses as a percentage
+// of revenue to be 33% to 34%」的 m[0] 跨两句，metricM 从 m[0] 取第一个
+// 名词会拿到 Revenue（第一句的名词）而不是 to be 前的 operating expenses
+// （指标错配→幂等 id 与结算 key 全歪）。lookbehind 后 m[0] 从名词起。
+// [v3.25 第二轮] lookbehind 窗容忍冒号与分号 bullet：SHOP live 逐字是
+// 「we expect: • Revenue to grow at a low-thirties percentage rate on a
+// year-over-year basis; • Gross profit dollars to grow at a mid-to-high
+// twenties percentage rate on a year-over-year basis; • Operating expenses
+// as a percentage of revenue to be 33% to 34%;」——冒号紧跟 expect、bullet
+// 间用分号。第一版窗口只许词字符（[A-Za-z][\w-]*\s+ 链），冒号与分号
+// 都跨不过去，live 三份备案 0 条而手抄夹具（无冒号无 bullet 的规范化
+// 文本）全绿——夹具走到不到被测分支（corr-2026-029 同型）。窗口规则：
+// 冒号可选（:?）、窗内禁句点与冒号（[^.:]，分号与 bullet 允许——同节
+// bullet 是同一段指引声明），上限 300 字符（与 form H 同款）。
+const GUIDANCE_EXPECT_TOBE_RE = new RegExp(
+  `(?<=(?:expects?|anticipates?)\\s*:?\\s*[^.:]{0,300}?)(?:${METRIC_NOUNS})\\b[^.;:]{0,80}?\\bto\\s+be\\s+\\d+(?:\\.\\d+)?\\s*%\\s+to\\s+\\d+(?:\\.\\d+)?\\s*%`, 'i');
+
+// [v3.25] between-and 两形态（form L，ANET live 实证逐字）：
+//   ① per-share between（EPS 无单位区间）：「Non-GAAP diluted net income
+//      per share between $1.06 and $1.08」——名词走 income（METRIC_NOUNS
+//      撤过 'diluted net income per share'，corr-2026-032：进 id 的字段
+//      只能加不互套新词；id 与 MRVL EPS 条目同构），结算侧无单位拒收；
+//   ② between approximately + 连字符 %：「Non-GAAP gross margin between
+//      approximately 62-63%」。
+// extendBack=14：吃句首 "Non-GAAP/GAAP" 限定词（与 form A 同款——丢限定词
+// 后 GAAP 与非 GAAP 两条指引在句子上无法区分）。
+const GUIDANCE_BETWEEN_RE = new RegExp(
+  `(?:(?:income|earnings)\\s+per\\s+share\\s+between\\s+\\$\\s?[\\d.,]+\\s+and\\s+\\$\\s?[\\d.,]+` +
+  `|(?:${METRIC_NOUNS})\\s+between\\s+approximately\\s+[\\d.]+\\s*[-\u2013\u2014]\\s*[\\d.]+\\s*%)`, 'i');
+
+// [v3.25] Q 缩写 + FY + 两位年份（QCOM live 实证：「Current Guidance Q4
+// FY26 Estimates」表格行上方的期间锚）。既有 QUARTER_FY2_RE 只认季度词
+// 全拼 + FY + 两位（DELL「Second-quarter FY27」），四位形态不认 FY26。
+// 捕获组 1=季度数字 2=两位年份（readPeriod 的 yr() 展开）。
+const QUARTER_QFY2_RE = /Q([1-4])\s*FY\s*(\d{2})\b/i;
+
+// [v3.25] 反向全年形态（锚词在年份**前**）。CSCO live 实证（2026-10-30 实抓
+// 0001321761-26-000039 文末指引表逐字）：「...results for fiscal 2027 FY
+// 2027 Revenue $72.2 billion to $73.4 billion Earnings per Share GAAP $4.00
+// to $4.06 Non-GAAP $5.05 to $5.11」——FY 列的期间声明是 "results for
+// fiscal 2027"（锚词在前）。旧年度模式全部不命中：ANNUAL_PERIOD_PATTERN
+// 要年份词在年份前（FY 2027 Guidance）、ANNUAL_EXPECT_RE 与 ANNUAL_BARE_
+// YEAR_RE 要动词在年份前——FY 列错配成就近的 Q1 列头（Q1 FY 2027），
+// 全年指引按季度结算点到期、用 Q1 实际值结算 FY 区间=错误结算（v3.19
+// AVGO/ORCL dueOn 错位同型纪律）。捕获组 1=年份，readPeriod 按集合判全年。
+// 精度：季度词在年份前时天然不命中（"guidance for the first quarter of
+// fiscal 2027" 的 first 挡在 (20\d{2}) 前）——测试钉住。
+const ANNUAL_RESULTS_RE = /(?:guidance|outlook|results)\s+for\s+(?:the\s+)?(?:full\s+)?(?:fiscal\s+)?(20\d{2})\b/i;
 // [v3.14] 多季度指引不适用单期结算机制：「we expect our tax rate for
 // the remaining quarters of 2026 to be between 15-17%」（META 07-29
 // live 实证）覆盖多个财季，而结算按 (ticker,财季,指标) 单期配对。
@@ -352,7 +461,7 @@ const ANNUAL_HEADER_RE = /(?<![Qq][1-4]\s*(?:FY|fiscal\s+year|fiscal)?\s*)(?<!(?
 // (?:fiscal\s+)?(20\d{2}) 吃不下 "fiscal year 2026" 的 year 单词
 // （fiscal 后直接要数字），Q4 FY2026 指引期间整个抽不到。
 const QUARTER_FISCALYEAR_RE = /(first|second|third|fourth|1st|2nd|3rd|4th)[\s-]quarter\s+(?:of\s+)?fiscal\s+year\s+(20\d{2})\b/i;
-const ANNUAL_PERIOD_SET = new Set([ANNUAL_PERIOD_PATTERN, ANNUAL_EXPECT_RE, ANNUAL_BARE_YEAR_RE, ANNUAL_YEAR_NOUN_RE, FULLYEAR_FY2_RE, ANNUAL_HEADER_RE]);
+const ANNUAL_PERIOD_SET = new Set([ANNUAL_PERIOD_PATTERN, ANNUAL_EXPECT_RE, ANNUAL_BARE_YEAR_RE, ANNUAL_YEAR_NOUN_RE, FULLYEAR_FY2_RE, ANNUAL_HEADER_RE, ANNUAL_RESULTS_RE]);
 const PERIOD_PATTERNS = [
   /(?:outlook|guidance)\s+for\s+(?:the\s+)?(first|second|third|fourth|1st|2nd|3rd|4th)\s+quarter\s+of\s+fiscal\s+(20\d{2})/i,
   /(first|second|third|fourth|1st|2nd|3rd|4th)\s+quarter\s+(?:of\s+)?(?:fiscal\s+)?(20\d{2})\b[^.;•]{0,30}?(?:outlook|guidance)/i,
@@ -377,6 +486,12 @@ const PERIOD_PATTERNS = [
   QUARTER_FY2_RE,
   FULLYEAR_FY2_RE,
   ANNUAL_HEADER_RE,
+  // [v3.25] Q 缩写+FY+两位年份（QCOM「Q4 FY26 Estimates」live 实证）。
+  // 追加在末尾：全文兜底匹配按数组顺序取第一个，新形态优先级最低，
+  // 不影响既有公司的期间解析（就近匹配不受数组顺序影响）。
+  QUARTER_QFY2_RE,
+  // [v3.25] 反向全年（CSCO「results for fiscal 2027」live 实证）。
+  ANNUAL_RESULTS_RE,
 ];
 const QWORD = { first: 1, second: 2, third: 3, fourth: 4, '1st': 1, '2nd': 2, '3rd': 3, '4th': 4 };
 
@@ -473,8 +588,10 @@ const RESULTS_YEARFIRST_RE = /(?:results?|earnings)\s+for\s+(?:its\s+)?(?:the\s+
 // gap 从 "Net sales increased 20% year-over-year" 桥接到下一句 "Operating
 // income was $27.5 billion"，把营业利润当成了营收。sales 形态因此只认
 // **紧邻**句式（无 gap）：ACTUAL_SALES_INCREASED_RE。
+// [v3.25] 复数营收（QCOM/NOW live 实证句式族：「quarterly revenues ...」/
+// 备案标题 revenues 复数形态）——旧正则只认单数 revenue。
 const ACTUAL_REVENUE_RE = new RegExp(
-  `\\b(?:record\\s+|total\\s+|net\\s+)?revenue\\b[^.;]{0,90}?\\b(?:of|was|were)\\s+(?:approximately\\s+)?(\\$\\s?[\\d.,]+\\s*(?:billion|million|bn|m))\\b`, 'i');
+  `\\b(?:record\\s+|total\\s+|net\\s+)?revenues?\\b[^.;]{0,90}?\\b(?:of|was|were)\\s+(?:approximately\\s+)?(\\$\\s?[\\d.,]+\\s*(?:billion|million|bn|m))\\b`, 'i');
 // [v3.5.1] "Net sales increased 20% to $200.5 billion"（AMZN live 实证）：
 // 亮点 bullet 只给同比增幅+绝对值，没有 of/was/were 连接词。收紧为
 // increased+数字%+to **紧邻**形态——容忍间隔会把 AWS 分部的 "net sales
@@ -703,6 +820,12 @@ function extractGuidance(text) {
     // extendBack=0：期间在冒号节头（"For Q1 2026, we expect:"），向前
     // 窗解析（与 form F 同款）。
     { re: new RegExp(GUIDANCE_COLON_BULLET_RE.source, 'gi'), extendBack: 0 },
+    // [v3.25] 表格行/无动词区间（QCOM/CSCO/NOW/UBER 四家 live 实证）
+    { re: new RegExp(GUIDANCE_RANGE_ROW_RE.source, 'gi'), extendBack: 40 },
+    // [v3.25] expect+名词+to be+X% to Y%（SHOP live 实证）
+    { re: new RegExp(GUIDANCE_EXPECT_TOBE_RE.source, 'gi'), extendBack: 0 },
+    // [v3.25] between-and 两形态（ANET live 实证）
+    { re: new RegExp(GUIDANCE_BETWEEN_RE.source, 'gi'), extendBack: 14 },
   ];
   const seen = new Set();
   // [v3.19] 同事实去重集合（期间+指标+数值），见 push 前注释
@@ -760,7 +883,13 @@ function extractGuidance(text) {
       // ② 金额+可选 in 结尾（"compared with $17.4 billion in third quarter
       //    2025"——Amazon 实测：金额后紧跟的期间是同比对象）。漏判只会
       //    漏采（期间 null 不可结算），误判才会污染结算点，故从紧。
-      const COMPARE_BEFORE = /(?:(?:compared\s+(?:with|to|versus|against)|versus|vs\.?|from|than)\s+|\$\s?[\d.,]+\s*(?:billion|million|bn|m)?\s+(?:in\s+)?)$/i;
+      // [v3.25] 金额分支的 in 改为**必填**：CSCO live 实证「GAAP $1.08 to
+      // $1.10 ... FY 2027 Guidance」表格行——上一行 EPS 区间的尾值 "$1.10 "
+      // 被旧正则（in 可选）当成「金额后跟同比期间引用」，把下一行的 FY2027
+      // Guidance 节头挡掉，全年指引错配成 Q1。原设计意图（v3.4 Amazon 实测
+      // 「compared with $17.4 billion in third quarter 2025」）本就有 in；
+      // 无 in 的金额+期间共现是表格邻行不是同比引用。对比词分支不变。
+      const COMPARE_BEFORE = /(?:(?:compared\s+(?:with|to|versus|against)|versus|vs\.?|from|than)\s+|\$\s?[\d.,]+\s*(?:billion|million|bn|m)?\s+in\s+)$/i;
       for (const p of PERIOD_PATTERNS) {
         const g = new RegExp(p.source, 'gi');
         let pm; let last = null;
@@ -778,8 +907,23 @@ function extractGuidance(text) {
           if (pm) { readPeriod(p, pm); break; }
         }
       }
+      // [v3.25] 指标名词/值/容差全部从**匹配自身** m[0] 取，不从 extendBack
+      // 后的 sentence 取：表格行 strip 后单元格间无句点（CSCO live 实测
+      // 「$18.0 billion - $18.2 billion Non-GAAP gross margin 65% - 66%」
+      // 连成一片），40 字符回扩把前一单元格的名词与值桥进句子——
+      // sentence.match 取到的是邻居的名词与值（operating margin 行的
+      // metric 变成 gross margin、value 变成营收区间，结算时判假 miss）。
+      // 所有 form 的 m[0] 都自带完整值结构（form A 尾部 NUM_OR_TERM
+      // {0,160}、form J/K/L 匹配即到值末）；sentence 仍用于存储、期间
+      // 解析与口径推导（nounIdx 按 m[0].indexOf 定位，与 m0 一致）。
+      const m0 = m[0];
       // 指标/数值/容差/区间
-      const metricM = sentence.match(new RegExp(METRIC_NOUNS, 'i'));
+      // [v3.25] 指标名词从 m[0] 取（与 rangeM 同源修复）：表格行 strip 后
+      // 单元格间无句点，extendBack 回扩把上一格的名词带进句子（CSCO live
+      // 实测 operating margin 行的句子前缀是 "gross margin 65% - 66% Non-
+      // GAAP "），sentence.match 取到邻居的名词——metric 错配会让幂等 id、
+      // settleMetric 与结算 key 全歪。nounIdx 用 m[0].indexOf 定位，一致。
+      const metricM = m0.match(new RegExp(METRIC_NOUNS, 'i'));
       // [v3.13] 口径标记从**原文**指标名词前的限定词推导：GUIDANCE_SENTENCE_RE
       // 与表格形态的 m[0] 以名词开头（nounIdx=m.index），expects 在前形态
       // 名词在句内（indexOf 定位）。不从 sentence 推——14 字符回扩窗口会把
@@ -795,27 +939,40 @@ function extractGuidance(text) {
       const gaapBasis = (nounIdx >= 0 && !form.isTable)
         ? gaapBasisOf(text.slice(Math.max(0, nounIdx - 30), nounIdx))
         : '';
-      const rangeM = sentence.match(/between\s+\$?\s?([\d.,]+)\s*(billion|million|%)?\s+and\s+\$?\s?([\d.,]+)\s*(billion|million|%)?/i)
-        || sentence.match(/([\d.]+)\s*%\s+to\s+([\d.]+)\s*%/i)
+      const rangeM = m0.match(/between\s+\$?\s?([\d.,]+)\s*(billion|million|%)?\s+and\s+\$?\s?([\d.,]+)\s*(billion|million|%)?/i)
+        || m0.match(/([\d.]+)\s*%\s+to\s+([\d.]+)\s*%/i)
         // [v3.14] 连字符美元区间（META live）：「in the range of $73-76
         // billion」两端同单位（billion 只写一次，不吃进来单位就丢）
         // [v3.16] 分隔符泛化为连字符或 to（GOOGL live 实证：「in the
         // range of $175 to $185 billion」——X-to-Y 形态旧正则整个不命中，
         // value 退化成点值 $175、无容差不可结算）；首侧补可选单位
         //（"$175 million to $1 billion" 两端不同单位时各折各的）
-        || sentence.match(/in\s+the\s+range\s+of\s+\$?\s?([\d.,]+)\s*(?:million|billion)?\s*(?:[-–]|\bto\b)\s*\$?\s?([\d.,]+)\s*(billion|million)/i)
+        || m0.match(/in\s+the\s+range\s+of\s+\$?\s?([\d.,]+)\s*(?:million|billion)?\s*(?:[-–]|\bto\b)\s*\$?\s?([\d.,]+)\s*(billion|million)/i)
         // [v3.14] 单百分号区间（META live）：「between 15-17%」（旧 % 区间
         // 正则要求两端都有 %，单 % 形态整个不命中）
-        || sentence.match(/between\s+([\d.]+)\s*[-–]\s*([\d.]+)\s*%/i)
+        || m0.match(/between\s+([\d.]+)\s*[-–]\s*([\d.]+)\s*%/i)
         // [v3.19] between + en-dash 美元区间（PLTR live 实证：「to
         // between $8.150 – $8.158 billion」——旧 and / in the range of /
         // 单百分号三种区间语法全部不命中，value 退化成点值 $8.150、
         // 无容差不可结算）。与 earnings-settlement.js parseRange 同轮
         // 同构新增（v3.16 教训：两边正则必须一起改）。
-        || sentence.match(/between\s+\$?\s?([\d.,]+)\s*(?:million|billion)?\s*[–-]\s*\$?\s?([\d.,]+)\s*(billion|million)/i);
-      const valueM = sentence.match(/\$\s?[\d.,]+\s*(?:billion|million|bn|tn|trillion)?/i)
-        || sentence.match(/[\d.]+\s*%/) || sentence.match(/[\d.]+\s*basis points/i);
-      const tolM = sentence.match(/(?:\+\/-|±|plus or minus)\s*(\$?\s?[\d.,]+\s*(?:%|billion|million|basis points|bps)?)/i);
+        || m0.match(/between\s+\$?\s?([\d.,]+)\s*(?:million|billion)?\s*[–-]\s*\$?\s?([\d.,]+)\s*(billion|million)/i)
+        // [v3.25] 裸区间（无 between / 无 in the range of）：QCOM「$9.7B -
+        // $10.5B」/ CSCO「$18.0 billion to $18.2 billion」/ NOW「$4,245 -
+        // $4,255」/ UBER「of $0.84 to $0.88」。与 form J 同构、与结算侧
+        // parseRange mBareUsd 同轮同构（v3.16 教训：两侧必须一起改）。
+        || m0.match(/\$\s?[\d.,]+\s*(?:million|billion|bn|B|M)?\s*(?:[-–—]|\bto\b)\s*\$?\s?[\d.,]+\s*(?:million|billion|bn|B|M)?/i)
+        // [v3.25] between approximately + 连字符 %（ANET live 实证：
+        // 「gross margin between approximately 62-63%」）
+        || m0.match(/between\s+approximately\s+([\d.]+)\s*[–-]\s*([\d.]+)\s*%/i)
+        // [v3.25] 尾 % 区间（首值无 %）——ANET「operating margin of 48 -
+        // 49%」/ CSCO「Non-GAAP gross margin 65% - 66%」live 实证：区间
+        // 符号只写一次、% 只写尾侧。旧链只有 X% to Y%（to only），连字符
+        // 形态整个不命中。
+        || m0.match(/([\d.]+)%?\s*[-–—]\s*([\d.]+)\s*%/i);
+      const valueM = m0.match(/\$\s?[\d.,]+\s*(?:billion|million|bn|tn|trillion)?/i)
+        || m0.match(/[\d.]+\s*%/) || m0.match(/[\d.]+\s*basis points/i);
+      const tolM = m0.match(/(?:\+\/-|±|plus or minus)\s*(\$?\s?[\d.,]+\s*(?:%|billion|million|basis points|bps)?)/i);
       // 前提削减：指引句之后 300 字符内的限定句（实测 NVIDIA 的
       // "NVIDIA is not assuming any Data Center compute revenue from China"
       // 就写在指引句后面一句）。matchEnd 已在上面期间匹配处算好。
@@ -826,7 +983,12 @@ function extractGuidance(text) {
       }
       // [v3.19] 同（期间,指标,数值）去重：见上方注释。口径差异以首条
       // 为准（不同值时数值不同，key 天然分开）。
-      const factKey = `${fiscalYear}|${quarter}|${annual}|${metricM ? metricM[0].toLowerCase() : ''}|${(rangeM ? rangeM[0] : (valueM ? valueM[0] : '')).replace(/\s+/g, ' ').trim()}`;
+      // [v3.25] 语义归一：同一条指引的两种句式（MRVL live 实证「is
+      // expected to be 52.9% to 53.9%」form A 与表格行「52.9% - 53.9%」
+      // form J）value 文本不同、事实相同——旧 seenFacts 按文本去重不去，
+      // 重复登记两个义务。归一：去空白、区间分隔符统一为 to（-\u2013\u2014
+      // 与 and 同义）、小写。
+      const factKey = `${fiscalYear}|${quarter}|${annual}|${metricM ? metricM[0].toLowerCase() : ''}|${(rangeM ? rangeM[0] : (valueM ? valueM[0] : '')).replace(/\s+/g, '').replace(/[-\u2013\u2014]/g, 'to').replace(/and/gi, 'to').toLowerCase()}`;
       if (seenFacts.has(factKey)) continue;
       seenFacts.add(factKey);
       guidance.push({
@@ -837,18 +999,28 @@ function extractGuidance(text) {
         // 区分），改它会让旧条目换 id 重复登记。
         gaapBasis,
         settleMetric: settleMetricOf(sentence, metricM ? metricM[0] : null),
-        value: rangeM ? rangeM[0].replace(/\s+/g, ' ') : (valueM ? valueM[0].replace(/\s+/g, ' ') : null),
+        // [v3.25] value/tolerance 落账前 trim：GUIDANCE_TABLE_RE 尾部的
+        // \s*（单位组前）会把值后的空格吃进 m[0]（"…± $1.00 "），m0 不经
+        // sentence 的 trim——tolM 组内 \s* 同样吃掉尾空格，旧行为在已
+        // trim 的 sentence 上匹配所以没暴露（v3.13 MU 夹具 tolerance
+        // "$1.00 " 精确相等断言失败，live 实证）。
+        // [v3.25] 去尾部标点：form G 的 [\d.,]+ 把 "$25.50," 的逗号吃进
+        // value（DELL 一句双 EPS live 实证）、form L 的 m[0] 吃进句点
+        // （"between $1.06 and $1.08."）——trim 只去空白，标点显式剥。
+        value: rangeM ? rangeM[0].replace(/\s+/g, ' ').trim().replace(/[,;:.]+$/, '') : (valueM ? valueM[0].replace(/\s+/g, ' ').trim().replace(/[,;:.]+$/, '') : null),
         isRange: !!rangeM,
-        tolerance: tolM ? tolM[1].replace(/\s+/g, ' ') : null,
+        tolerance: tolM ? tolM[1].replace(/\s+/g, ' ').trim().replace(/[,;:.]+$/, '') : null,
         quarter, fiscalYear,
         periodPhrase: periodPhrase || null,
         annual: !!annual,
         periodLabel: fiscalYear && quarter ? `FY${fiscalYear} Q${quarter}` : (fiscalYear && annual ? `FY${fiscalYear} 全年` : null),
         caveats,
       });
-      if (guidance.length >= 6) break;   // 每份发布最多 6 条指引，防刷屏
+      if (guidance.length >= 10) break;   // [v3.25] 每份发布最多 10 条指引
+      // （CSCO live 实测 9 条/备案——Q1+全年两组 Revenue/EPS；旧上限 6 把
+      // FY 全年指引整批切掉）
     }
-    if (guidance.length >= 6) break;
+    if (guidance.length >= 10) break;
   }
   // outlook 窗口：第一处 outlook/guidance 标题起 BODY_WINDOW_CHARS 字符，
   // 供通用抽取层与时间轴层使用

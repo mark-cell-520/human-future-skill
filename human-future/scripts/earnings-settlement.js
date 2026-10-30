@@ -37,8 +37,10 @@
  *    比较前两边必须同单位，否则跳过。
  */
 
-const NUM_UNIT_RE = /\$?\s?([\d.,]+)\s*(billion|million|bn|tn|trillion|%|basis points|bps)?/i;
-const SCALE = { billion: 1e9, bn: 1e9, million: 1e6, tn: 1e12, trillion: 1e12 };
+// [v3.25] 单位组补单字母 B/M（QCOM live 实证：「Revenues $9.7B - $10.5B」
+// 表格行用 B 缩写）。billion/million 全拼在前（交替按顺序匹配，全拼优先）。
+const NUM_UNIT_RE = /\$?\s?([\d.,]+)\s*(billion|million|bn|tn|trillion|%|basis points|bps|B|M)?/i;
+const SCALE = { billion: 1e9, bn: 1e9, million: 1e6, tn: 1e12, trillion: 1e12, b: 1e9, m: 1e6 };
 
 /**
  * 解析一个带单位的数值串 → {n, unit}。
@@ -84,6 +86,12 @@ function parseRange(str) {
     if ((mDollar[2] || '').includes('%') || (mDollar[4] || '').includes('%')) {
       return { lo: Number(mDollar[1].replace(/,/g, '')), hi: Number(mDollar[3].replace(/,/g, '')), unit: 'pct' };
     }
+    // [v3.25] between-and 两端都无单位（ANET EPS live 实证：「between
+    // $1.06 and $1.08」是每股美元值）：默认 billion 会错 9 个数量级
+    // （$1.06 → $10.6 亿）——不猜，返回 null 由调用方跳过（错配成 miss
+    // 比不结更坏）。既有 live 数据（AMZN/NVDA 税率/PLTR/META）都带单位
+    // 或 %，行为不变。
+    if (!mDollar[2] && !mDollar[4]) return null;
     const scale = (u) => (u && SCALE[u.toLowerCase()]) || 1e9; // 营收区间默认 billion
     return { lo: Number(mDollar[1].replace(/,/g, '')) * scale(mDollar[2]),
       hi: Number(mDollar[3].replace(/,/g, '')) * scale(mDollar[4]), unit: 'usd' };
@@ -116,6 +124,27 @@ function parseRange(str) {
     return { lo: Number(mBetweenDash[1].replace(/,/g, '')) * scLo,
       hi: Number(mBetweenDash[3].replace(/,/g, '')) * scHi, unit: 'usd' };
   }
+  // [v3.25] 无 between / 无 in the range of 的裸美元区间（QCOM/CSCO/NOW/
+  // UBER live 实证：「$9.7B - $10.5B」「$18.0 billion to $18.2 billion」
+  // 「of $0.84 to $0.88」）。与抽取侧 rangeM 新增形态同轮同构（v3.16 教训）。
+  // 尾侧单位**必需**——NOW「$4,245 - $4,255」单位在表头跨句不进 value 串，
+  // 默认 billion 差 1000 倍；尾侧无单位即不匹配、落到底部 return null，
+  // 实现「无单位一律不猜」（本地分叉轮同款纪律：错配成 miss 比不结更坏）。
+  const mBareUsd = s.match(/\$\s?([\d.,]+)\s*(million|billion|bn|B|M)?\s*(?:[-–]|\bto\b)\s*\$?\s?([\d.,]+)\s*(million|billion|bn|B|M)/i);
+  if (mBareUsd) {
+    const scLo = SCALE[(mBareUsd[2] || mBareUsd[4]).toLowerCase()];
+    const scHi = SCALE[mBareUsd[4].toLowerCase()];
+    return { lo: Number(mBareUsd[1].replace(/,/g, '')) * scLo,
+      hi: Number(mBareUsd[3].replace(/,/g, '')) * scHi, unit: 'usd' };
+  }
+  // [v3.25] between approximately + 连字符 %（ANET live 实证：「Non-GAAP
+  // gross margin between approximately 62-63%」）
+  const mBetweenApprox = s.match(/between\s+approximately\s+([\d.]+)\s*[-–]\s*([\d.]+)\s*%/i);
+  if (mBetweenApprox) return { lo: Number(mBetweenApprox[1]), hi: Number(mBetweenApprox[2]), unit: 'pct' };
+  // [v3.25] 尾 % 区间（首值无 %、无 between）——ANET「48 - 49%」/ CSCO
+  // 「65% - 66%」live 实证。与抽取侧 rangeM 新增分支同轮同构（v3.16 教训）。
+  const mTailPct = s.match(/([\d.]+)%?\s*[-–]\s*([\d.]+)\s*%/i);
+  if (mTailPct) return { lo: Number(mTailPct[1]), hi: Number(mTailPct[2]), unit: 'pct' };
   return null;
 }
 

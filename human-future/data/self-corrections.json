@@ -1,5 +1,5 @@
 {
-  "version": "3.24.0",
+  "version": "3.25.0",
   "corrections": [
     {
       "id": "corr-2026-007",
@@ -465,6 +465,36 @@
       "lesson": "写已知边界（或给能力写证伪路径）时要区分「没有数据源」与「没接数据源」——接新数据源时要扫该机构的其它端点，不能因第一个端点只覆盖一类表单就判定其余需人工。同型纪律：browse-edgar 的 type 参数只生效第一个（multi-type 查询实测无效）、同名不同 type 会解析到不同公司（Mobileye+type=S-1 → Mobileye Global Inc. CIK 0001910139 vs +type=RW → Mobileye B.V. CIK 0001607310）——跨表单查询必须锚定同一 CIK。另：事件类可观测数据只作上下文，不抬证据档、不改判定——「备案动作主张的事实核心由 S-1 记录验证，事件不推翻已发生的备案」，证伪解读（结合主张时点）由下游 agent 做，引擎不代判。",
       "severity": "medium",
       "fixedIn": "v3.24"
+    },
+    {
+      "id": "corr-2026-045",
+      "reportVersion": "v3.25",
+      "wrongClaim": "（沿用假设）新加的正则/常量只要 node --check 过就是在工作；探针输出为空说明本轮没有可报内容",
+      "rightClaim": "两个实测故障都是「语法对、行为错」：① QUARTER_QFY2_RE 是正则字面量，python 替换按 new RegExp 模板的转义层级写成了 \\\\s（字面量里匹配字面反斜杠+s）——「Q4 FY26」永不匹配，QCOM 07-29 的 Q4 指引被解析成已报告季 Q3，而 node --check 照样过；② m0（const m0 = m[0]）定义在 metricM 使用之后（TDZ），extractGuidance 每份备案抛 ReferenceError，被 collectEdgarFilings 的 per-company try/catch 吞掉 push 进 errors——探针输出 0 字节、exit=0，像「跑完了没数据」，实际是整个抽取层静默死亡。",
+      "evidence": "探针13 逐模式打印：QCOM before 窗内「Q4 FY26」零模式命中（QUARTER_QFY2_RE 的 \\\\s 不匹配空白）；探针6 家采集 available=true/备案 18/指引 0（errors 为空——TDZ 错误被 per-company catch 吞成 errors.push 而非抛出）",
+      "lesson": "正则字面量与 new RegExp(模板字符串) 的反斜杠层级不同：模板里要 \\\\s（JS 字符串层+正则层），字面量里只要 \\s——跨语言生成代码（python 写 JS）时按目标形态各写各的，不能一套转义走天下。另一条：模块级 per-company try/catch 会把 ReferenceError 这类「整个功能死了」的错误降级成单公司 errors——探针/脚本静默零输出时必须先区分「跑完没数据」与「跑了但崩在被吞的层里」，判据是看采集结果的 errors 数组与 items 数，不是 exit code。",
+      "severity": "medium",
+      "recordedAt": "2026-10-30T15:38:17.301Z"
+    },
+    {
+      "id": "corr-2026-046",
+      "reportVersion": "v3.25",
+      "wrongClaim": "（沿用假设）extendBack 向前扩展只影响 sentence 的展示文本，指标与值从 sentence 匹配是安全的",
+      "rightClaim": "表格行 strip 后单元格间无句点（CSCO live 实测「$18.0 billion - $18.2 billion Non-GAAP gross margin 65% - 66% Non-GAAP operating margin 35.5% - 36.5%」连成一片），40 字符回扩把上一格的名词与值桥进句子——metricM 从 sentence 取到邻居的 gross margin（operating margin 行的指标错配）、rangeM 取到邻居的营收区间（gross margin 指引的 value 变成 $18.0 billion，结算时判假 miss）。连带发现 v3.19「一句双 EPS」夹具是用去重掩盖 value 错位：第二次 form G 匹配的 value 被桥接成第一个指引短语的 $24.37，(期间,指标,数值) 去重把错位记录挡掉，看起来「去重生效」实际根因是 extendBack 桥接。",
+      "evidence": "探针11 CSCO 08-12：gross margin 行 value=$18.0 billion - $18.2 billion（邻居营收区间）；DELL EPS2 夹具第二次匹配 value=$24.37（应为 $25.50）、basis=non-gaap——v3.19 测试断言 length===1 钉的正是这个错位记录被去重的副产物",
+      "lesson": "向前/向后扩展窗只用于「存储与展示的句子」，指标名词与数值必须从匹配自身 m[0] 取（m[0] 对所有 form 都自带完整值结构）——扩展窗跨过的每一个字符都是潜在的同形邻居。另：当一个测试断言钉的是「错误中间态被某个机制挡住」，根因修好后要敢改断言——v3.19 的 length===1 是去重掩盖桥接，m0 修复后 GAAP/非 GAAP 分口径两条义务（与 v3.13 口径分 key 同型）才是正确行为。",
+      "severity": "medium",
+      "recordedAt": "2026-10-30T15:38:17.306Z"
+    },
+    {
+      "id": "corr-2026-047",
+      "reportVersion": "v3.25",
+      "wrongClaim": "（沿用假设）测试夹具抄 live 实证句的「内容」就够了，标点/bullet/大小写形态顺手规范化不影响覆盖",
+      "rightClaim": "SHOP form K 的夹具是手抄的规范化文本（「we expect Revenue to grow...Operating expenses as a percentage of revenue to be 33% to 34%」，无冒号无 bullet 无分号），而 stripHtml 后的 live 逐字是「we expect: • Revenue to grow at a low-thirties percentage rate on a year-over-year basis; • Gross profit dollars...; • Operating expenses as a percentage of revenue to be 33% to 34%;」——冒号紧跟 expect、bullet 间分号。form K 第一版 lookbehind 的词字符链跨不过冒号与分号，live 三份备案 0 条指引，而夹具全绿（断言通过）。这是 corr-2026-029「用例触达不到被测分支」家族第三次实证：前两次是小数点切断 lookahead 与 fixture 被前置守卫挡在断言前，这次是手抄时把 live 文本的句法形态规范化掉了。",
+      "evidence": "dbg-shop.js 对 stripHtml 后全文跑 extractGuidance：SHOP 三份备案指引 0 条；同文加冒号+分号 bullet 后命中；byTicker 统计 SHOP:0（live 端到端报告 JSON）",
+      "lesson": "抽取/匹配类改动的夹具必须来自采集器自己的 stripHtml 输出（或直接从 SEC 原文过一遍同一套清洗链），不能从探针 print 或记忆里手抄——探针的打印链与生产链差一个 replace，形态就变了。判据：夹具进测试前，先在真实采集产物上确认「这个形态真的出现了」（byTicker/未命中过堂），否则绿灯只是夹具自娱自乐。扩句式的每一轮都要问：live 全文里这个句式长什么样，不是我记的它长什么样。",
+      "severity": "medium",
+      "recordedAt": "2026-10-30T15:49:48.230Z"
     }
   ]
 }
