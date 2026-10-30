@@ -501,6 +501,51 @@ const COMMERCIAL_CLAIM_PATTERNS = [
   { id: 'legal-action',
     re: /(?:\b(?:sues?|sued|suing)\s+(?:[a-z]{1,12}\s+){0,2}?[A-Z][A-Za-z0-9&.-]*|\b(?:authorities|government|regulators?|police|customs|prosecutors?|attorneys?\s+general|doj|department\s+of\s+justice|sec|securities\s+and\s+exchange\s+commission|ftc|federal\s+trade\s+commission|treasury|eu|european\s+commission|white\s+house|ministry|ministers?|congress|parliament|lawmakers?)\b[^.!?]{0,40}?\b(?:seizes?|seized|seizing|fined|fining|penaliz(?:e|ed|ing)|penalis(?:e|ed|ing)|indicts?|indicted|indicting|confiscate[sd]?|confiscating)\b)/i,
     kind: 'legal-action', label: '执法/诉讼行动主张' },
+  // ── 客户成效/ROI 类 ──
+  // [v3.26] 客户成效/ROI 主张（customer-outcome，新辨别维度）。
+  // 2026-10-31 全池过堂（corr-2026-028 纪律：312 条 live 池逐桶过形态门、
+  // 未命中条目逐条过堂）live 实证：OpenAI News「Credit Saison achieves
+  // 954% ROI in a ChatGPT Enterprise pilot」（2026-10-29 在窗，frontier_
+  // models 桶）——扩容前 24 种形态全部不命中，整条不进辨别。
+  // v3.11 立库 usage-metric 时把采用证据枚举成「趋势主张/具名部署/用量
+  // 状态」三类、v3.12 扩成四类（+算力承诺），两轮都漏了**采用的结果**：
+  // 客户用 AI 之后到底有没有成效（ROI/节省/生产率）——而这是企业采购
+  // 方最关心的证据形态，也是厂商案例研究（case study）里唯一带量化结果
+  // 的句子。漏掉它，商业辨别对「采用的价值」失明：只看得见部署了多少
+  // 席位、处理了多少 token，看不见部署之后发生了什么。
+  // 形态族（两族，全部 live 实证驱动）：
+  //   A 成效动词 + 量化值 + 成效名词（数值在前）：「achieves 954% ROI」
+  //      「delivered 954% ROI」（Credit Saison live 逐字两句式）；
+  //   B 成效名词 + of + 量化值（名词在前）：「an ROI of 954%」「cost
+  //      savings of $12 million」——与 A 同构的常见语序。
+  //   成效名词族：ROI / return on investment / (cost) savings /
+  //     productivity (gain(s)|improvement(s)|uplift(s)) / efficiency
+  //     (gain(s)|improvement(s)) / cost reduction / payback。动词族只认成效达成
+  //     动词（achieve/deliver/generate/realize/report/record/post/see）。
+  // 精度设计（v3.0.0c/v3.2/v3.3/v3.6/v3.7/v3.9/v3.10/v3.11/v3.12/v3.21/
+  // v3.22 教训：漏报比误报诚实、没有实证不扩模式）：
+  //   ① 必须「量化值 + 成效名词」相邻共现（中间只容忍空白）——live 实证
+  //      ServiceNow 8-K「most enterprises are still searching for AI's
+  //      ROI, ServiceNow is the platform delivering it」含 ROI 名词与
+  //      delivering 动词但**无任何数字**，整个不命中（无量化值的 ROI
+  //      谈论不是可证伪主张，v3.6/v3.9/v3.10 同型纪律）；
+  //   ② 成效名词族不含 revenue/margin/income/orders——厂商自身财报
+  //      句（GOOGL「revenues increased 48% to $17.7 billion」）是
+  //      demand 地盘不是客户成效；不含 costs 裸名词——TCO 效率句
+  //      （NVDA「35x lower cost」/「Operating costs fell 40%」）按
+  //      v3.9 已决议不进库；
+  //   ③ 动词族不含 found——survey-finding 地盘（「survey of 1,200
+  //      enterprises found 34%」）不抢；
+  //   ④ 数值与名词之间不容长间隔——"$12 million in annual savings"
+  //      形态（in 间隔）无 live 实证不进库，与 v3.2/v3.6 宽窗教训同型；
+  //   ⑤ 「has/have + 成效名词」形态（"the pilot has a 6-month
+  //      payback"）无 live 实证不进库，动词族只收成效达成动词。
+  // live 全池实测（312 条池）：精确命中 1 条（即 Credit Saison 条），
+  // 精度回归 0 误报（ServiceNow ROI 无数字句/GOOGL 营收句/成本效率句/
+  // 用量指标句/调查发现句全部不命中，旧 24 种形态代表句式零漂移）。
+  { id: 'customer-outcome',
+    re: /(?=[^.!?]*\b(?:achieves?|achieved|achieving|delivers?|delivered|delivering|generates?|generated|generating|realiz(?:e|es|ed|ing)|reports?|reported|reporting|records?|recorded|post(?:s|ed)?|saw|sees?)\b)(?=[^.!?]*(?:\d[\d.,]*\s*(?:%|percent\b|million|billion|trillion|x\b|times)\s+(?:ROI|return\s+on\s+investment|(?:cost\s+)?savings|productivity\s+(?:gains?|improvements?|uplifts?)|efficiency\s+(?:gains?|improvements?)|cost\s+reductions?|payback)|(?:ROI|return\s+on\s+investment|(?:cost\s+)?savings|productivity\s+(?:gains?|improvements?|uplifts?)|efficiency\s+(?:gains?|improvements?)|cost\s+reductions?|payback)\s+of\s+(?:approximately\s+|nearly\s+|almost\s+|about\s+|around\s+|roughly\s+|up\s+to\s+|more\s+than\s+|over\s+)?\$?\s?\d[\d.,]*\s*(?:%|percent\b|million|billion|trillion|x\b|times)?))/i,
+    kind: 'customer-outcome', label: '客户成效/ROI 主张' },
 ];
 
 /** 不可证伪的商业措辞：无主体、无量化、纯修辞 */
@@ -849,6 +894,11 @@ function buildFalsification(patterns, text) {
     // 行政裁决），与 regulatory-action（提案→最终规则）、ma（探索→
     // 交割）、ipo（备案→挂牌）同构，不等财报。
     'legal-action': '观察到该诉讼被法院驳回、撤诉或和解且条款与主张情形不符，或该执法行动被上诉推翻、处罚/扣押金额被改判撤销，或相关指控被主管机关撤回',
+    // [v3.26] 客户成效/ROI 主张的证伪路径：成效类主张最常见的裂缝是
+    // 「ROI 测算方法不透明（成本项漏计/基线年替换/样本自选）」「客户方
+    // 或独立审计的测算与主张值不符」「下一期同口径自报值回落」。厂商
+    // 案例研究的 ROI 是厂商自己算的，证伪既要看值也要看方法。
+    'customer-outcome': '观察到客户方公开确认或独立审计的 ROI 测算与主张值不符、下一期同口径自报值回落，或第三方测算（独立咨询/行业基准）不支持该成效，或「成效」实为口径变化（统计窗口/基线年替换/成本项漏计/样本自选）',
     'unclassified': '无明确证伪路径——这本身就是问题',
   };
   return FALSIFICATION_BY_KIND[kind] || FALSIFICATION_BY_KIND.unclassified;
@@ -886,6 +936,10 @@ function inferCommercialCategory(text, patterns) {
       // regulatory-action/compliance 同域；兜底类目 market_claims
       // 不同值，行为断言可抓摘除）
       'legal-action': 'compliance_demand',
+      // [v3.26] 客户成效/ROI 是客户采用域的结果证据（与 adoption/
+      // deployment-scale/usage-metric 同域；兜底类目同为 market_claims
+      // ——行为断言抓不到摘除，测试走源级）
+      'customer-outcome': 'market_claims',
       // [v3.3] 交易过程是资本事件，归资本与商业模式域
       ma: 'capital_flow',
       funding: 'capital_flow', valuation: 'capital_flow', 'capital-signal': 'capital_flow',
