@@ -1,0 +1,76 @@
+{
+ "source": "Anthropic, PBC S-1 (CIK 0002130357, accession 0001628280-26-067168, filed 2026-10-26), anthropicpbc-sx1.htm, fetched 2026-10-31",
+ "note": "v3.27 备案正文量化主张抽取的 live 夹具：hit=五形态命中句（每形态前 3 条，跨形态 first-match-wins 归属，与 extractS1Claims 去重同构），miss=含 revenue/$ 但不合任何形态的精度面句子。逐字摘自 SEC Archives 原文（decodeFilingHtml 后）。",
+ "hit": [
+  {
+   "form": "revenue-growth",
+   "sentence": "In 2023, 2024, and 2025, our revenue was $41 million, $386 million, and $4.6 billion, respectively, representing year-over-year growth rates of 841% and 1,088%, respectively."
+  },
+  {
+   "form": "revenue-growth",
+   "sentence": "In the six months ended June 30, 2026, our revenue was $16.3 billion, representing a year-over-year growth rate of 1,300%."
+  },
+  {
+   "form": "revenue-level",
+   "sentence": "Our revenue was $16.3 billion for the six months ended June 30, 2026, up from $1.2 billion for the six months ended June 30, 2025."
+  },
+  {
+   "form": "revenue-level",
+   "sentence": "For 2023, our revenue of $41 million was substantially all consumption-based, reflecting our early operations."
+  },
+  {
+   "form": "revenue-level",
+   "sentence": "Our financial results reflect continued growth alongside ongoing investment in frontier AI as demonstrated below: • Our revenue was $11.6 billion for the three months ended June 30, 2026, up from $787 million for the three months ended June 30, 2025."
+  },
+  {
+   "form": "customer-scale",
+   "sentence": "Our customer base as of September 30, 2026 includes: • More than 11,900 customers with $100,000 or more of revenue on a TTM basis; • More than 1,900 customers with $1 million or more of revenue on a TTM basis; and • Approximately 250 customers with $10 million or more of revenue on a TTM basis."
+  },
+  {
+   "form": "customer-scale",
+   "sentence": "We had more than 11,900 customers with $100,000 or more of revenue on a TTM basis as of September 30, 2026, up from more than 950 as of September 30, 2025."
+  },
+  {
+   "form": "customer-scale",
+   "sentence": "As of September 30, 2026, we had more than 1,900 customers with $1 million or more of revenue on a TTM basis and approximately 250 customers with $10 million or more of revenue on a TTM basis."
+  },
+  {
+   "form": "compute-commitment",
+   "sentence": "Infrastructure Service Arrangements In November 2025, we entered into an agreement with Microsoft, which was subsequently amended in February and October 2026, pursuant to which we committed to spend an aggregate of at least $44.9 billion between November 2026 and May 2033, regardless of actual usage."
+  },
+  {
+   "form": "compute-commitment",
+   "sentence": "In March 2026, we entered into an agreement with Google, which was subsequently amended between May and August 2026, and pursuant to which we committed to spend at least approximately $114.5 billion between April 2026 and July 2033, regardless of actual usage."
+  },
+  {
+   "form": "compute-commitment",
+   "sentence": "In April 2026, we entered into an agreement with Amazon, pursuant to which we committed to spend an aggregate of at least $110.0 billion between May 2026 and April 2036, regardless of actual usage."
+  },
+  {
+   "form": "revenue-per-employee",
+   "sentence": "Our operating efficiency is demonstrated by TTM revenue per employee of over $6.6 million as of September 30, 2026, compared to $1.4 million as of September 30, 2025."
+  },
+  {
+   "form": "revenue-per-employee",
+   "sentence": "From September 30, 2025 to September 30, 2026, TTM revenue increased approximately 1,200% while headcount increased approximately 170%, driving TTM revenue per employee from $1.4 million to over $6.6 million, a reflection of extraordinary talent density and a culture built to compound it."
+  },
+  {
+   "form": "revenue-per-employee",
+   "sentence": "As of September 30, 2026, with approximately 5,300 employees, our TTM revenue per employee was over $6.6 million—a reflection of what we believe is the deepest concentration of AI research talent in the world."
+  }
+ ],
+ "miss": [
+  "“customers with $100,000 or more of revenue on a TTM basis,” “customers with $1 million or more of revenue on a TTM basis,” and “customers with $10 million or more of revenue on a TTM basis” each refer to customers contributing revenue equal to or greater than the applicable dollar amount during the trailing twelve-month (“TTM”) period ending on the measurement date.",
+  "“Net Revenue Retention” reflects customer expansion, contraction, and churn as of a measurement date.",
+  "We calculate Net Revenue Retention by dividing the Qualified Customers’ Current Period revenue by their Base Period revenue.",
+  "A Qualified Customer is a customer with at least $1 of revenue during the Base Period, excluding subscribers to our Claude Pro and Max plans, whose fixed-price subscriptions do not reflect the expansion and contraction behavior this metric is intended to capture.",
+  "“pay-for-intelligence” or “consumption” refers to our revenue model under which customers pay for their usage of our intelligence service, which is metered in tokens and priced according to the model selected.",
+  "“Run-Rate Revenue” is an operating metric that refers to the estimated annualized value of our revenue- generating activity as of a measurement date, calculated as the sum of (i) our consumption-based fees during the trailing 28-day period ended on the measurement date, multiplied by 13, and (ii) our aggregate monthly subscription fees as of the measurement date, multiplied by 12.",
+  "For purposes of calculating Run-Rate Revenue, consumption-based fees and subscription-based fees are derived from customer usage and active subscriptions.",
+  "Claude has experienced the fastest enterprise adoption of any technology in history, as demonstrated by revenue growing from $0 at commercial launch in the first quarter of 2023 to $ for the three months ended September 30, 2026.",
+  "We believe the work that knowledge workers perform represented more than $40 trillion in economic value globally in 2025,1 and with frontier AI’s potential to make them meaningfully more productive, our near- term opportunity is to expand this value and accelerate economic growth.",
+  "While it is still early to forecast frontier AI’s full impact across the economy, International Data Corporation (“IDC”) estimates that investment in AI solutions and services will yield a cumulative global economic impact of $22.5 trillion by 2031.2 We believe the impact could be even greater.",
+  "For example, in the life sciences sector, where annual global pharmaceutical spend is expected to exceed $2 trillion in 2026,3 Claude is used in drug discovery and development by our customers, our biotechnology partners, and our own researchers.",
+  "Our financial model provides us with the following strengths that allow us to build and scale efficiently: • Rapid Revenue Growth."
+ ]
+}

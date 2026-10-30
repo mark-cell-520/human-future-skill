@@ -1,5 +1,5 @@
 {
-  "version": "3.25.0",
+  "version": "3.27.0",
   "corrections": [
     {
       "id": "corr-2026-007",
@@ -505,6 +505,17 @@
       "lesson": "扩模式族时三条纪律：① 名词族单复数必须显式写 s?，且 A/B 两分支的名词组要从同一份拷贝——改一处必须两处同改（本轮 A/B 各两处共 4 处）；② 召回夹具的每个词都必须是该族的真实成员——写夹具时逐词对照动词族/名词族两张枚举清单，不能凭语感写常见词；③ 夹具 MISS 时分布局定位：先换族内动词排除动词因素、再定位名词因素——本轮两步各自精确失败，合并定位会误判「正则整体无效」而回滚正确的设计。",
       "severity": "medium",
       "recordedAt": "2026-10-31T00:00:00.000Z"
+    },
+    {
+      "id": "corr-2026-049",
+      "reportVersion": "v3.27",
+      "wrongClaim": "（沿用假设）公司候选提取的测试夹具用标题级干净句就够了——claimSentence 进了编排层自然是「主张本身」那句",
+      "rightClaim": "v3.27 live 实证（Understanding AI 条）：RSS 正文的署名行与正文之间没有句读，切句切不掉——claimSentence 实际是「Kai Williams Oct 29, 2026 ∙ Paid 113 9 4 Share Back in June, Anthropic filed a confidential draft of its S-1 form...」。候选提取按序推出 [Kai Williams, Oct, Paid, Share Back, June]，MAX_CANDIDATES_PER_CLAIM=5 的切片被 boilerplate 占满，真正的公司名 Anthropic 排在第 6 位被切掉——整条 ipo 主张「未匹配」，EDGAR 核查 ○。探针里手写干净 claimSentence 全绿（Anthropic 是第 3 候选），live 编排层才暴露。v3.23 立库时的候选提取测试全部用标题级夹具，从没有一条走过「署名行+正文」的真实 RSS 形态。",
+      "evidence": "live 端到端首跑：[ipo-edgar] 核查 3 条 ipo 主张：验证 2 / 未匹配 1（9 次 SEC 查询）；extractCompanyCandidates 对真实 claimSentence 输出候选前 5 位 [Kai Williams, Oct, Paid, Share Back, June]；停用词补月份缩写+Paid/Share 后复跑：验证 3 / 未匹配 0（7 次查询）",
+      "lesson": "「编排层的真实输入」与「测试夹具的干净输入」是两种形态——凡是要从自由文本抽实体（公司名/主体）的组件，夹具必须包含生产链真实切句产物（RSS 正文连署名行、Substack byline、正文无句读拼接），不能只喂标题级干净句。判据：新维度接真数据后，必须看 live 端到端里该条主张的**核查结果行**（✅/·/○），○ 出现时要能说出是「真的查无」还是「候选提取没走到」——两者在报告里都显示未匹配，但前者是证伪条件、后者是组件缺陷。同轮附带两个同类实测：Archives 路径 CIK 带前导零会被 SEC 301（defaultHttp 不跟随重定向，data.sec.gov 补零与 Archives 裸数字两种口径混用即踩）；汇总计数要按文档计不按主张附加次数计（1 份备案 10 条主张挂到 2 条主张上=10 条不是 20 条）。",
+      "severity": "medium",
+      "recordedAt": "2026-10-31T00:00:00.000Z",
+      "fix": "edgar-ipo-collector.js：CANDIDATE_STOPWORDS 补月份缩写（jan-dec）与署名行 boilerplate（paid/share/subscribe/sign/min/read）；ARCHIVES_INDEX_URL 与 lookupFilingClaims 的 CIK 去前导零（补注释说明 data.sec.gov 与 Archives 两种口径）；s1Claims 计数移入实际抓取分支（memo 命中不重复计）；defaultHttp 改 Buffer 收集+gzip 探测解码（大文档多字节跨 chunk 边界乱码防护）。测试 494→507 项（v3.27 段 13 项），10 轮反向验证全部精确失败。"
     }
   ]
 }

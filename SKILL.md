@@ -1,9 +1,10 @@
 ---
 name: human-future-v2
-title: "人类未来 · 文明推演引擎 v3.26.0"
-version: "3.26.0"
+title: "人类未来 · 文明推演引擎 v3.27.0"
+version: "3.27.0"
 description: |-
-  人类未来技能 v3.26.0 — 客户成效/ROI 主张进库（新辨别维度 customer-outcome，采用证据链第五形态）：2026-10-31 全池过堂（corr-2026-028 纪律：312 条 live 池逐桶过形态门、未命中条目逐条过堂）live 实证 OpenAI News「Credit Saison achieves 954% ROI in a ChatGPT Enterprise pilot」（2026-10-29 在窗，frontier_models 桶）——扩容前 24 种形态全部不命中，整条不进辨别。v3.11 立库 usage-metric 时把采用证据枚举成「趋势主张/具名部署/用量状态」三类、v3.12 扩成四类（+算力承诺），两轮都漏了**采用的结果**：客户用 AI 之后到底有没有成效（ROI/节省/生产率）——企业采购方最关心的证据形态、厂商案例研究里唯一带量化结果的句子。customer-outcome 两形态族（全部 live 实证驱动）：A 成效动词+量化值+成效名词（achieves 954% ROI / delivered 954% ROI，数值在前）；B 成效名词+of+量化值（an ROI of 954% / cost savings of $12 million，名词在前）。成效名词族：ROI / return on investment / (cost) savings / productivity (gain|improvement|uplift) / efficiency (gain|improvement) / cost reduction / payback；动词族只认成效达成动词（achieve/deliver/generate/realize/report/record/post/see）。精度设计（漏报比误报诚实、没有实证不扩模式）：① 必须「量化值+成效名词」相邻共现——live 实证 ServiceNow 8-K「most enterprises are still searching for AI's ROI, ServiceNow is the platform delivering it」含 ROI 名词与 delivering 动词但无任何数字，整个不命中（无量化值的 ROI 谈论不是可证伪主张，v3.6/v3.9/v3.10 同型纪律）；② 名词族不含 revenue/margin/income/orders（GOOGL「revenues increased 48% to $17.7 billion」是 demand 地盘）与 costs 裸名词（NVDA「35x lower cost」TCO 效率句，v3.9 已决议）；③ 动词族不含 found（survey-finding 地盘不抢）；④ 数值与名词之间不容长间隔（"$12 million in annual savings" 无 live 实证不进库）；⑤ has/have+成效名词（"the pilot has a 6-month payback"）无 live 实证不进库。本轮实测抓到并修复模式自身缺陷一处：A/B 两分支名词族 improvement/uplift 缺复数形态（improvements?）——「efficiency improvements of 18%」整句漏采，而夹具首版的 produced 又不在动词族，两层缺陷各自单独看都像设计如此（登记 corr-2026-048）。live 端到端（312 条池，EDGAR 缓存先删再跑）：pipeline exit 0、customer-outcome 精确命中 1 条（即 Credit Saison 条、0 误报）、判 证据不足/无出处(1)/推理 1/3（954% 命中 has-sample）/weak-evidence/decisionRelevant=false 不虚抬（厂商一手公告句式自身无归属词，v3.10 Uber 条同型）；其余 kind 计数逐一不变（零串台零丢失）；旧 24 种代表句式零漂移（测试钉住）。专属证伪路径（客户方公开确认或独立审计的 ROI 测算与主张值不符/下一期同口径自报值回落/第三方测算不支持/口径变化——统计窗口/基线年替换/成本项漏计/样本自选）+ market_claims 类目 + 报告与 cron 注入中文标签「客户成效/ROI 主张」全链就位。测试 485→494 项；8 轮反向验证全部精确失败（摘除模式整块→live 实证/端到端/计数/摘除证伪条件映射→1/摘除类目映射→1（源级）/摘除名词族单复数修复→召回夹具精确失败/摘除 formatReport KIND_CN→端到端/摘除注入 KIND_CN→注入源级/摘除量化要求→ServiceNow 句误入辨别/版本漂移→多处；每轮还原字节校验一致、收尾 494/0）。登记 corr-2026-048（模式族 A/B 两分支名词族单复数不同步+召回夹具动词/名词必须是族内真实成员，medium）；登记簿 46→47 条。仍在库外（如实）：in 间隔形态（"$12 million in annual savings"）、has/have+成效名词语法、produce 类未枚举动词——等有 live 实证再扩。
+  人类未来技能 v3.27.0 — S-1 备案正文量化主张抽取（新认知能力：ipo 证伪路径第四条「挂牌后披露矛盾」的基线数据）：v3.23 接上「备案存在性」核查（browse-edgar S-1 匹配升独立验证(4)）、v3.24 接上「撤回 RW/定价 424B4」事件观测（submissions 登记记录），但备案正文里写的量化主张（营收/增速/客户规模/算力支出承诺/人均营收）引擎从来没读过——v3.21 立库时写下的证伪路径第四条「挂牌后披露矛盾」因此没有基线数据：没有备案自报数字，拿什么和挂牌后的定期报告对账？2026-10-31 全池过堂（corr-2026-028 纪律：330 条 live 池逐桶过形态门、未命中条目逐条过堂）live 实证 Understanding AI「Anthropic's financials are surprisingly strong — What I learned reading all 421 pages of the Anthropic S-1」（2026-10-29 在窗，frontier_models 桶）通篇是 S-1 财务数字的二手转述，而引擎对一手正文零覆盖；且该条的备案动作句（"Back in June, Anthropic filed a confidential draft of its S-1 form..."）因 filed 与 S-1 之间隔着宾语（a confidential draft of its），旧 ipo 备案动作形态只容忍一个冠词/形容词、整句不命中、整条不进辨别。本轮：① edgar-ipo-collector 新增备案正文抓取（Archives index.json → 主文档 .htm → decodeFilingHtml 解码 → extractS1Claims 抽取）——匹配到 S-1 后按 accession 抓主文档（Anthropic live 实测 14.2MB/2 秒），五形态量化主张（营收与同比增速/营收水平/客户规模/算力支出承诺/人均营收，全部 live 实抓原文驱动，每形态 cap 2、总 cap 10）挂回 edgarIpoCheck.s1Claims；② ipo-claim 备案动作子形态补「宾语间隔形态」（tempered gap ≤45 字符，法律/执法/调查/定期报告名词黑名单——"filed a lawsuit over the IPO" 整个不命中，漏报比误报诚实）；③ 精度纪律（不虚抬）：备案正文数字是**公司自报**——只作一手信源上下文透传，不抬证据档、不改 verdict、不改推理分（媒体主张的判定与备案自报数字是两件事，混为一体就是口径错位）；抓取失败只降级 s1Claims.available=false+reason，S-1 存在性核查结论不受影响（存在性与正文内容是两件事，不把「正文抓不到」静默成「备案不存在」）；同 accession run 内 memo（两条 Anthropic ipo 主张共享一次抓取）；汇总计数按文档计不按主张附加次数计。live 端到端（318 条池，EDGAR 缓存先删再跑）：pipeline exit 0、ipo 主张 3 条核查全部验证（独立验证(4)，v3.26 轮为 1 条）、S-1 备案正文 1 次抓取拿到量化主张 10 条（2023-2025 营收 $41M/$386M/$4.6B +841%/+1,088%，2026 H1 营收 $16.3B +1,300%，11,900 customers $100k+ TTM，对 Microsoft/Google 算力支出承诺 $44.9B/$114.5B，人均营收 $6.6M）并渲染进报告与 cron 注入；模式库计数 25 不变（子形态扩展不加 kind）。同轮修两处被 live 实证暴露的组件缺陷（登记 corr-2026-049）：RSS 署名行（Substack byline 与正文无句读）把公司候选切片占满致 Understanding AI 条未匹配（候选停用词补月份缩写+paid/share 等）；Archives 路径 CIK 带前导零被 SEC 301（defaultHttp 不跟随重定向，data.sec.gov 补零与 Archives 裸数字两种口径）。测试 494→507 项；10 轮反向验证全部精确失败。仍在库外（如实）：挂牌后披露矛盾的逐条对账（S-1/A、424B4、挂牌后定期报告 vs 备案数字）仍由人工/下游执行——引擎现在手里有基线数据，但对账动作不代判；公司名匹配是启发式（候选提取对非常规署名形态仍可能漏，matched 记录带公司/CIK/accession 供逐条复核）。
+  历史：v3.26.0 — 客户成效/ROI 主张进库（新辨别维度 customer-outcome，采用证据链第五形态）：2026-10-31 全池过堂（corr-2026-028 纪律：312 条 live 池逐桶过形态门、未命中条目逐条过堂）live 实证 OpenAI News「Credit Saison achieves 954% ROI in a ChatGPT Enterprise pilot」（2026-10-29 在窗，frontier_models 桶）——扩容前 24 种形态全部不命中，整条不进辨别。v3.11 立库 usage-metric 时把采用证据枚举成「趋势主张/具名部署/用量状态」三类、v3.12 扩成四类（+算力承诺），两轮都漏了**采用的结果**：客户用 AI 之后到底有没有成效（ROI/节省/生产率）——企业采购方最关心的证据形态、厂商案例研究里唯一带量化结果的句子。customer-outcome 两形态族（全部 live 实证驱动）：A 成效动词+量化值+成效名词（achieves 954% ROI / delivered 954% ROI，数值在前）；B 成效名词+of+量化值（an ROI of 954% / cost savings of $12 million，名词在前）。成效名词族：ROI / return on investment / (cost) savings / productivity (gain|improvement|uplift) / efficiency (gain|improvement) / cost reduction / payback；动词族只认成效达成动词（achieve/deliver/generate/realize/report/record/post/see）。精度设计（漏报比误报诚实、没有实证不扩模式）：① 必须「量化值+成效名词」相邻共现——live 实证 ServiceNow 8-K「most enterprises are still searching for AI's ROI, ServiceNow is the platform delivering it」含 ROI 名词与 delivering 动词但无任何数字，整个不命中（无量化值的 ROI 谈论不是可证伪主张，v3.6/v3.9/v3.10 同型纪律）；② 名词族不含 revenue/margin/income/orders（GOOGL「revenues increased 48% to $17.7 billion」是 demand 地盘）与 costs 裸名词（NVDA「35x lower cost」TCO 效率句，v3.9 已决议）；③ 动词族不含 found（survey-finding 地盘不抢）；④ 数值与名词之间不容长间隔（"$12 million in annual savings" 无 live 实证不进库）；⑤ has/have+成效名词（"the pilot has a 6-month payback"）无 live 实证不进库。本轮实测抓到并修复模式自身缺陷一处：A/B 两分支名词族 improvement/uplift 缺复数形态（improvements?）——「efficiency improvements of 18%」整句漏采，而夹具首版的 produced 又不在动词族，两层缺陷各自单独看都像设计如此（登记 corr-2026-048）。live 端到端（312 条池，EDGAR 缓存先删再跑）：pipeline exit 0、customer-outcome 精确命中 1 条（即 Credit Saison 条、0 误报）、判 证据不足/无出处(1)/推理 1/3（954% 命中 has-sample）/weak-evidence/decisionRelevant=false 不虚抬（厂商一手公告句式自身无归属词，v3.10 Uber 条同型）；其余 kind 计数逐一不变（零串台零丢失）；旧 24 种代表句式零漂移（测试钉住）。专属证伪路径（客户方公开确认或独立审计的 ROI 测算与主张值不符/下一期同口径自报值回落/第三方测算不支持/口径变化——统计窗口/基线年替换/成本项漏计/样本自选）+ market_claims 类目 + 报告与 cron 注入中文标签「客户成效/ROI 主张」全链就位。测试 485→494 项；8 轮反向验证全部精确失败（摘除模式整块→live 实证/端到端/计数/摘除证伪条件映射→1/摘除类目映射→1（源级）/摘除名词族单复数修复→召回夹具精确失败/摘除 formatReport KIND_CN→端到端/摘除注入 KIND_CN→注入源级/摘除量化要求→ServiceNow 句误入辨别/版本漂移→多处；每轮还原字节校验一致、收尾 494/0）。登记 corr-2026-048（模式族 A/B 两分支名词族单复数不同步+召回夹具动词/名词必须是族内真实成员，medium）；登记簿 46→47 条。仍在库外（如实）：in 间隔形态（"$12 million in annual savings"）、has/have+成效名词语法、produce 类未枚举动词——等有 live 实证再扩。
   历史：v3.25.0 — SEC EDGAR 一手信源扩容第二轮（公司名单 14→20 + 六家公司指引句式族进库，已知边界推进）：v3.24 基线 live 复测（2026-10-30）六家境内备案人（QCOM/ANET/CSCO/NOW/UBER/SHOP）各 3 份 Item 2.02 业绩 8-K 在采集窗口内，18 份备案数值指引 0 条进台账——指引句式全部在库外（corr-2026-032「在窗公司≠采到的指引」同型第五波）。本轮（全部 2026-10-30 SEC EDGAR 实抓原文驱动）：① 公司名单 14→20（半导体/网络设备/企业软件/平台经济四子域）；② extractGuidance 补三种句式族——form J 表格行/无动词区间（QCOM「Current Guidance Q4 FY26 Estimates 1 Revenues $9.7B - $10.5B」B 单位、CSCO「FY 2027 Guidance Revenue $18.0 billion to $18.2 billion」to 分隔、NOW「Subscription revenues $4,245 - $4,255」无单位、UBER「we anticipate Gross Bookings of $58.25 billion to $60.25 billion」of+to）、form K expect+名词+to be+X% to Y%（SHOP「Operating expenses as a percentage of revenue to be 33% to 34%」，只收纯 % 区间不抢 form B 点值与 form D in-the-range 地盘）、form L between-and 两形态（ANET「Non-GAAP diluted net income per share between $1.06 and $1.08」per-share 无单位 +「gross margin between approximately 62-63%」），form H 泛化 of approximately 与尾 % 分支（ANET 冒号 bullet「Revenue of approximately $3.3 billion」「operating margin of 48 - 49%」）；名词族补 operating margin/gross bookings/adjusted ebitda（不互套现有词，corr-2026-032 幂等纪律）；③ 期间模式补 Q 缩写+FY+两位年份（QCOM「Q4 FY26」）与反向全年（CSCO「results for fiscal 2027」锚词在年份前——旧 ANNUAL 模式全部要求年份在前，FY 列错配成 Q1 列头、全年指引按季度结算点到期撞 Q1 实际值判假 beat，v3.19 同型纪律）；④ 语义去重（factKey 归一：去空白+区间分隔符统一 to——MRVL「is expected to be 52.9% to 53.9%」form A 与表格行「52.9% - 53.9%」form J 是同一条指引两种句式，不重复登记两个义务）；⑤ value/tolerance 改从 m[0] 取并 trim+去尾标点（表格行 strip 后单元格间无句点，extendBack 把邻格名词与值桥进句子——CSCO live 实证 operating margin 行 metric 变成 gross margin、value 变成邻居营收区间；连带修正 v3.19「一句双 EPS」夹具：第二次 form G 匹配取到正确值 $25.50，GAAP/非 GAAP 分口径两条义务）；⑥ 结算层 parseRange 补裸美元区间（无 between/无 in the range of）与尾 %、parseMetricValue 补 B/M 单位，**无单位区间一律不猜**（NOW 表头单位跨句、ANET EPS between——默认 billion 差 1000 倍/9 个数量级，错配成 miss 比不结更坏）；⑦ claims 额度 90→170（live 实测 20 家 155 条，140 切尾 15 条——corr-2026-033 容量上限白名单同型第四次）。live 端到端：18 份备案指引 0→58 条（QCOM 15/CSCO 18/ANET 7/UBER 9/NOW 6/SHOP 3）、财报指引辨别 106→159 条、SEC EDGAR 备案 42→60 条（47 份含数值指引）、edgarClaimsTruncation null（158 条 ≤ cap 170 零切顶；90→170 因 140 live 实测切尾 15 条）；旧 14 家代表句式零漂移（form A/B/D/E/F/G/H+MU 表格字段逐一不变）。form K 的 live 逐字是「we expect: • ...; • Operating expenses as a percentage of revenue to be 33% to 34%;」冒号+分号 bullet——lookbehind 窗容忍（第一版词字符链跨不过冒号，live 0 条而手抄夹具全绿，corr-2026-047）。测试 475→485 项；6 轮反向验证全部精确失败（摘除名单六家→1/摘除 form J→3/摘除 form L→1/摘除无单位拒收→2/摘除反向全年→2/摘除语义归一→1；每轮还原字节校验一致、收尾 485/0）。登记 corr-2026-045（正则字面量与 new RegExp 模板的反斜杠层级不同+per-company catch 吞 ReferenceError，medium）/corr-2026-046（表格行无句点，extendBack 桥接邻格名词与值，medium）/corr-2026-047（测试夹具必须 live 逐字——手抄规范化走不到被测分支，medium）。仍在库外（如实）：UBER gross bookings/EBITDA、SHOP opex、QCOM EPS 实际值侧无行内单位或无对应抽取形态（pending）；NOW 区间单位在表头不猜；SHOP「Revenue to grow at a low-thirties percentage rate」文字增长率与「Stock-based compensation to be $150 million」点值（非 % 区间）不收（v3.6/v3.9 同型纪律）；CSCO「Non-GAAP $1.32 to $1.34」行无名词（strip 后表格行丢结构）漏采。
   历史：v3.24.0 - 新认知能力：ipo 证伪路径第二、三条接真数据（撤回 RW +
   定价 424B4，EDGAR submissions 登记记录）——v3.21 给 ipo-claim 立库时写下
@@ -73,16 +74,36 @@ description: |-
 ---
 ---
 
-# 人类未来 · 文明推演引擎 v3.26.0
+# 人类未来 · 文明推演引擎 v3.27.0
 
 > 数据采集（RSS 真联网 + 可选正文增强 + 外部预测基准 GJOpen）→ 心虫 stateless 检查器 → 三年推演引擎。
 > 当前状态与实测数字见下一节，历史版本记录见 references/upgrade-history.md。
 
 ---
 
-## 当前状态（v3.26.0 实测）
+## 当前状态（v3.27.0 实测）
 
-以下数字全部来自 live 实跑。v3.26.0 轮（2026-10-31，EDGAR 缓存先删再跑）：
+以下数字全部来自 live 实跑。v3.27.0 轮（2026-10-31，EDGAR 缓存先删再跑）：
+`FETCH=1 FETCH_BODY=1 node scripts/run-pipeline.js` pipeline exit 0、**S-1 备案
+正文量化主张抽取（新认知能力：ipo 证伪路径第四条「挂牌后披露矛盾」的基线数据）**
+——全池过堂（corr-2026-028 纪律，330 条池逐桶过形态门、未命中条目逐条过堂）
+live 实证 Understanding AI「Anthropic's financials are surprisingly strong —
+What I learned reading all 421 pages of the Anthropic S-1」（2026-10-29 在窗，
+frontier_models 桶）：v3.23 接上备案存在性核查、v3.24 接上撤回/定价事件观测后，
+备案正文里写的量化主张引擎从来没读过——「挂牌后披露矛盾」这条证伪路径没有基线
+数据（没有备案自报数字，拿什么和挂牌后的定期报告对账）；且该条的备案动作句
+（"filed a confidential draft of its S-1 form"）因 filed 与 S-1 之间有宾语，
+旧备案动作形态整句不命中、整条不进辨别。live 端到端（318 条池）：ipo 主张 3 条
+核查全部验证（独立验证(4)，v3.26 轮为 1 条）、S-1 备案正文 1 次抓取拿到量化主张
+10 条并渲染进报告与 cron 注入（2023-2025 营收 $41M/$386M/$4.6B +841%/+1,088%、
+2026 H1 营收 $16.3B +1,300%、11,900 customers $100k+ TTM、对 Microsoft/Google
+算力支出承诺 $44.9B/$114.5B、人均营收 $6.6M）；模式库计数 25 不变（子形态扩展
+不加 kind）；同轮修两处被 live 实证暴露的组件缺陷（登记 corr-2026-049）：RSS
+署名行把公司候选切片占满致 Understanding AI 条未匹配、Archives 路径 CIK 带前导零
+被 SEC 301。测试 494→507 项；10 轮反向验证全部精确失败（R5 首跑因摘除后 kind
+不再是 ipo 触发 TypeError 整段崩溃——补防护后重跑精确失败 6 条，v3.11/v3.22
+同型教训第四次实证）。
+（v3.26.0 轮（2026-10-31，EDGAR 缓存先删再跑）：
 `FETCH=1 FETCH_BODY=1 node scripts/run-pipeline.js` pipeline exit 0、**客户成效/
 ROI 主张进库（新辨别维度 customer-outcome）**——全池过堂（corr-2026-028 纪律，
 312 条池逐桶过形态门、未命中条目逐条过堂）live 实证 OpenAI News「Credit Saison
@@ -1676,6 +1697,69 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   引擎从「只能查备案存在性」扩展到「能观测撤回与定价事件」）且用户可感知
   （报告与注入首次出现事件后缀行与流程事件计数）= x.0。
 
+**[v3.27] S-1 备案正文量化主张抽取（新认知能力：ipo 证伪路径第四条的基线数据）**
+- 定位：采用/供给侧证据链之外的「备案正文」覆盖缺口。v3.21 给 ipo-claim 立库时
+  写下专属证伪路径「EDGAR 查无/撤回/定价时间表不符/挂牌后披露矛盾」四条，v3.23
+  接上第一条（备案存在性核查，browse-edgar S-1 匹配升独立验证(4)）、v3.24 接上
+  第二、三条（撤回 RW/定价 424B4，submissions 登记记录观测），但第四条「挂牌后
+  披露矛盾」一直没有基线数据——备案正文里公司自报的量化数字（营收/增速/客户
+  规模/算力支出承诺/人均营收）引擎从来没读过。没有备案自报数字，「与挂牌后披露
+  矛盾」这条证伪条件就无从执行。2026-10-31 全池过堂（corr-2026-028 纪律）live
+  实证：Understanding AI「Anthropic's financials are surprisingly strong — What
+  I learned reading all 421 pages of the Anthropic S-1」（2026-10-29 在窗）通篇是
+  S-1 财务数字的二手转述，而引擎对一手正文零覆盖。
+- 数据源与流程（edgar-ipo-collector.js 新能力）：匹配到 S-1 备案后按 accession
+  查 Archives index.json → 取最大非索引 .htm 主文档（≤25MB，Anthropic live 实测
+  14.2MB/2 秒）→ decodeFilingHtml（块级标签转空格保句界、行内标签直接删除——SEC
+  正文把单词拆进 <span>，转空格会造假断词；数字/名字实体解码；「N Table of
+  Contents」页码残留清理）→ extractS1Claims 五形态抽取。形态族（全部 live 实抓
+  原文驱动）：营收与同比增速（revenue was $X + growth Y% 两件套）、营收水平
+  （revenue was/of $X）、客户规模（N customers with $X+ of revenue）、算力支出
+  承诺（committed to spend $X）、人均营收（revenue per employee $X）；每形态
+  cap 2、总 cap 10；forward-looking 段落整句跳过；同句只归第一个命中的形态。
+- 同轮模式扩展（ipo-claim 备案动作子形态补「宾语间隔形态」）：live 实证该条的
+  备案动作句「Back in June, Anthropic filed a confidential draft of its S-1
+  form with the Securities and Exchange Commission」——filed 与 S-1 之间隔着
+  宾语，旧形态只容忍一个冠词/形容词、整句不命中。新形态为 tempered gap
+  （≤45 字符且不含法律/执法/调查/定期报告名词黑名单）——「filed a lawsuit
+  over the IPO」「filed its quarterly report and discussed the IPO」整个不
+  命中（漏报比误报诚实）。IPO_FILING_ACTION_RE 是辨别器与核查器共用的单一
+  事实来源（v3.23 纪律），子形态扩展两边同时生效。
+- 精度设计（不虚抬，全部有断言）：① 备案正文数字是**公司自报**——只作一手信源
+  上下文透传（挂回 edgarIpoCheck.s1Claims），不抬证据档、不改 verdict、不改推理
+  分：媒体主张的判定与备案自报数字是两件事，混为一体就是口径错位（引擎自己要抓
+  的形态）；② 抓取失败（网络/解析/超尺寸/无主文档）只降级
+  s1Claims.available=false+reason，S-1 存在性核查结论不受影响——「正文抓不到」
+  与「备案不存在」不能混；③ 同 accession run 内 memo（两条 Anthropic ipo 主张
+  共享一次抓取，fair access）；④ 汇总计数按**文档**计不按主张附加次数计
+  （1 份备案 10 条主张挂到 2 条主张上=10 条不是 20 条）；⑤ 非 live 模式不发起
+  任何抓取（含正文）。
+- 判别结果（live 实测）：3 条 Anthropic ipo 主张（MIT Tech Review / Understanding
+  AI / Transformer News）全部 matched S-1 2026-10-26（accession
+  0001628280-26-067168）升独立验证(4)，备案正文量化主张 10 条挂回每条主张；
+  推理分不因透传变化（0/3、1/3 照旧）。
+- 同轮维护（不单独涨号的两处组件缺陷修复，均被本轮 live 实证暴露，登记
+  corr-2026-049）：① 公司候选停用词补月份缩写（jan-dec）与署名行 boilerplate
+  （paid/share/subscribe/sign/min/read）——RSS 正文的 Substack 署名行与正文之间
+  没有句读，切句切不掉，「Kai Williams Oct 29, 2026 ∙ Paid 113 9 4 Share Back
+  in June, Anthropic filed...」把 MAX_CANDIDATES_PER_CLAIM=5 的候选切片占满，
+  真公司名 Anthropic 被切在第 6 位、整条主张「未匹配」；修复后候选从署名行之后
+  的真实公司名开始（MIT TR/Goldman 既有行为不变，有断言钉住）；② Archives 路径
+  CIK 去前导零（data.sec.gov 的 submissions 要补零到 10 位、Archives 的
+  data/<cik>/ 用裸数字——带前导零 SEC 回 301，而 defaultHttp 不跟随重定向）；
+  ③ defaultHttp 改 Buffer 收集+gzip 探测解码（SEC 对大文档返回 gzip，旧实现逐
+  chunk `d += c` 既解不了 gzip 也会在多字节字符跨 chunk 边界时乱码）。
+- 端到端：formatReport 的「EDGAR 核查」✅/·/○ 行之后渲染「S-1 备案量化主张」
+  三形态行（有主张=公司自报+取证基线口径限定/无主张=解析成功无命中/不可用=
+  抓取失败不影响存在性结论）+ 汇总行「备案正文 N 次抓取（量化主张 M 条，X 份
+  成功 / Y 份失败）」；cron 注入第 6 段同措辞同步（四形态+汇总都注入，v3.0.0c
+  断链纪律）。
+- 仍在库外（如实）：挂牌后披露矛盾的逐条对账（S-1/A、424B4、挂牌后定期报告
+  vs 备案数字）仍由人工/下游 agent 执行——引擎现在手里有基线数据，但对账动作
+  不代判；公司名匹配是启发式（候选提取对非常规署名形态仍可能漏，matched 记录
+  带公司/CIK/accession 供逐条复核）；S-1 正文的预测性表述（forward-looking
+  段）不抽——只认过去时/既成事实的量化陈述。
+
 **[v3.26] 客户成效/ROI 主张（customer-outcome，新辨别维度）**
 - 定位：采用证据链的第五形态缺口。v3.11 立库 usage-metric 时把采用证据枚举成
   「趋势主张（adoption）/具名部署（deployment-scale）/用量状态（usage-metric）」
@@ -1855,7 +1939,7 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   严格过滤，漏掉数据里 2 条 critical（都是「整段推演作废」级的假能力审计），
   接入后会少报高危数（说 4 实际 6）。改为按等级表比较（critical > high >
   medium > low），critical 排最前。这是修 bug，不算升级——升级点是接入本身。
-- 边界（如实声明）：登记簿 43 条（v3.13 轮新增 corr-2026-030/031、v3.14 轮
+- 边界（如实声明）：登记簿 48 条（v3.13 轮新增 corr-2026-030/031、v3.14 轮
   新增 corr-2026-032/033、v3.15 轮新增 corr-2026-034、v3.16 轮新增
   corr-2026-035、v3.17 轮新增 corr-2026-036、v3.18 轮新增 corr-2026-037、
   v3.19 轮新增 corr-2026-038、v3.20 轮新增 corr-2026-039、v3.21 轮新增
@@ -2073,7 +2157,7 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   引擎不代劳——这是心虫铁律，不是能力缺失。
 
 **测试**
-- `npm test`：**494 项断言**（实测各 section 汇总；v3.4 的 230 + v3.5 新增 11 + v3.5.1 新增 9 + v3.6 新增 8 + v3.7 新增 9 + v3.8 新增 11 + v3.9 新增 8 + v3.10 新增 13 + v3.11 新增 15 + v3.12 新增 14 + v3.13 新增 13 + v3.14 新增 9 + v3.15 新增 10 + v3.16 新增 11 + v3.17 新增 10 + v3.18 新增 6 + v3.19 新增 9 + v3.20 新增 8 + v3.21 新增 16 + v3.21.1 新增 9 + v3.22 新增 10 + v3.22.1 新增 10 + v3.23 新增 13 + v3.24 新增 13 + v3.25 新增 10 + v3.26 新增 9：
+- `npm test`：**507 项断言**（实测各 section 汇总；v3.4 的 230 + v3.5 新增 11 + v3.5.1 新增 9 + v3.6 新增 8 + v3.7 新增 9 + v3.8 新增 11 + v3.9 新增 8 + v3.10 新增 13 + v3.11 新增 15 + v3.12 新增 14 + v3.13 新增 13 + v3.14 新增 9 + v3.15 新增 10 + v3.16 新增 11 + v3.17 新增 10 + v3.18 新增 6 + v3.19 新增 9 + v3.20 新增 8 + v3.21 新增 16 + v3.21.1 新增 9 + v3.22 新增 10 + v3.22.1 新增 10 + v3.23 新增 13 + v3.24 新增 13 + v3.25 新增 10 + v3.26 新增 9 + v3.27 新增 13：
   2 项纯结算函数（settleGuidance 单位感知容差：相对/绝对/bps/百分点/区间/无容差
   跳过，含区分相对vs绝对的边界用例 / normalizeMetric+parseMetricValue 单位解析）+
   3 项实际值抽取（extractActuals 营收+毛利率+标题期间 / GAAP/非GAAP 不同值抽出

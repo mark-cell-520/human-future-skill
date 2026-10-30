@@ -35,7 +35,19 @@
 // 的独立验证复用，必须单一事实来源）。导出 IPO_FILING_ACTION_RE 供
 // 辨别器自己判定「本主张是否断言备案动作」——只有这类主张的 EDGAR
 // 在案记录才抬证据档（文书主体/承销牵头只记上下文，不虚抬）。
-const IPO_FORM_FILING_ACTION = '\\b(?:files?|filed|filing|submits?|submitted|submitting)\\s+(?:for\\s+)?(?:an?\\s+|its\\s+|the\\s+|their\\s+|planned\\s+|initial\\s+|public\\s+)?(?:S-1|IPO|public\\s+debut)\\b';
+// [v3.27] 备案动作补「宾语间隔形态」：live 实证（2026-10-31 全池过堂）
+// Understanding AI「Back in June, Anthropic filed a confidential draft
+// of its S-1 form with the Securities and Exchange Commission」——
+// filed 与 S-1 之间隔着宾语（a confidential draft of its），旧形态只
+// 容忍一个冠词/形容词，整句不命中、这条 S-1 财务分析整条不进辨别。
+// 精度设计（ tempered gap ）：间隔 ≤45 字符且不含法律/定期报告名词
+// （lawsuit|complaint|litigation|charges?|indictment|investigation|
+// probe|suit|objection|petition|appeal|brief|motion|reports?）——
+// 「filed a lawsuit over the IPO」「filed its quarterly report and
+// discussed the IPO」这类法律/定期备案句不是 IPO 备案动作，整个不
+// 命中（漏报比误报诚实，v3.0.0c 同型纪律）。
+const IPO_FORM_FILING_ACTION = '(?:\\b(?:files?|filed|filing|submits?|submitted|submitting)\\s+(?:for\\s+)?(?:an?\\s+|its\\s+|the\\s+|their\\s+|planned\\s+|initial\\s+|public\\s+)?(?:S-1|IPO|public\\s+debut)\\b'
+  + '|\\b(?:files?|filed|filing|submits?|submitted|submitting)\\s+(?:a|an|its|the|their)\\s+(?:(?!lawsuit|complaint|litigation|charges?|indictment|investigation|probe|suit\\b|objection|petition|appeal|brief|motion|reports?)[^.!?]){0,45}?\\b(?:S-1|IPO|public\\s+debut)\\b)';
 const IPO_FORM_DOC_SUBJECT = '\\b(?:S-1|IPO)\\s+(?:filing|takeaways?|highlights?)\\b';
 const IPO_FORM_UNDERWRITING = '\\b(?:lead|leads|led|leading|underwrites?|to\\s+lead)\\b[^.!?]{0,40}?\\b(?:IPO|offering|listing|debut)\\b';
 const IPO_FILING_ACTION_RE = new RegExp(IPO_FORM_FILING_ACTION, 'i');
@@ -812,6 +824,13 @@ function discriminateCommercial(claim, opts = {}) {
     // （备案是否存在）由 S-1 记录验证，事件不推翻已发生的备案；解读
     // （结合主张时点判断是否证伪）由下游 agent 做，引擎不代判。
     // eventsUnavailableReason = 事件查询失败/预算用尽（S-1 结论不受影响）。
+    // [v3.27] s1Claims = 备案正文（S-1 主文档）里抽取出的量化财务主张
+    // （营收/增速/客户规模/算力支出承诺/人均营收五形态，全部 live 实证
+    // 驱动）——v3.21 立库时写的证伪路径第四条「挂牌后披露矛盾」从此有
+    // 基线数据：引擎手里有备案正文自报数字，才能与后续 S-1/A、424B4
+    // 定价、挂牌后定期报告同口径对账。只作一手信源上下文透传：不抬
+    // 证据档、不改 verdict、不改推理分（媒体主张的判定与备案正文
+    // 自报数字是两件事，混为一体就是口径错位——引擎自己要抓的形态）。
     edgarIpoCheck: (matchedPatterns.some(p => p.kind === 'ipo') && edgarVerification) ? {
       checked: edgarVerification.checked || [],
       matched: edgarVerification.matched || null,
@@ -820,6 +839,7 @@ function discriminateCommercial(claim, opts = {}) {
       reason: edgarVerification.reason || null,
       events: edgarVerification.events || null,
       eventsUnavailableReason: edgarVerification.eventsUnavailableReason || null,
+      s1Claims: edgarVerification.s1Claims || null,
     } : null,
     // 是否值得心虫关注：证据等级 >=3 或推理 >=2 的商业主张才有决策价值
     decisionRelevant: (evidence.weight >= 3 || reasoningScore >= 2)

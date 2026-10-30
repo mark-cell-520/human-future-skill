@@ -344,7 +344,7 @@ class ProjectionEngine {
     }
     const report = {
       meta: {
-        version: '3.26.0',
+        version: '3.27.0',
         heartflowVersion: this.analysis.engineVersion,
         timestamp: this.timestamp,
         modulesLoaded: this.analysis.modulesLoaded,
@@ -2979,6 +2979,25 @@ function formatReport(report) {
         if (!c.reason && c.eventsUnavailableReason) {
           lines.push(`    EDGAR 事件: 不可用——${c.eventsUnavailableReason}`);
         }
+        // [v3.27] 备案正文量化主张（S-1 主文档抽取）。三种形态分开措辞：
+        // available+有主张 = 公司在一手备案正文里自报的量化数字（只作
+        // 上下文，不抬证据档/不改判定——媒体主张的判定与备案自报数字
+        // 是两件事）；available+无主张 = 正文解析成功但无命中形态；
+        // 不可用 = 抓取失败/预算用尽，S-1 存在性结论不受影响（不把
+        // 「正文抓不到」静默成「备案不存在」）。
+        if (c.s1Claims) {
+          const sc = c.s1Claims;
+          if (sc.available && sc.claims && sc.claims.length) {
+            lines.push(`    S-1 备案量化主张: ${sc.claims.length} 条（${sc.company} 在备案正文自报，公司口径，未经审计确认；取证基线=后续 S-1/A、424B4 定价、挂牌后定期报告同口径对账）`);
+            for (const cl of sc.claims) {
+              lines.push(`      - [${cl.label}] ${cl.sentence}`);
+            }
+          } else if (sc.available) {
+            lines.push(`    S-1 备案量化主张: 正文解析成功但未命中量化主张形态（营收/客户规模/算力承诺/人均营收）`);
+          } else {
+            lines.push(`    S-1 备案量化主张: 不可用——${sc.reason}（S-1 备案存在性核查结论不受影响）`);
+          }
+        }
       }
       lines.push(`    证伪条件: ${r.falsification}`);
     }
@@ -2987,6 +3006,7 @@ function formatReport(report) {
     }
     // [v3.23] IPO 主张的 EDGAR 核查汇总（新数据源 v3.23 的端到端回显）。
     // [v3.24] 汇总行带流程事件计数（撤回/定价）与事件可用性。
+    // [v3.27] 汇总行带备案正文量化主张计数（抓取几次/拿到几条/失败几次）。
     if (cdsc.ipoVerification) {
       const iv = cdsc.ipoVerification;
       if (iv.available) {
@@ -2994,6 +3014,9 @@ function formatReport(report) {
           + ` / 上下文 ${iv.contextOnly} / 未匹配 ${iv.unmatched}；${iv.queries} 次 SEC 查询（S-1 窗口 ${iv.windowDays} 天）`
           + (iv.eventsQueries > 0
             ? `；流程事件 ${iv.eventsQueries} 次 submissions 查询（撤回 ${iv.withdrawn} / 定价 ${iv.priced}）${iv.eventsAvailable ? '' : '——事件不可用: ' + (iv.eventsReason || '')}`
+            : '')
+          + (iv.claimsQueries > 0
+            ? `；备案正文 ${iv.claimsQueries} 次抓取（量化主张 ${iv.claimsTotal} 条，${iv.claimsFetched} 份成功 / ${iv.claimsFailed} 份失败）${iv.claimsAvailable ? '' : '——正文不可用: ' + (iv.claimsReason || '')}`
             : ''));
       } else {
         lines.push(`  IPO 主张 EDGAR 核查: 不可用——${iv.reason}（ipo 主张按原证据档判定）`);
