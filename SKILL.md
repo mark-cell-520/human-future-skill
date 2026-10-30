@@ -4,7 +4,7 @@ title: "人类未来 · 文明推演引擎 v3.25.0"
 version: "3.25.0"
 description: |-
 description: |-
-  人类未来技能 v3.25.0 — SEC EDGAR 一手信源扩容第二轮（公司名单 14→20 + 六家公司指引句式族进库，已知边界推进）：v3.24 基线 live 复测（2026-10-30）六家境内备案人（QCOM/ANET/CSCO/NOW/UBER/SHOP）各 3 份 Item 2.02 业绩 8-K 在采集窗口内，18 份备案数值指引 0 条进台账——指引句式全部在库外（corr-2026-032「在窗公司≠采到的指引」同型第五波）。本轮（全部 2026-10-30 SEC EDGAR 实抓原文驱动）：① 公司名单 14→20（半导体/网络设备/企业软件/平台经济四子域）；② extractGuidance 补三种句式族——form J 表格行/无动词区间（QCOM「Current Guidance Q4 FY26 Estimates 1 Revenues $9.7B - $10.5B」B 单位、CSCO「FY 2027 Guidance Revenue $18.0 billion to $18.2 billion」to 分隔、NOW「Subscription revenues $4,245 - $4,255」无单位、UBER「we anticipate Gross Bookings of $58.25 billion to $60.25 billion」of+to）、form K expect+名词+to be+X% to Y%（SHOP「Operating expenses as a percentage of revenue to be 33% to 34%」，只收纯 % 区间不抢 form B 点值与 form D in-the-range 地盘）、form L between-and 两形态（ANET「Non-GAAP diluted net income per share between $1.06 and $1.08」per-share 无单位 +「gross margin between approximately 62-63%」），form H 泛化 of approximately 与尾 % 分支（ANET 冒号 bullet「Revenue of approximately $3.3 billion」「operating margin of 48 - 49%」）；名词族补 operating margin/gross bookings/adjusted ebitda（不互套现有词，corr-2026-032 幂等纪律）；③ 期间模式补 Q 缩写+FY+两位年份（QCOM「Q4 FY26」）与反向全年（CSCO「results for fiscal 2027」锚词在年份前——旧 ANNUAL 模式全部要求年份在前，FY 列错配成 Q1 列头、全年指引按季度结算点到期撞 Q1 实际值判假 beat，v3.19 同型纪律）；④ 语义去重（factKey 归一：去空白+区间分隔符统一 to——MRVL「is expected to be 52.9% to 53.9%」form A 与表格行「52.9% - 53.9%」form J 是同一条指引两种句式，不重复登记两个义务）；⑤ value/tolerance 改从 m[0] 取并 trim+去尾标点（表格行 strip 后单元格间无句点，extendBack 把邻格名词与值桥进句子——CSCO live 实证 operating margin 行 metric 变成 gross margin、value 变成邻居营收区间；连带修正 v3.19「一句双 EPS」夹具：第二次 form G 匹配取到正确值 $25.50，GAAP/非 GAAP 分口径两条义务）；⑥ 结算层 parseRange 补裸美元区间（无 between/无 in the range of）与尾 %、parseMetricValue 补 B/M 单位，**无单位区间一律不猜**（NOW 表头单位跨句、ANET EPS between——默认 billion 差 1000 倍/9 个数量级，错配成 miss 比不结更坏）；⑦ claims 额度 90→170（live 实测 20 家 155 条，140 切尾 15 条——corr-2026-033 容量上限白名单同型第四次）。live 端到端：18 份备案指引 0→55 条、财报指引辨别 106→141 条、SEC EDGAR 备案 42→60 条（47 家含数值指引——公司数×每备案指引数）、edgarClaimsTruncation seen=155/cut=0/cap=170；旧 14 家代表句式零漂移（form A/B/D/E/F/G/H+MU 表格字段逐一不变）。测试 475→485 项；6 轮反向验证全部精确失败（摘除名单六家→1/摘除 form J→6/摘除 form L→3/摘除无单位拒收→4/摘除反向全年→2/摘除语义归一→1；每轮还原字节校验一致、收尾 485/0）。登记 corr-2026-045（正则字面量与 new RegExp 模板的反斜杠层级不同+per-company catch 吞 ReferenceError，medium）/corr-2026-046（表格行无句点，extendBack 桥接邻格名词与值，medium）。仍在库外（如实）：UBER gross bookings/EBITDA、SHOP opex、QCOM EPS 实际值侧无行内单位或无对应抽取形态（pending）；NOW 区间单位在表头不猜；SHOP「Revenue to grow at a low-thirties percentage rate」文字增长率无幅度不收（v3.6/v3.9 同型纪律）；CSCO「Non-GAAP $1.32 to $1.34」行无名词（strip 后表格行丢结构）漏采。
+  人类未来技能 v3.25.0 — SEC EDGAR 一手信源扩容第二轮（公司名单 14→20 + 六家公司指引句式族进库，已知边界推进）：v3.24 基线 live 复测（2026-10-30）六家境内备案人（QCOM/ANET/CSCO/NOW/UBER/SHOP）各 3 份 Item 2.02 业绩 8-K 在采集窗口内，18 份备案数值指引 0 条进台账——指引句式全部在库外（corr-2026-032「在窗公司≠采到的指引」同型第五波）。本轮（全部 2026-10-30 SEC EDGAR 实抓原文驱动）：① 公司名单 14→20（半导体/网络设备/企业软件/平台经济四子域）；② extractGuidance 补三种句式族——form J 表格行/无动词区间（QCOM「Current Guidance Q4 FY26 Estimates 1 Revenues $9.7B - $10.5B」B 单位、CSCO「FY 2027 Guidance Revenue $18.0 billion to $18.2 billion」to 分隔、NOW「Subscription revenues $4,245 - $4,255」无单位、UBER「we anticipate Gross Bookings of $58.25 billion to $60.25 billion」of+to）、form K expect+名词+to be+X% to Y%（SHOP「Operating expenses as a percentage of revenue to be 33% to 34%」，只收纯 % 区间不抢 form B 点值与 form D in-the-range 地盘）、form L between-and 两形态（ANET「Non-GAAP diluted net income per share between $1.06 and $1.08」per-share 无单位 +「gross margin between approximately 62-63%」），form H 泛化 of approximately 与尾 % 分支（ANET 冒号 bullet「Revenue of approximately $3.3 billion」「operating margin of 48 - 49%」）；名词族补 operating margin/gross bookings/adjusted ebitda（不互套现有词，corr-2026-032 幂等纪律）；③ 期间模式补 Q 缩写+FY+两位年份（QCOM「Q4 FY26」）与反向全年（CSCO「results for fiscal 2027」锚词在年份前——旧 ANNUAL 模式全部要求年份在前，FY 列错配成 Q1 列头、全年指引按季度结算点到期撞 Q1 实际值判假 beat，v3.19 同型纪律）；④ 语义去重（factKey 归一：去空白+区间分隔符统一 to——MRVL「is expected to be 52.9% to 53.9%」form A 与表格行「52.9% - 53.9%」form J 是同一条指引两种句式，不重复登记两个义务）；⑤ value/tolerance 改从 m[0] 取并 trim+去尾标点（表格行 strip 后单元格间无句点，extendBack 把邻格名词与值桥进句子——CSCO live 实证 operating margin 行 metric 变成 gross margin、value 变成邻居营收区间；连带修正 v3.19「一句双 EPS」夹具：第二次 form G 匹配取到正确值 $25.50，GAAP/非 GAAP 分口径两条义务）；⑥ 结算层 parseRange 补裸美元区间（无 between/无 in the range of）与尾 %、parseMetricValue 补 B/M 单位，**无单位区间一律不猜**（NOW 表头单位跨句、ANET EPS between——默认 billion 差 1000 倍/9 个数量级，错配成 miss 比不结更坏）；⑦ claims 额度 90→170（live 实测 20 家 155 条，140 切尾 15 条——corr-2026-033 容量上限白名单同型第四次）。live 端到端：18 份备案指引 0→58 条（QCOM 15/CSCO 18/ANET 7/UBER 9/NOW 6/SHOP 3）、财报指引辨别 106→159 条、SEC EDGAR 备案 42→60 条（47 份含数值指引）、edgarClaimsTruncation null（158 条 ≤ cap 170 零切顶；90→170 因 140 live 实测切尾 15 条）；旧 14 家代表句式零漂移（form A/B/D/E/F/G/H+MU 表格字段逐一不变）。form K 的 live 逐字是「we expect: • ...; • Operating expenses as a percentage of revenue to be 33% to 34%;」冒号+分号 bullet——lookbehind 窗容忍（第一版词字符链跨不过冒号，live 0 条而手抄夹具全绿，corr-2026-047）。测试 475→485 项；6 轮反向验证全部精确失败（摘除名单六家→1/摘除 form J→3/摘除 form L→1/摘除无单位拒收→2/摘除反向全年→2/摘除语义归一→1；每轮还原字节校验一致、收尾 485/0）。登记 corr-2026-045（正则字面量与 new RegExp 模板的反斜杠层级不同+per-company catch 吞 ReferenceError，medium）/corr-2026-046（表格行无句点，extendBack 桥接邻格名词与值，medium）/corr-2026-047（测试夹具必须 live 逐字——手抄规范化走不到被测分支，medium）。仍在库外（如实）：UBER gross bookings/EBITDA、SHOP opex、QCOM EPS 实际值侧无行内单位或无对应抽取形态（pending）；NOW 区间单位在表头不猜；SHOP「Revenue to grow at a low-thirties percentage rate」文字增长率与「Stock-based compensation to be $150 million」点值（非 % 区间）不收（v3.6/v3.9 同型纪律）；CSCO「Non-GAAP $1.32 to $1.34」行无名词（strip 后表格行丢结构）漏采。
   历史：v3.24.0 - 新认知能力：ipo 证伪路径第二、三条接真数据（撤回 RW +
   定价 424B4，EDGAR submissions 登记记录）——v3.21 给 ipo-claim 立库时写下
   证伪路径「EDGAR 查无/撤回/定价时间表不符/挂牌后披露矛盾」四条，v3.23 只接了
@@ -86,14 +86,17 @@ description: |-
 `FETCH=1 FETCH_BODY=1 node scripts/run-pipeline.js` pipeline exit 0、**公司名单
 14→20**（QCOM/ANET/CSCO/NOW/UBER/SHOP 六家新增——live 复测各 3 份 Item 2.02
 在窗、18 份备案数值指引 0 条进台账，corr-2026-032 同型第五波）后 SEC EDGAR
-备案 42→60 条（47 家含数值指引）、财报指引辨别 106→141 条、18 份备案指引
-0→55 条、edgarClaimsTruncation seen=155/cut=0/cap=170（额度 90→170，140 切尾
-15 条的实测驱动）、已结算与 pending 随到期门自然推进。六家句式族全部 live
+备案 42→60 条（47 份含数值指引）、财报指引辨别 106→159 条、18 份备案指引
+0→58 条（QCOM 15/CSCO 18/ANET 7/UBER 9/NOW 6/SHOP 3）、edgarClaims-
+Truncation null（158 条 ≤ cap 170 零切顶；90→170 因 140 实测切尾 15 条）、
+已结算与 pending 随到期门自然推进。六家句式族全部 live
 实证驱动：QCOM 表格行 B 单位区间+Q4 FY26、ANET 冒号 bullet（of approximately/
 尾 %/between 无单位）、CSCO FY2027 Guidance 表（to 分隔+反向全年 results for
 fiscal 2027）、NOW 无单位表格行区间（单位在表头，结算侧不猜）、UBER
 anticipate+of+to 区间（gross bookings/adjusted ebitda 名词族）、SHOP expect+to
-be+X% to Y%（operating expenses）。精度纪律：actuals 两列表格（无区间符号）、
+be+X% to Y%（operating expenses——live 逐字「we expect: • ...; • Operating
+expenses as a percentage of revenue to be 33% to 34%;」冒号+分号 bullet，
+lookbehind 窗容忍，corr-2026-047）。精度纪律：actuals 两列表格（无区间符号）、
 raising/grew-to 句、文字增长率（low-thirties percentage rate）零误收；MRVL 双
 句式语义去重（同指引两种句式不重复登记）；无单位区间一律不猜（默认 billion 差
 1000 倍/9 个数量级——错配成 miss 比不结更坏）。旧 14 家代表句式零漂移（form
@@ -133,7 +136,7 @@ MIT TR 条仍独立验证(4)/thin-reasoning；forecast 辨别 106 条与结算�
 （0 新结算/跳过 6、ledger brier 0.2377/样本 16）逐条零漂移。剩余边界
 （如实）：挂牌后披露矛盾（挂牌后定期报告与 S-1 主张逐条对账）仍无数据
 支撑，由人工/下游 agent 执行。测试 462→475 项；8 轮反向验证全部精确失败。
-登记簿 42→45 条（corr-2026-044/045/046，medium）。
+登记簿 42→46 条（corr-2026-044/045/046/047，medium）。
 （v3.23.0 轮：pipeline exit 0、312 条 live 信号（business 48 + economy 46 +
 frontier_models 142 + sec_filings 42 + tech 22 + humanities 12）；**新数据源：
 EDGAR S-1/IPO 备案核查**（v3.21 立库 ipo-claim 时写下的证伪路径「EDGAR 查无/

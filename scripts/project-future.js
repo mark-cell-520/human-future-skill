@@ -344,7 +344,7 @@ class ProjectionEngine {
     }
     const report = {
       meta: {
-        version: '3.24.0',
+        version: '3.25.0',
         heartflowVersion: this.analysis.engineVersion,
         timestamp: this.timestamp,
         modulesLoaded: this.analysis.modulesLoaded,
@@ -1476,7 +1476,11 @@ class ProjectionEngine {
     // 实证：新形态的主张总落在 ticker 序尾部，涨额度必须与扩库同轮做。
     let edgarClaimsSeen = 0;
     let edgarClaimsCut = 0;
-    const EDGAR_CLAIMS_CAP = 90;
+    // [v3.25] 90→170：公司名单 14→20 后 live 实测 claim 总量 155 条（旧
+    // 14 家约 92 + 新 6 家 63；v3.20 轮 84 条）。v3.14/v3.19/v3.20 同型纪律
+    // 第四次——容量上限是另一种白名单（corr-2026-033）：140 把尾部 15 条
+    // 整批切掉（不辨别、不登记、不结算）。数值按本轮 live 实测定。
+    const EDGAR_CLAIMS_CAP = 170;
     for (const it of this.signals.items) {
       if (!Array.isArray(it.guidance)) continue;
       for (const g of it.guidance) {
