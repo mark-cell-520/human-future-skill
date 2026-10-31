@@ -516,6 +516,16 @@
       "severity": "medium",
       "recordedAt": "2026-10-31T00:00:00.000Z",
       "fix": "edgar-ipo-collector.js：CANDIDATE_STOPWORDS 补月份缩写（jan-dec）与署名行 boilerplate（paid/share/subscribe/sign/min/read）；ARCHIVES_INDEX_URL 与 lookupFilingClaims 的 CIK 去前导零（补注释说明 data.sec.gov 与 Archives 两种口径）；s1Claims 计数移入实际抓取分支（memo 命中不重复计）；defaultHttp 改 Buffer 收集+gzip 探测解码（大文档多字节跨 chunk 边界乱码防护）。测试 494→507 项（v3.27 段 13 项），10 轮反向验证全部精确失败。"
+    },
+    {
+      "id": "corr-2026-050",
+      "reportVersion": "v3.28",
+      "severity": "medium",
+      "wrongClaim": "（沿用假设）「无单位一律不猜」的纪律被执行成「无单位一律不读」——v3.25 立 form J（表格行/无动词区间）时把 NOW 的无单位区间整批列为结算侧不猜，已知边界措辞是「单位在表头跨句不进 value 串」，读起来像「单位拿不到」；据此把「读表头声明」也一并排除了。",
+      "rightClaim": "2026-10-31 live 复测（SEC EDGAR 实抓逐字）证明单位不是猜的：NOW 指引表表头逐字声明了单位——「The following table summarizes our guidance for the third quarter 2026: Third Quarter 2026 Non-GAAP Guidance (1) Amount ($ millions) (2) Year/Year Growth (%) … Subscription revenues $3,975 - $3,980」，标记就在行前 ~75 字符；DELL Guidance Summary 表头「(in billions, except percentages and per share amounts)」、UBER「(In millions, except percentages and per share amounts)」、MRVL/QCOM「(in millions, except per share …)」同款。读申报口径与默认标度有本质区别：前者是公司自己写的口径，后者是引擎的猜测。「不猜」的正确执行是「不默认标度」，不该顺带排除「读申报口径」。推进后 NOW 6 条无单位区间指引全部标度 million，FY2026 Q2 指引 $3,815-3,820 vs Q2 备案自报 $3,877M 真实结算（beat 带外）。",
+      "evidence": "live 端到端（306 条池，EDGAR 缓存先删再跑）：NOW 6 条指引 unit=million；结算 1 条（beat 带外，方向单独记）；两条「区间解析失败」skip 消失（Q2 当轮结算、Q3 按到期门 pending）；MRVL/DELL/UBER/QCOM/ANET/CSCO 既有指引行 unit=null 零漂移（每股守卫+行内单位优先双挡）；复跑幂等 0 新结算/0 新登记。",
+      "lesson": "「不猜 X」类纪律要区分「没有数据」与「没去读数据」——前者是证伪条件，后者是实现缺口（corr-2026-044「引擎不能执行 ≠ 没有数据支撑」在单位维度的同型）。写已知边界时把「当前实现读不到」与「数据不可得」分开写，否则下一轮会把边界当永久事实引用（corr-2026-038「否定式状态必须随每轮全池测量刷新」同族）。附带两条精度纪律：① 表头单位守卫必须假设「标记真的会在窗口内」——本轮每股守卫在 live 池无触发面（各家每股指引行窗口内均无标记），夹具用 DELL live 同表文本（标记与每股行距 131 字符）才钉住分支，并附「摘除守卫后同位置安得上 billion」的触达证明（corr-2026-029/037 纪律）；② 单位组 \\bB\\b/\\bM\\b 匹配不了紧贴数字的「9.7B」（QCOM live 逐字，7B 之间无词边界）——守卫漏旗，测试实测抓到后改 B\\b/M\\b。",
+      "resolvedAt": "2026-10-31"
     }
   ]
 }

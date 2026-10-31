@@ -344,7 +344,7 @@ class ProjectionEngine {
     }
     const report = {
       meta: {
-        version: '3.27.0',
+        version: '3.28.0',
         heartflowVersion: this.analysis.engineVersion,
         timestamp: this.timestamp,
         modulesLoaded: this.analysis.modulesLoaded,
@@ -1725,6 +1725,10 @@ class ProjectionEngine {
             value: r.guidance.value,
             tolerance: r.guidance.tolerance,
             isRange: !!r.guidance.isRange,
+            // [v3.28] 表头单位提示落账（无行内单位表格行指引的标度）。与
+            // isRange 同型纪律（v3.16 corr-2026-035）：只抽不落，备案滑出
+            // 采集窗口后回落持久化分支时提示丢失、区间永远不可结算。
+            unit: r.guidance.unit || null,
           } : null,
         });
         registered.push({ id: rec.id, dueOn: dueDate, probability: rec.probability });
@@ -1870,6 +1874,11 @@ class ProjectionEngine {
             // 名词级 metric 对 EPS 是 income，与实际值侧配不上。
             metric: normalizeMetric(g.settleMetric || g.metric), gaapBasis: g.gaapBasis || '',
             value: g.value, tolerance: g.tolerance, isRange: !!g.isRange,
+            // [v3.28] 表头单位提示随句反推元数据一起走（NOW live 实证：
+            // 存量 6 条无单位区间指引的 settlement.isRange 是旧版落的
+            // false，全靠当期句反推拿到正确元数据——提示也必须从当期
+            // 指引来，持久化 settlement 没有这个字段）。
+            unit: g.unit || null,
           };
           const ns = normSentence(g.sentence);
           const nk = guidanceNounKey(g.sentence);
@@ -1925,6 +1934,9 @@ class ProjectionEngine {
           // GAAP/非GAAP、抽取句只拿第一列数值不带限定词，实测即此形态）。
           gaapBasis: p.settlement.gaapBasis || claimGaapBasis(p.claim),
           value: p.settlement.value, tolerance: p.settlement.tolerance, isRange: !!p.settlement.isRange,
+          // [v3.28] 表头单位提示：v3.28 起登记的条目 settlement.unit 有值；
+          // 更早的条目没有该字段（undefined → null），行为与 v3.27 一致。
+          unit: p.settlement.unit || null,
         };
       }
       if (!meta || !meta.ticker || !meta.fiscalYear) {
@@ -1955,7 +1967,7 @@ class ProjectionEngine {
         skipped.push({ id: p.id, reason: `${keyBase}${meta.metric} 有 ${actuals.length} 条实际值（GAAP/非 GAAP 分歧或口径未限定），判歧义不自动结算` });
         continue;
       }
-      const verdict = settleGuidance({ value: meta.value, tolerance: meta.tolerance, isRange: meta.isRange }, actuals[0]);
+      const verdict = settleGuidance({ value: meta.value, tolerance: meta.tolerance, isRange: meta.isRange, unit: meta.unit }, actuals[0]);
       if (!verdict.settleable) {
         skipped.push({ id: p.id, reason: verdict.reason });
         continue;

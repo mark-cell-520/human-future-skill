@@ -447,6 +447,11 @@ function discriminate(claim, opts = {}) {
     // 中招；live 结算走句子索引所以没暴露——与 v3.5.1 ticker 恒 null 同型：
     // 传了不等于落账，落账了不等于每条路径都读得到）。
     isRange: guidanceMeta ? !!guidanceMeta.isRange : false,
+    // [v3.28] 表头单位提示透传（无行内单位的表格行指引从表头声明解析的
+    // 标度：'million' | 'billion' | null）。v3.16 isRange 透传断链同型
+    // 纪律——少这个字段，结算侧 parseRange 的 unitHint 分支永远收不到提示，
+    // NOW 的 6 条无单位区间指引到期仍判「区间解析失败」（传了不等于落账）。
+    unit: guidanceMeta ? (guidanceMeta.unit || null) : null,
     ticker: claim.ticker || null,
     fiscalYear: guidanceMeta ? (guidanceMeta.fiscalYear ?? null) : null,
     quarter: guidanceMeta ? (guidanceMeta.quarter ?? null) : null,

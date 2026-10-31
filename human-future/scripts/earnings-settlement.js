@@ -74,8 +74,12 @@ function parseMetricValue(str) {
  * $8.150 – $8.158 billion」——between-and / in the range of / 单百分号
  * 三种旧语法全部不命中）。与 edgar-collector rangeM 同构（v3.16 教训：
  * 抽取侧与结算侧必须同轮改，只改一侧会越界崩溃或断言空转）。
+ * [v3.28] unitHint 参数：表格行无行内单位时由抽取侧从**表头单位声明**
+ * 解析出的标度提示（NOW live 实证「Amount ($ millions) … Subscription
+ * revenues $3,975 - $3,980」）。只在调用方给出提示时生效（无提示一律
+ * 不猜，v3.25 纪律），且行内已有单位的值串不走该分支（防双重标度）。
  */
-function parseRange(str) {
+function parseRange(str, unitHint) {
   const s = String(str || '');
   const mDollar = s.match(/between\s+\$?\s?([\d.,]+)\s*(billion|million|%)?\s+and\s+\$?\s?([\d.,]+)\s*(billion|million|%)?/i);
   if (mDollar) {
@@ -145,6 +149,23 @@ function parseRange(str) {
   // 「65% - 66%」live 实证。与抽取侧 rangeM 新增分支同轮同构（v3.16 教训）。
   const mTailPct = s.match(/([\d.]+)%?\s*[-–]\s*([\d.]+)\s*%/i);
   if (mTailPct) return { lo: Number(mTailPct[1]), hi: Number(mTailPct[2]), unit: 'pct' };
+  // [v3.28] 表头单位提示分支（NOW live 实证：「Amount ($ millions) …
+  // Subscription revenues $3,975 - $3,980」——单位声明在表头，value 串
+  // 无行内单位）。纪律（与抽取侧 resolveTableUnit 一一对应）：
+  // ① 只在调用方给出 unitHint 时生效——无提示不猜（v3.25：错配成
+  //    miss 比不结更坏）；
+  // ② 行内含单位的值串不进本分支（上方各分支已覆盖或在此拒收）——
+  //    防双重标度；
+  // ③ 每股指标由抽取侧守卫挡掉（表头单位声明一律 except per share
+  //    data），本分支不再重复判。
+  if (unitHint && SCALE[unitHint] && !/billion|million|bn|B\b|M\b|%/i.test(s)) {
+    const mHint = s.match(/\$\s?([\d.,]+)\s*(?:[–-]|\bto\b)\s*\$?\s?([\d.,]+)/i);
+    if (mHint) {
+      const sc = SCALE[unitHint];
+      return { lo: Number(mHint[1].replace(/,/g, '')) * sc,
+        hi: Number(mHint[2].replace(/,/g, '')) * sc, unit: 'usd' };
+    }
+  }
   return null;
 }
 
@@ -152,10 +173,13 @@ function parseRange(str) {
  * 由指引的数值/容差/区间算出命中带 → {lo, hi, unit, guidedN, tolAbs, basis}。
  * 无法定义命中带（无容差无区间 / 单位不兼容 / 解释不了）返回 null——
  * 调用方据此跳过，绝不猜一个带出来。
+ * [v3.28] unit 参数：表格行无行内单位时抽取侧从表头声明解析的标度提示
+ * （'million' | 'billion'），只透传给 parseRange 的区间分支——点值+
+ * 容差路径不用它（% 容差的标度语义与区间不同，无 live 实证不扩）。
  */
-function guidanceBand(guidedValue, tolerance, isRange) {
+function guidanceBand(guidedValue, tolerance, isRange, unit) {
   if (isRange) {
-    const r = parseRange(guidedValue);
+    const r = parseRange(guidedValue, unit);
     return r ? { lo: r.lo, hi: r.hi, unit: r.unit, guidedN: (r.lo + r.hi) / 2, tolAbs: (r.hi - r.lo) / 2, basis: 'range' } : null;
   }
   if (!tolerance) return null; // 无容差的点值指引：不自动结算
@@ -180,13 +204,13 @@ function guidanceBand(guidedValue, tolerance, isRange) {
 
 /**
  * 判定一条指引对上一个实际值是否命中。
- * @param {object} g 指引元数据 {value, tolerance, isRange}
+ * @param {object} g 指引元数据 {value, tolerance, isRange, unit}
  * @param {string} actualValue 实际值串，如 "$96.2 billion" / "75.0%"
  * @returns {{settleable:boolean, reason?:string, hit?:boolean, band?:object, actualN?:number, direction?:string}}
  *   settleable=false 时 reason 说明为何不自动结算（无带/单位不兼容）。
  */
 function settleGuidance(g, actualValue) {
-  const band = guidanceBand(g.value, g.tolerance, g.isRange);
+  const band = guidanceBand(g.value, g.tolerance, g.isRange, g.unit);
   if (!band) {
     return { settleable: false, reason: g.isRange ? '区间解析失败' : (g.tolerance ? '容差单位无法解释' : '无容差/区间的点值指引，不自动结算') };
   }
@@ -262,10 +286,19 @@ if (require.main === module) {
     ['between $4.889 – $4.897 billion', null, true, '$4.5 billion', false, 'below'],
     // [v3.19] DELL between-and 区间（旧形态，回归不破）
     ['between $44.0 billion and $45.0 billion', null, true, '$47.0 billion', false, 'beat'],
+    // [v3.28] 表头单位提示（NOW live 实证：表头「Amount ($ millions)」+
+    // 无行内单位行「Subscription revenues $3,975 - $3,980」）——有提示才
+    // 标度；无提示同一值串仍不可结算（不猜纪律不回退）；行内已有单位的
+    // 值串不吃提示（防双重标度：QCOM「$9.7B - $10.5B」+ million 提示仍按
+    // 行内 B 标度）
+    ['$3,975 - $3,980', null, true, '$3,988 million', false, 'beat', 'million'],
+    ['$3,975 - $3,980', null, true, '$3,978 million', true, 'in-band', 'million'],
+    ['$3,975 - $3,980', null, true, '$3,988 million', null, null, null],
+    ['$9.7B - $10.5B', null, true, '$10.1B', true, 'in-band', 'million'],
   ];
   let pass = 0, fail = 0;
-  for (const [gv, tol, isRange, av, expHit, expDir] of cases) {
-    const r = settleGuidance({ value: gv, tolerance: tol, isRange }, av);
+  for (const [gv, tol, isRange, av, expHit, expDir, unit] of cases) {
+    const r = settleGuidance({ value: gv, tolerance: tol, isRange, unit }, av);
     const ok = (expHit === null) ? (!r.settleable) : (r.settleable && r.hit === expHit && r.direction.startsWith(expDir));
     if (ok) { pass++; console.log(`✓ ${gv} ±${tol || '-'} vs ${av} → ${r.settleable ? (r.hit ? 'HIT' : 'MISS') + ' ' + r.direction : 'skip(' + r.reason + ')'}`); }
     else { fail++; console.log(`✗ ${gv} ±${tol || '-'} vs ${av} → got ${JSON.stringify({ settleable: r.settleable, hit: r.hit, direction: r.direction, reason: r.reason })}, expected hit=${expHit} dir=${expDir}`); }

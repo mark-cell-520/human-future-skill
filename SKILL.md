@@ -1,11 +1,12 @@
 ---
 name: human-future-v2
-title: "人类未来 · 文明推演引擎 v3.27.0"
-version: "3.27.0"
+title: "人类未来 · 文明推演引擎 v3.28.0"
+version: "3.28.0"
 description: |-
-  人类未来技能 v3.27.0 — S-1 备案正文量化主张抽取（新认知能力：ipo 证伪路径第四条「挂牌后披露矛盾」的基线数据）：v3.23 接上「备案存在性」核查（browse-edgar S-1 匹配升独立验证(4)）、v3.24 接上「撤回 RW/定价 424B4」事件观测（submissions 登记记录），但备案正文里写的量化主张（营收/增速/客户规模/算力支出承诺/人均营收）引擎从来没读过——v3.21 立库时写下的证伪路径第四条「挂牌后披露矛盾」因此没有基线数据：没有备案自报数字，拿什么和挂牌后的定期报告对账？2026-10-31 全池过堂（corr-2026-028 纪律：330 条 live 池逐桶过形态门、未命中条目逐条过堂）live 实证 Understanding AI「Anthropic's financials are surprisingly strong — What I learned reading all 421 pages of the Anthropic S-1」（2026-10-29 在窗，frontier_models 桶）通篇是 S-1 财务数字的二手转述，而引擎对一手正文零覆盖；且该条的备案动作句（"Back in June, Anthropic filed a confidential draft of its S-1 form..."）因 filed 与 S-1 之间隔着宾语（a confidential draft of its），旧 ipo 备案动作形态只容忍一个冠词/形容词、整句不命中、整条不进辨别。本轮：① edgar-ipo-collector 新增备案正文抓取（Archives index.json → 主文档 .htm → decodeFilingHtml 解码 → extractS1Claims 抽取）——匹配到 S-1 后按 accession 抓主文档（Anthropic live 实测 14.2MB/2 秒），五形态量化主张（营收与同比增速/营收水平/客户规模/算力支出承诺/人均营收，全部 live 实抓原文驱动，每形态 cap 2、总 cap 10）挂回 edgarIpoCheck.s1Claims；② ipo-claim 备案动作子形态补「宾语间隔形态」（tempered gap ≤45 字符，法律/执法/调查/定期报告名词黑名单——"filed a lawsuit over the IPO" 整个不命中，漏报比误报诚实）；③ 精度纪律（不虚抬）：备案正文数字是**公司自报**——只作一手信源上下文透传，不抬证据档、不改 verdict、不改推理分（媒体主张的判定与备案自报数字是两件事，混为一体就是口径错位）；抓取失败只降级 s1Claims.available=false+reason，S-1 存在性核查结论不受影响（存在性与正文内容是两件事，不把「正文抓不到」静默成「备案不存在」）；同 accession run 内 memo（两条 Anthropic ipo 主张共享一次抓取）；汇总计数按文档计不按主张附加次数计。live 端到端（318 条池，EDGAR 缓存先删再跑）：pipeline exit 0、ipo 主张 3 条核查全部验证（独立验证(4)，v3.26 轮为 1 条）、S-1 备案正文 1 次抓取拿到量化主张 10 条（2023-2025 营收 $41M/$386M/$4.6B +841%/+1,088%，2026 H1 营收 $16.3B +1,300%，11,900 customers $100k+ TTM，对 Microsoft/Google 算力支出承诺 $44.9B/$114.5B，人均营收 $6.6M）并渲染进报告与 cron 注入；模式库计数 25 不变（子形态扩展不加 kind）。同轮修两处被 live 实证暴露的组件缺陷（登记 corr-2026-049）：RSS 署名行（Substack byline 与正文无句读）把公司候选切片占满致 Understanding AI 条未匹配（候选停用词补月份缩写+paid/share 等）；Archives 路径 CIK 带前导零被 SEC 301（defaultHttp 不跟随重定向，data.sec.gov 补零与 Archives 裸数字两种口径）。测试 494→507 项；10 轮反向验证全部精确失败。仍在库外（如实）：挂牌后披露矛盾的逐条对账（S-1/A、424B4、挂牌后定期报告 vs 备案数字）仍由人工/下游执行——引擎现在手里有基线数据，但对账动作不代判；公司名匹配是启发式（候选提取对非常规署名形态仍可能漏，matched 记录带公司/CIK/accession 供逐条复核）。
+  人类未来技能 v3.28.0 — 表头单位解析（已知边界推进：无行内单位的表格行指引，标度从指引表格的表头声明读取——v3.25「无单位一律不猜」的精确化）：v3.25 立 form J（表格行/无动词区间，QCOM/CSCO/NOW/UBER/SHOP/ANET 六家 live 实证）时把「无单位区间」整批列为结算侧不猜（NOW live 实证「Subscription revenues $4,245 - $4,255」单位在表头跨句不进 value 串，默认 billion 差 1000 倍/9 个数量级，错配成 miss 比不结更坏）。2026-10-31 live 复测（SEC EDGAR 实抓逐字）：单位不是「猜」的——财报指引表格的表头**逐字声明**了单位（NOW 0001373715-26-000072「Third Quarter 2026 Non-GAAP Guidance (1) Amount ($ millions) … Subscription revenues $3,975 - $3,980」，标记就在行前 ~75 字符；DELL Guidance Summary 表头逐字「(in billions, except percentages and per share amounts)」同款），读申报口径与默认标度有本质区别。本轮：① edgar-collector 新增 resolveTableUnit——无行内单位（且非每股）的 $ 区间/点值向上就近取表头单位标记（窗口 300 字符、三种括号形态「($ millions)」「(in millions, except per share data)」「(In millions, except percentages)」），unit 单独成字段、**不进 value 串**（value 是登记 id 的幂等维度，改它会让台账存量条目换 id 重复登记）；② 精度纪律（不虚抬，逐条有测试钉住）：行内已有单位不适用（inline 优先，防双重标度——QCOM「$9.7B - $10.5B」行为不变）；**每股指标不适用**——财报表头单位声明一律带 except per share 限定（UBER/DELL/MRVL live 逐字），把 million/billion 安到每股行上会错 6-9 个数量级（$0.84 → $840,000、$6.10 → $61 亿）；无标记留 null，不回退「无单位不猜」纪律；③ 透传链三处同轮齐修（forecast-discriminator guidanceStruct.unit → record() settlement.unit 落账 → settleEarningsGuidance 句反推/持久化两路径 → settleGuidance/parseRange unitHint 分支）——v3.16 isRange 透传断链（corr-2026-035）同型纪律：只抽不落=备案滑出窗口后提示丢失。同轮修一处被测试实测抓到的守卫缺陷：单位组 \bB\b/\bM\b 匹配不了紧贴数字的「9.7B」（QCOM live 逐字，7B 之间无词边界），改 B\b/M\b。live 端到端（306 条池，EDGAR 缓存先删再跑）：pipeline exit 0、NOW 6 条无单位区间指引全部解析出 unit=million、FY2026 Q2 指引 $3,815-3,820（表头 million）vs Q2 备案自报 $3,877M **真实结算（beat 带外）**——两条「区间解析失败」skip 消失（Q2 当轮结算、Q3 按到期门 dueOn 2026-11-14 pending）；复跑幂等 0 新结算/0 新登记；byKind/信号池/forecast 条数逐项零漂移。测试 507→518 项（v3.28 段 11 项）；10 轮反向验证全部精确失败。仍在库外（如实）：MRVL 表格行点值「$2,700 ±5」的容差 % 在 strip 后丢失（「容差单位无法解释」）、QCOM/ANET 每股区间无单位（表头 except per share，有意不收）、PLTR 千分位单位折算、ORCL FY2027 全年营收 settleMetric 取错族（v3.15 起的下轮候选）。
+  历史：v3.27.0 — S-1 备案正文量化主张抽取（新认知能力：ipo 证伪路径第四条「挂牌后披露矛盾」的基线数据）：v3.23 接上「备案存在性」核查（browse-edgar S-1 匹配升独立验证(4)）、v3.24 接上「撤回 RW/定价 424B4」事件观测（submissions 登记记录），但备案正文里写的量化主张（营收/增速/客户规模/算力支出承诺/人均营收）引擎从来没读过——v3.21 立库时写下的证伪路径第四条「挂牌后披露矛盾」因此没有基线数据：没有备案自报数字，拿什么和挂牌后的定期报告对账？2026-10-31 全池过堂（corr-2026-028 纪律：330 条 live 池逐桶过形态门、未命中条目逐条过堂）live 实证 Understanding AI「Anthropic's financials are surprisingly strong — What I learned reading all 421 pages of the Anthropic S-1」（2026-10-29 在窗，frontier_models 桶）通篇是 S-1 财务数字的二手转述，而引擎对一手正文零覆盖；且该条的备案动作句（"Back in June, Anthropic filed a confidential draft of its S-1 form..."）因 filed 与 S-1 之间隔着宾语（a confidential draft of its），旧 ipo 备案动作形态只容忍一个冠词/形容词、整句不命中、整条不进辨别。本轮：① edgar-ipo-collector 新增备案正文抓取（Archives index.json → 主文档 .htm → decodeFilingHtml 解码 → extractS1Claims 抽取）——匹配到 S-1 后按 accession 抓主文档（Anthropic live 实测 14.2MB/2 秒），五形态量化主张（营收与同比增速/营收水平/客户规模/算力支出承诺/人均营收，全部 live 实抓原文驱动，每形态 cap 2、总 cap 10）挂回 edgarIpoCheck.s1Claims；② ipo-claim 备案动作子形态补「宾语间隔形态」（tempered gap ≤45 字符，法律/执法/调查/定期报告名词黑名单——"filed a lawsuit over the IPO" 整个不命中，漏报比误报诚实）；③ 精度纪律（不虚抬）：备案正文数字是**公司自报**——只作一手信源上下文透传，不抬证据档、不改 verdict、不改推理分（媒体主张的判定与备案自报数字是两件事，混为一体就是口径错位）；抓取失败只降级 s1Claims.available=false+reason，S-1 存在性核查结论不受影响（存在性与正文内容是两件事，不把「正文抓不到」静默成「备案不存在」）；同 accession run 内 memo（两条 Anthropic ipo 主张共享一次抓取）；汇总计数按文档计不按主张附加次数计。live 端到端（318 条池，EDGAR 缓存先删再跑）：pipeline exit 0、ipo 主张 3 条核查全部验证（独立验证(4)，v3.26 轮为 1 条）、S-1 备案正文 1 次抓取拿到量化主张 10 条（2023-2025 营收 $41M/$386M/$4.6B +841%/+1,088%，2026 H1 营收 $16.3B +1,300%，11,900 customers $100k+ TTM，对 Microsoft/Google 算力支出承诺 $44.9B/$114.5B，人均营收 $6.6M）并渲染进报告与 cron 注入；模式库计数 25 不变（子形态扩展不加 kind）。同轮修两处被 live 实证暴露的组件缺陷（登记 corr-2026-049）：RSS 署名行（Substack byline 与正文无句读）把公司候选切片占满致 Understanding AI 条未匹配（候选停用词补月份缩写+paid/share 等）；Archives 路径 CIK 带前导零被 SEC 301（defaultHttp 不跟随重定向，data.sec.gov 补零与 Archives 裸数字两种口径）。测试 494→507 项；10 轮反向验证全部精确失败。仍在库外（如实）：挂牌后披露矛盾的逐条对账（S-1/A、424B4、挂牌后定期报告 vs 备案数字）仍由人工/下游执行——引擎现在手里有基线数据，但对账动作不代判；公司名匹配是启发式（候选提取对非常规署名形态仍可能漏，matched 记录带公司/CIK/accession 供逐条复核）。
   历史：v3.26.0 — 客户成效/ROI 主张进库（新辨别维度 customer-outcome，采用证据链第五形态）：2026-10-31 全池过堂（corr-2026-028 纪律：312 条 live 池逐桶过形态门、未命中条目逐条过堂）live 实证 OpenAI News「Credit Saison achieves 954% ROI in a ChatGPT Enterprise pilot」（2026-10-29 在窗，frontier_models 桶）——扩容前 24 种形态全部不命中，整条不进辨别。v3.11 立库 usage-metric 时把采用证据枚举成「趋势主张/具名部署/用量状态」三类、v3.12 扩成四类（+算力承诺），两轮都漏了**采用的结果**：客户用 AI 之后到底有没有成效（ROI/节省/生产率）——企业采购方最关心的证据形态、厂商案例研究里唯一带量化结果的句子。customer-outcome 两形态族（全部 live 实证驱动）：A 成效动词+量化值+成效名词（achieves 954% ROI / delivered 954% ROI，数值在前）；B 成效名词+of+量化值（an ROI of 954% / cost savings of $12 million，名词在前）。成效名词族：ROI / return on investment / (cost) savings / productivity (gain|improvement|uplift) / efficiency (gain|improvement) / cost reduction / payback；动词族只认成效达成动词（achieve/deliver/generate/realize/report/record/post/see）。精度设计（漏报比误报诚实、没有实证不扩模式）：① 必须「量化值+成效名词」相邻共现——live 实证 ServiceNow 8-K「most enterprises are still searching for AI's ROI, ServiceNow is the platform delivering it」含 ROI 名词与 delivering 动词但无任何数字，整个不命中（无量化值的 ROI 谈论不是可证伪主张，v3.6/v3.9/v3.10 同型纪律）；② 名词族不含 revenue/margin/income/orders（GOOGL「revenues increased 48% to $17.7 billion」是 demand 地盘）与 costs 裸名词（NVDA「35x lower cost」TCO 效率句，v3.9 已决议）；③ 动词族不含 found（survey-finding 地盘不抢）；④ 数值与名词之间不容长间隔（"$12 million in annual savings" 无 live 实证不进库）；⑤ has/have+成效名词（"the pilot has a 6-month payback"）无 live 实证不进库。本轮实测抓到并修复模式自身缺陷一处：A/B 两分支名词族 improvement/uplift 缺复数形态（improvements?）——「efficiency improvements of 18%」整句漏采，而夹具首版的 produced 又不在动词族，两层缺陷各自单独看都像设计如此（登记 corr-2026-048）。live 端到端（312 条池，EDGAR 缓存先删再跑）：pipeline exit 0、customer-outcome 精确命中 1 条（即 Credit Saison 条、0 误报）、判 证据不足/无出处(1)/推理 1/3（954% 命中 has-sample）/weak-evidence/decisionRelevant=false 不虚抬（厂商一手公告句式自身无归属词，v3.10 Uber 条同型）；其余 kind 计数逐一不变（零串台零丢失）；旧 24 种代表句式零漂移（测试钉住）。专属证伪路径（客户方公开确认或独立审计的 ROI 测算与主张值不符/下一期同口径自报值回落/第三方测算不支持/口径变化——统计窗口/基线年替换/成本项漏计/样本自选）+ market_claims 类目 + 报告与 cron 注入中文标签「客户成效/ROI 主张」全链就位。测试 485→494 项；8 轮反向验证全部精确失败（摘除模式整块→live 实证/端到端/计数/摘除证伪条件映射→1/摘除类目映射→1（源级）/摘除名词族单复数修复→召回夹具精确失败/摘除 formatReport KIND_CN→端到端/摘除注入 KIND_CN→注入源级/摘除量化要求→ServiceNow 句误入辨别/版本漂移→多处；每轮还原字节校验一致、收尾 494/0）。登记 corr-2026-048（模式族 A/B 两分支名词族单复数不同步+召回夹具动词/名词必须是族内真实成员，medium）；登记簿 46→47 条。仍在库外（如实）：in 间隔形态（"$12 million in annual savings"）、has/have+成效名词语法、produce 类未枚举动词——等有 live 实证再扩。
-  历史：v3.25.0 — SEC EDGAR 一手信源扩容第二轮（公司名单 14→20 + 六家公司指引句式族进库，已知边界推进）：v3.24 基线 live 复测（2026-10-30）六家境内备案人（QCOM/ANET/CSCO/NOW/UBER/SHOP）各 3 份 Item 2.02 业绩 8-K 在采集窗口内，18 份备案数值指引 0 条进台账——指引句式全部在库外（corr-2026-032「在窗公司≠采到的指引」同型第五波）。本轮（全部 2026-10-30 SEC EDGAR 实抓原文驱动）：① 公司名单 14→20（半导体/网络设备/企业软件/平台经济四子域）；② extractGuidance 补三种句式族——form J 表格行/无动词区间（QCOM「Current Guidance Q4 FY26 Estimates 1 Revenues $9.7B - $10.5B」B 单位、CSCO「FY 2027 Guidance Revenue $18.0 billion to $18.2 billion」to 分隔、NOW「Subscription revenues $4,245 - $4,255」无单位、UBER「we anticipate Gross Bookings of $58.25 billion to $60.25 billion」of+to）、form K expect+名词+to be+X% to Y%（SHOP「Operating expenses as a percentage of revenue to be 33% to 34%」，只收纯 % 区间不抢 form B 点值与 form D in-the-range 地盘）、form L between-and 两形态（ANET「Non-GAAP diluted net income per share between $1.06 and $1.08」per-share 无单位 +「gross margin between approximately 62-63%」），form H 泛化 of approximately 与尾 % 分支（ANET 冒号 bullet「Revenue of approximately $3.3 billion」「operating margin of 48 - 49%」）；名词族补 operating margin/gross bookings/adjusted ebitda（不互套现有词，corr-2026-032 幂等纪律）；③ 期间模式补 Q 缩写+FY+两位年份（QCOM「Q4 FY26」）与反向全年（CSCO「results for fiscal 2027」锚词在年份前——旧 ANNUAL 模式全部要求年份在前，FY 列错配成 Q1 列头、全年指引按季度结算点到期撞 Q1 实际值判假 beat，v3.19 同型纪律）；④ 语义去重（factKey 归一：去空白+区间分隔符统一 to——MRVL「is expected to be 52.9% to 53.9%」form A 与表格行「52.9% - 53.9%」form J 是同一条指引两种句式，不重复登记两个义务）；⑤ value/tolerance 改从 m[0] 取并 trim+去尾标点（表格行 strip 后单元格间无句点，extendBack 把邻格名词与值桥进句子——CSCO live 实证 operating margin 行 metric 变成 gross margin、value 变成邻居营收区间；连带修正 v3.19「一句双 EPS」夹具：第二次 form G 匹配取到正确值 $25.50，GAAP/非 GAAP 分口径两条义务）；⑥ 结算层 parseRange 补裸美元区间（无 between/无 in the range of）与尾 %、parseMetricValue 补 B/M 单位，**无单位区间一律不猜**（NOW 表头单位跨句、ANET EPS between——默认 billion 差 1000 倍/9 个数量级，错配成 miss 比不结更坏）；⑦ claims 额度 90→170（live 实测 20 家 155 条，140 切尾 15 条——corr-2026-033 容量上限白名单同型第四次）。live 端到端：18 份备案指引 0→58 条（QCOM 15/CSCO 18/ANET 7/UBER 9/NOW 6/SHOP 3）、财报指引辨别 106→159 条、SEC EDGAR 备案 42→60 条（47 份含数值指引）、edgarClaimsTruncation null（158 条 ≤ cap 170 零切顶；90→170 因 140 live 实测切尾 15 条）；旧 14 家代表句式零漂移（form A/B/D/E/F/G/H+MU 表格字段逐一不变）。form K 的 live 逐字是「we expect: • ...; • Operating expenses as a percentage of revenue to be 33% to 34%;」冒号+分号 bullet——lookbehind 窗容忍（第一版词字符链跨不过冒号，live 0 条而手抄夹具全绿，corr-2026-047）。测试 475→485 项；6 轮反向验证全部精确失败（摘除名单六家→1/摘除 form J→3/摘除 form L→1/摘除无单位拒收→2/摘除反向全年→2/摘除语义归一→1；每轮还原字节校验一致、收尾 485/0）。登记 corr-2026-045（正则字面量与 new RegExp 模板的反斜杠层级不同+per-company catch 吞 ReferenceError，medium）/corr-2026-046（表格行无句点，extendBack 桥接邻格名词与值，medium）/corr-2026-047（测试夹具必须 live 逐字——手抄规范化走不到被测分支，medium）。仍在库外（如实）：UBER gross bookings/EBITDA、SHOP opex、QCOM EPS 实际值侧无行内单位或无对应抽取形态（pending）；NOW 区间单位在表头不猜；SHOP「Revenue to grow at a low-thirties percentage rate」文字增长率与「Stock-based compensation to be $150 million」点值（非 % 区间）不收（v3.6/v3.9 同型纪律）；CSCO「Non-GAAP $1.32 to $1.34」行无名词（strip 后表格行丢结构）漏采。
+  历史：v3.25.0 — SEC EDGAR 一手信源扩容第二轮（公司名单 14→20 + 六家公司指引句式族进库，已知边界推进）：v3.24 基线 live 复测（2026-10-30）六家境内备案人（QCOM/ANET/CSCO/NOW/UBER/SHOP）各 3 份 Item 2.02 业绩 8-K 在采集窗口内，18 份备案数值指引 0 条进台账——指引句式全部在库外（corr-2026-032「在窗公司≠采到的指引」同型第五波）。本轮（全部 2026-10-30 SEC EDGAR 实抓原文驱动）：① 公司名单 14→20（半导体/网络设备/企业软件/平台经济四子域）；② extractGuidance 补三种句式族——form J 表格行/无动词区间（QCOM「Current Guidance Q4 FY26 Estimates 1 Revenues $9.7B - $10.5B」B 单位、CSCO「FY 2027 Guidance Revenue $18.0 billion to $18.2 billion」to 分隔、NOW「Subscription revenues $4,245 - $4,255」无单位、UBER「we anticipate Gross Bookings of $58.25 billion to $60.25 billion」of+to）、form K expect+名词+to be+X% to Y%（SHOP「Operating expenses as a percentage of revenue to be 33% to 34%」，只收纯 % 区间不抢 form B 点值与 form D in-the-range 地盘）、form L between-and 两形态（ANET「Non-GAAP diluted net income per share between $1.06 and $1.08」per-share 无单位 +「gross margin between approximately 62-63%」），form H 泛化 of approximately 与尾 % 分支（ANET 冒号 bullet「Revenue of approximately $3.3 billion」「operating margin of 48 - 49%」）；名词族补 operating margin/gross bookings/adjusted ebitda（不互套现有词，corr-2026-032 幂等纪律）；③ 期间模式补 Q 缩写+FY+两位年份（QCOM「Q4 FY26」）与反向全年（CSCO「results for fiscal 2027」锚词在年份前——旧 ANNUAL 模式全部要求年份在前，FY 列错配成 Q1 列头、全年指引按季度结算点到期撞 Q1 实际值判假 beat，v3.19 同型纪律）；④ 语义去重（factKey 归一：去空白+区间分隔符统一 to——MRVL「is expected to be 52.9% to 53.9%」form A 与表格行「52.9% - 53.9%」form J 是同一条指引两种句式，不重复登记两个义务）；⑤ value/tolerance 改从 m[0] 取并 trim+去尾标点（表格行 strip 后单元格间无句点，extendBack 把邻格名词与值桥进句子——CSCO live 实证 operating margin 行 metric 变成 gross margin、value 变成邻居营收区间；连带修正 v3.19「一句双 EPS」夹具：第二次 form G 匹配取到正确值 $25.50，GAAP/非 GAAP 分口径两条义务）；⑥ 结算层 parseRange 补裸美元区间（无 between/无 in the range of）与尾 %、parseMetricValue 补 B/M 单位，**无单位区间一律不猜**（NOW 表头单位跨句、ANET EPS between——默认 billion 差 1000 倍/9 个数量级，错配成 miss 比不结更坏）；⑦ claims 额度 90→170（live 实测 20 家 155 条，140 切尾 15 条——corr-2026-033 容量上限白名单同型第四次）。live 端到端：18 份备案指引 0→58 条（QCOM 15/CSCO 18/ANET 7/UBER 9/NOW 6/SHOP 3）、财报指引辨别 106→159 条、SEC EDGAR 备案 42→60 条（47 份含数值指引）、edgarClaimsTruncation null（158 条 ≤ cap 170 零切顶；90→170 因 140 live 实测切尾 15 条）；旧 14 家代表句式零漂移（form A/B/D/E/F/G/H+MU 表格字段逐一不变）。form K 的 live 逐字是「we expect: • ...; • Operating expenses as a percentage of revenue to be 33% to 34%;」冒号+分号 bullet——lookbehind 窗容忍（第一版词字符链跨不过冒号，live 0 条而手抄夹具全绿，corr-2026-047）。测试 475→485 项；6 轮反向验证全部精确失败（摘除名单六家→1/摘除 form J→3/摘除 form L→1/摘除无单位拒收→2/摘除反向全年→2/摘除语义归一→1；每轮还原字节校验一致、收尾 485/0）。登记 corr-2026-045（正则字面量与 new RegExp 模板的反斜杠层级不同+per-company catch 吞 ReferenceError，medium）/corr-2026-046（表格行无句点，extendBack 桥接邻格名词与值，medium）/corr-2026-047（测试夹具必须 live 逐字——手抄规范化走不到被测分支，medium）。仍在库外（如实）：UBER gross bookings/EBITDA、SHOP opex、QCOM EPS 实际值侧无行内单位或无对应抽取形态（pending）；**[v3.28 已推进] NOW 区间单位在表头——表头声明可读（resolveTableUnit），6 条无单位区间指引全部标度 million、Q2 指引已真实结算**；MRVL 表格行点值「$2,700 ±5」容差 % 在 strip 后丢失（「容差单位无法解释」）；SHOP「Revenue to grow at a low-thirties percentage rate」文字增长率与「Stock-based compensation to be $150 million」点值（非 % 区间）不收（v3.6/v3.9 同型纪律）；CSCO「Non-GAAP $1.32 to $1.34」行无名词（strip 后表格行丢结构）漏采。
   历史：v3.24.0 - 新认知能力：ipo 证伪路径第二、三条接真数据（撤回 RW +
   定价 424B4，EDGAR submissions 登记记录）——v3.21 给 ipo-claim 立库时写下
   证伪路径「EDGAR 查无/撤回/定价时间表不符/挂牌后披露矛盾」四条，v3.23 只接了
@@ -74,16 +75,41 @@ description: |-
 ---
 ---
 
-# 人类未来 · 文明推演引擎 v3.27.0
+# 人类未来 · 文明推演引擎 v3.28.0
 
 > 数据采集（RSS 真联网 + 可选正文增强 + 外部预测基准 GJOpen）→ 心虫 stateless 检查器 → 三年推演引擎。
 > 当前状态与实测数字见下一节，历史版本记录见 references/upgrade-history.md。
 
 ---
 
-## 当前状态（v3.27.0 实测）
+## 当前状态（v3.28.0 实测）
 
-以下数字全部来自 live 实跑。v3.27.0 轮（2026-10-31，EDGAR 缓存先删再跑）：
+以下数字全部来自 live 实跑。v3.28.0 轮（2026-10-31，EDGAR 缓存先删再跑）：
+`FETCH=1 FETCH_BODY=1 node scripts/run-pipeline.js` pipeline exit 0、**表头单位
+解析（已知边界推进：无行内单位的表格行指引，标度从表头声明读取）**——
+v3.25 立 form J 时把「无单位区间」整批列为结算侧不猜（NOW live 实证
+「Subscription revenues $4,245 - $4,255」单位在表头跨句不进 value 串，默认
+billion 差 1000 倍/9 个数量级）。本轮 live 复测（SEC EDGAR 实抓逐字）证明
+单位不是「猜」的：指引表格表头逐字声明了单位（NOW 0001373715-26-000072
+「Third Quarter 2026 Non-GAAP Guidance (1) Amount ($ millions) … Subscription
+revenues $3,975 - $3,980」，标记距行 ~75 字符；DELL Guidance Summary 表头
+「(in billions, except percentages and per share amounts)」同款）。edgar-collector
+新增 resolveTableUnit（窗口 300 字符就近取标记、三种括号形态、unit 单独成字段
+不进 value 串——value 是 id 幂等维度）；精度纪律：行内单位优先（防双重标度）、
+**每股行除外**（表头声明一律 except per share data，错标差 6-9 个数量级——
+DELL live 逐字夹具钉住：GAAP diluted EPS $6.10 距表头 131 字符，摘除守卫即被
+错标 billion）、无标记留 null 不回退不猜纪律。透传链三处齐修
+（辨别器 unit → record() 落账 → 结算层句反推/持久化两路径 → parseRange
+unitHint 分支），v3.16 isRange 透传断链同型纪律。同轮修一处被测试实测抓到
+的守卫缺陷：单位组 \bB\b/\bM\b 匹配不了紧贴数字的「9.7B」（QCOM live 逐字，
+7B 之间无词边界），改 B\b/M\b。live 端到端（306 条池）：NOW 6 条无单位区间
+指引全部解析出 unit=million、FY2026 Q2 指引 $3,815-3,820 vs Q2 备案自报
+$3,877M **真实结算（beat 带外）**、两条「区间解析失败」skip 消失（Q3 按到期门
+dueOn 2026-11-14 pending）；复跑幂等 0 新结算/0 新登记；商业辨别段 audited 22
+（byKind ipo:3 全独立验证(4) 等逐一不变）、forecast 178 条、信号池六桶
+（tech 22 + humanities 12 + frontier_models 118 + economy 46 + business 48 +
+sec_filings 60）逐项零漂移。测试 507→518 项；10 轮反向验证全部精确失败。
+（v3.27.0 轮（2026-10-31，EDGAR 缓存先删再跑）：
 `FETCH=1 FETCH_BODY=1 node scripts/run-pipeline.js` pipeline exit 0、**S-1 备案
 正文量化主张抽取（新认知能力：ipo 证伪路径第四条「挂牌后披露矛盾」的基线数据）**
 ——全池过堂（corr-2026-028 纪律，330 条池逐桶过形态门、未命中条目逐条过堂）
@@ -1697,6 +1723,68 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   引擎从「只能查备案存在性」扩展到「能观测撤回与定价事件」）且用户可感知
   （报告与注入首次出现事件后缀行与流程事件计数）= x.0。
 
+**[v3.28] 表头单位解析（已知边界推进：无行内单位表格行指引的标度从表头声明读取）**
+- 定位：v3.25 立 form J（表格行/无动词区间，六家 live 实证）时把「无单位区间」
+  整批列为结算侧不猜——NOW live 实证「Subscription revenues $4,245 - $4,255」
+  单位在表头跨句不进 value 串，默认 billion 差 1000 倍/9 个数量级，错配成 miss
+  比不结更坏（登记在案的纪律）。2026-10-31 live 复测（SEC EDGAR 实抓逐字）证明
+  「不猜」被执行过了头：单位不是猜的——指引表格表头**逐字声明**了单位
+  （NOW 0001373715-26-000072：「The following table summarizes our guidance for
+  the third quarter 2026: Third Quarter 2026 GAAP Guidance Third Quarter 2026
+  Non-GAAP Guidance (1) Amount ($ millions) (2) Year/Year Growth (%) …
+  Subscription revenues $3,975 - $3,980」，标记距行 ~75 字符；DELL Guidance
+  Summary 表头逐字「(in billions, except percentages and per share amounts)」
+  同款；UBER/MRVL/QCOM 表头也都带「except per share」限定语）。读申报口径与
+  默认标度有本质区别：前者是公司自己写的口径，后者是引擎的猜测。v3.25 边界
+  措辞把「当前实现读不到」写成了近似「数据不可得」——区分「没有数据」与
+  「没接数据」的同型纪律（corr-2026-044）在单位维度上的再现（登记
+  corr-2026-050）。
+- 数据与流程（edgar-collector.js 新能力 resolveTableUnit）：无行内单位（且非
+  每股）的 $ 区间/点值，向上就近取表头单位标记（窗口 TABLE_UNIT_WINDOW=300
+  字符，三种括号形态「($ millions)」「(in millions, except per share data)」
+  「(In millions, except percentages)」——except 限定语是表头声明的组成部分），
+  单位**单独成字段、不进 value 串**：value 是登记 id 的幂等维度之一（同备案多
+  指引靠 metric+value 区分），改它会让台账存量 6 条 NOW 条目换 id 重复登记
+  （v3.13「metric 不进 id 变更」同型纪律）。
+- 精度纪律（不虚抬，逐条有测试钉住）：① 行内已有单位不适用（inline 优先，
+  防双重标度——QCOM「$9.7B - $10.5B」/ UBER「$58.25 billion to $60.25
+  billion」行为不变）；② **每股指标不适用**——财报表头单位声明一律带
+  except per share 限定（UBER/DELL/MRVL live 逐字），把 million/billion 安到
+  每股行上会错 6-9 个数量级（$0.84 → $840,000；DELL 的 $6.10 → $61 亿）。
+  live 池实证：UBER/QCOM/ANET/MRVL 的每股指引行窗口内均无标记（指引在叙述段
+  不在表内，或表头距行超窗）——守卫是防御性的，用 DELL live 逐字夹具（标记与
+  每股行同窗，距表头 131 字符）直接钉 resolveTableUnit，并附「摘除守卫后同位置
+  安得上 billion」的分支触达证明（corr-2026-029/037 纪律：夹具必须触达被测
+  分支）；③ 向上就近取最近标记（表头紧邻本表行，上一张表的标记更远）；
+  ④ 取不到留 null——结算侧按「无单位一律不猜」拒收，不回退 v3.25 纪律。
+- 透传链三处同轮齐修（v3.16 isRange 透传断链 corr-2026-035 同型纪律——只抽
+  不落=备案滑出采集窗口后提示丢失）：forecast-discriminator guidanceStruct.unit
+  （逐字段手抄非 spread，漏一个字段整条链静默退化）→ project-future record()
+  settlement.unit 落账 → settleEarningsGuidance 两条元数据路径（当期句反推
+  meta.unit + 持久化 settlement.unit 兜底）→ settleGuidance/guidanceBand/
+  parseRange unitHint 分支。存量 6 条 NOW 台账条目是旧版落的 isRange=false
+  （record() 幂等不更新），修复靠「当期指引句反推优先」路径——unit 必须随句
+  反推元数据一起走。
+- 同轮修一处被测试实测抓到的守卫缺陷：单位组 \bB\b/\bM\b 匹配不了紧贴
+  数字的「9.7B」（QCOM live 逐字，7B 之间无词边界）——守卫漏旗，表头 million
+  会二次标度到 B 行上。改 B\b/M\b（值串只含数字与单位字母，无误伤面）。
+- 判别结果（live 实测）：NOW 6 条无单位区间指引（Q2/Q3/Q4 + 三份全年）全部
+  解析出 unit=million；FY2026 Q2 指引 $3,815-3,820（表头 million）vs Q2 备案
+  自报 $3,877M **真实结算（beat 带外，方向单独记）**——两条「区间解析失败」
+  skip 消失（Q2 当轮结算、Q3 按到期门 dueOn 2026-11-14 pending 不提前结）；
+  复跑幂等 0 新结算/0 新登记；商业辨别段 audited 22（byKind ipo:3 全独立
+  验证(4) 等逐一不变）、forecast 178 条、信号池六桶 306 条逐项零漂移。
+- 端到端：edgar-collector 抽取 → forecast-discriminator 透传 → 登记落账 →
+  earnings-settlement 结算（报告「财报指引结算」段出现 NOW 行）→ cron 注入
+  第 6.5 段同措辞（[v3.28] 表头单位口径限定：标度来自备案表头声明、每股行
+  除外、无标记不猜——agent 看到结算行时要能复核量纲，v3.0.0c 断链纪律）。
+- 仍在库外的单位句式（如实）：MRVL 表格行点值「$2,700 ±5」的容差 % 在表格
+  strip 后丢失（「容差单位无法解释」——叙事版「$2.700 billion ±5%」同指引
+  已另行结算，表格版是重复登记）；QCOM/ANET 每股区间（表头 except per share，
+  有意不收）；点值+% 容差的表头标度（guidanceBand 点值路径不用提示——%
+  容差的标度语义与区间不同，无 live 实证不扩）；PLTR 千分位单位折算、
+  ORCL FY2027 全年营收 settleMetric 取错族（v3.15 起的下轮候选）。
+
 **[v3.27] S-1 备案正文量化主张抽取（新认知能力：ipo 证伪路径第四条的基线数据）**
 - 定位：采用/供给侧证据链之外的「备案正文」覆盖缺口。v3.21 给 ipo-claim 立库时
   写下专属证伪路径「EDGAR 查无/撤回/定价时间表不符/挂牌后披露矛盾」四条，v3.23
@@ -1939,13 +2027,13 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   严格过滤，漏掉数据里 2 条 critical（都是「整段推演作废」级的假能力审计），
   接入后会少报高危数（说 4 实际 6）。改为按等级表比较（critical > high >
   medium > low），critical 排最前。这是修 bug，不算升级——升级点是接入本身。
-- 边界（如实声明）：登记簿 48 条（v3.13 轮新增 corr-2026-030/031、v3.14 轮
+- 边界（如实声明）：登记簿 49 条（v3.13 轮新增 corr-2026-030/031、v3.14 轮
   新增 corr-2026-032/033、v3.15 轮新增 corr-2026-034、v3.16 轮新增
   corr-2026-035、v3.17 轮新增 corr-2026-036、v3.18 轮新增 corr-2026-037、
   v3.19 轮新增 corr-2026-038、v3.20 轮新增 corr-2026-039、v3.21 轮新增
   corr-2026-040、v3.22 轮新增 corr-2026-041、v3.22.1 轮新增 corr-2026-042、
   v3.23 轮新增 corr-2026-043、v3.24 轮新增 corr-2026-044 后：
-  critical 4 / high 18 / medium 21（含 corr-2026-024/025 两条前轮手写条目
+  critical 4 / high 18 / medium 27（含 corr-2026-024/025 两条前轮手写条目
   未设 severity、按 medium 计）——corr-2026-044 记的是「引擎不能执行 ≠
   没有数据支撑」——v3.23 把 ipo 证伪路径的「撤回（RW）/定价（424B4）」整批
   列为「由人工/下游 agent 执行」，但 browse-edgar 的 type=S-1 只是 SEC 的一个
@@ -1955,6 +2043,14 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   写已知边界时要区分「没有数据源」与「没接数据源」，接新数据源（或给能力
   写证伪路径）时要扫该机构的其它端点，不能因第一个端点只覆盖一类表单就
   判定其余需人工；
+  corr-2026-050 记的是「不猜 X」的纪律要区分「没有数据」与「没去读数据」——
+  v3.25 把 NOW 无单位区间整批列为结算侧不猜（边界措辞「单位在表头跨句」读起来
+  像数据不可得），2026-10-31 live 复测证明单位声明就在表头（行前 ~75 字符），
+  读申报口径与默认标度有本质区别；写已知边界时把「当前实现读不到」与「数据
+  不可得」分开写（corr-2026-044 同型、corr-2026-038 同族）。附带：表头单位
+  的每股守卫在 live 池无触发面，夹具必须用标记与每股行同窗的 live 文本
+  （DELL Guidance Summary，距 131 字符）才钉得住分支；单位组 \bB\b 匹配不了
+  紧贴数字的「9.7B」——守卫漏旗由测试实测抓到；
   corr-2026-043 记的是「证伪路径写成可观测
   条件 ≠ 引擎能执行该检查」——v3.21 立库 ipo-claim 时写下证伪路径「EDGAR
   查无/撤回/定价时间表不符/挂牌后披露矛盾」，但四条里没有任何一条有数据
@@ -2157,7 +2253,7 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   引擎不代劳——这是心虫铁律，不是能力缺失。
 
 **测试**
-- `npm test`：**507 项断言**（实测各 section 汇总；v3.4 的 230 + v3.5 新增 11 + v3.5.1 新增 9 + v3.6 新增 8 + v3.7 新增 9 + v3.8 新增 11 + v3.9 新增 8 + v3.10 新增 13 + v3.11 新增 15 + v3.12 新增 14 + v3.13 新增 13 + v3.14 新增 9 + v3.15 新增 10 + v3.16 新增 11 + v3.17 新增 10 + v3.18 新增 6 + v3.19 新增 9 + v3.20 新增 8 + v3.21 新增 16 + v3.21.1 新增 9 + v3.22 新增 10 + v3.22.1 新增 10 + v3.23 新增 13 + v3.24 新增 13 + v3.25 新增 10 + v3.26 新增 9 + v3.27 新增 13：
+- `npm test`：**518 项断言**（实测各 section 汇总；v3.4 的 230 + v3.5 新增 11 + v3.5.1 新增 9 + v3.6 新增 8 + v3.7 新增 9 + v3.8 新增 11 + v3.9 新增 8 + v3.10 新增 13 + v3.11 新增 15 + v3.12 新增 14 + v3.13 新增 13 + v3.14 新增 9 + v3.15 新增 10 + v3.16 新增 11 + v3.17 新增 10 + v3.18 新增 6 + v3.19 新增 9 + v3.20 新增 8 + v3.21 新增 16 + v3.21.1 新增 9 + v3.22 新增 10 + v3.22.1 新增 10 + v3.23 新增 13 + v3.24 新增 13 + v3.25 新增 10 + v3.26 新增 9 + v3.27 新增 13 + v3.28 新增 11：
   2 项纯结算函数（settleGuidance 单位感知容差：相对/绝对/bps/百分点/区间/无容差
   跳过，含区分相对vs绝对的边界用例 / normalizeMetric+parseMetricValue 单位解析）+
   3 项实际值抽取（extractActuals 营收+毛利率+标题期间 / GAAP/非GAAP 不同值抽出
@@ -2912,6 +3008,19 @@ v2.17/v3.0.0c 轮次数字（248-258 条 live、36.7 秒、基准冷启动）见
   解码 → 1 条断言失败；摘除去重 → 3 条失败；摘除缓存新鲜度检查 → 1 条失败；
   minShared 降到 1 → 1 条失败（单专名误命中）；摘除报告段渲染 → 2 条失败；
   摘除 reasoningEngines 的 available 门 → 1 条失败。
+
+  v3.28 新增 11（1 项 live 实证抽取（NOW 0001373715-26-000072 两张指引表 live 逐字：6 行无单位区间全部 unit=million、isRange/期间/指标族逐一断言）
+  + 1 项 resolveTableUnit 纯函数 live 夹具（DELL Guidance Summary live 逐字：聚合行 billion、每股行 null，附「摘除守卫后同位置安得上 billion」的分支触达证明——corr-2026-029/037 纪律）
+  + 1 项守卫边界四形态（% 值/行内单位/超窗/无标记全部留 null——超窗夹具硬编码 350，R4 首跑引用被测窗口常量自适配报 0 失败后修正，同型第五次实证）
+  + 1 项标记变体三形态（「($ millions)」「(in millions, except per share data)」「(In millions, except percentages)」+ billions）
+  + 1 项精度回归（UBER/QCOM/ANET live 逐字：每股行与行内单位行 unit=null 零误标）
+  + 1 项 guidanceStruct unit 透传（v3.16 isRange 同型断链纪律）
+  + 1 项登记落账源级（settlement.unit 进 record() 元数据）
+  + 1 项 settleEarningsGuidance 句反推路径端到端（受控台账：存量 isRange=false 条目经当期句反推 unit 真实结算 beat 带外）
+  + 1 项持久化路径端到端（备案滑出窗口时 settlement.unit 兜底，annual key）
+  + 1 项 cron 注入源级（[v3.28] 表头单位口径限定）
+  + 1 项版本号一致性（五处对齐 3.28.0））。
+  v3.28 十轮反向验证全部精确失败（R1 摘除 resolveTableUnit 单位解析→4/R2 摘除每股守卫→1/R3 摘除行内单位守卫→1/R4 摘除窗口限制→1（首跑夹具自适配报 0 失败，改硬编码距离后精确失败）/R5 摘除 parseRange unitHint 分支→2/R6 摘除辨别器透传→1/R7 摘除登记落账→1/R8 摘除句反推 meta.unit→1/R9 摘除注入口径限定→1/R10 版本漂移→多处；每轮还原字节校验一致、收尾 518/0，v2.13h EU AI Act 网络抖动为存量失败不计入）。
 
 **cron 注入脚本**（`~/.hermes/scripts/hf-cron-fetch.sh`，不在本仓、不受版本控制）
 - 跑法：`FETCH=1 FETCH_BODY=1 node scripts/run-pipeline.js` → 提取摘要 → 心虫 think()

@@ -538,6 +538,51 @@ function settleMetricOf(sentence, metricNoun) {
   return m;
 }
 
+// ── [v3.28] 表头单位解析（表格行无行内单位的指引）────────────────────
+// 定位：v3.25 立 form J（表格行/无动词区间）时把「无单位区间」整批列为
+// 结算侧不猜（NOW live 实证「Subscription revenues $4,245 - $4,255」
+// 单位在表头跨句不进 value 串，默认 billion 差 1000 倍）。本轮推进该
+// 已知边界：单位不是「猜」的——财报指引表格的表头**逐字声明**了单位
+// （NOW 0001373715-26-000072 live 实抓逐字：「Third Quarter 2026
+// Non-GAAP Guidance (1) Amount ($ millions) (2) Year/Year Growth (%)
+// … Subscription revenues $3,975 - $3,980」），标记就在行前 ~75 字符。
+// 读表头声明与默认标度有本质区别：前者是公司自己写的口径。
+//
+// 精度纪律（不虚抬，逐条有测试钉住）：
+// ① 行内已有单位（billion/million/bn/B/M/%）不适用——inline 优先，
+//    防双重标度（QCOM「$9.7B - $10.5B」/ UBER「$58.25 billion to
+//    $60.25 billion」行为不变）；
+// ② **每股指标不适用**——财报表头单位声明一律带 except per share
+//    限定（UBER live 逐字「(In millions, except percentages and per
+//    share amounts)… Non-GAAP EPS of $0.84 to $0.88」）：把表头的
+//    million 安到每股行上，$0.84 会变 $840,000，错 6 个数量级。
+//    判据：指标名词或命中句含 per share / eps；
+// ③ 向上就近取**最近**标记（窗口 TABLE_UNIT_WINDOW 内）——表头紧邻
+//    本表行，上一张表的标记更远；本表无标记时误取上表标记的风险由
+//    ①② 挡（无标记表格的行自带单位或非 $ 起始）；
+// ④ 取不到留 null——结算侧按「无单位一律不猜」拒收（v3.25 纪律：
+//    错配成 miss 比不结更坏）。
+const TABLE_UNIT_MARK_RE = /\(\s*(?:\$\s*)?(?:in\s+)?(millions|billions)\b[^)]*\)/gi;
+const TABLE_UNIT_WINDOW = 300;   // NOW live 实测：标记距指引行 ~75 字符
+
+function resolveTableUnit(text, matchIndex, valueStr, metricNoun, sentence) {
+  const v = String(valueStr || '');
+  if (!/^\s*\$/.test(v)) return null;                                  // 只对 $ 起始值（% 区间不适用）
+  // ① 行内已有单位。单位组用 B\b/M\b 而非 \bB\b/\bM\b——QCOM live 逐字
+  // 「$9.7B - $10.5B」的 B 紧贴数字（7B 之间无词边界，\bB\b 匹配不到），
+  // 测试实测抓到该漏洞（守卫漏旗 → 表头 million 会二次标度到 B 行上）。
+  if (/billion|million|bn|B\b|M\b|%/i.test(v)) return null;
+  if (/per\s+share|\beps\b/i.test(String(metricNoun || ''))            // ② 每股指标不适用
+    || /per\s+share/i.test(String(sentence || ''))) return null;
+  const from = Math.max(0, matchIndex - TABLE_UNIT_WINDOW);
+  const win = text.slice(from, matchIndex);
+  let unit = null;
+  TABLE_UNIT_MARK_RE.lastIndex = 0;
+  let mm;
+  while ((mm = TABLE_UNIT_MARK_RE.exec(win)) !== null) unit = mm[1].toLowerCase();  // ③ 最近标记胜出
+  return unit === 'millions' ? 'million' : (unit === 'billions' ? 'billion' : null);
+}
+
 // ── [v3.5] 实际值句式（过去时，与指引的 "is expected to be" 对立）────────
 // 定位：v3.4 登记了 33 条财报指引、15 条到期未结算——v2.13 核心承诺「到期
 // 结算 Brier」对最硬的预测类从未兑现（结算逻辑整个缺失）。业绩发布 EX-99
@@ -973,6 +1018,16 @@ function extractGuidance(text) {
       const valueM = m0.match(/\$\s?[\d.,]+\s*(?:billion|million|bn|tn|trillion)?/i)
         || m0.match(/[\d.]+\s*%/) || m0.match(/[\d.]+\s*basis points/i);
       const tolM = m0.match(/(?:\+\/-|±|plus or minus)\s*(\$?\s?[\d.,]+\s*(?:%|billion|million|basis points|bps)?)/i);
+      // [v3.28] 表头单位解析：无行内单位（且非每股）的 $ 区间/点值，向上
+      // 就近取指引表格表头的单位声明（NOW live 实证「Amount ($ millions)
+      // … Subscription revenues $3,975 - $3,980」）。单位单独成字段——
+      // **不进 value 串**：value 是登记 id 的幂等维度之一（同备案多指引
+      // 靠 metric+value 区分），改它会让台账存量条目换 id 重复登记
+      // （v3.13「metric 不进 id 变更」同型纪律）。结算侧按此字段标度，
+      // 取不到（null）时行为与 v3.25-v3.27 完全一致（无单位不猜）。
+      const unit = resolveTableUnit(text, m.index,
+        rangeM ? rangeM[0] : (valueM ? valueM[0] : null),
+        metricM ? metricM[0] : null, sentence);
       // 前提削减：指引句之后 300 字符内的限定句（实测 NVIDIA 的
       // "NVIDIA is not assuming any Data Center compute revenue from China"
       // 就写在指引句后面一句）。matchEnd 已在上面期间匹配处算好。
@@ -1008,6 +1063,10 @@ function extractGuidance(text) {
         // value（DELL 一句双 EPS live 实证）、form L 的 m[0] 吃进句点
         // （"between $1.06 and $1.08."）——trim 只去空白，标点显式剥。
         value: rangeM ? rangeM[0].replace(/\s+/g, ' ').trim().replace(/[,;:.]+$/, '') : (valueM ? valueM[0].replace(/\s+/g, ' ').trim().replace(/[,;:.]+$/, '') : null),
+        // [v3.28] 表头单位（'million' | 'billion' | null）：无行内单位的
+        // 表格行指引从表头声明解析（见 resolveTableUnit）。只作结算侧
+        // 标度提示，不改 value 文本（id 稳定性）。
+        unit,
         isRange: !!rangeM,
         tolerance: tolM ? tolM[1].replace(/\s+/g, ' ').trim().replace(/[,;:.]+$/, '') : null,
         quarter, fiscalYear,
@@ -1563,6 +1622,8 @@ module.exports = {
   ACTUAL_SALES_INCREASED_RE, QUARTER_ENDED_RE, MAX_8K_PER_COMPANY,
   // [v3.13] 结算配对用导出：口径推导 / 指标族推导 / 新实际值形态（测试）
   gaapBasisOf, settleMetricOf, guidanceNounKey, METRIC_NOUNS,
+  // [v3.28] 表头单位解析（无行内单位表格行指引的单位声明读取，测试）
+  resolveTableUnit, TABLE_UNIT_MARK_RE, TABLE_UNIT_WINDOW,
   ACTUAL_MARGIN_BULLET_RE, ACTUAL_EPS_RE, ACTUAL_OPINC_RE, ACTUAL_REVENUE_GREW_RE, FULLYEAR_GUARD_RE,
   // [v3.14] META CFO 评论式指引形态 + 多季度守卫 + bullet 营收实际值（测试）
   GUIDANCE_EXPECTS_GAP_RE, MULTI_PERIOD_RE, ACTUAL_REVENUE_BULLET_RE,
