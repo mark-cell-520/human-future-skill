@@ -12544,3 +12544,60 @@ c3301('id 稳定性：长 value 串切片后不残留尾随连字符', (() => {
     else _fsS.writeFileSync(_LEDGER_S, _savedS);
   }
 })();
+
+// ════════════════════════════════════════════════════════════════
+// v3.30.2 认知公式桥风险期望值的浮点收口
+//
+// 实测：2026-10-31 报告「认知公式评估」段渲染出
+//   - **风险期望值**: -0.8400000000000001（最坏情况贡献 -0.26）
+// 同一段贝叶斯 0.6444 / 折现 0.8264 / Brier 0.2533 都在 runFormulaBridge
+// 内 toFixed(4) 过，只有 riskAdjustedExpectation 的返回值是裸浮点和直接
+// 透传。0.5*0.6 + 0.1*(-0.9) = 0.20999999999999996。
+// ════════════════════════════════════════════════════════════════
+const v3302 = [];
+function c3302(name, ok, detail) { v3302.push({ name, ok, detail }); }
+
+c3302('认知公式桥：风险期望值 toFixed 收口，不透传浮点长尾', (() => {
+  const M = require('./human-future/scripts/cognitive-formula-bridge.js');
+  const cases = [
+    [{ probability: 0.5, impact: 0.6 }, { probability: 0.1, impact: -0.9, worstCase: true }],
+    [{ probability: 0.7, impact: -1.2 }, { probability: 0.3, impact: -0.2, worstCase: true }],
+    [{ probability: 0.33, impact: 0.81 }, { probability: 0.29, impact: -1.07, worstCase: true }],
+  ];
+  for (const sc of cases) {
+    const raw = M.riskAdjustedExpectation(sc);
+    const fixed = M.runFormulaBridge({ scenarios: sc }).formulas.risk;
+    // 收口后的值必须与裸算在 4 位小数内一致，且字符串表示不得出现浮点长尾
+    if (Math.abs(fixed.expectedValue - raw.expectedValue) > 1e-4) return false;
+    if (Math.abs(fixed.worstCaseContribution - raw.worstCaseContribution) > 1e-4) return false;
+    if (String(fixed.expectedValue).length > 8) return false;      // 0.21 / -0.9 / -0.043 均 ≤8
+    if (String(fixed.worstCaseContribution).length > 8) return false;
+  }
+  return true;
+})(), 'riskAdjustedExpectation 返回裸浮点和（0.20999999999999996 / -0.8999999999999999），runFormulaBridge 必须 toFixed(4) 收口——实测报告渲染出 -0.8400000000000001');
+
+c3302('认知公式桥：无 scenarios 时不出 risk 段（不虚构）', (() => {
+  const M = require('./human-future/scripts/cognitive-formula-bridge.js');
+  const out = M.runFormulaBridge({ milestone: { prior: 0.5, evidenceStrength: 0.75, yearsAhead: 2 } });
+  return !out.formulas.risk;
+})(), '没有场景输入不得凭空渲染风险期望值');
+
+// v3.30.2 汇总
+(async () => {
+  try {
+    const results = await Promise.all(v3302.map(c => Promise.resolve(c.ok)));
+    let f = 0;
+    v3302.forEach((c, i) => {
+      const ok = results[i];
+      if (!ok) f++;
+      console.log(`${ok ? '✓' : '✗'} ${c.name}${ok ? '' : '  —— ' + c.detail}`);
+    });
+    console.log(`\nv3.30.2: ${v3302.length - f} 通过, ${f} 失败, 共 ${v3302.length} 个`);
+    if (f > 0) {
+      console.log('结论：认知公式桥风险期望值的浮点收口或「无场景不渲染」纪律有缺。');
+      process.exitCode = 1;
+    } else {
+      console.log('结论：认知公式桥 risk 段与 bayes/discount/brier 同型 toFixed(4) 收口，报告不再渲染 -0.8400000000000001 这类浮点长尾；无场景输入时不出 risk 段。');
+    }
+  } finally { /* 无副作用，无需还原 */ }
+})();

@@ -566,6 +566,16 @@
       "evidence": "台账实测：39 组冲突（21 组 claim 相同 + 18 组 claim 因抽取窗口宽度不同而异，如「EPS $1.22 - $1.42」vs「revenues $1.2B - $1.4B GAAP diluted EPS $1.22 - $1.42」，settlement 元数据完全一致）；迁移后 0 重复 id。测试：基线 540/0 → 加修复 540/0 → 加回归 543/0。live 复跑（测试期间 EDGAR 实抓）新增 40 条真实指引、0 重复 id。",
       "lesson": "「id 绝不能含会变的字段」这条纪律（v2.13 立）只挡住了 claimSentence/date 两族，没挡住**原始串的形态抖动**——同一数值「$3.150 billion」与「$3,150」、同一 value 带不带尾随标点，是两个不同的 slug。判据要从「字段会不会变」细化到「字段的字符串形态会不会变」：进 id 的每一段都要过归一化（trim + 去首尾连字符），且归一化必须在切片之后（切片会制造新的边界垃圾）。同型纪律：修生成逻辑必须同时迁存量，否则新逻辑会在存量里「找不到自己」而重新制造问题——这与 v3.28「value 是登记 id 幂等维度，改它会让存量条目换 id 重复登记」是同一枚硬币的两面。仍在库外（如实）：单位基差（MRVL「Net revenue is expected to be $3.150 billion」句式形态 vs「net revenue $3,150」表格行形态）仍产生两个 id——归一化只处理了形态抖动，没处理 billion/million/无单位的标度归一，需要数值+单位 canonicalize，属能力建设不是修 bug。",
       "resolvedAt": "2026-10-31"
+    },
+    {
+      "id": "corr-2026-055",
+      "reportVersion": "v3.30.2",
+      "severity": "low",
+      "wrongClaim": "2026-10-31 报告「认知公式评估」段渲染出「风险期望值: -0.8400000000000001（最坏情况贡献 -0.26）」。根因：cognitive-formula-bridge.js 的 runFormulaBridge 里 bayes/discount/brier 三个公式都各自 Number(x.toFixed(4)) 收口，只有 riskAdjustedExpectation 的返回值是裸浮点和直接赋给 out.formulas.risk——0.5*0.6 + 0.1*(-0.9) = 0.20999999999999996，渲染层 project-future.js:3101 直接模板串插值，长尾原样进报告。",
+      "rightClaim": "runFormulaBridge 的 risk 分支改为对 riskAdjustedExpectation 的返回值做 Number(toFixed(4)) 收口（expectedValue 与 worstCaseContribution 两个字段），与同函数内 bayes/discount/brier 的收口方式完全同型。修复后 0.20999999999999996→0.21、-0.8999999999999999→-0.9、-0.04299999999999998→-0.043。",
+      "evidence": "报告全文扫描：最新报告 1 处 ≥6 位小数（即该值），历史报告 0 处（risk 段需有 scenarios 输入才触发，属偶发）。裸算 vs 修复后三组对照全部收口。测试 543→545 项。",
+      "lesson": "公式模块的输出收口责任在模块自己，不能推给渲染层——同一个 runFormulaBridge 里四个公式三个收口一个没收，各自单独看都像「渲染层会处理」。判据：任何进报告的数值都要过 toFixed，且同一函数内的收口方式必须同型（corr-2026-014 版本漂移、v3.28 单位透传三处齐修都是「同型必须穷举」）。另：报告级扫描（≥6 位小数的正则）比读代码更容易发现这类缺陷——坏数字在输出里，不在逻辑里。",
+      "resolvedAt": "2026-10-31"
     }
   ]
 }

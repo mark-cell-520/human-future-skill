@@ -95,8 +95,17 @@ function runFormulaBridge(projection = {}) {
   }
 
   // 风险期望
+  // [v3.30.2] 必须 toFixed 收口。实测踩坑：riskAdjustedExpectation 返回裸
+  // 浮点和（0.5*0.6 + 0.1*(-0.9) 之类），IEEE754 累加直接透传到报告里变成
+  // 「-0.8400000000000001」——同一段贝叶斯/折现/Brier 都在本函数内 toFixed(4)，
+  // 只有风险这条漏了，报告读者看到的就是坏数字。与 brier/discount 同型纪律：
+  // 公式模块自己收口，不把原始化责任推给渲染层。
   if (Array.isArray(projection.scenarios) && projection.scenarios.length) {
-    out.formulas.risk = riskAdjustedExpectation(projection.scenarios);
+    const risk = riskAdjustedExpectation(projection.scenarios);
+    out.formulas.risk = {
+      expectedValue: Number(risk.expectedValue.toFixed(4)),
+      worstCaseContribution: Number(risk.worstCaseContribution.toFixed(4)),
+    };
   }
 
   return out;
