@@ -536,6 +536,26 @@
       "evidence": "live 端到端（294 条池，EDGAR 缓存先删再跑）：结算段 settled 6 条（QCOM Q2/Q3 GAAP/非GAAP EPS×4 + 营收×2，另有 2 条 CSCO 营收当轮落账）；QCOM 分部营收指引（QCT/QTL）4 条按纪律保持 pending（分部 settleMetric 前缀后 actualIndex 无对应 key，不错配总量实际值判假 miss）；PLTR 02-02 备案期间锚从「全不命中」变命中（v3.20 夹具断言随 live 推进更新）；npm test 529/0；8 轮反向验证全部精确失败（R1 摘除期间锚泛化→2/R2 摘除营收 colon 复数→2/R3 摘除 EPS colon→1/R4 摘除分部前缀→1/R5b 摘除每股分支→1/R6 摘除 perShare 透传→1/R7 摘除注入口径限定→1/R8 版本漂移→1；每轮还原字节校验一致）。R5 首跑摘除方式把函数参数改名导致函数体内引用未定义变量、整段测试崩溃（NO-SUMMARY 而非精确失败）——改「条件永假」摘除法后精确失败 1 条（v3.11/v3.22「摘除类测试崩溃不是精确失败」同型第五次实证）。",
       "lesson": "① 「某公司实际值侧抽不到」这类否定式边界必须拆到形态级再记录——本轮证明同一句边界里混着「期间锚正则太紧」「标题句式未枚举」「区间纪律误伤」三种完全不同的修法，混成一句会让下一轮不知道从哪下手（corr-2026-041「已知边界的修法预设可能与实证所需形态不同」同型：修法必须从实证句子本身推）；② 防误伤纪律（v3.25「尾侧单位必填」防 NOW 无单位区间错标度）与「该形态本就无单位」要分开判——每股区间的尾侧无单位是量纲正确而非缺失，判据在指标族（调用方推导的 perShare）不在值串形态；配套千分位守卫（perShare=true 也不许把 $4,245 - $4,255 解析成 4245 美元/股）钉住误传面；③ 分部指标与总量指标共用 settleMetric 是错配温床——实际值侧只抽总量时，分部指引必须加分部前缀走 pending（宁可 pending 不判假 miss，v3.25「错配成 miss 比不结更坏」同型）。",
       "resolvedAt": "2026-10-31"
+    },
+    {
+      "id": "corr-2026-052",
+      "reportVersion": "v3.30",
+      "severity": "medium",
+      "wrongClaim": "（设计缺陷）v3.30 给 actuals 加「口径词+指标名词+of+单值」形态（CSCO News Summary live 实证）时，第一版只有区间 lookahead 一条守卫，隐含假设「of+单值是实际值摘要段的专利」。live 复测证明同一个表层形态在三类句子里都存在：① UBER 指引段「we anticipate: … Non-GAAP EPS of $0.84 to $0.88」（区间腿被 lookahead 挡掉，但正则回溯会把 $0.84 退成 $0.8 仍匹配——lookahead 只挡完整值后面的区间腿，退短后的「4 to…」不是区间标记、守卫放行）；② ANET highlights「GAAP and non-GAAP operating margin of 45.4% and 49.9%, respectively, compared to GAAP and non-GAAP operating margin of 44.7% and 48.8% in the second quarter of 2025」（双口径 respectively + 同比重复，抽出来会把 GAAP 值 45.4% 归到 non-gaap 口径、把 2025 年同比值当本财季实际值）；③ ANET outlook「we expect: … Non-GAAP operating margin of approximately 46%」（approximately 挡住匹配，但无 approximately 的 expect+of+单值会直穿）。",
+      "rightClaim": "四条守卫齐上才把同形态的指引值/双口径误归/同比值全部挡下（每条带「摘除守卫后同位置安得上」的分支触达证明）：① 区间 lookahead（of+$X to $Y 指引区间句零误收）+ 值边界守卫 (?![\\d.])(?!,\\d)（防正则回溯把 $0.84 截成 $0.8，顺带挡千分位不完整值 $4,245→$4）；② 「GAAP and <口径词>」双口径 respectively 整条不收（respectively 归属逻辑未实现，NVDA 双百分号同型纪律：错归口径比漏报危险）；③ compared to/versus/vs 紧邻前缀不收（同比值不是本财季实际值）；④ 匹配点前 150 字符窗内的指引动词（expect/anticipate/estimate/forecast/project）不收。纪律升级：新形态进库时必须拿「同形态在别的语用场景的 live 句子」过堂——一个表层形态服务实际值与指引两类句子时，「形态命中」不等于「命中是实际值」。",
+      "evidence": "UBER 0001543151-26-000027 指引段 live 逐字（区间 of 形态）、ANET 0001596532-26-000174 highlights live 逐字（双口径 respectively+同比）、ANET 0001596532-26-000010 outlook live 逐字（expect+approximately）、测试 T3/T4/T5/T6 四条精度夹具（各带分支触达证明）；回溯绕过由 T3 首跑实测抓到（hits(guide)===1 而非 0）。",
+      "lesson": "同一表层形态（口径词+名词+of+值）在财报里服务两类句子：摘要段的实际值与指引段的期望值——新形态的精度设计必须按「这条形态还可能在哪种句子里出现」枚举守卫，不能只按「我想收的那句」设计；正则的负向 lookahead 会被回溯绕过（值退短后区间腿不再是区间标记），值后面必须加边界守卫；每条守卫的夹具都要能证明「摘除它这句就会误收」。",
+      "resolvedAt": "2026-10-31"
+    },
+    {
+      "id": "corr-2026-053",
+      "reportVersion": "v3.30",
+      "severity": "medium",
+      "wrongClaim": "（夹具缺陷）v3.30 测试第一版的两处夹具不是 live 逐字：① ANET Q4 毛利率夹具把备案前言压缩了（headline+highlights 直接相接），同比句「compared to the third quarter of 2025」被挤进 extractActuals 的 head=400 窗，RESULTS_HEADLINE_RES 通用形态先匹配到它 → 期间锚解析成 q=3 FY=2025（正确是 q=4 FY=2025）——真实备案里锚句「today announced financial results for its fourth quarter and the full year ended December 31, 2025」在 highlights 之前、head 窗内没有同比句；② 受控台账 fixture 给 CSCO 用了 fiscalYearEnd '1231'（日历年末），FY2026 Q3 的 dueOn 被算成 2026-11-14（未来）→ 到期门正确地不结算，测试看不到结算。",
+      "rightClaim": "两处夹具改为 live 逐字：① ANET 夹具用 0001596532-26-000010 真实 lead（EX-99.1 头+标题+SANTA CLARA 前言含锚句+Financial Highlights 段，stripHtml 后原样），期间锚恢复 q=4 FY=2025；② 受控台账 fixture 按公司真实财年末传参（CSCO '0726'、UBER '1231'），dueOn 恢复已到期（CSCO Q3≈2026-06-14），四条结算真实发生。",
+      "evidence": "probe-real-leads.js 实抓两份备案 lead 逐字；T5/T8 两测试首跑失败输出（q=3 FY=2025 / settled 0 条）；改为真实 lead+真实财末后 T5/T8 通过。",
+      "lesson": "测试夹具的「压缩」会改变被测代码看到的上下文——期间锚在 head=400 窗内竞争（标题形态 vs 同比句），财年末决定 dueOn 到期门；夹具必须 live 逐字（含前言与锚句的相对位置），受控台账 fixture 必须用公司真实 fiscalYearEnd。corr-2026-047「夹具必须 live 逐字」同型第二次实证（第一次是正则走不到分支，这次是锚句被挤出窗口）。",
+      "resolvedAt": "2026-10-31"
     }
   ]
 }

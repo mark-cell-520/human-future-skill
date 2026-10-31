@@ -681,6 +681,44 @@ const ACTUAL_REVENUE_COLON_RE = new RegExp(
 // 精度：值无单位（每股），结算侧 parseMetricValue 按每股解析
 // （与指引侧 $1.26 - $1.46 同量纲）。
 const ACTUAL_EPS_COLON_RE = /(non-?gaap|gaap)\s+eps\s*:\s*\$([\d.]+)/gi;
+// [v3.30] News Summary「口径词 + 指标名词 + of + 单值」实际值形态（CSCO
+// live 实证逐字，2026-10-31 实抓 0000858877-26-000006/000075 两份备案
+// 的 News Summary 段）：
+//   CSCO 02-11（Q2 FY2026）：「GAAP EPS of $0.80, up 31% year over
+//     year; and Non-GAAP EPS of $1.04, … GAAP gross margin of 65.0%
+//     and Non-GAAP gross margin of 67.5%; GAAP operating margin of
+//     24.6% and Non-GAAP operating margin of 34.6%」
+//   CSCO 05-13（Q3 FY2026）：同结构（$0.85/$1.06、63.6%/66.0%、
+//     25.0%/34.2%）
+// 无 was/were、无冒号、无 net income+or per diluted share 结构——旧
+// 三个实际值形态全部不命中，CSCO 毛利率/营业利润/EPS 区间指引到期
+// 找不到对账依据（v3.29 已知边界「CSCO 毛利率/EPS 实际值无对应抽取
+// 形态」的 live 实证精确化：形态在摘要段、在 lead 窗口内）。
+// 指标族：gross margin / operating margin / EPS（→diluted eps）。
+// 精度纪律（同形态在指引句里同样存在——UBER live 逐字「Non-GAAP EPS
+// of $0.84 to $0.88」是指引不是实际值，四条守卫逐条有测试钉住）：
+//   ① 只收**单值**（区间 lookahead：of $X to $Y / of $X - $Y 是指引
+//      区间语法，整个不命中——UBER/ANET/QCOM 的 of+区间指引句零误收）。
+//      值边界守卫 (?![\d.])(?!,\d)：没有它，正则回溯会把「$0.84」
+//      退成「$0.8」（lookahead 只挡完整值后面的区间腿，退短后的
+//      「4 to…」不是区间标记、守卫放行——实测抓到的回溯绕过）；
+//      顺带挡千分位不完整值（「$4,245」不会被截成「$4」）；
+//   ② 「GAAP and <口径词>」双口径 respectively 形态整条不收——
+//      ANET live 逐字「GAAP and non-GAAP operating margin of 45.4%
+//      and 49.9%, respectively」 respectively 归属逻辑未实现
+//      （NVDA 双百分号 respectively 同型纪律：错归口径比漏报危险，
+//      且同句 compared to 还会带同比值）；
+//   ③ 「compared to / versus / vs」紧邻前缀不收（同比值不是本财季
+//      实际值——ANET live 逐字「compared to GAAP gross margin of
+//      64.6% in the third quarter of 2025」）；
+//   ④ 匹配点前 150 字符窗内的指引动词（expect/anticipate/estimate/
+// forecast/project）不收（指引段的 of+单值点值——ANET live 逐字
+//      「we expect: … Non-GAAP operating margin of approximately
+//      46%」由 approximately 与本守卫双挡）。
+const ACTUAL_METRIC_OF_RE = /(GAAP|non-GAAP)\s+(gross\s+margin|operating\s+margin|EPS)\s+of\s+(\$\s?[\d.,]+|[\d.,]+%)(?![\d.])(?!,\d)(?!\s*(?:to|[-–—])\s*\$?[\d.])/gi;
+const METRIC_OF_DUAL_RE = /GAAP\s+and\s+$/i;                       // ② 双口径 respectively
+const METRIC_OF_COMPARE_RE = /(?:compared\s+to|versus|vs\.?)\s+$/i;  // ③ 同比引用
+const METRIC_OF_GUIDE_RE = /\b(?:expects?|anticipates?|estimates?|forecasts?|projects?)\b/i;  // ④ 指引动词
 // [v3.20] PLTR grew-to 营收实际值形态。live 实证（2026-10-27 实抓
 // 0001321655-26-000026/000039 亮点段逐字）：
 //   「• Revenue grew 85% year-over-year and 16% quarter-over-quarter
@@ -1297,6 +1335,25 @@ function extractActuals(text) {
     if (!notFullYear(m)) continue;
     push('diluted eps', gaapBasisOf(m[1]), '$' + m[2]);
   }
+  // [v3.30] News Summary「口径词+指标名词+of+单值」形态（CSCO live
+  // 实证，见 ACTUAL_METRIC_OF_RE 注释）。三条守卫：双口径
+  // respectively / 同比引用 / 指引动词窗——同形态在指引句里同样
+  // 存在（UBER「Non-GAAP EPS of $0.84 to $0.88」由区间 lookahead
+  // 挡、ANET 双口径与同比值由后两条挡），错收指引值会把实际值
+  // 索引污染成错事实（v3.25「错配成 miss 比不结更坏」同型）。
+  for (const m of lead.matchAll(ACTUAL_METRIC_OF_RE)) {
+    const pre20 = lead.slice(Math.max(0, m.index - 20), m.index);
+    if (METRIC_OF_DUAL_RE.test(pre20)) continue;        // ② GAAP and … respectively
+    if (METRIC_OF_COMPARE_RE.test(pre20)) continue;     // ③ compared to 同比值
+    const pre150 = lead.slice(Math.max(0, m.index - 150), m.index);
+    if (METRIC_OF_GUIDE_RE.test(pre150)) continue;      // ④ 指引动词窗
+    if (!notFullYear(m)) continue;
+    const family = /eps/i.test(m[2]) ? 'diluted eps' : m[2].toLowerCase();
+    // 去尾标点（v3.25 value 纪律同型）：句末值（「of $0.75.」）会被
+    // 值组吸进句点，落账前剥掉——actuals 索引的 value 要能进
+    // parseMetricValue。
+    push(family, gaapBasisOf(m[1]), m[3].replace(/\s+/g, '').replace(/[,.;:]+$/, ''));
+  }
   // [v3.13] 合并营业利润实际值（AMZN）
   for (const m of lead.matchAll(ACTUAL_OPINC_RE)) {
     if (!notFullYear(m)) continue;
@@ -1686,6 +1743,8 @@ module.exports = {
   ACTUAL_SALES_INCREASED_RE, QUARTER_ENDED_RE, MAX_8K_PER_COMPANY,
   // [v3.13] 结算配对用导出：口径推导 / 指标族推导 / 新实际值形态（测试）
   gaapBasisOf, settleMetricOf, guidanceNounKey, METRIC_NOUNS,
+  // [v3.30] News Summary「口径词+指标名词+of+单值」实际值形态（测试）
+  ACTUAL_METRIC_OF_RE, METRIC_OF_DUAL_RE, METRIC_OF_COMPARE_RE, METRIC_OF_GUIDE_RE,
   // [v3.28] 表头单位解析（无行内单位表格行指引的单位声明读取，测试）
   resolveTableUnit, TABLE_UNIT_MARK_RE, TABLE_UNIT_WINDOW,
   ACTUAL_MARGIN_BULLET_RE, ACTUAL_EPS_RE, ACTUAL_OPINC_RE, ACTUAL_REVENUE_GREW_RE, FULLYEAR_GUARD_RE,
