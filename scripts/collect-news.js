@@ -33,8 +33,12 @@ const { collectEdgarFilings } = require('../human-future/scripts/edgar-collector
 //   用户 2026-10-20 要求「增加一个专项大模型的趋势和最新进展」。原采集源里
 //   没有任何一家模型厂商的一手源，导致大模型方向的信号只能从二手科技媒体
 //   转述里捡，且型号更新（GPT/Gemini/Claude/开源家族）几乎必然滞后。
-//   本域 9 个源全部经过实测可达（8 秒超时内全部返回 200 且有 item/entry），
-//   每源最多取 8 条，防止 OpenAI 那种 1300 条的历史 feed 把候选池撑爆。
+//   本域 12 个源（9 个 v2.7 实测源 + Anthropic sitemap / EU AI Act / NIST），
+//   每源最多取 12 条，防止 OpenAI 那种 1300 条的历史 feed 把候选池撑爆。
+//   [2026-10-31 源可靠性审计] v2.7 当年写的是「8 秒超时内全部返回 200」，
+//   2026-10-31 复测证明这句话对 MIT News 不成立：实测 27-40 秒才返回
+//   （530KB），8 秒默认超时下 14 轮报告里只进去 8 轮。慢源已按源给
+//   超时预算（见下方 timeoutMs），不再靠全局 FETCH_TIMEOUT_MS 一刀切。
 //   厂商一手源 + 两家分析型 newsletter（Interconnects / Understanding AI /
 //   Transformer News）覆盖「官方发布」与「业界解读」两侧。
 const RSS_SOURCES = {
@@ -50,7 +54,14 @@ const RSS_SOURCES = {
     { name: 'Google DeepMind Blog', url: 'https://deepmind.google/blog/rss.xml' },
     { name: 'Microsoft Research Blog', url: 'https://www.microsoft.com/en-us/research/feed/' },
     { name: 'NVIDIA Blog', url: 'https://blogs.nvidia.com/feed/' },
-    { name: 'MIT News - AI', url: 'https://news.mit.edu/rss/topic/artificial-intelligence2' },
+    // [2026-10-31 源可靠性审计] timeoutMs=45000：2026-10-31 串行复测该源
+    // 27.1 秒 / 40.0 秒才返回（530KB），8 秒默认超时下整源被静默丢掉——
+    // 14 轮报告里只进去 8 轮（缺的轮次日志只有一行 [WARN] 抓取失败，
+    // 没有任何断言会红，所以这个缺口存在了很久没人发现）。
+    // 与 EU AI Act 同款做法：慢源单独给预算，不抬高全局 FETCH_TIMEOUT_MS
+    // （健康源仍在 8 秒内返回，不为个别慢源拖慢每一轮）。
+    { name: 'MIT News - AI', url: 'https://news.mit.edu/rss/topic/artificial-intelligence2',
+      timeoutMs: 45000 },
     { name: 'Interconnects', url: 'https://www.interconnects.ai/feed' },
     { name: 'Understanding AI', url: 'https://www.understandingai.org/feed' },
     { name: 'Transformer News', url: 'https://www.transformernews.ai/feed' },
@@ -105,10 +116,15 @@ const RSS_SOURCES = {
   // 诚实性说明：这些是**政策公告与研究解读**，不是原始统计序列
   // （失业率、CPI 等数值需 FRED/BLS，当前不可用）。
   // 报告里不得把它们当成统计数据引用，只能当「政策与研究动向」。
+  // [2026-10-31 源可靠性审计] ECB/NBER 按源给超时预算。
+  // v2.14 只把 sitemap 页面解析移出第一阶段，没解决 RSS 并行抢占本身：
+  // 2026-10-31 复测 NBER 1.7-18 秒大幅波动、ECB 偶发 >8 秒，14 轮报告里
+  // NBER 只进 10 轮、ECB 12 轮（npm test 自己的采集段也在打
+  // 「economy/NBER Working Papers 抓取失败: This operation was aborted」）。
   economy: [
     { name: 'Federal Reserve (Monetary)', url: 'https://www.federalreserve.gov/feeds/press_monetary.xml' },
-    { name: 'ECB Press', url: 'https://www.ecb.europa.eu/rss/press.html' },
-    { name: 'NBER Working Papers', url: 'https://www.nber.org/rss/new.xml' },
+    { name: 'ECB Press', url: 'https://www.ecb.europa.eu/rss/press.html', timeoutMs: 25000 },
+    { name: 'NBER Working Papers', url: 'https://www.nber.org/rss/new.xml', timeoutMs: 30000 },
     { name: 'EconBrowser', url: 'https://econbrowser.com/feed' },
   ],
   // ── 商业域 ────────────────────────────────────────────────────
@@ -675,6 +691,30 @@ async function fetchAll(opts = {}) {
   // 两段分离后，页面解析不再占用任何现有源的超时窗口。
   const results = await Promise.all(needFetch.map(({ domain, src }) =>
     (src.type === 'sitemap' ? fetchSitemapEntries(src) : fetchFeed(src))));
+  // [2026-10-31 源可靠性审计] 失败源串行重试一轮。
+  //
+  // 2026-10-31 实测：23 个源一把 Promise.all 时，每轮有 1-3 个源被丢，
+  // 而且丢的是谁逐轮轮换（MIT News / 微软研究院 / NBER / Ars Technica 都丢过）——
+  // 同一个源单独请求 0.5-3.6 秒就回来，并行下却 27-40 秒或被连接重置。
+  // 这是**竞争**不是源坏：把超时从 8 秒抬到 45 秒也只剩部分缓解
+  // （MIT News 仍在 45 秒档下被丢过，NBER 出过 fetch failed 连接错）。
+  //
+  // 串行重试只跑失败的那 1-3 个源，没有竞争，几乎必然成功；
+  // 代价是每轮多 1-5 秒（只在真有失败时才花）。
+  // 与正文抓取的有界并发（4 条一批）是同一条纪律：别让 20 多个请求
+  // 同时挤一条出口。
+  const failedJobs = [];
+  for (let i = 0; i < needFetch.length; i++) {
+    if (!results[i] || !results[i].ok) failedJobs.push(i);
+  }
+  for (const i of failedJobs) {
+    const { domain, src } = needFetch[i];
+    const r = await (src.type === 'sitemap' ? fetchSitemapEntries(src) : fetchFeed(src));
+    results[i] = r;
+    if (r.ok) {
+      console.log(`  [live] ${domain}/${src.name}: ${r.items.length} 条（并行竞争失败，串行重试成功）`);
+    }
+  }
   for (let i = 0; i < needFetch.length; i++) {
     const { src } = needFetch[i];
     if (src.type !== 'sitemap') continue;
