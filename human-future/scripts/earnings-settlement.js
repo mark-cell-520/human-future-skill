@@ -78,8 +78,16 @@ function parseMetricValue(str) {
  * 解析出的标度提示（NOW live 实证「Amount ($ millions) … Subscription
  * revenues $3,975 - $3,980」）。只在调用方给出提示时生效（无提示一律
  * 不猜，v3.25 纪律），且行内已有单位的值串不走该分支（防双重标度）。
+ * [v3.29] perShare 参数：每股区间指引（QCOM live 实证「GAAP diluted
+ * EPS $1.26 - $1.46」/ ANET「between $1.06 and $1.08」）的尾侧本就
+ * 无单位（每股美元值的量纲不是 million/billion），v3.25「尾侧单位
+ * 必填」纪律把它们整批挡在库外（区间解析失败）。判据与 unitHint
+ * 一一对应：只在调用方显式给出 perShare（指标族是 diluted eps，由
+ * 元数据推导不是猜）且值串行内无单位时生效——NOW「$4,245 -
+ * $4,255」（无单位千分位报表值，表头 million）的 perShare=false
+ * 照旧被「尾侧必填」挡掉，不猜纪律不回退。
  */
-function parseRange(str, unitHint) {
+function parseRange(str, unitHint, perShare) {
   const s = String(str || '');
   const mDollar = s.match(/between\s+\$?\s?([\d.,]+)\s*(billion|million|%)?\s+and\s+\$?\s?([\d.,]+)\s*(billion|million|%)?/i);
   if (mDollar) {
@@ -95,7 +103,21 @@ function parseRange(str, unitHint) {
     // （$1.06 → $10.6 亿）——不猜，返回 null 由调用方跳过（错配成 miss
     // 比不结更坏）。既有 live 数据（AMZN/NVDA 税率/PLTR/META）都带单位
     // 或 %，行为不变。
-    if (!mDollar[2] && !mDollar[4]) return null;
+    // [v3.29] perShare 例外：每股指标的 between-and 无单位区间是合法
+    // 可结算形态（ANET live 实证；QCOM 走下方裸区间分支）。perShare
+    // 由调用方从指标族（diluted eps）推导，不是猜——无提示时本行
+    // 照旧 return null（v3.25 纪律保持，探针/测试钉住）。
+    if (!mDollar[2] && !mDollar[4]) {
+      // [v3.29] perShare 例外 + 千分位守卫：每股指标的量纲（单股美元
+      // 收益）不存在千分位写法——带千分位逗号的是千/百万级报表值
+      // （v3.17 千分位报表防错标度同型纪律）。守卫钉住：perShare=true
+      // 也不许把 NOW「$4,245 - $4,255」解析成 4245 美元/股。
+      if (perShare && !/\d,\d{3}/.test(s)) {
+        return { lo: Number(mDollar[1].replace(/,/g, '')),
+          hi: Number(mDollar[3].replace(/,/g, '')), unit: 'usd' };
+      }
+      return null;
+    }
     const scale = (u) => (u && SCALE[u.toLowerCase()]) || 1e9; // 营收区间默认 billion
     return { lo: Number(mDollar[1].replace(/,/g, '')) * scale(mDollar[2]),
       hi: Number(mDollar[3].replace(/,/g, '')) * scale(mDollar[4]), unit: 'usd' };
@@ -166,6 +188,18 @@ function parseRange(str, unitHint) {
         hi: Number(mHint[2].replace(/,/g, '')) * sc, unit: 'usd' };
     }
   }
+  // [v3.29] 每股区间（QCOM live 实证）：perShare 由调用方从指标族推导
+  // （diluted eps），值串行内无单位（$1.26 - $1.46 的尾侧没有
+  // million/billion，每股量纲）。lo/hi 取原值、unit='usd'——实际值侧
+  // 「$6.88」parseMetricValue 同落 usd（$ 前缀无单位按美元计），
+  // 同指标族（diluted eps）下量纲一致。无 perShare 提示不进本分支
+  // （NOW 无单位区间照旧 return null，v3.25 不猜纪律）。
+  if (perShare && !/billion|million|bn|B\b|M\b|%/i.test(s) && !/\d,\d{3}/.test(s)) {
+    const mPS = s.match(/\$\s?([\d.,]+)\s*(?:[–-]|\bto\b)\s*\$?\s?([\d.,]+)/i);
+    if (mPS) {
+      return { lo: Number(mPS[1].replace(/,/g, '')), hi: Number(mPS[2].replace(/,/g, '')), unit: 'usd' };
+    }
+  }
   return null;
 }
 
@@ -176,10 +210,12 @@ function parseRange(str, unitHint) {
  * [v3.28] unit 参数：表格行无行内单位时抽取侧从表头声明解析的标度提示
  * （'million' | 'billion'），只透传给 parseRange 的区间分支——点值+
  * 容差路径不用它（% 容差的标度语义与区间不同，无 live 实证不扩）。
+ * [v3.29] perShare 参数：每股区间指引标记（指标族 diluted eps），
+ * 透传给 parseRange 的每股分支（QCOM EPS live 实证）。
  */
-function guidanceBand(guidedValue, tolerance, isRange, unit) {
+function guidanceBand(guidedValue, tolerance, isRange, unit, perShare) {
   if (isRange) {
-    const r = parseRange(guidedValue, unit);
+    const r = parseRange(guidedValue, unit, perShare);
     return r ? { lo: r.lo, hi: r.hi, unit: r.unit, guidedN: (r.lo + r.hi) / 2, tolAbs: (r.hi - r.lo) / 2, basis: 'range' } : null;
   }
   if (!tolerance) return null; // 无容差的点值指引：不自动结算
@@ -210,7 +246,7 @@ function guidanceBand(guidedValue, tolerance, isRange, unit) {
  *   settleable=false 时 reason 说明为何不自动结算（无带/单位不兼容）。
  */
 function settleGuidance(g, actualValue) {
-  const band = guidanceBand(g.value, g.tolerance, g.isRange, g.unit);
+  const band = guidanceBand(g.value, g.tolerance, g.isRange, g.unit, g.perShare);
   if (!band) {
     return { settleable: false, reason: g.isRange ? '区间解析失败' : (g.tolerance ? '容差单位无法解释' : '无容差/区间的点值指引，不自动结算') };
   }

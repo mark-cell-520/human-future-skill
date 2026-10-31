@@ -344,7 +344,7 @@ class ProjectionEngine {
     }
     const report = {
       meta: {
-        version: '3.28.0',
+        version: '3.29.0',
         heartflowVersion: this.analysis.engineVersion,
         timestamp: this.timestamp,
         modulesLoaded: this.analysis.modulesLoaded,
@@ -1879,6 +1879,11 @@ class ProjectionEngine {
             // false，全靠当期句反推拿到正确元数据——提示也必须从当期
             // 指引来，持久化 settlement 没有这个字段）。
             unit: g.unit || null,
+            // [v3.29] 每股区间标记（QCOM live 实证「GAAP diluted EPS
+            // $1.26 - $1.46」）：从指标族推导（diluted eps），供
+            // parseRange 每股分支解析尾侧无单位的区间——与 unit 同型
+            // 透传（只抽不落=备案滑出窗口后提示丢失，corr-2026-035）。
+            perShare: /eps|per\s+share/i.test(normalizeMetric(g.settleMetric || g.metric)),
           };
           const ns = normSentence(g.sentence);
           const nk = guidanceNounKey(g.sentence);
@@ -1937,6 +1942,10 @@ class ProjectionEngine {
           // [v3.28] 表头单位提示：v3.28 起登记的条目 settlement.unit 有值；
           // 更早的条目没有该字段（undefined → null），行为与 v3.27 一致。
           unit: p.settlement.unit || null,
+          // [v3.29] 每股区间标记：持久化 settlement 无此字段，从 claim
+          // 句反推（「GAAP diluted EPS $1.26 - $1.46」的指标名词自带
+          // 每股语义，与句反推路径同判据）。
+          perShare: /eps|per\s+share/i.test(String(p.claim || '')),
         };
       }
       if (!meta || !meta.ticker || !meta.fiscalYear) {
@@ -1967,7 +1976,7 @@ class ProjectionEngine {
         skipped.push({ id: p.id, reason: `${keyBase}${meta.metric} 有 ${actuals.length} 条实际值（GAAP/非 GAAP 分歧或口径未限定），判歧义不自动结算` });
         continue;
       }
-      const verdict = settleGuidance({ value: meta.value, tolerance: meta.tolerance, isRange: meta.isRange, unit: meta.unit }, actuals[0]);
+      const verdict = settleGuidance({ value: meta.value, tolerance: meta.tolerance, isRange: meta.isRange, unit: meta.unit, perShare: meta.perShare }, actuals[0]);
       if (!verdict.settleable) {
         skipped.push({ id: p.id, reason: verdict.reason });
         continue;

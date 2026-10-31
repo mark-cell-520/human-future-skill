@@ -526,6 +526,16 @@
       "evidence": "live 端到端（306 条池，EDGAR 缓存先删再跑）：NOW 6 条指引 unit=million；结算 1 条（beat 带外，方向单独记）；两条「区间解析失败」skip 消失（Q2 当轮结算、Q3 按到期门 pending）；MRVL/DELL/UBER/QCOM/ANET/CSCO 既有指引行 unit=null 零漂移（每股守卫+行内单位优先双挡）；复跑幂等 0 新结算/0 新登记。",
       "lesson": "「不猜 X」类纪律要区分「没有数据」与「没去读数据」——前者是证伪条件，后者是实现缺口（corr-2026-044「引擎不能执行 ≠ 没有数据支撑」在单位维度的同型）。写已知边界时把「当前实现读不到」与「数据不可得」分开写，否则下一轮会把边界当永久事实引用（corr-2026-038「否定式状态必须随每轮全池测量刷新」同族）。附带两条精度纪律：① 表头单位守卫必须假设「标记真的会在窗口内」——本轮每股守卫在 live 池无触发面（各家每股指引行窗口内均无标记），夹具用 DELL live 同表文本（标记与每股行距 131 字符）才钉住分支，并附「摘除守卫后同位置安得上 billion」的触达证明（corr-2026-029/037 纪律）；② 单位组 \\bB\\b/\\bM\\b 匹配不了紧贴数字的「9.7B」（QCOM live 逐字，7B 之间无词边界）——守卫漏旗，测试实测抓到后改 B\\b/M\\b。",
       "resolvedAt": "2026-10-31"
+    },
+    {
+      "id": "corr-2026-051",
+      "reportVersion": "v3.29",
+      "severity": "medium",
+      "wrongClaim": "（沿用假设）v3.25 给六家新公司（QCOM/ANET/CSCO/NOW/UBER/SHOP）写已知边界「实际值侧无行内单位或无对应抽取形态（pending）」时，把三种形态缺口混成了一句话，其中两种实际是「期间锚正则太紧」与「标题句式未枚举」——不是数据不可得。① CSCO 的期间锚句「today reported second quarter results for the period ended January 24, 2026」里季度词与 ended 之间隔着宾语（results for the period），旧 QUARTER_ENDED_RE 要求 quarter 与 ended 紧邻，整个不命中 → actualPeriod 恒 null → actuals 整个返回空，而边界记录让人以为「抽不到值」；② QCOM 备案标题头条「Revenues: $10.6 billion」（复数营收+冒号，旧 colon 正则只认单数）与「GAAP EPS: $6.88, Non-GAAP EPS: $2.65」（口径 EPS 冒号）从来没进过形态库；③ 每股区间指引（QCOM「GAAP diluted EPS $1.26 - $1.46」）被 v3.25「尾侧单位必填」纪律挡掉——该纪律防的是 NOW 无单位千分位区间（$4,245 - $4,255 单位在表头），但每股区间尾侧本就无单位，被连带挡下（区间解析失败）。",
+      "rightClaim": "2026-10-31 live 复测（SEC EDGAR 实抓逐字）三种缺口各自有精确形态：① 期间锚泛化为「quarter 词 + [^.;]{0,40} 间隔 + ended <date>」后 CSCO Q2/Q3 FY2026 两份备案 actualPeriod 从 null 变正确财季（ANET 02-12「fourth quarter and the full year ended December 31, 2025」同型命中）；② revenue colon 名词组补复数 + 新增 EPS colon 口径冒号形态后 QCOM 三份备案营收/EPS 双口径实际值全部入账；③ perShare 标记（由指标族 diluted eps 推导，不是猜）+ 千分位守卫解析每股区间，无提示时 v3.25 纪律完全保持。live 端到端：QCOM Q2/Q3 营收区间 2 条 + EPS 4 条、CSCO Q3/Q4 营收区间 2 条共 8 条真实结算（含 beat 带外与带上沿，方向单独记），「区间解析失败」skip 归 0。",
+      "evidence": "live 端到端（294 条池，EDGAR 缓存先删再跑）：结算段 settled 6 条（QCOM Q2/Q3 GAAP/非GAAP EPS×4 + 营收×2，另有 2 条 CSCO 营收当轮落账）；QCOM 分部营收指引（QCT/QTL）4 条按纪律保持 pending（分部 settleMetric 前缀后 actualIndex 无对应 key，不错配总量实际值判假 miss）；PLTR 02-02 备案期间锚从「全不命中」变命中（v3.20 夹具断言随 live 推进更新）；npm test 529/0；8 轮反向验证全部精确失败（R1 摘除期间锚泛化→2/R2 摘除营收 colon 复数→2/R3 摘除 EPS colon→1/R4 摘除分部前缀→1/R5b 摘除每股分支→1/R6 摘除 perShare 透传→1/R7 摘除注入口径限定→1/R8 版本漂移→1；每轮还原字节校验一致）。R5 首跑摘除方式把函数参数改名导致函数体内引用未定义变量、整段测试崩溃（NO-SUMMARY 而非精确失败）——改「条件永假」摘除法后精确失败 1 条（v3.11/v3.22「摘除类测试崩溃不是精确失败」同型第五次实证）。",
+      "lesson": "① 「某公司实际值侧抽不到」这类否定式边界必须拆到形态级再记录——本轮证明同一句边界里混着「期间锚正则太紧」「标题句式未枚举」「区间纪律误伤」三种完全不同的修法，混成一句会让下一轮不知道从哪下手（corr-2026-041「已知边界的修法预设可能与实证所需形态不同」同型：修法必须从实证句子本身推）；② 防误伤纪律（v3.25「尾侧单位必填」防 NOW 无单位区间错标度）与「该形态本就无单位」要分开判——每股区间的尾侧无单位是量纲正确而非缺失，判据在指标族（调用方推导的 perShare）不在值串形态；配套千分位守卫（perShare=true 也不许把 $4,245 - $4,255 解析成 4245 美元/股）钉住误传面；③ 分部指标与总量指标共用 settleMetric 是错配温床——实际值侧只抽总量时，分部指引必须加分部前缀走 pending（宁可 pending 不判假 miss，v3.25「错配成 miss 比不结更坏」同型）。",
+      "resolvedAt": "2026-10-31"
     }
   ]
 }

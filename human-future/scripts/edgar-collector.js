@@ -619,7 +619,19 @@ const RESULTS_HEADLINE_RES = [
   /(first|second|third|fourth|1st|2nd|3rd|4th)[\s-]quarter\s+(?:of\s+)?(?:fiscal\s+)?(?:year\s+)?(?:and\s+(?:fiscal\s+|full[\s-])?year\s+)?(20\d{2})/i,
 ];
 // [v3.5.1] 标题无年份时的正文权威锚：已报告财季的结束日期。
-const QUARTER_ENDED_RE = /(first|second|third|fourth)\s+quarter\s+ended\s+[A-Za-z]+\s+\d{1,2},\s+(20\d{2})/i;
+// [v3.29] 期间锚泛化：quarter 与 ended 之间容忍间隔（[^.;]{0,40}）。
+// live 实证（2026-10-31 实抓逐字）：CSCO「Cisco today reported second
+// quarter results for the period ended January 24, 2026」与 ANET
+// 「announced financial results for its fourth quarter and the full
+// year ended December 31, 2025」——季度词与 ended 之间隔着
+// 「results for the period」/「and the full year」，旧正则
+// （quarter\s+ended 紧邻）整个不命中、actualPeriod 恒 null、
+// actuals 整个返回空：CSCO Q2/Q3 FY2026 两份备案的营收实际值
+// 抽不到，Q3 FY2026 营收区间指引到期找不到对账依据（v3.25
+// 「CSCO 18 条指引进台账」同型第五波的另一面——指引侧进了、
+// 实际值侧锚缺失）。间隔窗 [^.;] 不过句点（不跨句），
+// {0,40} 覆盖两种 live 形态（最长 22 字符）且不放过段头引用。
+const QUARTER_ENDED_RE = /(first|second|third|fourth|1st|2nd|3rd|4th)\s+quarter\b[^.;]{0,40}?\bended\s+[A-Za-z]+\s+\d{1,2},\s+(20\d{2})/i;
 // [v3.19] 年份前置标题锚（DELL live 实证，见 extractActuals 内注释）：
 // 「results for its fiscal 2027 second quarter」——季度词在年份后的
 // 标题语序。捕获组 1=年份 2=季度词。
@@ -650,8 +662,25 @@ const ACTUAL_SALES_INCREASED_RE = new RegExp(
 // 主模式与 sales-increased 形态都不命中，到期营收指引找不到对账依据。
 // 精度：冒号紧跟名词（只容忍空白）、值紧跟冒号；取第一个匹配——总量
 // 惯例在最前（与主模式同一首匹配纪律，分部营收 bullets 在后不取）。
+// [v3.29] 名词组补复数（revenues?）——QCOM live 逐字「Revenues:
+// $10.6 billion」「Revenues: $9.9 billion」（备案标题头条，复数
+// revenues + 冒号 + billion 单位）。旧正则只认单数 revenue，
+// QCOM 三份在窗备案的实际值营收全部抽不到：FY2026 Q2/Q3 营收
+// 区间指引（$10.2-11.0B / $9.2-10.0B）到期找不到对账依据
+// （v3.25 已知边界「QCOM 实际值侧无对应抽取形态」的 live 实证）。
+// 精度：冒号紧跟名词（只容忍空白），表格行「Revenues $9,947」
+// 无冒号天然不命中。
 const ACTUAL_REVENUE_COLON_RE = new RegExp(
-  `\\b(?:record\\s+|total\\s+|net\\s+)?revenue\\s*:\\s*(?:approximately\\s+)?(\\$\\s?[\\d.,]+\\s*(?:billion|million|bn|m))\\b`, 'i');
+  `\\b(?:record\\s+|total\\s+|net\\s+)?revenues?\\s*:\\s*(?:approximately\\s+)?(\\$\\s?[\\d.,]+\\s*(?:billion|million|bn|m))\\b`, 'i');
+// [v3.29] 每股收益标题冒号形态（QCOM live 逐字：「GAAP EPS:
+// $6.88, Non-GAAP EPS: $2.65」——备案标题头条给两个口径的 EPS
+// 实际值，无 of/was/were、无 net income+or per diluted share
+// 结构，ACTUAL_EPS_RE 整个不命中）。口径词必须紧邻 EPS 冒号
+// （GAAP gross margin 等其它指标不误配）；matchAll 抽两条
+// （gaap / non-gaap 各一，与 v3.13 口径分 key 配对链对齐）。
+// 精度：值无单位（每股），结算侧 parseMetricValue 按每股解析
+// （与指引侧 $1.26 - $1.46 同量纲）。
+const ACTUAL_EPS_COLON_RE = /(non-?gaap|gaap)\s+eps\s*:\s*\$([\d.]+)/gi;
 // [v3.20] PLTR grew-to 营收实际值形态。live 实证（2026-10-27 实抓
 // 0001321655-26-000026/000039 亮点段逐字）：
 //   「• Revenue grew 85% year-over-year and 16% quarter-over-quarter
@@ -1053,7 +1082,35 @@ function extractGuidance(text) {
         // metric 是登记 id 的幂等维度之一（同备案多指引靠 metric+value
         // 区分），改它会让旧条目换 id 重复登记。
         gaapBasis,
-        settleMetric: settleMetricOf(sentence, metricM ? metricM[0] : null),
+        // [v3.29] 分部营收指引防错配（QCOM live 实证）：QCOM 指引表
+        // 同时给总量与分部区间——「Current Guidance Q4 FY26
+        // Estimates Revenues $9.7B - $10.5B」（总量）与
+        // 「Supplemental Revenue Information QCT revenues $8.4B -
+        // $9.0B」「QTL revenues $1.2B - $1.4B」（分部）。旧代码
+        // 分部与总量的 settleMetric 都是 'revenue'，而实际值侧只
+        // 抽总量（ACTUAL_REVENUE_RE 取第一个匹配=总收入，v3.5
+        // 纪律）——分部指引会与总量实际值配对，$8.4-9.0B vs
+        // $10.6B 判**假 miss**（v3.25「错配成 miss 比不结更坏」
+        // 同型）。修法：分部指引的 settleMetric 加分部前缀
+        // （'qct revenue' / 'qtl revenue'）——actualIndex 没有
+        // 对应 key，结算层走 actuals.length===0 → pending
+        // （不结不错配，漏报比误报诚实）。分部值实际值抽取
+        // （Segment Results 表「Total QCT revenues $8,504」）无
+        // live 配对需求（分部区间指引的结算结构不同），留边界。
+        settleMetric: (() => {
+          const base = settleMetricOf(sentence, metricM ? metricM[0] : null);
+          if (!/^(revenue|net sales|total revenue)$/.test(base)) return base;
+          // 名词前 40 字符窗内取**最近**的分部标记（一句双分部时
+          // 最接近指标的那个才是本行归属——live 实证「QCT
+          // revenues $8.4B - $9.0B QTL revenues $1.2B - $1.4B」
+          // 连成一句，第二个匹配的归属是 QTL）。
+          if (nounIdx >= 0) {
+            const pre = text.slice(Math.max(0, nounIdx - 40), nounIdx);
+            const segs = [...pre.matchAll(/\b(QCT|QTL)\b/gi)];
+            if (segs.length) return segs[segs.length - 1][1].toLowerCase() + ' ' + base;
+          }
+          return base;
+        })(),
         // [v3.25] value/tolerance 落账前 trim：GUIDANCE_TABLE_RE 尾部的
         // \s*（单位组前）会把值后的空格吃进 m[0]（"…± $1.00 "），m0 不经
         // sentence 的 trim——tolM 组内 \s* 同样吃掉尾空格，旧行为在已
@@ -1230,6 +1287,13 @@ function extractActuals(text) {
   }
   // [v3.13] 每股收益实际值（MRVL/MU 两种连接形态）
   for (const m of lead.matchAll(ACTUAL_EPS_RE)) {
+    if (!notFullYear(m)) continue;
+    push('diluted eps', gaapBasisOf(m[1]), '$' + m[2]);
+  }
+  // [v3.29] QCOM 标题冒号 EPS 形态（「GAAP EPS: $6.88, Non-GAAP
+  // EPS: $2.65」）。见 ACTUAL_EPS_COLON_RE 注释。值无单位
+  // （每股口径），与指引侧 $ 区间同量纲。
+  for (const m of lead.matchAll(ACTUAL_EPS_COLON_RE)) {
     if (!notFullYear(m)) continue;
     push('diluted eps', gaapBasisOf(m[1]), '$' + m[2]);
   }
