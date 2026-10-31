@@ -2094,7 +2094,7 @@ class ProjectionEngine {
     // 机制假设句，ma 动词形态已收紧）。容量：business 12 / sec_filings 10 /
     // frontier_models 10 / economy 6 / tech 6 / humanities 4——business
     // 仍是第一优先（[v3.22.1] 补 tech/humanities 两桶，见下）。
-    const PICK_BUCKETS = ['business', 'sec_filings', 'frontier_models', 'economy', 'tech', 'humanities'];
+    const PICK_BUCKETS = ['business', 'sec_filings', 'frontier_models', 'economy', 'tech', 'humanities', 'global'];
     // [v3.12] sec_filings 8→10：算力基建承诺主张进池后 sec_filings 候选
     // 增至 10 条（NVDA $500B 资本动员、NVDA/CRWV 5GW AI factories、
     // CRWV 8-K 各一条 + 原有 7 条），8 会把尾部的 $64B server orders 与
@@ -2112,8 +2112,8 @@ class ProjectionEngine {
     // （无 live 实证），同型补齐防同类漏桶（cap 兜底，今天不加条目）。
     // 容量 tech 6 / humanities 4 排在 economy 之后——business 第一优先
     // 纪律不变（v3.10 断言钉住），新桶只做补充不做挤占。
-    const BUCKET_CAP = { business: 12, sec_filings: 10, frontier_models: 10, economy: 6, tech: 6, humanities: 4 };
-    const byBucket = { business: [], sec_filings: [], frontier_models: [], economy: [], tech: [], humanities: [] };
+    const BUCKET_CAP = { business: 12, sec_filings: 10, frontier_models: 10, economy: 6, tech: 6, humanities: 4, global: 8 };
+    const byBucket = { business: [], sec_filings: [], frontier_models: [], economy: [], tech: [], humanities: [], global: [] };
     // [v3.0.0c] 精度门：候选题句必须命中商业主张形态。
     //
     // 实测依据（2026-10-24 轮，修复前）：旧触发器是「句子含 $ / % / market /

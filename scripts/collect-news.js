@@ -153,6 +153,30 @@ const RSS_SOURCES = {
     { name: 'Last Week in AI', url: 'https://lastweekin.ai/feed' },
     { name: 'ProductHunt', url: 'https://www.producthunt.com/feed' },
   ],
+  // ── 全球新闻域（2026-10-31 全球多极化扩容）─────────────────────
+  // 为什么加：v3.29 及以前的全部 RSS 源是英美主导（MIT TR/Nature/OpenAI/
+  // Fed/ECB/TechCrunch…），心理与哲学两个域甚至是空的。推演「人类未来」
+  // 却只读单极大国的叙事，等于用一只手鼓掌。本轮补上多极视角：
+  //   欧洲公共广播（BBC/Guardian/DW/France24）——规范与社福叙事
+  //   全球南方（Al Jazeera）——非西方视角的国际报道
+  //   亚太（SCMP 英文）——中国与亚太的英文一手报道（不比二手转述）
+  //   科学（Science news）——自然科学顶刊新闻（补 humanities 深度）
+  //   太空（SpaceNews）——太空域的一手行业源（原来只有关键词没有源）
+  //   防务地缘（Defense One）——军事/地缘信号
+  //   财经（CNBC top news）——全球资本市场
+  // 全部 2026-10-31 实测可达且解析出真实条目（BBC 35/SCMP 50/半岛 25）。
+  global: [
+    { name: 'BBC News - World', url: 'https://feeds.bbci.co.uk/news/world/rss.xml' },
+    { name: 'The Guardian - World', url: 'https://www.theguardian.com/world/rss' },
+    { name: 'Al Jazeera', url: 'https://www.aljazeera.com/xml/rss/all.xml' },
+    { name: 'France 24 (English)', url: 'https://www.france24.com/en/rss' },
+    { name: 'Deutsche Welle - World', url: 'https://rss.dw.com/rdf/rss-en-world' },
+    { name: 'SCMP - China/Asia', url: 'https://www.scmp.com/rss/91/feed' },
+    { name: 'Science News', url: 'https://www.science.org/rss/news_current.xml' },
+    { name: 'SpaceNews', url: 'https://spacenews.com/feed/' },
+    { name: 'Defense One', url: 'https://www.defenseone.com/rss/all/' },
+    { name: 'CNBC Top News', url: 'https://www.cnbc.com/id/100003114/device/rss/rss.html' },
+  ],
 };
 
 const DOMAIN_NAMES = {
@@ -162,6 +186,8 @@ const DOMAIN_NAMES = {
   psychology: '心理',
   philosophy: '哲学',
   economy: '宏观经济',
+  // [2026-10-31] 全球新闻域：多极国际源（英/欧/全球南方/亚太/科学/太空/防务/财经）
+  global: '全球新闻',
   // [v3.4] SEC EDGAR 一手财报备案（8-K Item 2.02 业绩发布 + EX-99 附件）
   sec_filings: 'SEC 财报备案',
   business: '商业动态',
