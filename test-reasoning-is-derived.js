@@ -12451,3 +12451,96 @@ c3300('版本号一致性：VERSION/package.json/banner/projection meta/run-pipe
     console.log('结论：v3.29 已知边界「CSCO 毛利率/EPS 实际值无对应抽取形态」按 live 实证推进——News Summary 段「口径词+指标名词+of+单值」形态进库（CSCO 两份备案六项 actuals 入账、UBER Q1/Q2 非GAAP EPS 实际值入账），四条守卫钉住同形态的指引句零误收（区间 lookahead/双口径 respectively/同比引用/指引动词窗），CSCO Q3 毛利率与营业利润带内命中、EPS beat 带外、UBER Q2 EPS 带内四条真实结算；Q4 备案摘要无 of 形态如实留界（指引 pending 不硬结）。');
   }
 })();
+
+// ════════════════════════════════════════════════════════════════
+// v3.30.1 指引 id slug 稳定性（台账 39 组重复登记的根因修复）
+//
+// 实测：台账 231 条里有 39 组同一义务被登记两遍，id 只差首尾连字符
+// （…diluted-earnings-per-share--37-84- vs …--37-84）。根因是 id 的
+// metric/value 段直接 slugify 原始串，value 尾部只要带一个非字母数字
+// 字符就留下尾随 '-'。修法：先切片后剥首尾连字符。
+// ════════════════════════════════════════════════════════════════
+const v3301 = [];
+function c3301(name, ok, detail) { v3301.push({ name, ok, detail }); }
+
+const _fsS = require('fs');
+const _LEDGER_S = path.join(__dirname, 'human-future/data/prediction-ledger.json');
+const _savedS = _fsS.existsSync(_LEDGER_S) ? _fsS.readFileSync(_LEDGER_S, 'utf-8') : null;
+
+function _mkGuidanceItem(value, metric, link) {
+  return [{
+    title: 'MRVL 8-K 业绩发布 · 2026-05-27', description: '',
+    body: 'Net revenue is expected to be $2.700 billion +/- 5%.',
+    source: 'SEC EDGAR', bucket: 'sec_filings', origin: 'live',
+    pubDate: '2026-05-27', link, fiscalYearEnd: '0130', ticker: 'MRVL',
+    guidance: [{
+      sentence: 'Net revenue is expected to be $2.700 billion +/- 5%',
+      metric, value, tolerance: '5%', quarter: 2, fiscalYear: 2027,
+      periodLabel: 'FY2027 Q2', caveats: [],
+    }],
+  }];
+}
+function _registerOnce(value, metric, link) {
+  const { ProjectionEngine } = require('./scripts/project-future.js');
+  const eng = new ProjectionEngine({});
+  eng.signals = { totalItems: 1, domains: [], undomained: 0, dateRange: null, items: _mkGuidanceItem(value, metric, link) };
+  return eng.buildForecastDiscrimination();
+}
+
+// 1. value 尾随非字母数字字符不得改变 id（核心回归）
+c3301('id 稳定性：value 尾随标点不改变 id，第二遍被幂等跳过而非重复登记', (() => {
+  const r1 = _registerOnce('$2.700 billion', 'net revenue', 'https://example.com/edgar-mrvl-slug-a');
+  const reg1 = (r1.ledgerRegistration && r1.ledgerRegistration.registered) || [];
+  if (reg1.length !== 1) return false;
+  const id1 = reg1[0].id;
+  if (/[-_]$/.test(id1)) return false;                       // 规范 id 不得以连字符收尾
+  const r2 = _registerOnce('$2.700 billion ', 'net revenue', 'https://example.com/edgar-mrvl-slug-a');
+  const reg2 = (r2.ledgerRegistration && r2.ledgerRegistration.registered) || [];
+  const skip2 = (r2.ledgerRegistration && r2.ledgerRegistration.skipped) || [];
+  // 第二遍必须 0 新登记，且跳过理由是「id 已存在」
+  return reg2.length === 0 && skip2.some(s => /id 已存在/.test(String(s.reason || '')));
+})(), '同一指引两遍抽取（value 尾随空格）必须落到同一个 id——实测台账 39 组重复登记的根因');
+
+// 2. metric 段同样去首尾连字符
+c3301('id 稳定性：metric 尾随标点不改变 id', (() => {
+  const r1 = _registerOnce('$2.700 billion', 'net revenue', 'https://example.com/edgar-mrvl-slug-b');
+  const reg1 = (r1.ledgerRegistration && r1.ledgerRegistration.registered) || [];
+  if (reg1.length !== 1) return false;
+  const r2 = _registerOnce('$2.700 billion', 'net revenue ', 'https://example.com/edgar-mrvl-slug-b');
+  const reg2 = (r2.ledgerRegistration && r2.ledgerRegistration.registered) || [];
+  const skip2 = (r2.ledgerRegistration && r2.ledgerRegistration.skipped) || [];
+  return reg2.length === 0 && skip2.some(s => /id 已存在/.test(String(s.reason || '')));
+})(), 'metric 尾部带空格的同一指引不得新开 id');
+
+// 3. 长 value 串：切片（24）本身会切出尾随连字符，必须再剥一次
+c3301('id 稳定性：长 value 串切片后不残留尾随连字符', (() => {
+  const longVal = '$1.2345678901234567890123456789 billion';
+  const r = _registerOnce(longVal, 'net revenue', 'https://example.com/edgar-mrvl-slug-c');
+  const reg = (r.ledgerRegistration && r.ledgerRegistration.registered) || [];
+  if (reg.length !== 1) return false;
+  const id = reg[0].id;
+  return !/[-_]$/.test(id) && /net-revenue-/.test(id);
+})(), '「先切片后剥」——切片会在 24 字符处切出新的尾随连字符，不剥就复发');
+
+// v3.30.1 汇总
+(async () => {
+  try {
+    const results = await Promise.all(v3301.map(c => Promise.resolve(c.ok)));
+    let f = 0;
+    v3301.forEach((c, i) => {
+      const ok = results[i];
+      if (!ok) f++;
+      console.log(`${ok ? '✓' : '✗'} ${c.name}${ok ? '' : '  —— ' + c.detail}`);
+    });
+    console.log(`\nv3.30.1: ${v3301.length - f} 通过, ${f} 失败, 共 ${v3301.length} 个`);
+    if (f > 0) {
+      console.log('结论：指引 id 的 slug 稳定性回归未全通过——metric/value 段的首尾连字符剥离或切片顺序有缺。');
+      process.exitCode = 1;
+    } else {
+      console.log('结论：指引 id 的 metric/value 段先切片后剥首尾连字符，同一指引不再因 value/metric 尾随标点产生两个 id（台账 39 组重复登记的根因已修，存量 83 条 id 已规范化、39 组已合并）。');
+    }
+  } finally {
+    if (_savedS === null) { try { _fsS.unlinkSync(_LEDGER_S); } catch (_) {} }
+    else _fsS.writeFileSync(_LEDGER_S, _savedS);
+  }
+})();

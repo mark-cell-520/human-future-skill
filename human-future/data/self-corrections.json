@@ -556,6 +556,16 @@
       "evidence": "probe-real-leads.js 实抓两份备案 lead 逐字；T5/T8 两测试首跑失败输出（q=3 FY=2025 / settled 0 条）；改为真实 lead+真实财末后 T5/T8 通过。",
       "lesson": "测试夹具的「压缩」会改变被测代码看到的上下文——期间锚在 head=400 窗内竞争（标题形态 vs 同比句），财年末决定 dueOn 到期门；夹具必须 live 逐字（含前言与锚句的相对位置），受控台账 fixture 必须用公司真实 fiscalYearEnd。corr-2026-047「夹具必须 live 逐字」同型第二次实证（第一次是正则走不到分支，这次是锚句被挤出窗口）。",
       "resolvedAt": "2026-10-31"
+    },
+    {
+      "id": "corr-2026-054",
+      "reportVersion": "v3.30.1",
+      "severity": "high",
+      "wrongClaim": "台账 prediction-ledger.json 231 条里有 39 组同一义务被登记两遍，id 只差首尾连字符（…diluted-earnings-per-share--37-84- vs …--37-84；…income--0-31- vs …--0-31）。根因：scripts/project-future.js 构造 id 时 metric/value 段直接 String(x).replace(/[^a-z0-9]+/gi,'-')，value 串尾部只要带一个非字母数字字符（尾随空格、句点、±、千分位逗号后的收尾）就留下尾随 '-'。同一条指引两遍抽取一遍带一遍不带 → 两个 id → record() 的「id 已存在」幂等守卫失效 → 登记两条。另：存量 83 条 id 带首尾连字符，其中 44 条没有规范化兄弟条目——只修生成逻辑不迁存量，引擎下次生成规范 id 时找不到存量条目，会把重复重新造出来。",
+      "rightClaim": "① 生成逻辑：抽出 slug(s, max) 助手，先切片后剥首尾连字符（先剥后切片会在 24/40 字符处切出新的尾随连字符），source/urlTail/dueOn/metric/value 五段全部走它；② 存量迁移：83 条 id 规范化 + 39 组冲突合并（判据=组内 gaapBasis 一致 + value 去首尾标点后一致；无 settlement 元数据时回落 claim 数值集合），保留已结算 outcome 与更全的 settlement 元数据，台账 231→192 条、0 重复 id、0 残留连字符；③ 回归测试 3 项（value 尾随标点/metric 尾随标点/长 value 串切片后），测试 540→543 项全绿。",
+      "evidence": "台账实测：39 组冲突（21 组 claim 相同 + 18 组 claim 因抽取窗口宽度不同而异，如「EPS $1.22 - $1.42」vs「revenues $1.2B - $1.4B GAAP diluted EPS $1.22 - $1.42」，settlement 元数据完全一致）；迁移后 0 重复 id。测试：基线 540/0 → 加修复 540/0 → 加回归 543/0。live 复跑（测试期间 EDGAR 实抓）新增 40 条真实指引、0 重复 id。",
+      "lesson": "「id 绝不能含会变的字段」这条纪律（v2.13 立）只挡住了 claimSentence/date 两族，没挡住**原始串的形态抖动**——同一数值「$3.150 billion」与「$3,150」、同一 value 带不带尾随标点，是两个不同的 slug。判据要从「字段会不会变」细化到「字段的字符串形态会不会变」：进 id 的每一段都要过归一化（trim + 去首尾连字符），且归一化必须在切片之后（切片会制造新的边界垃圾）。同型纪律：修生成逻辑必须同时迁存量，否则新逻辑会在存量里「找不到自己」而重新制造问题——这与 v3.28「value 是登记 id 幂等维度，改它会让存量条目换 id 重复登记」是同一枚硬币的两面。仍在库外（如实）：单位基差（MRVL「Net revenue is expected to be $3.150 billion」句式形态 vs「net revenue $3,150」表格行形态）仍产生两个 id——归一化只处理了形态抖动，没处理 billion/million/无单位的标度归一，需要数值+单位 canonicalize，属能力建设不是修 bug。",
+      "resolvedAt": "2026-10-31"
     }
   ]
 }

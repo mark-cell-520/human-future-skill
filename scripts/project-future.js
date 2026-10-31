@@ -1660,17 +1660,30 @@ class ProjectionEngine {
         .replace(/[?#].*$/, '')        // 剥查询串与 hash
         .replace(/\/$/, '')
         .split('/').pop() || '';
-      const id = `fc-${(r.source || 'unknown').replace(/[^a-z0-9]+/gi, '-').toLowerCase()}`
-        + `-${urlTail.replace(/[^a-z0-9]+/gi, '-').toLowerCase().slice(0, 40) || 'nourl'}`
-        + `-${(r.dueOn || 'nodue').replace(/[^a-z0-9]+/gi, '-').toLowerCase()}`
+      // [v3.31] slug 必须剥掉首尾连字符，且**先切片后剥**。
+      // 实测踩坑（台账 39 组重复登记）：value 串尾部只要带一个非字母数字
+      // 字符（尾随空格、句点、±、千分位逗号后的收尾），
+      // replace(/[^a-z0-9]+/gi,'-') 就留下尾随 '-'。同一指引两遍抽取
+      // 一遍带一遍不带 → 两个 id → 台账登记两条。实测如
+      //   …-diluted-earnings-per-share--37-84-   （有尾随 -）
+      //   …-diluted-earnings-per-share--37-84    （无尾随 -）
+      // 同 accession、同 dueOn、同 metric、同 value，只差一个尾随 '-'。
+      // 「先切片后剥」是因为切片本身会切出新的尾随 '-'（长 value 串）。
+      const slug = (s, max) => {
+        const v = String(s).replace(/[^a-z0-9]+/gi, '-').toLowerCase();
+        return (max ? v.slice(0, max) : v).replace(/^-+|-+$/g, '');
+      };
+      const id = `fc-${slug(r.source || 'unknown')}`
+        + `-${slug(urlTail, 40) || 'nourl'}`
+        + `-${slug(r.dueOn || 'nodue')}`
         // [v3.4] 财报指引加 metric+value 维度：同一 8-K 备案的多条指引
         // （revenue / gross margins / operating expenses）结算点相同，不加
         // 维度则第 2 条起被「id 已存在」误跳过；只加 metric 还不够——MRVL
         // 实测 GAAP gross margin 52.9% 与非 GAAP 57.5% 同名同时点，仍互撞
         // （非 GAAP 那条被静默丢弃）。value 对同一 accession 是确定性的。
         + (r.guidance && r.guidance.metric
-          ? `-${String(r.guidance.metric).replace(/[^a-z0-9]+/gi, '-').toLowerCase()}`
-            + `-${String(r.guidance.value || 'novalue').replace(/[^a-z0-9]+/gi, '-').toLowerCase().slice(0, 24)}`
+          ? `-${slug(r.guidance.metric)}`
+            + `-${slug(r.guidance.value || 'novalue', 24)}`
           : '');
       const dueDate = r.dueOn && /^\d{4}-Q([1-4])$/.test(r.dueOn)
         ? `${r.dueOn.slice(0, 4)}-${['03-31', '06-30', '09-30', '12-31'][Number(r.dueOn.slice(-1)) - 1]}`
